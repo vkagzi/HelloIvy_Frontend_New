@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  web:
+    tty: true
+    working_dir: /app
+    # command: >
+    #   sh -c "npm install &&
+    #          npm run dev"
+    command: >
+      sh -c "npm install && tail -f /dev/null"
+    container_name: 'helloivy_web'
+    env_file:
+      - ../.env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - '../:/app'
+    ports:
+      - '12321:3000'
+    networks:
+      - common_network
+networks:
+  common_network:
+    name: common_network

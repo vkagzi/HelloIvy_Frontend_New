@@ -1,0 +1,108 @@
+'use client';
+
+import React from 'react';
+import Image from 'next/image';
+import imgIcon from '@/assets/images/icon.png';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import { FiIcon } from '@/app/_components/Icons';
+import { useProfile } from '../_context/ProfileContext';
+
+type InfoItemProps = {
+  icon: string;
+  value: string | undefined;
+  showDivider?: boolean;
+};
+
+const InfoItem: React.FC<InfoItemProps> = ({
+  icon,
+  value,
+  showDivider = true,
+}) => {
+  const displayValue =
+    typeof value === 'string' && value ? value : 'Not provided';
+
+  return (
+    <>
+      <span className="flex items-center gap-2">
+        <FiIcon name={icon} className="flex h-3 w-3 items-center text-neutral-500" />
+        <Paragraph size="xs" className="text-neutral-900">
+          {displayValue}
+        </Paragraph>
+      </span>
+      {showDivider && <span className="hidden text-neutral-300 sm:inline">|</span>}
+    </>
+  );
+};
+
+const ProfileHeaderSkeleton: React.FC = () => (
+  <section className="flex flex-col">
+    <div className="flex items-center gap-6">
+      <div className="h-20 w-20 animate-pulse rounded-full bg-neutral-200" />
+      <div className="flex flex-col gap-2">
+        <div className="h-6 w-48 animate-pulse rounded bg-neutral-200" />
+        <div className="h-4 w-64 animate-pulse rounded bg-neutral-200" />
+      </div>
+    </div>
+  </section>
+);
+
+const ProfileHeaderView: React.FC = () => {
+  const { personalDetails: defaultValues, loading } = useProfile();
+
+  if (loading) {
+    return <ProfileHeaderSkeleton />;
+  }
+
+  const getStringValue = (value: unknown): string | undefined => {
+    return typeof value === 'string' && value ? value : undefined;
+  };
+
+  const getFullName = (): string => {
+    const firstName = getStringValue(defaultValues.firstName) ?? 'Not Provided';
+    const lastName = getStringValue(defaultValues.lastName) ?? '';
+
+    return `${firstName} ${lastName}`.trim();
+  };
+
+  const profileInfo = [
+    { icon: 'envelope', value: getStringValue(defaultValues.email) },
+    { icon: 'phone-call', value: getStringValue(defaultValues.phoneNumber) },
+    { icon: 'user', value: getStringValue(defaultValues.gender) },
+    { icon: 'cake-birthday', value: getStringValue(defaultValues.dob) },
+    { icon: 'marker', value: getStringValue(defaultValues.addressline) },
+  ];
+
+  return (
+    <section className="flex flex-col">
+      <div className="flex items-center gap-6">
+        <div className="relative h-20 w-20">
+          <Image
+            src={imgIcon}
+            alt="Profile"
+            width={80}
+            height={80}
+            className="rounded-full border border-neutral-200 object-cover"
+            priority
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Heading level={4} className="font-extrabold text-neutral-900">
+            {getFullName()}
+          </Heading>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-neutral-900">
+            {profileInfo.map((info, index) => (
+              <InfoItem
+                key={info.icon}
+                icon={info.icon}
+                value={info.value}
+                showDivider={index < profileInfo.length - 1}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default ProfileHeaderView;

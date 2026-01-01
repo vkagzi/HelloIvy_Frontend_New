@@ -1,0 +1,174 @@
+'use client';
+
+import React, { useState, useRef, useCallback } from 'react';
+import { FieldDefinition } from '@/app/utils/dynamicForm';
+import DynamicForm from '@/app/_components/dynamic-form/DynamicForm';
+import Tabs from '../../_components/Tabs';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/app/_components/Toast';
+import { getProfileData } from '../../lib/api';
+import { SubmitHandler } from 'react-hook-form';
+import api from '@/lib/api';
+import Instructions from '../../_components/Instructions';
+import {
+  educationalFieldDefs as fieldDefss,
+  educationalLayout as layout,
+  schoolTestTypeOptions,
+  ugPgTestTypeOptions,
+} from '../../_config/fieldDefinitions';
+import {
+  // getSectionCompletionStatus,
+  hasProfileSection,
+} from '../../utils/utils';
+import { useProfile } from '../../_context/ProfileContext';
+
+const EducationalDetailsForm: React.FC = () => {
+  const { addToast } = useToast();
+  const router = useRouter();
+  const { rawApiResponse } = useProfile();
+  const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
+
+  const [fieldDefs, setFieldDefs] = useState<FieldDefinition[]>(fieldDefss);
+  const prevAcademicLevelRef = useRef<string | undefined>(undefined);
+
+  // Helper to get options based on academic level
+  const getTestTypeOptions = (academicLevel: string | undefined): string[] => {
+    if (!academicLevel) {
+      return [];
+    }
+    if (
+      academicLevel === '10+ years post College' ||
+      academicLevel === 'Completed College / Postgraduate' ||
+      academicLevel === 'In College / Undergraduate'
+    ) {
+      return ugPgTestTypeOptions;
+    } else if (
+      academicLevel === 'High School (9th–12th)' ||
+      academicLevel === 'Middle School (5th–8th)'
+    ) {
+      return schoolTestTypeOptions;
+    }
+    return [];
+  };
+
+  // Helper to update testType options based on academic level
+  const updateTestTypeOptions = useCallback((academicLevel: string | undefined): void => {
+    // Only update if the academic level actually changed
+    if (prevAcademicLevelRef.current === academicLevel) {
+      return;
+    }
+    prevAcademicLevelRef.current = academicLevel;
+
+    const options = getTestTypeOptions(academicLevel);
+    setFieldDefs((prev) =>
+      prev.map((field) =>
+        field.id === 'testType' ? { ...field, options } : field
+      )
+    );
+  }, []);
+
+  const handleFormInit = useCallback((
+    form: import('react-hook-form').UseFormReturn<Record<string, unknown>>
+  ): void => {
+    // Initialize options based on existing academicLevel value
+    const initialAcademicLevel = form.getValues('academicLevel') as string | undefined;
+    updateTestTypeOptions(initialAcademicLevel);
+
+    // Watch for changes
+    form.watch((values) => {
+      const academicLevel = values.academicLevel as string | undefined;
+      updateTestTypeOptions(academicLevel);
+    });
+  }, [updateTestTypeOptions]);
+
+  const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
+    try {
+      // Fetch latest profile data to ensure we have the most recent data
+      const latestData = await getProfileData();
+      const existingProfile =
+        ((latestData?.profile as Record<string, unknown>)?.profile as Record<
+          string,
+          unknown
+        >) || {};
+
+      const extraCurricular = existingProfile.extraCurricular ?? {};
+      const personalDetails = existingProfile.personalDetails ?? {};
+      const additional = existingProfile.additional ?? {};
+      const professional = existingProfile.professional ?? {};
+
+      const response = await api('/api/profiles/update/', {
+        method: 'POST',
+        body: {
+          profile: {
+            educational: _data,
+            personalDetails: personalDetails,
+            professional: professional,
+            additional: additional,
+            extraCurricular: extraCurricular,
+          },
+        },
+      });
+      if (response['message'] === 'Profile updated successfully.') {
+        router.push('/profile/professional/edit');
+      } else {
+        addToast('Failed to update profile.', { type: 'error' });
+      }
+    } catch (error) {
+      const message =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message: unknown }).message)
+          : 'An unknown error occurred';
+      addToast(message, { type: 'error' });
+    }
+  };
+
+  // Extract educational details from the nested structure
+  let educationalDetails: Record<string, unknown> = {};
+
+  if (
+    defaultValues &&
+    typeof defaultValues.profile === 'object' &&
+    defaultValues.profile !== null
+  ) {
+    const profileObj = defaultValues.profile as Record<string, unknown>;
+
+    if (typeof profileObj.profile === 'object' && profileObj.profile !== null) {
+      const nestedProfile = profileObj.profile as Record<string, unknown>;
+
+      if (
+        typeof nestedProfile.educational === 'object' &&
+        nestedProfile.educational !== null
+      ) {
+        educationalDetails = nestedProfile.educational as Record<
+          string,
+          unknown
+        >;
+      }
+    }
+  }
+
+  console.log('Educational details for form:', educationalDetails); // Debug log
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Instructions />
+      <Tabs />
+      <DynamicForm
+        defaultValues={educationalDetails}
+        fieldDefs={fieldDefs}
+        layout={layout}
+        onSubmit={onSubmit}
+        onFormInit={handleFormInit}
+        formClassName="space-y-6"
+        buttonName="Add Professional Details"
+        showSaveButton={
+          hasProfileSection(defaultValues, 'educational')
+            ? { showSave: true, href: '/profile/professional/edit' }
+            : { showSave: false }
+        }
+      />
+    </div>
+  );
+};
+
+export default EducationalDetailsForm;

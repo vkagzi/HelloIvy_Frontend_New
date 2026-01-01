@@ -1,0 +1,133 @@
+'use client';
+
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { getProfileData } from '../lib/api';
+import { getToken } from '@/lib/api';
+
+type ProfileData = Record<string, unknown>;
+
+type ProfileContextType = {
+  profileData: ProfileData | null;
+  rawApiResponse: { profile: Record<string, unknown> } | null;
+  personalDetails: ProfileData;
+  educationalDetails: ProfileData;
+  professionalDetails: ProfileData;
+  additionalDetails: ProfileData;
+  extraCurricularDetails: ProfileData;
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+};
+
+const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
+
+export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [rawApiResponse, setRawApiResponse] = useState<{ profile: Record<string, unknown> } | null>(null);
+  const [personalDetails, setPersonalDetails] = useState<ProfileData>({});
+  const [educationalDetails, setEducationalDetails] = useState<ProfileData>({});
+  const [professionalDetails, setProfessionalDetails] = useState<ProfileData>({});
+  const [additionalDetails, setAdditionalDetails] = useState<ProfileData>({});
+  const [extraCurricularDetails, setExtraCurricularDetails] = useState<ProfileData>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProfileData = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Check if user is authenticated
+      const token = getToken();
+      if (!token) {
+        console.error('No authentication token found');
+        setError('Please log in to view your profile');
+        return;
+      }
+
+      const data = await getProfileData();
+      console.log('ProfileContext - Raw API data:', data);
+
+      // Store the raw API response for edit pages
+      setRawApiResponse(data as { profile: Record<string, unknown> });
+
+      if (
+        data &&
+        typeof data === 'object' &&
+        'profile' in data &&
+        typeof data.profile === 'object' &&
+        data.profile !== null
+      ) {
+        const profile = data.profile as Record<string, unknown>;
+
+        // API returns nested structure: data.profile.profile
+        if (
+          'profile' in profile &&
+          typeof profile.profile === 'object' &&
+          profile.profile !== null
+        ) {
+          const fullProfileData = profile.profile as Record<string, unknown>;
+          console.log('ProfileContext - Full profile data:', fullProfileData);
+          setProfileData(fullProfileData);
+
+          // Extract all sections
+          if ('personalDetails' in fullProfileData) {
+            setPersonalDetails(fullProfileData.personalDetails as ProfileData);
+          }
+          if ('educational' in fullProfileData) {
+            setEducationalDetails(fullProfileData.educational as ProfileData);
+          }
+          if ('professional' in fullProfileData) {
+            setProfessionalDetails(fullProfileData.professional as ProfileData);
+          }
+          if ('additional' in fullProfileData) {
+            setAdditionalDetails(fullProfileData.additional as ProfileData);
+          }
+          if ('extraCurricular' in fullProfileData) {
+            setExtraCurricularDetails(fullProfileData.extraCurricular as ProfileData);
+          }
+        } else {
+          console.warn('Profile nested object not found');
+        }
+      } else {
+        console.warn('Invalid profile data structure received');
+      }
+    } catch (err) {
+      console.error('Error fetching profile data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load profile data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfileData();
+  }, [fetchProfileData]);
+
+  return (
+    <ProfileContext.Provider
+      value={{
+        profileData,
+        rawApiResponse,
+        personalDetails,
+        educationalDetails,
+        professionalDetails,
+        additionalDetails,
+        extraCurricularDetails,
+        loading,
+        error,
+        refetch: fetchProfileData,
+      }}
+    >
+      {children}
+    </ProfileContext.Provider>
+  );
+};
+
+export const useProfile = (): ProfileContextType => {
+  const context = useContext(ProfileContext);
+  if (!context) {
+    throw new Error('useProfile must be used within a ProfileProvider');
+  }
+  return context;
+};
