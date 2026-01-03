@@ -8,47 +8,7 @@ import imgLogoApp from '@/assets/images/logo-app.png';
 import imgIcon from '@/assets/images/icon.png';
 import Image from 'next/image';
 import { Label } from '@/app/_components/Typography';
-
-type NavItem = {
-  label: string;
-  icon: string;
-  href: string;
-};
-
-const navItems: NavItem[] = [
-  { label: 'My Dashboard', icon: 'sr-apps', href: '/dashboard' },
-  { label: 'Career Discovery', icon: 'briefcase', href: '/career' },
-  { label: 'College Selector', icon: 'school', href: '/college' },
-  {
-    label: 'Essay Brainstorm',
-    icon: 'brain-circuit',
-    href: '/essay-brainstorm/intro',
-  },
-  {
-    label: 'Essay Evaluator',
-    icon: 'list-check',
-    href: '/essay-evaluator',
-  },
-  {
-    label: 'Interview Preparation',
-    icon: 'videoconference',
-    href: '/interview-prep',
-  },
-  {
-    label: 'Degree Selector',
-    icon: 'graduation-cap',
-    href: '/degree',
-  },
-  {
-    label: 'Recommendations',
-    icon: 'diploma',
-    href: '/recommendations',
-  },
-  { label: 'Resources', icon: 'resources', href: '/resources' },
-  { label: 'Resume Builder', icon: 'CV', href: '/resume' },
-  { label: 'Application', icon: 'form', href: '/application' },
-  { label: 'Starred', icon: 'star', href: '/starred' },
-];
+import { sidebarNavItems } from '@/app/_constants/navItems';
 
 const Navbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
@@ -58,7 +18,7 @@ const Navbar: React.FC = () => {
     <nav
       className={`relative flex flex-col bg-white transition-all duration-200 ${
         collapsed ? 'w-14' : 'w-50 border-r border-neutral-200'
-      } my-3 min-h-screen px-3`}
+      } my-3 min-h-screen px-2`}
     >
       <div className="flex h-12 items-center justify-between pb-3">
         <Image
@@ -80,7 +40,7 @@ const Navbar: React.FC = () => {
         </button>
       </div>
       <ul className="mt-2 flex-1">
-        {navItems.map((item) => {
+        {sidebarNavItems.map((item) => {
           const active = pathname === item.href;
           return (
             <li key={item.href} className="h-10">

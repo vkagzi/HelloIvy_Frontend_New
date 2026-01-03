@@ -10,7 +10,7 @@ import { Heading, Paragraph } from '@/app/_components/Typography';
 import { InputField } from '@/app/_components/InputField';
 import Button, { ButtonLink } from '@/app/_components/Button';
 import SignUpLeftCol from '@/app/_components/signup/SignUpLeftCol';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/app/_components/Toast';
 import { signIn } from 'next-auth/react';
 
@@ -23,6 +23,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function Login(): React.ReactElement {
   const { addToast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
   const {
     control,
     handleSubmit,
@@ -46,8 +48,8 @@ export default function Login(): React.ReactElement {
       }
 
       if (result?.ok) {
-        // Successful login - redirect to app
-        router.push('/dashboard');
+        // Successful login - redirect to callback URL or dashboard
+        router.push(callbackUrl);
       }
     } catch (error) {
       const message =

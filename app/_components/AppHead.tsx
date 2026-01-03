@@ -13,42 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/app/_components/DropdownMenu';
 import type { Session } from 'next-auth';
-
-type Headings = {
-  heading: string;
-  href: string;
-};
-
-const navItems: Headings[] = [
-  { heading: 'Dashboard', href: '/dashboard' },
-  { heading: 'Career Discovery', href: '/career' },
-  {
-    heading: 'Degree Selector',
-    href: '/degree',
-  },
-  { heading: 'College Selector', href: '/college' },
-  {
-    heading: 'Essay Brainstorm',
-    href: '/essay-brainstorm/intro',
-  },
-  {
-    heading: 'Essay Evaluator',
-    href: '/essay-evaluator',
-  },
-  {
-    heading: 'Recommendations',
-    href: '/recommendations',
-  },
-  { heading: 'Resources', href: '/resources' },
-  { heading: 'Resume Builder', href: '/resume' },
-  {
-    heading: 'Interview Preparation',
-    href: '/interview-prep',
-  },
-  { heading: 'Application', href: '/application' },
-  { heading: 'Starred', href: '/starred' },
-  { heading: 'Personal Details', href: '/profile/personal/edit' },
-];
+import { navItems } from '@/app/_constants/navItems';
 
 type AppHeadProps = {
   session: Session | null;
@@ -59,7 +24,7 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
 
   const pathname = usePathname();
   const currentNavItem = navItems.find((item) => pathname === item.href);
-  const heading = currentNavItem ? currentNavItem.heading : 'Dashboard';
+  const heading = currentNavItem ? currentNavItem.label : 'Dashboard';
 
   // Calculate user initials from name
   const getUserInitials = (name: string): string => {
@@ -100,8 +65,8 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
   return (
     <>
       {pathname == '/app' && <div className="dashboard-bg"></div>}
-      <header className="flex h-12 items-center justify-between border-b border-neutral-200 px-4 pb-3">
-        <div>
+      <header className="flex h-12 items-center justify-between border-b border-neutral-200 px-4">
+        <div className="flex items-center">
           <Heading level={3} className="font-extrabold">
             {heading}
           </Heading>
@@ -127,6 +92,19 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
               sideOffset={8}
               align="end"
             >
+              <div className="flex items-center gap-3 px-2 py-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-200">
+                  <Label size="sm">
+                    {getUserInitials(userAuth.userDetails.name)}
+                  </Label>
+                </div>
+                <div className="flex flex-col">
+                  <Label size="md" className="font-semibold text-neutral-900">
+                    {userAuth.userDetails.name || userAuth.userDetails.email}
+                  </Label>
+                </div>
+              </div>
+              <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href="/profile/personal/edit">My Profile</Link>
               </DropdownMenuItem>
@@ -134,11 +112,8 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
               <DropdownMenuItem>FAQs</DropdownMenuItem>
               <DropdownMenuItem>Legal</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-red-600 focus:text-red-600"
-                onClick={() => signOut()}
-              >
-                Log Out
+              <DropdownMenuItem asChild className="text-red-600 focus:text-red-600">
+                <Link href="/logout">Log Out</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
