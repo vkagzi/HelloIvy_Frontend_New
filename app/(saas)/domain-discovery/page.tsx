@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { careerDiscoveryApi, SessionListItem } from '@/lib/career-discovery-api';
+import { domainDiscoveryApi, SessionListItem } from '@/lib/domain-discovery-api';
 import { useOpenAITTS } from '../../_hooks/useOpenAITTS';
 import { Checkbox } from '@/app/_components/Checkbox';
 import { BrainWithoutBGLottie } from '@/app/_components/LottieAnimation';
@@ -16,9 +16,9 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 
-interface CareerDiscoveryPageProps {}
+interface DomainDiscoveryPageProps {}
 
-export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
+export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
@@ -27,7 +27,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const { speakText, isSpeaking } = useOpenAITTS();
 
-  const instructions = `This module helps you discover your ideal career path through personalized, AI-powered analysis based on your unique profile and experiences. We analyze your existing profile data and guide you through 8 thoughtful questions about your preferences. You'll receive personalized career recommendations with detailed insights, salary ranges, and specific next steps. The process takes about 5-7 minutes and is completely personalized to your background.`;
+  const instructions = `This module helps you discover your ideal academic and interest domains through personalized, AI-powered analysis based on your unique curiosities and passions. We analyze your existing profile data and guide you through 8 thoughtful questions about your interests. You'll receive personalized domain recommendations with related subjects, exploration activities, and potential career paths. The process takes about 5-7 minutes and is completely personalized to your background.`;
 
   useEffect(() => {
     loadSessions();
@@ -36,7 +36,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   const loadSessions = async () => {
     try {
       setIsLoadingSessions(true);
-      const response = await careerDiscoveryApi.listSessions();
+      const response = await domainDiscoveryApi.listSessions();
       setSessions(response.sessions);
     } catch (err) {
       console.error('Failed to load sessions:', err);
@@ -49,7 +49,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     speakText(instructions);
   };
 
-  const handleStartCareerDiscovery = async () => {
+  const handleStartDomainDiscovery = async () => {
     if (!hasReadInstructions) {
       setError('Please read all instructions before proceeding');
       return;
@@ -61,21 +61,21 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
 
       // Clear any stored session to force a new one
       try {
-        localStorage.removeItem('career_session_id');
-        sessionStorage.removeItem('career_session_active');
+        localStorage.removeItem('domain_session_id');
+        sessionStorage.removeItem('domain_session_active');
       } catch {
         // ignore
       }
 
       // Create a new session
-      const session = await careerDiscoveryApi.createSession();
+      const session = await domainDiscoveryApi.createSession();
       console.log('Created new session:', session);
 
       // Navigate to conversation page with session ID
-      router.push(`/career/${session.session_id}/conversations`);
+      router.push(`/domain-discovery/${session.session_id}/conversations`);
     } catch (err) {
-      console.error('Failed to start career discovery:', err);
-      setError('Failed to start career discovery. Please try again.');
+      console.error('Failed to start domain discovery:', err);
+      setError('Failed to start domain discovery. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +83,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
 
   const handleResumeSession = async (sessionId: string) => {
     try {
-      router.push(`/career/${sessionId}/conversations`);
+      router.push(`/domain-discovery/${sessionId}/conversations`);
     } catch (err) {
       console.error('Failed to resume session:', err);
       setError('Failed to resume session. Please try again.');
@@ -91,7 +91,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   };
 
   const handleViewResults = (sessionId: string) => {
-    router.push(`/career/${sessionId}/results`);
+    router.push(`/domain-discovery/${sessionId}/results`);
   };
 
   const formatDate = (dateString: string) => {
@@ -125,17 +125,17 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
         <div className="mb-10 flex flex-col items-center justify-between gap-8 md:flex-row">
           {/* Left Content */}
           <div className="flex-1">
-            <span className="mb-2 bg-linear-to-r from-red-500 via-pink-500 via-purple-500 via-purple-700 via-indigo-600 to-teal-400 bg-clip-text text-2xl font-semibold text-transparent md:text-2xl">
-              Career Discovery
+            <span className="mb-2 bg-linear-to-r from-teal-500 via-emerald-500 to-blue-400 bg-clip-text text-2xl font-semibold text-transparent md:text-2xl">
+              Domain Discovery
             </span>
             <Heading
               level={1}
               variant="web"
               className="font-extrabold text-neutral-900"
             >
-              Ready to start
+              Ready to discover
               <br />
-              Career Discovery?
+              your interests?
             </Heading>
           </div>
 
@@ -183,9 +183,9 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                             <div className="mt-1 text-sm text-gray-600">
                               Progress: {session.current_step}/{session.total_steps}{' '}
                               questions •{' '}
-                              {session.current_phase === 'profile'
-                                ? 'Profile Builder'
-                                : 'Career Explorer'}
+                              {session.current_phase === 'exploration'
+                                ? 'Interest Exploration'
+                                : 'Domain Mapping'}
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -194,7 +194,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleResumeSession(session.session_id)}
-                                className="border-purple-500 text-purple-600 hover:bg-purple-50"
+                                className="border-teal-500 text-teal-600 hover:bg-teal-50"
                               >
                                 Resume
                               </Button>
@@ -221,13 +221,13 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
 
         {isLoadingSessions && (
           <div className="mb-8 flex items-center justify-center py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-purple-500 border-t-transparent"></div>
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-teal-500 border-t-transparent"></div>
             <span className="ml-2 text-gray-500">Loading sessions...</span>
           </div>
         )}
 
         {/* Instructions Box */}
-        <div className="mb-6 rounded-lg border border-orange-200 p-6">
+        <div className="mb-6 rounded-lg border border-teal-200 p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">
               {sessions.length > 0
@@ -238,10 +238,10 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
               onClick={handleListen}
               variant="outline"
               size="sm"
-              className="rounded-md border border-orange-500 bg-orange-50 text-orange-500 hover:bg-orange-100"
+              className="rounded-md border border-teal-500 bg-teal-50 text-teal-500 hover:bg-teal-100"
             >
               <FiIcon name="volume" className="h-4 w-4" />
-              <Label size="md" className="text-orange-500">
+              <Label size="md" className="text-teal-500">
                 Listen
               </Label>
             </Button>
@@ -251,44 +251,43 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             <li className="flex gap-3">
               <span className="min-w-[20px] font-semibold">1</span>
               <span>
-                This module helps you discover your ideal career path through
-                personalized, AI-powered analysis based on your unique profile
-                and experiences.
+                This module helps you discover academic and interest domains that
+                match your natural curiosities, passions, and learning preferences.
               </span>
             </li>
             <li className="flex gap-3">
               <span className="min-w-[20px] font-semibold">2</span>
               <span>
-                We analyze your existing profile data, experiences, and
-                achievements to provide tailored career recommendations.
+                We analyze your existing profile data, interests, and activities
+                to provide tailored domain recommendations.
               </span>
             </li>
             <li className="flex gap-3">
               <span className="min-w-[20px] font-semibold">3</span>
               <span>
                 You'll go through an 8-step guided conversation to uncover your
-                career preferences and interests.
+                interests and map them to potential domains.
               </span>
             </li>
             <li className="flex gap-3">
               <span className="min-w-[20px] font-semibold">4</span>
               <span>
-                Receive detailed career matches with salary ranges, next steps,
-                and actionable insights to pursue your recommended career paths.
+                Receive detailed domain matches with related subjects, exploration
+                activities, and potential career paths to pursue.
               </span>
             </li>
             <li className="flex gap-3">
               <span className="min-w-[20px] font-semibold">5</span>
               <span>
                 The entire process takes about 5-7 minutes and is completely
-                personalized to your background.
+                personalized to your background and interests.
               </span>
             </li>
             <li className="flex gap-3">
               <span className="min-w-[20px] font-semibold">6</span>
               <span>
-                Find a comfortable space where you can focus and be ready to
-                share your career aspirations and preferences.
+                Domain Discovery is a prerequisite for Career Discovery - understanding
+                your domains helps identify specific career paths later.
               </span>
             </li>
           </ol>
@@ -316,7 +315,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           <Button
             variant="primary"
             size="lg"
-            onClick={handleStartCareerDiscovery}
+            onClick={handleStartDomainDiscovery}
             disabled={isLoading || !hasReadInstructions}
             iconRight={<FiIcon name="arrow-small-right" className="h-5 w-5" />}
             className="mt-6"

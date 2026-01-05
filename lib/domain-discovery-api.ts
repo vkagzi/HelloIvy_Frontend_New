@@ -95,7 +95,7 @@ class DomainDiscoveryAPI {
    * Returns the session with the initial bot message
    */
   async createSession(): Promise<DomainDiscoverySession> {
-    return api<DomainDiscoverySession>(`${this.baseUrl}/sessions/`, {
+    return api<DomainDiscoverySession>(`${this.baseUrl}/`, {
       method: 'POST',
     });
   }
@@ -104,14 +104,14 @@ class DomainDiscoveryAPI {
    * Get the current active session for the user
    */
   async getCurrentSession(): Promise<DomainDiscoverySession> {
-    return api<DomainDiscoverySession>(`${this.baseUrl}/sessions/current/`);
+    return api<DomainDiscoverySession>(`${this.baseUrl}/current/`);
   }
 
   /**
    * List all sessions for the user
    */
   async listSessions(): Promise<SessionListResponse> {
-    return api<SessionListResponse>(`${this.baseUrl}/sessions/list/`);
+    return api<SessionListResponse>(`${this.baseUrl}/list/`);
   }
 
   /**
@@ -121,10 +121,9 @@ class DomainDiscoveryAPI {
     sessionId: string,
     content: string
   ): Promise<SendMessageResponse> {
-    return api<SendMessageResponse>(`${this.baseUrl}/messages/`, {
+    return api<SendMessageResponse>(`${this.baseUrl}/${sessionId}/messages/`, {
       method: 'POST',
       body: {
-        session_id: sessionId,
         content: content,
       },
     });
@@ -135,7 +134,7 @@ class DomainDiscoveryAPI {
    */
   async getMessages(sessionId: string): Promise<MessageHistoryResponse> {
     return api<MessageHistoryResponse>(
-      `${this.baseUrl}/sessions/${sessionId}/messages/`
+      `${this.baseUrl}/${sessionId}/messages/history/`
     );
   }
 
@@ -143,7 +142,7 @@ class DomainDiscoveryAPI {
    * End a domain discovery session
    */
   async endSession(sessionId: string): Promise<void> {
-    return api<void>(`${this.baseUrl}/sessions/${sessionId}/end/`, {
+    return api<void>(`${this.baseUrl}/${sessionId}/end/`, {
       method: 'POST',
     });
   }
@@ -154,11 +153,8 @@ class DomainDiscoveryAPI {
   async generateRecommendations(
     sessionId: string
   ): Promise<RecommendationsResponse> {
-    return api<RecommendationsResponse>(`${this.baseUrl}/recommendations/`, {
+    return api<RecommendationsResponse>(`${this.baseUrl}/${sessionId}/recommendations/generate/`, {
       method: 'POST',
-      body: {
-        session_id: sessionId,
-      },
     });
   }
 
@@ -167,7 +163,7 @@ class DomainDiscoveryAPI {
    */
   async getRecommendations(sessionId: string): Promise<RecommendationsResponse> {
     return api<RecommendationsResponse>(
-      `${this.baseUrl}/sessions/${sessionId}/recommendations/`
+      `${this.baseUrl}/${sessionId}/recommendations/`
     );
   }
 

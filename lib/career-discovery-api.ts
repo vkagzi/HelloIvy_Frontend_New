@@ -93,7 +93,7 @@ class CareerDiscoveryAPI {
    * Returns the session with the initial bot message
    */
   async createSession(): Promise<CareerDiscoverySession> {
-    return api<CareerDiscoverySession>(`${this.baseUrl}/sessions/`, {
+    return api<CareerDiscoverySession>(`${this.baseUrl}/`, {
       method: 'POST',
     });
   }
@@ -102,14 +102,14 @@ class CareerDiscoveryAPI {
    * Get the current active session for the user
    */
   async getCurrentSession(): Promise<CareerDiscoverySession> {
-    return api<CareerDiscoverySession>(`${this.baseUrl}/sessions/current/`);
+    return api<CareerDiscoverySession>(`${this.baseUrl}/current/`);
   }
 
   /**
    * List all sessions for the user
    */
   async listSessions(): Promise<SessionListResponse> {
-    return api<SessionListResponse>(`${this.baseUrl}/sessions/list/`);
+    return api<SessionListResponse>(`${this.baseUrl}/list/`);
   }
 
   /**
@@ -119,10 +119,9 @@ class CareerDiscoveryAPI {
     sessionId: string,
     content: string
   ): Promise<SendMessageResponse> {
-    return api<SendMessageResponse>(`${this.baseUrl}/messages/`, {
+    return api<SendMessageResponse>(`${this.baseUrl}/${sessionId}/messages/`, {
       method: 'POST',
       body: {
-        session_id: sessionId,
         content: content,
       },
     });
@@ -133,7 +132,7 @@ class CareerDiscoveryAPI {
    */
   async getMessages(sessionId: string): Promise<MessageHistoryResponse> {
     return api<MessageHistoryResponse>(
-      `${this.baseUrl}/sessions/${sessionId}/messages/`
+      `${this.baseUrl}/${sessionId}/messages/history/`
     );
   }
 
@@ -141,7 +140,7 @@ class CareerDiscoveryAPI {
    * End a career discovery session
    */
   async endSession(sessionId: string): Promise<void> {
-    return api<void>(`${this.baseUrl}/sessions/${sessionId}/end/`, {
+    return api<void>(`${this.baseUrl}/${sessionId}/end/`, {
       method: 'POST',
     });
   }
@@ -152,11 +151,8 @@ class CareerDiscoveryAPI {
   async generateRecommendations(
     sessionId: string
   ): Promise<RecommendationsResponse> {
-    return api<RecommendationsResponse>(`${this.baseUrl}/recommendations/`, {
+    return api<RecommendationsResponse>(`${this.baseUrl}/${sessionId}/recommendations/generate/`, {
       method: 'POST',
-      body: {
-        session_id: sessionId,
-      },
     });
   }
 
@@ -165,7 +161,7 @@ class CareerDiscoveryAPI {
    */
   async getRecommendations(sessionId: string): Promise<RecommendationsResponse> {
     return api<RecommendationsResponse>(
-      `${this.baseUrl}/sessions/${sessionId}/recommendations/`
+      `${this.baseUrl}/${sessionId}/recommendations/`
     );
   }
 

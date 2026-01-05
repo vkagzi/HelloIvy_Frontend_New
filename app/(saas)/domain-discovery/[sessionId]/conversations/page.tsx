@@ -6,12 +6,12 @@ import { Heading, Paragraph } from '../../../../_components/Typography';
 import { useToast } from '../../../../_components/Toast';
 import { Textarea } from '@/app/_components/Textarea';
 import {
-  careerDiscoveryApi,
+  domainDiscoveryApi,
   SendMessageResponse,
-} from '@/lib/career-discovery-api';
+} from '@/lib/domain-discovery-api';
 
 type Role = 'bot' | 'user';
-type Phase = 'profile' | 'explorer';
+type Phase = 'exploration' | 'mapping';
 
 interface Message {
   id: string;
@@ -20,14 +20,14 @@ interface Message {
   timestamp: string; // ISO
 }
 
-const TOTAL_QUESTIONS = 10;
-const PROFILE_QUESTIONS_COUNT = 5;
+const TOTAL_QUESTIONS = 8;
+const EXPLORATION_QUESTIONS_COUNT = 4;
 const MIN_QUESTIONS_FOR_RECOMMENDATIONS = 3;
 
 /** ================== Transcript Helpers ================== */
 function loadTranscript(sessionId: string): Message[] {
   try {
-    const raw = localStorage.getItem(`career_conversation_transcript_${sessionId}`);
+    const raw = localStorage.getItem(`domain_conversation_transcript_${sessionId}`);
     if (!raw) return [];
     const arr = JSON.parse(raw);
     return Array.isArray(arr) ? arr : [];
@@ -39,7 +39,7 @@ function loadTranscript(sessionId: string): Message[] {
 function saveTranscript(sessionId: string, messages: Message[]) {
   try {
     localStorage.setItem(
-      `career_conversation_transcript_${sessionId}`,
+      `domain_conversation_transcript_${sessionId}`,
       JSON.stringify(messages)
     );
   } catch {
@@ -47,7 +47,7 @@ function saveTranscript(sessionId: string, messages: Message[]) {
   }
 }
 
-const CareerConversationPage: React.FC = () => {
+const DomainConversationPage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
   const sessionId = params?.sessionId as string | undefined;
@@ -76,7 +76,7 @@ const CareerConversationPage: React.FC = () => {
   );
   const canEndConversation = userAnswerCount >= MIN_QUESTIONS_FOR_RECOMMENDATIONS;
   const phase: Phase =
-    askedCount < PROFILE_QUESTIONS_COUNT ? 'profile' : 'explorer';
+    askedCount < EXPLORATION_QUESTIONS_COUNT ? 'exploration' : 'mapping';
 
   // Initialize session on mount
   useEffect(() => {
@@ -88,7 +88,7 @@ const CareerConversationPage: React.FC = () => {
 
   async function initializeSession() {
     if (!sessionId) {
-      router.push('/career');
+      router.push('/domain-discovery');
       return;
     }
     
@@ -97,7 +97,7 @@ const CareerConversationPage: React.FC = () => {
 
       // Try to load existing session
       try {
-        const historyResponse = await careerDiscoveryApi.getMessages(sessionId);
+        const historyResponse = await domainDiscoveryApi.getMessages(sessionId);
         if (historyResponse.messages.length > 0) {
           // Restore existing session
           setCurrentStep(historyResponse.current_step);
@@ -113,9 +113,9 @@ const CareerConversationPage: React.FC = () => {
           return;
         }
       } catch (error) {
-        console.log('Could not restore session, redirecting to career page');
+        console.log('Could not restore session, redirecting to domain page');
         addToast('Session not found. Please start a new session.', { type: 'error' });
-        router.push('/career');
+        router.push('/domain-discovery');
         return;
       }
     } catch (error) {
@@ -123,7 +123,7 @@ const CareerConversationPage: React.FC = () => {
       addToast('Failed to load conversation. Please try again.', {
         type: 'error',
       });
-      router.push('/career');
+      router.push('/domain-discovery');
     } finally {
       setIsLoading(false);
     }
@@ -170,7 +170,7 @@ const CareerConversationPage: React.FC = () => {
 
     try {
       // Send message to backend and get AI response
-      const response: SendMessageResponse = await careerDiscoveryApi.sendMessage(
+      const response: SendMessageResponse = await domainDiscoveryApi.sendMessage(
         sessionId,
         userMessage
       );
@@ -189,14 +189,14 @@ const CareerConversationPage: React.FC = () => {
         };
         setMessages((prev) => [...prev, botMsg]);
 
-        addToast('Great! Generating your career recommendations…', { type: 'success' });
+        addToast('Great! Generating your domain recommendations…', { type: 'success' });
 
         // Generate recommendations before redirecting
         try {
-          const result = await careerDiscoveryApi.generateRecommendations(sessionId);
+          const result = await domainDiscoveryApi.generateRecommendations(sessionId);
           if (result.recommendations && result.recommendations.length > 0) {
             addToast('Your results are ready!', { type: 'success' });
-            router.push(`/career/${sessionId}/results`);
+            router.push(`/domain-discovery/${sessionId}/results`);
           } else {
             addToast('Could not generate recommendations. Please try again.', {
               type: 'error',
@@ -207,7 +207,7 @@ const CareerConversationPage: React.FC = () => {
           addToast('Failed to generate recommendations. Redirecting anyway...', {
             type: 'warning',
           });
-          router.push(`/career/${sessionId}/results`);
+          router.push(`/domain-discovery/${sessionId}/results`);
         }
         return;
       }
@@ -243,13 +243,13 @@ const CareerConversationPage: React.FC = () => {
   async function handleEnd() {
     if (sessionId) {
       try {
-        await careerDiscoveryApi.endSession(sessionId);
+        await domainDiscoveryApi.endSession(sessionId);
       } catch (error) {
         console.log('Could not end session on server');
       }
     }
     addToast('Wrapping up and generating your results…', { type: 'success' });
-    router.push(`/career/${sessionId}/results`);
+    router.push(`/domain-discovery/${sessionId}/results`);
   }
 
   // STT functions - using backend Whisper API
@@ -258,7 +258,7 @@ const CareerConversationPage: React.FC = () => {
     console.log('🔄 Starting transcription via backend...');
 
     try {
-      const transcription = await careerDiscoveryApi.transcribeAudio(audioBlob);
+      const transcription = await domainDiscoveryApi.transcribeAudio(audioBlob);
       console.log('✅ Transcription result:', transcription);
       return transcription || '';
     } catch (error) {
@@ -281,37 +281,9 @@ const CareerConversationPage: React.FC = () => {
         );
       }
 
-      // First, enumerate devices to see what's available
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioInputs = devices.filter(
-          (device) => device.kind === 'audioinput'
-        );
-        console.log('🎤 Available audio devices:', audioInputs.length);
-
-        audioInputs.forEach((device, index) => {
-          console.log(`Device ${index + 1}:`, {
-            deviceId: device.deviceId,
-            label: device.label || 'Unknown Microphone',
-            groupId: device.groupId,
-          });
-        });
-
-        if (audioInputs.length === 0) {
-          throw new Error(
-            'No microphone devices found. Please connect a microphone and refresh the page.'
-          );
-        }
-      } catch (enumError) {
-        console.warn('Could not enumerate devices:', enumError);
-        // Continue anyway, let getUserMedia handle it
-      }
-
       // Try multiple constraint configurations
       const constraintOptions = [
-        // Most permissive - let browser choose any available microphone
         { audio: true },
-        // More specific but still flexible
         {
           audio: {
             echoCancellation: true,
@@ -319,7 +291,6 @@ const CareerConversationPage: React.FC = () => {
             autoGainControl: true,
           },
         },
-        // Minimal constraints
         {
           audio: {
             echoCancellation: false,
@@ -334,20 +305,9 @@ const CareerConversationPage: React.FC = () => {
 
       for (let i = 0; i < constraintOptions.length; i++) {
         try {
-          console.log(
-            `🎤 Trying constraint option ${i + 1}:`,
-            constraintOptions[i]
-          );
-          stream = await navigator.mediaDevices.getUserMedia(
-            constraintOptions[i]
-          );
-          console.log(
-            '✅ Microphone access granted with constraint option',
-            i + 1
-          );
+          stream = await navigator.mediaDevices.getUserMedia(constraintOptions[i]);
           break;
         } catch (error) {
-          console.warn(`❌ Constraint option ${i + 1} failed:`, error);
           lastError = error;
           continue;
         }
@@ -356,23 +316,6 @@ const CareerConversationPage: React.FC = () => {
       if (!stream) {
         throw lastError || new Error('All microphone access attempts failed');
       }
-
-      // Check if the stream has active audio tracks
-      const audioTracks = stream.getAudioTracks();
-      if (audioTracks.length === 0) {
-        stream.getTracks().forEach((track) => track.stop());
-        throw new Error('No audio tracks found in the stream');
-      }
-
-      console.log('🎵 Audio tracks found:', audioTracks.length);
-      audioTracks.forEach((track, index) => {
-        console.log(`Track ${index + 1}:`, {
-          label: track.label,
-          enabled: track.enabled,
-          muted: track.muted,
-          readyState: track.readyState,
-        });
-      });
 
       // Create MediaRecorder with explicit MIME type support check
       let recorder;
@@ -384,11 +327,10 @@ const CareerConversationPage: React.FC = () => {
         'audio/ogg',
       ];
 
-      let selectedType = 'audio/webm'; // fallback
+      let selectedType = 'audio/webm';
       for (const type of supportedTypes) {
         if (MediaRecorder.isTypeSupported(type)) {
           selectedType = type;
-          console.log('✅ Using MIME type:', type);
           break;
         }
       }
@@ -396,29 +338,17 @@ const CareerConversationPage: React.FC = () => {
       try {
         recorder = new MediaRecorder(stream, { mimeType: selectedType });
       } catch (recorderError) {
-        console.warn(
-          'Failed to create MediaRecorder with MIME type, using default:',
-          recorderError
-        );
         recorder = new MediaRecorder(stream);
       }
 
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = (e) => {
-        console.log(
-          '🎵 Audio chunk received:',
-          e.data.size,
-          'bytes',
-          e.data.type
-        );
         if (e.data.size > 0) chunks.push(e.data);
       };
 
       recorder.onstop = async () => {
-        console.log('🛑 Recording stopped, chunks:', chunks.length);
         const audioBlob = new Blob(chunks, { type: selectedType });
-        console.log('📦 Audio blob created:', audioBlob.size, 'bytes');
 
         if (audioBlob.size > 0) {
           const transcription = await transcribeAudio(audioBlob);
@@ -447,29 +377,18 @@ const CareerConversationPage: React.FC = () => {
       setMediaRecorder(recorder);
       setIsRecording(true);
       addToast('🎤 Recording... speak now!', { type: 'info' });
-      console.log('📹 Recording started successfully');
     } catch (error) {
       console.error('❌ Complete recording setup failed:', error);
       const err = error as Error & { name?: string };
 
       if (err.name === 'NotAllowedError') {
         addToast(
-          '❌ Microphone access denied. Please click the microphone icon in your browser address bar and allow access.',
+          '❌ Microphone access denied. Please allow access in your browser.',
           { type: 'error' }
         );
       } else if (err.name === 'NotFoundError') {
         addToast(
           '❌ No microphone found. Please connect a microphone and try again.',
-          { type: 'error' }
-        );
-      } else if (err.name === 'NotSupportedError') {
-        addToast(
-          '❌ Microphone not supported in this browser. Please use Chrome, Firefox, or Safari.',
-          { type: 'error' }
-        );
-      } else if (err.name === 'NotReadableError') {
-        addToast(
-          '❌ Microphone is being used by another application. Please close other apps using the microphone.',
           { type: 'error' }
         );
       } else {
@@ -491,7 +410,7 @@ const CareerConversationPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full min-h-0 bg-linear-to-br from-purple-50 to-blue-100">
+    <div className="flex h-full min-h-0 bg-linear-to-br from-teal-50 to-cyan-100">
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header */}
         <div className="border-b bg-white px-6 py-4 shadow-sm">
@@ -501,12 +420,12 @@ const CareerConversationPage: React.FC = () => {
                 level={2}
                 className="text-xl font-semibold text-gray-900"
               >
-                🚀 Career Journey
+                🧭 Domain Discovery Journey
               </Heading>
               <Paragraph className="mt-1 text-sm text-gray-600">
                 {askedCount}/{TOTAL_QUESTIONS} questions asked • Phase:{' '}
                 <span className="font-medium">
-                  {phase === 'profile' ? 'Profile Builder' : 'Career Explorer'}
+                  {phase === 'exploration' ? 'Interest Exploration' : 'Domain Mapping'}
                 </span>
               </Paragraph>
             </div>
@@ -520,7 +439,7 @@ const CareerConversationPage: React.FC = () => {
               }
               className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
                 canEndConversation
-                  ? 'cursor-pointer bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
+                  ? 'cursor-pointer bg-linear-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700'
                   : 'cursor-not-allowed bg-gray-400 opacity-60'
               }`}
             >
@@ -542,7 +461,7 @@ const CareerConversationPage: React.FC = () => {
                 <div
                   className={`rounded-lg px-4 py-3 ${
                     m.type === 'user'
-                      ? 'ml-12 bg-linear-to-r from-purple-500 to-blue-500 text-white'
+                      ? 'ml-12 bg-linear-to-r from-teal-500 to-cyan-500 text-white'
                       : 'border bg-white text-gray-900 shadow-sm'
                   } `}
                 >
@@ -555,7 +474,7 @@ const CareerConversationPage: React.FC = () => {
                   </Paragraph>
                 </div>
                 <div
-                  className={`mt-1 text-xs ${m.type === 'user' ? 'text-purple-100' : 'text-gray-500'}`}
+                  className={`mt-1 text-xs ${m.type === 'user' ? 'text-teal-100' : 'text-gray-500'}`}
                 >
                   {new Date(m.timestamp).toLocaleTimeString([], {
                     hour: '2-digit',
@@ -571,7 +490,7 @@ const CareerConversationPage: React.FC = () => {
               <div className="max-w-3xl">
                 <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">
                   <span className="text-sm text-gray-500">
-                    Career AI is thinking…
+                    Domain AI is thinking…
                   </span>
                 </div>
               </div>
@@ -614,7 +533,7 @@ const CareerConversationPage: React.FC = () => {
                   </div>
                 ) : isTranscribing ? (
                   <div className="flex items-center space-x-1">
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-teal-500 border-t-transparent"></div>
                     <span className="text-xs">⏳</span>
                   </div>
                 ) : (
@@ -639,7 +558,7 @@ const CareerConversationPage: React.FC = () => {
                 }
                 className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
                   canEndConversation
-                    ? 'bg-linear-to-r cursor-pointer from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
+                    ? 'bg-linear-to-r cursor-pointer from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700'
                     : 'cursor-not-allowed bg-gray-400 opacity-60'
                 }`}
               >
@@ -659,4 +578,4 @@ const CareerConversationPage: React.FC = () => {
   );
 };
 
-export default CareerConversationPage;
+export default DomainConversationPage;

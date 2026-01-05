@@ -6,8 +6,8 @@ export type NavItem = {
 
 export const navItems: NavItem[] = [
   { label: 'Dashboard', icon: 'sr-apps', href: '/dashboard' },
-  { label: 'Domain Discovery', icon: 'world', href: '/domain' },
-  { label: 'Career Discovery', icon: 'briefcase', href: '/career' },
+  { label: 'Domain Discovery', icon: 'world', href: '/domain-discovery' },
+  { label: 'Career Discovery', icon: 'briefcase', href: '/career-discovery' },
   { label: 'Degree Selector', icon: 'graduation-cap', href: '/degree' },
   { label: 'College Selector', icon: 'school', href: '/college' },
   {
@@ -39,5 +39,5 @@ export const navItems: NavItem[] = [
 
 // Subset of nav items shown in the sidebar
 export const sidebarNavItems: NavItem[] = navItems.filter((item) =>
-  ['/dashboard', '/domain', '/career'].includes(item.href)
+  ['/dashboard', '/domain-discovery', '/career-discovery'].includes(item.href)
 );
