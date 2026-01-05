@@ -1,6 +1,6 @@
 'use client';
 import Image from 'next/image';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,7 +20,7 @@ const loginSchema = z.object({
 });
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function Login(): React.ReactElement {
+function LoginForm(): React.ReactElement {
   const { addToast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -133,5 +133,13 @@ export default function Login(): React.ReactElement {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Login(): React.ReactElement {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
