@@ -1,6 +1,5 @@
 // shadcn-style reusable form components
 export { Input, type InputProps } from './Input';
-export { Textarea, type TextareaProps } from './Textarea';
 export { Checkbox } from './Checkbox';
 export { FormLabel, type FormLabelProps } from './FormLabel';
 export { OTPInput, type OTPInputProps } from './OTPInput';

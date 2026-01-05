@@ -6,7 +6,7 @@ import { useToast } from '../../../_components/Toast';
 import { useRouter } from 'next/navigation';
 import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
 import { useGlobalTTSManager } from '../../../_hooks/useGlobalTTSManager';
-import { Textarea } from '@/app/_components/Textarea';
+import { Textarea } from '@/components/ui/textarea';
 import {
   sessionManagementApi,
   collegeEssayApi,

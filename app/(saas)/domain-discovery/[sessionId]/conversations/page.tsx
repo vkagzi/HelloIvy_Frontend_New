@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Heading, Paragraph } from '../../../../_components/Typography';
 import { useToast } from '../../../../_components/Toast';
-import { Textarea } from '@/app/_components/Textarea';
+import { Textarea } from '@/components/ui/textarea';
 import {
   domainDiscoveryApi,
   SendMessageResponse,
@@ -510,7 +510,6 @@ const DomainConversationPage: React.FC = () => {
                 onKeyDown={handleKeyDown}
                 placeholder="Type your response…"
                 className="min-h-10! py-2!"
-                rows={1}
                 disabled={isLoading}
               />
             </div>

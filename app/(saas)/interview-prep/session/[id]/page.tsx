@@ -6,7 +6,7 @@ import Button from '../../../../_components/Button';
 import { useToast } from '../../../../_components/Toast';
 import { useRouter, useParams } from 'next/navigation';
 import api from '../../../../../lib/api';
-import { Textarea } from '@/app/_components/Textarea';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Question {
   question: string;

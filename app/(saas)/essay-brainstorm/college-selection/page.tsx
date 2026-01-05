@@ -7,7 +7,7 @@ import { useToast } from '../../../_components/Toast';
 import { useRouter } from 'next/navigation';
 import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
 import { Input } from '@/app/_components/Input';
-import { Textarea } from '@/app/_components/Textarea';
+import { Textarea } from '@/components/ui/textarea';
 import {
   collegeEssayApi,
   CollegeEssayData,

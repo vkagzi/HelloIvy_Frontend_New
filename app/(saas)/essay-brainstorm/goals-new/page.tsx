@@ -6,7 +6,7 @@ import Button from '../../../_components/Button';
 import { useToast } from '../../../_components/Toast';
 import { useRouter } from 'next/navigation';
 import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
-import { Textarea } from '@/app/_components/Textarea';
+import { Textarea } from '@/components/ui/textarea';
 import { essayGoalsApi, EssayGoal } from '../../../../lib/api-services';
 
 const GoalsPage: React.FC = () => {

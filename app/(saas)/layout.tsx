@@ -4,6 +4,7 @@ import Navbar from '@/app/_components/Navbar';
 import AppHead from '@/app/_components/AppHead';
 import { auth } from '@/auth';
 import { SessionProvider } from 'next-auth/react';
+import { ProfileProvider } from './profile/_context/ProfileContext';
 
 export const metadata: Metadata = {
   title: 'Student Dashboard',
@@ -24,11 +25,13 @@ export default async function RootLayout({
   return (
     <div className="flex h-screen overflow-hidden">
       <SessionProvider session={session}>
-        <Navbar />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <AppHead session={session} />
-          <main className="flex-1 overflow-auto px-15 py-5">{children}</main>
-        </div>
+        <ProfileProvider>
+          <Navbar />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <AppHead session={session} />
+            <main className="flex-1 overflow-auto px-15 py-5">{children}</main>
+          </div>
+        </ProfileProvider>
       </SessionProvider>
     </div>
   );

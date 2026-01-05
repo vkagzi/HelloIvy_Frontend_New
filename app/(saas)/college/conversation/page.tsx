@@ -6,7 +6,7 @@ import { Heading, Paragraph } from '../../../_components/Typography';
 import { useToast } from '../../../_components/Toast';
 import { useRouter } from 'next/navigation';
 import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
-import { Textarea } from '@/app/_components/Textarea';
+import { Textarea } from '@/components/ui/textarea';
 import {
   personalStoriesApi,
   professionalStoriesApi,
