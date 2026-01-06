@@ -47,15 +47,24 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showDatePicker]);
+  
+  // Get proper default value based on field type
+  const getControllerDefaultValue = (): unknown => {
+    const currentValue = form.getValues(field.id);
+    if (currentValue !== undefined && currentValue !== null) {
+      return currentValue;
+    }
+    // Set defaults for specific field types
+    if (field.type === 'checkbox') return false;
+    if (field.type === 'multi_select') return [];
+    return '';
+  };
+
   return (
     <Controller
       name={field.id}
       control={form.control}
-      defaultValue={
-        typeof form.getValues(field.id) === 'boolean'
-          ? form.getValues(field.id)
-          : false
-      }
+      defaultValue={getControllerDefaultValue()}
       render={({ field: controllerField }) => {
         switch (field.type) {
           case 'text':
@@ -325,7 +334,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 options={field.options ?? []}
                 required={field.required}
                 placeholder={field.placeholder}
-                value={controllerField.value as string[]}
+                value={Array.isArray(controllerField.value) ? controllerField.value : []}
                 onChange={controllerField.onChange}
                 error={error}
               />

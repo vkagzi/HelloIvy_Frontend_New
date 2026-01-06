@@ -125,6 +125,20 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Clear errors when field values change
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name && errors[name]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, errors]);
+
   // Generate Zod schema
   let { schema } = generateDynamicFormSchema(fieldDefs, layout);
 
@@ -177,6 +191,30 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     />
   );
 
+  // Map columns to Tailwind classes
+  const getGridColsClass = (cols: number): string => {
+    const colsMap: Record<number, string> = {
+      1: 'md:grid-cols-1',
+      2: 'md:grid-cols-2',
+      3: 'md:grid-cols-3',
+      4: 'md:grid-cols-4',
+      5: 'md:grid-cols-5',
+      6: 'md:grid-cols-6',
+    };
+    return colsMap[cols] || 'md:grid-cols-3';
+  };
+
+  // Get field width class based on width property
+  const getFieldWidthClass = (field: FieldDefinition): string => {
+    if (!field.width) return '';
+    // Use col-span for grid layouts
+    const width = field.width;
+    if (width === 1.5) return 'md:col-span-2';
+    if (width === 2) return 'md:col-span-2';
+    if (width === 3) return 'md:col-span-3';
+    return '';
+  };
+
   // Update renderRepeatableFieldset to always show remove button for repeatable fieldsets
   const renderRepeatableFieldset = (item: LayoutItem): React.ReactNode => {
     if (item.repeatable && item.name) {
@@ -208,60 +246,70 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       const repeatArr = form.watch(item.name) as Record<string, unknown>[];
 
       const disableRemove = (repeatArr?.length ?? 0) <= minRows;
+      const repeatableColumns = repeatableOption.columns ?? item.columns ?? 3;
 
       return (
         <div key={item.name} className="mt-5 flex flex-col gap-4">
-          <div className={`grid gap-4 md:grid-cols-${item.columns ?? 1}`}>
+          <div className={`grid gap-4 ${getGridColsClass(item.columns ?? 1)}`}>
             {(repeatArr ?? []).map((row, rIdx) => (
-              <div key={rIdx} className="grid items-end gap-4 md:grid-cols-3">
-                {item.fields?.map((fid) => {
-                  const field = fieldDefs.find((f) => f.id === fid);
-                  if (!field || !isFieldVisible(field, formValues)) return null;
-                  const errorKey = `${item.name}.${rIdx}.${fid}`;
-                  const repeatableField: FieldDefinition = {
-                    ...field,
-                    id: `${item.name}.${rIdx}.${fid}`,
-                  };
-                  return (
-                    <div key={`${item.name}.${rIdx}.${fid}`}>
-                      <Controller
-                        name={`${item.name}.${rIdx}.${fid}` as never}
-                        control={form.control}
-                        defaultValue={
-                          (form.getValues(`${item.name}.${rIdx}.${fid}`) ??
-                            '') as never
-                        }
-                        render={() => (
-                          <FieldRenderer
-                            field={repeatableField}
-                            form={form}
-                            error={errors[errorKey]}
-                            inputHeightClass="py-2"
-                            labelHeightClass="text-label-md"
-                            inputWidthClass="w-full"
-                          />
-                        )}
-                      />
-                    </div>
-                  );
-                })}
+              <div key={rIdx} className="flex items-end gap-2">
+                <div className={`grid flex-1 items-end gap-4 ${getGridColsClass(repeatableColumns)}`}>
+                  {item.fields?.map((fid) => {
+                    const field = fieldDefs.find((f) => f.id === fid);
+                    if (!field || !isFieldVisible(field, formValues)) return null;
+                    const errorKey = `${item.name}.${rIdx}.${fid}`;
+                    const repeatableField: FieldDefinition = {
+                      ...field,
+                      id: `${item.name}.${rIdx}.${fid}`,
+                    };
+                    const widthClass = getFieldWidthClass(field);
+                    return (
+                      <div key={`${item.name}.${rIdx}.${fid}`} className={widthClass}>
+                        <Controller
+                          name={`${item.name}.${rIdx}.${fid}` as never}
+                          control={form.control}
+                          defaultValue={
+                            (form.getValues(`${item.name}.${rIdx}.${fid}`) ??
+                              '') as never
+                          }
+                          render={() => (
+                            <FieldRenderer
+                              field={repeatableField}
+                              form={form}
+                              error={errors[errorKey]}
+                              inputHeightClass="py-2"
+                              labelHeightClass="text-label-md"
+                              inputWidthClass="w-full"
+                            />
+                          )}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
                 {!disableRemove && (
-                  <div className="flex items-center self-start justify-self-center">
-                    <button
-                      type="button"
-                      className="text-label-sm cursor-pointer font-medium text-neutral-400 transition-colors hover:text-neutral-700"
-                      onClick={() => handleRemoveRepeatable(item.name!, rIdx)}
-                      disabled={disableRemove}
-                      aria-label="Remove"
+                  <button
+                    type="button"
+                    className="text-label-sm mb-0.5 cursor-pointer font-medium text-red-500 transition-colors hover:text-red-700"
+                    onClick={() => handleRemoveRepeatable(item.name!, rIdx)}
+                    disabled={disableRemove}
+                    aria-label="Remove"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
                     >
-                      <Image
-                        src={bin}
-                        alt="Remove"
-                        className="h-6 w-6"
-                        priority
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                       />
-                    </button>
-                  </div>
+                    </svg>
+                  </button>
                 )}
               </div>
             ))}
@@ -284,14 +332,15 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     return (
       <div
         key={item.fields && item.fields.join('-')}
-        className={`grid gap-4 md:grid-cols-${item.columns ?? 1}`}
+        className={`grid gap-4 ${getGridColsClass(item.columns ?? 1)}`}
       >
         {item.fields &&
           item.fields.map((fid) => {
             const field = fieldDefs.find((f) => f.id === fid);
             if (!field) return null;
+            const widthClass = getFieldWidthClass(field);
             return (
-              <div key={fid}>
+              <div key={fid} className={widthClass}>
                 <Controller
                   name={fid}
                   control={form.control}
@@ -323,14 +372,15 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     return (
       <div
         key={item.fields && item.fields.join('-')}
-        className={`grid gap-4 md:grid-cols-${item.columns ?? 1} mt-4`}
+        className={`grid gap-4 ${getGridColsClass(item.columns ?? 1)} mt-4`}
       >
         {item.fields &&
           item.fields.map((fid) => {
             const field = fieldDefs.find((f) => f.id === fid);
             if (!field || !isFieldVisible(field, formValues)) return null;
+            const widthClass = getFieldWidthClass(field);
             return (
-              <div key={fid}>
+              <div key={fid} className={widthClass}>
                 <Controller
                   name={fid}
                   control={form.control}

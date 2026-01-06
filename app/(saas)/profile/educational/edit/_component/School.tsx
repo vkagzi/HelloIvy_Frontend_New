@@ -34,6 +34,15 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
   const minSchools = 1;
   const minSubjects = section.repeatables?.repeatable_option?.min ?? 1;
 
+  // Helper to calculate grid template columns with field widths
+  const getGridTemplateColumns = (fieldIds: string[]): string => {
+    const widths = fieldIds.map((fid) => {
+      const field = fieldDefs.find((f) => f.id === fid);
+      return field?.width ?? 1;
+    });
+    return widths.map((w) => `${w}fr`).join(' ');
+  };
+
   // Array of school blocks, each with a unique key and its own subject rows
   const [schools, setSchools] = useState<SchoolInstance[]>(() =>
     Array.from({ length: minSchools }, () => ({
@@ -181,7 +190,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           <div
             className="mt-5 grid gap-4"
             style={{
-              gridTemplateColumns: `repeat(${(section.repeatables?.fields.length ?? 1) + 1}, minmax(0, 1fr))`,
+              gridTemplateColumns: `${getGridTemplateColumns(section.repeatables?.fields ?? [])} 100px`,
             }}
           >
             {school.subjectRows.map((row, rowIdx) => (

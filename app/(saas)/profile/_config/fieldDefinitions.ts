@@ -50,9 +50,17 @@ export const personalFieldDefs: FieldDefinition[] = [
     validation: { format: 'email' },
   },
   {
+    id: 'countryCode',
+    type: 'select',
+    label: 'Edit Country code',
+    placeholder: 'Select country code',
+    required: true,
+    options: ['+91 (India)', '+1 (US/Canada)', '+44 (UK)', '+86 (China)', '+81 (Japan)', '+61 (Australia)', '+49 (Germany)', '+33 (France)'],
+  },
+  {
     id: 'phoneNumber',
     type: 'text',
-    label: 'Phone Number',
+    label: 'Mobile Number',
     placeholder: 'Enter your phone number',
     required: true,
     validation: { regex: Regexvalidations.justNumberWithBlank },
@@ -113,73 +121,11 @@ export const personalFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
-    id: 'cityOfBirth',
-    type: 'select_autofill',
-    label: 'City of Birth',
-    placeholder: 'Select city',
-    options: ['New York', 'Los Angeles', 'Chicago'],
-    required: true,
-  },
-  {
-    id: 'countryOfBirth',
-    type: 'select_autofill',
-    label: 'Country of Birth',
-    placeholder: 'Select country',
-    options: ['USA', 'Canada', 'Mexico'],
-    required: true,
-  },
-  {
-    id: 'currentCity',
-    type: 'select_autofill',
-    label: 'Current City',
-    placeholder: 'Select city/town',
-    options: ['New York', 'Los Angeles', 'Chicago'],
-    required: true,
-  },
-  {
-    id: 'currentCountry',
-    type: 'select_autofill',
-    label: 'Current Country',
-    placeholder: 'Select country',
-    options: ['USA', 'Canada', 'Mexico'],
-    required: true,
-  },
-  {
-    id: 'guardianNumber',
-    type: 'text',
-    label: 'Guardian/Parent Number',
-    placeholder: 'Enter mobile no.',
-    required: false,
-    validation: { regex: Regexvalidations.justNumberWithBlank },
-  },
-  {
-    id: 'guardianRelation',
-    type: 'text',
-    label: 'Relation with Guardian',
-    placeholder: 'Enter relation',
-    required: true,
-  },
-  {
-    id: 'noOfCitiesLived',
-    type: 'text',
-    label: 'No. of Cities Lived in',
-    placeholder: 'Enter count',
-    required: false,
-    validation: { regex: Regexvalidations.justNumberWithBlank },
-  },
-  {
     id: 'fathersProfession',
     type: 'text',
     label: "Father's Profession",
     placeholder: 'Enter profession',
     required: false,
-    validationDependsOn: [
-      {
-        fieldId: 'mothersProfession',
-        values: [undefined, '', null],
-        validation: { required: true },
-      },
-    ],
   },
   {
     id: 'mothersProfession',
@@ -187,13 +133,6 @@ export const personalFieldDefs: FieldDefinition[] = [
     label: "Mother's Profession",
     placeholder: 'Enter profession',
     required: false,
-    validationDependsOn: [
-      {
-        fieldId: 'fathersProfession',
-        values: [undefined, '', null],
-        validation: { required: true },
-      },
-    ],
   },
   {
     id: 'annualIncome',
@@ -204,46 +143,17 @@ export const personalFieldDefs: FieldDefinition[] = [
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
-    id: 'siblingName',
-    type: 'text',
-    label: 'Sibling Name',
-    placeholder: 'Enter sibling name',
-    required: true,
-  },
-  {
-    id: 'siblingAge',
-    type: 'select',
-    label: 'Sibling Age',
-    placeholder: 'Enter sibling age',
-    required: true,
-    options: [...Array.from({ length: 51 }, (_, i) => `${i + 10} years`)],
-  },
-  {
-    id: 'siblingInstitute',
-    type: 'text',
-    label: 'Sibling Institute',
-    placeholder: 'Enter sibling institute',
-    required: true,
-  },
-  {
-    id: 'familyStudiedAbroad',
-    type: 'text',
-    label: 'Anyone from your family studied abroad?',
-    placeholder: 'Enter details if any',
-    required: false,
-  },
-  {
     id: 'maintainChannel',
     type: 'select',
     label: 'Do you maintain Blog/YouTube/Insta Channel?',
     placeholder: 'Enter details',
     options: ['Yes', 'No'],
-    required: true,
+    required: false,
   },
   {
     id: 'platformName',
     type: 'select',
-    label: 'Social Media Platform Name',
+    label: 'Platform Name',
     placeholder: 'Enter social media platform name',
     options: [
       'Facebook',
@@ -258,14 +168,14 @@ export const personalFieldDefs: FieldDefinition[] = [
   {
     id: 'accountLinks',
     type: 'text',
-    label: 'Social Media Account Links',
+    label: 'Account Link',
     placeholder: 'Enter social media account links',
     required: true,
   },
   {
     id: 'language',
     type: 'select',
-    label: 'Select Language',
+    label: 'Language',
     placeholder: 'Enter language',
     options: [
       'English',
@@ -284,15 +194,15 @@ export const personalFieldDefs: FieldDefinition[] = [
   {
     id: 'type',
     type: 'select',
-    label: 'Select type',
+    label: 'Type',
     placeholder: 'Skills',
-    options: ['read', 'write', 'speak'],
+    options: ['Read', 'Write', 'Speak'],
     required: true,
   },
   {
     id: 'proficiency',
     type: 'select',
-    label: 'Select proficiency',
+    label: 'Proficiency',
     placeholder: 'Enter proficiency',
     options: ['Basic', 'Intermediate', 'Advanced', 'Native'],
     required: true,
@@ -300,7 +210,7 @@ export const personalFieldDefs: FieldDefinition[] = [
   {
     id: 'comment',
     type: 'text',
-    label: 'Comment',
+    label: 'Comments (if any)',
     placeholder: 'Enter comment',
     required: false,
   },
@@ -309,7 +219,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'select',
     label: 'Learning Difficulties',
     placeholder: 'Enter learning difficulties',
-    required: true,
+    required: false,
     options: [
       'No learning difficulties',
       'Dyslexia',
@@ -322,8 +232,8 @@ export const personalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'learningDifficultiesComments',
-    type: 'textarea',
-    label: 'Comments',
+    type: 'text',
+    label: 'Comments (if any)',
     placeholder: 'Enter comments',
     required: false,
     validationDependsOn: [
@@ -337,9 +247,9 @@ export const personalFieldDefs: FieldDefinition[] = [
   {
     id: 'physicalDisabilities',
     type: 'select',
-    label: 'Physical Disabilities',
+    label: 'Physical disability?',
     placeholder: 'Enter physical disabilities',
-    required: true,
+    required: false,
     options: [
       'No, I do not have any physical disability',
       'Yes, locomotor disability (movement-related)',
@@ -354,7 +264,7 @@ export const personalFieldDefs: FieldDefinition[] = [
   {
     id: 'physicalDisabilitiesComments',
     type: 'text',
-    label: 'Comments',
+    label: 'Comments (if any)',
     placeholder: 'Enter comments',
     required: false,
     validationDependsOn: [
@@ -365,29 +275,6 @@ export const personalFieldDefs: FieldDefinition[] = [
       },
     ],
   },
-  {
-    id: 'forcesBackground',
-    type: 'select',
-    label: 'Forces Background',
-    placeholder: 'Enter details',
-    required: false,
-    options: [
-      'Yes, I have personally served in the armed forces',
-      'Yes, my parent(s) serve or served in the armed forces',
-      'Yes, my sibling(s) serve or served in the armed forces',
-      'Yes, I am from an ex-serviceman/ex-servicewoman family',
-      'No, I do not have a military background',
-      'Prefer not to say',
-    ],
-  },
-  {
-    id: 'reservationCategory',
-    type: 'select',
-    options: ['No', 'EWS', 'OBC', 'SC', 'ST'],
-    label: 'Reservation Category',
-    placeholder: 'Enter reservation category',
-    required: true,
-  },
 ];
 
 export const personalLayout: LayoutBlock[] = [
@@ -397,7 +284,22 @@ export const personalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: ['firstName', 'lastName', 'dob', 'email', 'phoneNumber', 'gender'],
+    fields: ['firstName', 'lastName', 'dob'],
+    columns: 3,
+  },
+  {
+    type: 'fieldset',
+    fields: ['email'],
+    columns: 3,
+  },
+  {
+    type: 'fieldset',
+    fields: ['countryCode', 'phoneNumber'],
+    columns: 3,
+  },
+  {
+    type: 'fieldset',
+    fields: ['gender'],
     columns: 3,
   },
   {
@@ -416,10 +318,6 @@ export const personalLayout: LayoutBlock[] = [
       'state',
       'country',
       'citizenShip',
-      'cityOfBirth',
-      'countryOfBirth',
-      'currentCity',
-      'currentCountry',
     ],
     columns: 3,
   },
@@ -428,34 +326,15 @@ export const personalLayout: LayoutBlock[] = [
   },
   {
     type: 'heading',
-    content: 'Family Detail',
+    content: 'Family Details',
   },
   {
     type: 'fieldset',
     fields: [
-      'guardianNumber',
-      'guardianRelation',
-      'noOfCitiesLived',
       'fathersProfession',
       'mothersProfession',
       'annualIncome',
     ],
-    columns: 3,
-  },
-  {
-    type: 'fieldset',
-    fields: ['siblingName', 'siblingAge', 'siblingInstitute'],
-    name: 'siblings',
-    repeatable: true,
-    repeatable_option: {
-      add: '+ Add Sibling',
-      show_default: 1,
-      min: 0,
-    },
-  },
-  {
-    type: 'fieldset',
-    fields: ['familyStudiedAbroad'],
     columns: 3,
   },
   {
@@ -476,7 +355,7 @@ export const personalLayout: LayoutBlock[] = [
     name: 'socialMedia',
     repeatable: true,
     repeatable_option: {
-      add: '+ Add Social Media',
+      add: '+ Add Platform',
       show_default: 0,
       min: 0,
       columns: 3,
@@ -502,11 +381,12 @@ export const personalLayout: LayoutBlock[] = [
     name: 'languages',
     repeatable: true,
     repeatable_option: {
-      add: '+ Add Language',
+      add: '(+) Add Language',
       show_default: 1,
-      min: 1,
-      columns: 3,
+      min: 0,
+      columns: 4,
     },
+    columns: 1
   },
   {
     type: 'fieldset',
@@ -516,11 +396,6 @@ export const personalLayout: LayoutBlock[] = [
   {
     type: 'fieldset',
     fields: ['physicalDisabilities', 'physicalDisabilitiesComments'],
-    columns: 3,
-  },
-  {
-    type: 'fieldset',
-    fields: ['forcesBackground', 'reservationCategory'],
     columns: 3,
   },
 ];
@@ -554,14 +429,14 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'academicLevel',
     type: 'select',
-    label: 'Academic Level',
+    label: 'Currently I am in / Which grade are you in?',
     placeholder: 'Select academic level',
     options: [
-      'Middle School (5th–8th)',
-      'High School (9th–12th)',
-      'In College / Undergraduate',
-      'Completed College / Postgraduate',
-      '10+ years post College',
+      'Middle School (7th–8th grade)',
+      'High School (9th–12th grade)',
+      'College/Undergraduate',
+      'Postgraduate',
+      'Working/Completed College',
     ],
     required: true,
   },
@@ -576,7 +451,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'city',
     type: 'select_autofill',
-    label: 'City',
+    label: 'Location (City)',
     placeholder: 'Select city/town',
     options: ['Select city/town', 'New York', 'Los Angeles', 'Chicago'],
     required: true,
@@ -584,7 +459,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'country',
     type: 'select_autofill',
-    label: 'Country',
+    label: 'Location (Country)',
     placeholder: 'Select country',
     options: ['Select country', 'USA', 'Canada', 'Mexico'],
     required: true,
@@ -624,16 +499,17 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'yourTotalScore',
     type: 'text',
-    label: 'Your Total Score',
+    label: 'Total/Cumulative Score',
     placeholder: 'Enter your total score',
     required: true,
   },
   {
     id: 'highestTotalScore',
     type: 'text',
-    label: 'Highest Total Score',
+    label: 'Highest Possible Cumulative Score',
     placeholder: 'Enter highest possible score',
     required: true,
+    width: 1.5,
     validation: {
       max: 100,
     },
@@ -641,7 +517,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'redFlags',
     type: 'text',
-    label: 'Red Flags',
+    label: 'Red Flag / Failures/Comments',
     placeholder: 'Enter any red flags',
     required: false,
   },
@@ -662,7 +538,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
       '9 Years',
       '10+ Years',
     ],
-    label: 'Gap Years',
+    label: 'Gap Years (if any)',
     placeholder: 'Enter gap years',
     required: false,
   },
@@ -702,14 +578,14 @@ export const educationalFieldDefs: FieldDefinition[] = [
     placeholder: 'Enter major',
     required: true,
   },
-  {
-    id: 'durationOfDegree',
-    type: 'select',
-    options: ['Select duration', '3 Year Course', '4 Year Course'],
-    label: 'Duration of Degree',
-    placeholder: 'Select duration',
-    required: true,
-  },
+  // {
+  //   id: 'durationOfDegree',
+  //   type: 'select',
+  //   options: ['Select duration', '3 Year Course', '4 Year Course'],
+  //   label: 'Duration of Degree',
+  //   placeholder: 'Select duration',
+  //   required: true,
+  // },
   {
     id: 'startToEndYear',
     type: 'text',
@@ -720,15 +596,15 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'overallPercentage',
     type: 'text',
-    label: 'Overall Percentage',
-    placeholder: 'Enter overall percentage',
+    label: 'Overall GPA / Percentage',
+    placeholder: 'Enter overall GPA or percentage',
     required: true,
   },
   {
     id: 'estimatedRank',
     type: 'text',
-    label: 'Estimated Rank',
-    placeholder: 'Enter estimated rank',
+    label: 'Estimated Overall Rank',
+    placeholder: 'Enter estimated overall rank',
     required: true,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
@@ -1207,7 +1083,7 @@ export const educationalLayout: LayoutBlock[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['Middle School (5th–8th)'],
+        value: ['Middle School (7th–8th grade)'],
       },
     },
     repeatables: {
@@ -1239,7 +1115,7 @@ export const educationalLayout: LayoutBlock[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['High School (9th–12th)'],
+        value: ['High School (9th–12th grade)'],
       },
     },
     repeatables: {
@@ -1270,7 +1146,7 @@ export const educationalLayout: LayoutBlock[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['In College / Undergraduate'],
+        value: ['College/Undergraduate'],
       },
     },
     repeatables: {
@@ -1300,7 +1176,7 @@ export const educationalLayout: LayoutBlock[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['Completed College / Postgraduate'],
+        value: ['Postgraduate'],
       },
     },
     repeatables: {
@@ -1321,7 +1197,7 @@ export const educationalLayout: LayoutBlock[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['10+ years post College'],
+        value: ['Working/Completed College'],
       },
     },
   },
@@ -1883,19 +1759,19 @@ export const getExtracurricularTitle = (
 ): string => {
   if (!academicLevel) return 'Extra Curricular Activities';
   const levels = Array.isArray(academicLevel) ? academicLevel : [academicLevel];
-  if (levels.includes('10+ years post College')) {
+  if (levels.includes('Working/Completed College')) {
     return 'Extracurriculars during UG/PG, Work/Internship/Startup Experience';
   }
   if (
-    levels.includes('Completed College / Postgraduate') ||
-    levels.includes('In College / Undergraduate')
+    levels.includes('Postgraduate') ||
+    levels.includes('College/Undergraduate')
   ) {
     return 'Extracurriculars during School/Highschool, UG/PG, Work/Internship/Startup Experience';
   }
-  if (levels.includes('High School (9th–12th)')) {
+  if (levels.includes('High School (9th–12th grade)')) {
     return 'Extracurriculars during School/Highschool';
   }
-  if (levels.includes('Middle School (5th–8th)')) {
+  if (levels.includes('Middle School (7th–8th grade)')) {
     return 'Extracurriculars during Middle School';
   }
   return 'Extra Curricular Activities';

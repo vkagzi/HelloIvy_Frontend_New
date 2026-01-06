@@ -1,12 +1,14 @@
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { FieldType } from '../types/type';
 
-export const getDefaultValue = (type: FieldType): string | number | boolean => {
+export const getDefaultValue = (type: FieldType): string | number | boolean | string[] => {
   switch (type) {
     case 'checkbox':
       return false;
     case 'number':
       return '';
+    case 'multi_select':
+      return [];
     default:
       return '';
   }

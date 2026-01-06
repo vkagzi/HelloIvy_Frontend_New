@@ -36,6 +36,7 @@ export interface FieldDefinition {
     };
   };
   validationDependsOn?: ConditionalValidation[];
+  width?: number;
 }
 
 interface DynamicFormResult {
