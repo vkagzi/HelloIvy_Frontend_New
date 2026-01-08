@@ -12,6 +12,7 @@ export type FieldValidation = {
   format?: string;
   min?: number;
   max?: number;
+  maxLength?: number;
   required?: boolean;
 };
 
@@ -49,6 +50,8 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
     case 'textarea': {
       let base = z.string();
       if (field.required) base = base.min(1, `${field.label} is required`);
+      if (field.validation?.maxLength)
+        base = base.max(field.validation.maxLength, `${field.label} must be at most ${field.validation.maxLength} characters`);
       if (field.validation?.regex)
         base = base.regex(
           new RegExp(field.validation.regex),

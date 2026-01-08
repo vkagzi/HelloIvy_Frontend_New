@@ -7,6 +7,12 @@
 
 import { FieldDefinition, Regexvalidations } from '@/app/utils/dynamicForm';
 import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
+import { COUNTRY_CODES } from '@/app/_constants/countryCodes';
+import {
+  CITY_OPTIONS,
+  COUNTRY_OPTIONS,
+  STATE_OPTIONS,
+} from '@/app/_constants/locations';
 
 // =============================================================================
 // LAYOUT BLOCK TYPE
@@ -51,11 +57,11 @@ export const personalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'countryCode',
-    type: 'select',
-    label: 'Edit Country code',
+    type: 'select_autofill',
+    label: 'Country code',
     placeholder: 'Select country code',
     required: true,
-    options: ['+91 (India)', '+1 (US/Canada)', '+44 (UK)', '+86 (China)', '+81 (Japan)', '+61 (Australia)', '+49 (Germany)', '+33 (France)'],
+    options: COUNTRY_CODES,
   },
   {
     id: 'phoneNumber',
@@ -63,7 +69,10 @@ export const personalFieldDefs: FieldDefinition[] = [
     label: 'Mobile Number',
     placeholder: 'Enter your phone number',
     required: true,
-    validation: { regex: Regexvalidations.justNumberWithBlank },
+    validation: { 
+      regex: Regexvalidations.justNumberWithBlank,
+      maxLength: 10,
+    },
   },
   {
     id: 'gender',
@@ -85,7 +94,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'City',
     placeholder: 'Select city/town',
-    options: ['New York', 'Los Angeles', 'Chicago'],
+    options: CITY_OPTIONS,
     required: true,
   },
   {
@@ -101,7 +110,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'State',
     placeholder: 'Select state',
-    options: ['California', 'Texas', 'Florida'],
+    options: STATE_OPTIONS,
     required: true,
   },
   {
@@ -109,7 +118,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'Country',
     placeholder: 'Select country',
-    options: ['USA', 'Canada', 'Mexico'],
+    options: COUNTRY_OPTIONS,
     required: true,
   },
   {
@@ -117,7 +126,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'Citizenship',
     placeholder: 'Enter citizenship',
-    options: ['USA', 'Canada', 'Mexico'],
+    options: COUNTRY_OPTIONS,
     required: true,
   },
   {
@@ -416,8 +425,8 @@ export const personalLayout: LayoutBlock[] = [
 export const ugPgTestTypeOptions = [
   'SAT',
   'ACT',
-  'TOEFL',
-  'IELTS',
+  // 'TOEFL',
+  // 'IELTS',
   'Duolingo',
   'GMAT',
   'GRE',
@@ -429,8 +438,8 @@ export const schoolTestTypeOptions = [
   'SAT',
   'ACT',
   'AP',
-  'TOEFL',
-  'IELTS',
+  // 'TOEFL',
+  // 'IELTS',
   'Others',
 ];
 
@@ -438,7 +447,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'academicLevel',
     type: 'select',
-    label: 'Currently I am in / Which grade are you in?',
+    label: 'Currently I am in ',
     placeholder: 'Select academic level',
     options: [
       'Middle School (7th–8th grade)',
@@ -448,6 +457,14 @@ export const educationalFieldDefs: FieldDefinition[] = [
       'Working/Completed College',
     ],
     required: true,
+  },
+  {
+    id: 'gradeLevel',
+    type: 'number',
+    label: 'Which grade/year are you in?',
+    placeholder: 'Enter grade number',
+    required: false,
+    validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
     id: 'schoolName',
@@ -462,7 +479,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'Location (City)',
     placeholder: 'Select city/town',
-    options: ['Select city/town', 'New York', 'Los Angeles', 'Chicago'],
+    options: CITY_OPTIONS,
     required: true,
   },
   {
@@ -470,7 +487,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'Location (Country)',
     placeholder: 'Select country',
-    options: ['Select country', 'USA', 'Canada', 'Mexico'],
+    options: COUNTRY_OPTIONS,
     required: true,
   },
   {
@@ -695,9 +712,9 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'courseCity',
     type: 'select_autofill',
-    label: 'Course City',
+    label: 'City',
     placeholder: 'Select city/town',
-    options: ['Select city/town', 'New York', 'Los Angeles', 'Chicago'],
+    options: CITY_OPTIONS,
     required: false,
     validationDependsOn: [
       {
@@ -760,7 +777,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
       'GMAT',
       'GRE',
       'Executive Assessment',
-      'Others',
+      'Others'
     ],
   },
   {
@@ -1071,7 +1088,7 @@ export const educationalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: ['academicLevel'],
+    fields: ['academicLevel', 'gradeLevel'],
     columns: 3,
   },
   {
@@ -1463,14 +1480,16 @@ export const professionalFieldDefs: FieldDefinition[] = [
     id: 'city',
     type: 'text',
     label: 'City',
-    placeholder: 'Enter city/town',
+    placeholder: 'Select city/town',
+    options: CITY_OPTIONS,
     required: true,
   },
   {
     id: 'country',
-    type: 'text',
+    type: 'select_autofill',
     label: 'Country',
-    placeholder: 'Enter country',
+    placeholder: 'Select country',
+    options: COUNTRY_OPTIONS,
     required: true,
   },
   {
@@ -1617,16 +1636,18 @@ export const additionalFieldDefs: FieldDefinition[] = [
   {
     id: 'degreeInterest',
     type: 'text',
-    label: 'Degree Interest',
+    label: 'What program/ degree are you interested in ?',
     placeholder: 'Enter your degree interest',
     required: true,
+  
   },
   {
     id: 'whyInterest',
     type: 'text',
-    label: 'Why this Program?',
+    label: 'And why ?',
     placeholder: 'Enter your reasons for interest in this degree',
     required: false,
+    width: 2,
   },
   {
     id: 'campusVisited',
@@ -1749,7 +1770,7 @@ export const extraCurricularFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'City',
     placeholder: 'Select city/town',
-    options: ['Select city/town', 'New York', 'Los Angeles', 'Chicago'],
+    options: CITY_OPTIONS,
     required: false,
   },
   {
@@ -1757,7 +1778,7 @@ export const extraCurricularFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'Country',
     placeholder: 'Select country',
-    options: ['Select country', 'USA', 'Canada', 'Mexico'],
+    options: COUNTRY_OPTIONS,
     required: false,
   },
 ];

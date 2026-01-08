@@ -328,6 +328,8 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
               </div>
             );
           case 'multi_select':
+            console.log('Rendering multi_select for field:', field.id, 'with value:', controllerField.value);
+            console.log('Options:', field);
             return (
               <MultiSelect
                 label={field.label}

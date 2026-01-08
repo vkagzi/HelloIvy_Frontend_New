@@ -31,23 +31,31 @@ const EducationalDetailsForm: React.FC = () => {
   const [fieldDefs, setFieldDefs] = useState<FieldDefinition[]>(fieldDefss);
   const prevAcademicLevelRef = useRef<string | undefined>(undefined);
 
-  // Helper to get options based on academic level
+  const UG_PG_LEVELS = [
+    'College/Undergraduate',
+    'Postgraduate',
+    'Working/Completed College',
+  ];
+
+  const SCHOOL_LEVELS = [
+    'High School (9th–12th grade)',
+    'Middle School (7th–8th grade)',
+  ];
+
+  // Helper to get options based on academic level selected in the form
   const getTestTypeOptions = (academicLevel: string | undefined): string[] => {
     if (!academicLevel) {
       return [];
     }
-    if (
-      academicLevel === '10+ years post College' ||
-      academicLevel === 'Completed College / Postgraduate' ||
-      academicLevel === 'In College / Undergraduate'
-    ) {
+
+    if (UG_PG_LEVELS.includes(academicLevel)) {
       return ugPgTestTypeOptions;
-    } else if (
-      academicLevel === 'High School (9th–12th)' ||
-      academicLevel === 'Middle School (5th–8th)'
-    ) {
+    }
+
+    if (SCHOOL_LEVELS.includes(academicLevel)) {
       return schoolTestTypeOptions;
     }
+
     return [];
   };
 

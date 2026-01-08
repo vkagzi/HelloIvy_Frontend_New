@@ -992,7 +992,7 @@ ${convo}
   // ---------- render ----------
   if (isInitializing) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <div className="mb-2 text-lg font-semibold">
             Setting up your college advisor…
@@ -1006,7 +1006,7 @@ ${convo}
   }
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-purple-50 to-blue-100">
+    <div className="flex bg-gradient-to-br from-purple-50 to-blue-100">
       <div className="flex flex-1 flex-col">
         {/* Header */}
         <div className="border-b bg-white px-6 py-4 shadow-sm">

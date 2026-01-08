@@ -163,12 +163,12 @@ export function SelectAutofill({
                       type="button"
                       onClick={() => handleOptionSelect(option)}
                       className={cn(
-                        'flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-2 text-sm transition-colors',
+                        'flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors',
                         'hover:bg-neutral-100',
                         isSelected && 'bg-neutral-50'
                       )}
                     >
-                      <span className="text-neutral-900">{option}</span>
+                      <span className="text-left text-neutral-900">{option}</span>
                       {isSelected && (
                         <Check className="h-4 w-4 text-blue-500" />
                       )}
