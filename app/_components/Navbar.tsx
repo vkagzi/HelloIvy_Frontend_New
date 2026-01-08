@@ -18,7 +18,7 @@ const Navbar: React.FC = () => {
     <nav
       className={`relative flex flex-col bg-white transition-all duration-200 ${
         collapsed ? 'w-14' : 'w-50 border-r border-neutral-200'
-      } my-3 min-h-screen px-2`}
+      }  min-h-screen px-2`}
     >
       <div className="flex h-12 items-center justify-between pb-3">
         <Image

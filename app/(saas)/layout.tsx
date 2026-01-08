@@ -23,7 +23,7 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen">
       <SessionProvider session={session}>
         <ProfileProvider>
           <Navbar />

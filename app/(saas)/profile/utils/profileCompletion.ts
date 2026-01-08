@@ -37,40 +37,158 @@ const isFieldFilled = (value: unknown): boolean => {
 };
 
 /**
- * Calculate completion percentage for a specific section
- * Only counts required fields or fields that have been filled
+ * Calculate completion for personal section
+ * Checks 5 main sections:
+ * 1. Basic Details (firstName, lastName, dob)
+ * 2. Address (addressline, city, country)
+ * 3. Family Details (annualIncome)
+ * 4. Social Media (socialMedia array)
+ * 5. Languages (languages array)
  */
-const calculateSectionCompletion = (
+const calculatePersonalCompletion = (
   data: ProfileData,
-  fieldDefs: FieldDefinition[]
-): { filled: number; total: number } => {
+  _fieldDefs: FieldDefinition[]
+): { filled: number; total: number; percentage: number } => {
+  const total = 4;
   let filled = 0;
-  let total = 0;
 
-  fieldDefs.forEach((field) => {
-    // Skip non-data fields like headings and separators
-    if (field.type === 'heading' || field.type === 'seperator' || field.type === 'title') {
-      return;
-    }
+  // 1. Basic Details
+  if (isFieldFilled(data.firstName) && isFieldFilled(data.lastName) && isFieldFilled(data.dob)) {
+    filled++;
+  }
 
-    // Only count fields that are required by default (not conditionally required)
-    // Skip fields that are only conditionally required (have validationDependsOn but not required: true)
-    const isRequiredByDefault = field.required === true;
-    const isConditionallyRequired = field.validationDependsOn && !isRequiredByDefault;
-    
-    const value = data[field.id];
-    const fieldIsFilled = isFieldFilled(value);
-    
-    // Count this field if it's required OR if it's been filled
-    if (isRequiredByDefault || (fieldIsFilled && !isConditionallyRequired)) {
-      total++;
-      if (fieldIsFilled) {
-        filled++;
-      }
-    }
-  });
+  // 2. Address
+  if (isFieldFilled(data.addressline) && isFieldFilled(data.city) && isFieldFilled(data.country)) {
+    filled++;
+  }
 
-  return { filled, total };
+  // 3. Family Details
+  if (isFieldFilled(data.annualIncome)) {
+    filled++;
+  }
+
+  // // 4. Social Media
+  // if (Array.isArray(data.socialMedia) && data.socialMedia.length > 0) {
+  //   filled++;
+  // }
+
+  // 5. Languages
+  if (Array.isArray(data.languages) && data.languages.length > 0) {
+    filled++;
+  }
+
+  const percentage = total > 0 ? Math.round((filled / total) * 100) : 0;
+
+  return { filled, total, percentage };
+};
+
+/**
+ * Calculate completion for educational section
+ * Checks 3 main sections:
+ * 1. Academic Details
+ * 2. Courses & Certifications
+ * 3. Awards & Scholarships
+ */
+const calculateEducationalCompletion = (
+  data: ProfileData,
+  _fieldDefs: FieldDefinition[]
+): { filled: number; total: number; percentage: number } => {
+  const total = 3;
+  let filled = 0;
+
+  // 1. Academic Details - check if academicLevel is filled
+  if (isFieldFilled(data.academicLevel)) {
+    filled++;
+  }
+
+  // 2. Courses & Certifications - check if courses array has data
+  if (Array.isArray(data.courses) && data.courses.length > 0) {
+    filled++;
+  }
+
+  // 3. Awards & Scholarships - check if awards array has data
+  if (Array.isArray(data.awards) && data.awards.length > 0) {
+    filled++;
+  }
+
+  const percentage = total > 0 ? Math.round((filled / total) * 100) : 0;
+
+  return { filled, total, percentage };
+};
+
+/**
+ * Calculate completion for professional section
+ * Checks 2 main sections:
+ * 1. Work Experience (experience field)
+ * 2. Achievements (achievements array)
+ */
+const calculateProfessionalCompletion = (
+  data: ProfileData,
+  _fieldDefs: FieldDefinition[]
+): { filled: number; total: number; percentage: number } => {
+  const total = 2;
+  let filled = 0;
+
+  // 1. Work Experience
+  if (isFieldFilled(data.experience)) {
+    filled++;
+  }
+
+  // 2. Achievements
+  if (Array.isArray(data.achievements) && data.achievements.length > 0) {
+    filled++;
+  }
+
+  const percentage = total > 0 ? Math.round((filled / total) * 100) : 0;
+
+  return { filled, total, percentage };
+};
+
+/**
+ * Calculate completion for additional section
+ * Checks 2 main sections:
+ * 1. Degree Interest
+ * 2. Campus Visit / Additional Information
+ */
+const calculateAdditionalCompletion = (
+  data: ProfileData,
+  _fieldDefs: FieldDefinition[]
+): { filled: number; total: number; percentage: number } => {
+  const total = 2;
+  let filled = 0;
+
+  // 1. Degree Interest
+  if (isFieldFilled(data.degreeInterest)) {
+    filled++;
+  }
+
+  // 2. Campus Visit or Additional Information
+  if (isFieldFilled(data.campusVisited) || isFieldFilled(data.shareInformation)) {
+    filled++;
+  }
+
+  const percentage = total > 0 ? Math.round((filled / total) * 100) : 0;
+
+  return { filled, total, percentage };
+};
+
+/**
+ * Calculate completion for extra-curricular section
+ * Checks if extraCurricular array has data
+ */
+const calculateExtraCurricularCompletion = (
+  data: ProfileData,
+  _fieldDefs: FieldDefinition[]
+): { filled: number; total: number; percentage: number } => {
+  const total = 1;
+  let filled = 0;
+  // Check if extraCurricular array has data
+  if (Array.isArray(data) && data.length > 0) {
+    filled++;
+  }
+  const percentage = total > 0 ? Math.round((filled / total) * 100) : 0;
+
+  return { filled, total, percentage };
 };
 
 /**
@@ -87,15 +205,15 @@ export const calculateProfileCompletion = (profileData: {
   let totalFields = 0;
 
   // Personal details
-  const personal = calculateSectionCompletion(
+  const personal = calculatePersonalCompletion(
     profileData.personalDetails ?? {},
     personalFieldDefs
   );
   totalFilled += personal.filled;
   totalFields += personal.total;
 
-  // Educational details
-  const educational = calculateSectionCompletion(
+  // Educational details (use special handler for nested structure)
+  const educational = calculateEducationalCompletion(
     profileData.educationalDetails ?? {},
     educationalFieldDefs
   );
@@ -103,7 +221,7 @@ export const calculateProfileCompletion = (profileData: {
   totalFields += educational.total;
 
   // Professional details
-  const professional = calculateSectionCompletion(
+  const professional = calculateProfessionalCompletion(
     profileData.professionalDetails ?? {},
     professionalFieldDefs
   );
@@ -111,34 +229,30 @@ export const calculateProfileCompletion = (profileData: {
   totalFields += professional.total;
 
   // Additional details
-  const additional = calculateSectionCompletion(
+  const additional = calculateAdditionalCompletion(
     profileData.additionalDetails ?? {},
     additionalFieldDefs
   );
   totalFilled += additional.filled;
   totalFields += additional.total;
 
-  // Extra-curricular details (handle array structure)
-  const extraCurricular = profileData.extraCurricularDetails ?? {};
-  const extraActivities = Array.isArray(extraCurricular.extraCurricular)
-    ? extraCurricular.extraCurricular
-    : [];
+  // Extra-curricular details
+  const extraCurricular = calculateExtraCurricularCompletion(
+    profileData.extraCurricularDetails ?? {},
+    extraCurricularFieldDefs
+  );
+  totalFilled += extraCurricular.filled;
+  totalFields += extraCurricular.total;
 
-  if (extraActivities.length > 0) {
-    extraActivities.forEach((activity: ProfileData) => {
-      const activityCompletion = calculateSectionCompletion(
-        activity,
-        extraCurricularFieldDefs
-      );
-      totalFilled += activityCompletion.filled;
-      totalFields += activityCompletion.total;
-    });
-  } else {
-    // If no activities, count all extra-curricular fields as empty
-    totalFields += extraCurricularFieldDefs.filter(
-      (f) => f.type !== 'heading' && f.type !== 'seperator'
-    ).length;
-  }
+    console.log({
+    personal,
+    educational,
+    professional,
+    additional,
+    extraCurricular,
+    totalFilled,
+    totalFields,
+  })
 
   // Calculate percentage
   if (totalFields === 0) {
@@ -165,51 +279,33 @@ export const getSectionCompletionDetails = (profileData: {
   additional: number;
   extraCurricular: number;
 } => {
-  const personal = calculateSectionCompletion(
+  const personal = calculatePersonalCompletion(
     profileData.personalDetails ?? {},
     personalFieldDefs
   );
-  const educational = calculateSectionCompletion(
+  const educational = calculateEducationalCompletion(
     profileData.educationalDetails ?? {},
     educationalFieldDefs
   );
-  const professional = calculateSectionCompletion(
+  const professional = calculateProfessionalCompletion(
     profileData.professionalDetails ?? {},
     professionalFieldDefs
   );
-  const additional = calculateSectionCompletion(
+  const additional = calculateAdditionalCompletion(
     profileData.additionalDetails ?? {},
     additionalFieldDefs
   );
 
-  const extraCurricular = profileData.extraCurricularDetails ?? {};
-  const extraActivities = Array.isArray(extraCurricular.extraCurricular)
-    ? extraCurricular.extraCurricular
-    : [];
-
-  let extraFilled = 0;
-  let extraTotal = 0;
-
-  if (extraActivities.length > 0) {
-    extraActivities.forEach((activity: ProfileData) => {
-      const activityCompletion = calculateSectionCompletion(
-        activity,
-        extraCurricularFieldDefs
-      );
-      extraFilled += activityCompletion.filled;
-      extraTotal += activityCompletion.total;
-    });
-  } else {
-    extraTotal = extraCurricularFieldDefs.filter(
-      (f) => f.type !== 'heading' && f.type !== 'seperator'
-    ).length;
-  }
+  const extraCurricular = calculateExtraCurricularCompletion(
+    profileData.extraCurricularDetails ?? {},
+    extraCurricularFieldDefs
+  );
 
   return {
-    personal: personal.total ? Math.round((personal.filled / personal.total) * 100) : 0,
-    educational: educational.total ? Math.round((educational.filled / educational.total) * 100) : 0,
-    professional: professional.total ? Math.round((professional.filled / professional.total) * 100) : 0,
-    additional: additional.total ? Math.round((additional.filled / additional.total) * 100) : 0,
-    extraCurricular: extraTotal ? Math.round((extraFilled / extraTotal) * 100) : 0,
+    personal: personal.percentage,
+    educational: educational.percentage,
+    professional: professional.percentage,
+    additional: additional.percentage,
+    extraCurricular: extraCurricular.percentage,
   };
 };
