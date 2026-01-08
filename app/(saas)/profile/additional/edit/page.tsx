@@ -16,7 +16,7 @@ import { useProfile } from '../../_context/ProfileContext';
 const AdditionalFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse } = useProfile();
+  const { rawApiResponse, refetch } = useProfile();
   const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
@@ -47,6 +47,8 @@ const AdditionalFormDetails: React.FC = () => {
         },
       });
       if (response['message'] === 'Profile updated successfully.') {
+        // Refetch profile data to update the context
+        await refetch();
         router.push('/profile/personal');
       } else {
         addToast('Failed to update profile.', { type: 'error' });

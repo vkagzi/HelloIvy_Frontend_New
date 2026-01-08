@@ -25,7 +25,7 @@ import { useProfile } from '../../_context/ProfileContext';
 const EducationalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse } = useProfile();
+  const { rawApiResponse, refetch } = useProfile();
   const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
 
   const [fieldDefs, setFieldDefs] = useState<FieldDefinition[]>(fieldDefss);
@@ -117,6 +117,8 @@ const EducationalDetailsForm: React.FC = () => {
         },
       });
       if (response['message'] === 'Profile updated successfully.') {
+        // Refetch profile data to update the context
+        await refetch();
         router.push('/profile/professional/edit');
       } else {
         addToast('Failed to update profile.', { type: 'error' });

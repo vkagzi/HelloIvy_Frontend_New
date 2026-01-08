@@ -16,7 +16,7 @@ import { useProfile } from '../../_context/ProfileContext';
 const ExtraCurricularFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse } = useProfile();
+  const { rawApiResponse, refetch } = useProfile();
   const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
   const academicLevel =
     typeof defaultValues.profile === 'object' &&
@@ -97,6 +97,8 @@ const ExtraCurricularFormDetails: React.FC = () => {
         },
       });
       if (response['message'] === 'Profile updated successfully.') {
+        // Refetch profile data to update the context
+        await refetch();
         router.push('/profile/additional/edit');
       } else {
         addToast('Failed to update profile.', { type: 'error' });

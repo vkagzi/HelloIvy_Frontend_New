@@ -22,7 +22,7 @@ const ProfessionalFormDetails: React.FC = () => {
   const formRef = React.useRef<ReturnType<
     typeof import('react-hook-form').useForm
   > | null>(null);
-  const { rawApiResponse } = useProfile();
+  const { rawApiResponse, refetch } = useProfile();
   const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
@@ -57,6 +57,8 @@ const ProfessionalFormDetails: React.FC = () => {
         addToast('Professional details saved successfully!', {
           type: 'success',
         });
+        // Refetch profile data to update the context
+        await refetch();
         router.push('/profile/extra-curricular/edit');
       } else {
         addToast('Failed to update profile.', { type: 'error' });
@@ -106,6 +108,8 @@ const ProfessionalFormDetails: React.FC = () => {
             addToast('Professional details saved successfully!', {
               type: 'success',
             });
+            // Refetch profile data to update the context
+            await refetch();
             router.push('/profile/extra-curricular/edit');
           } catch (error) {
             console.error('Error saving professional data:', error);
@@ -117,7 +121,7 @@ const ProfessionalFormDetails: React.FC = () => {
     return () => {
       subscription.unsubscribe?.();
     };
-  }, [router, defaultValues, addToast]);
+  }, [router, defaultValues, addToast, refetch]);
 
   // Extract professional details from the nested structure
   let professionalDetails: Record<string, unknown> = {};

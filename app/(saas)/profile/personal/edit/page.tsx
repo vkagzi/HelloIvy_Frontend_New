@@ -16,7 +16,7 @@ import { useProfile } from '../../_context/ProfileContext';
 const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse, loading, error } = useProfile();
+  const { rawApiResponse, loading, error, refetch } = useProfile();
   const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
@@ -62,6 +62,8 @@ const PersonalDetailsForm: React.FC = () => {
 
       if (response['message'] === 'Profile updated successfully.') {
         addToast('Profile updated successfully!', { type: 'success' });
+        // Refetch profile data to update the context
+        await refetch();
         // Small delay to show success message before navigation
         setTimeout(() => {
           router.push('/profile/educational/edit');
