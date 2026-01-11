@@ -3,24 +3,24 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import DynamicForm from '@/app/_components/dynamic-form/DynamicForm';
-import Tabs from '../../_components/Tabs';
+import Tabs from '@/app/(saas)/profile/_components/Tabs';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/app/_components/Toast';
-import { getProfileData } from '../../lib/api';
+import { getProfileData } from '@/app/(saas)/profile/lib/api';
 import { SubmitHandler } from 'react-hook-form';
 import api from '@/lib/api';
-import Instructions from '../../_components/Instructions';
+import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import {
   educationalFieldDefs as fieldDefss,
   educationalLayout as layout,
   schoolTestTypeOptions,
   ugPgTestTypeOptions,
-} from '../../_config/fieldDefinitions';
+} from '@/app/(saas)/profile/_config/fieldDefinitions';
 import {
   // getSectionCompletionStatus,
   hasProfileSection,
-} from '../../utils/utils';
-import { useProfile } from '../../_context/ProfileContext';
+} from '@/app/(saas)/profile/utils/utils';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 const EducationalDetailsForm: React.FC = () => {
   const { addToast } = useToast();

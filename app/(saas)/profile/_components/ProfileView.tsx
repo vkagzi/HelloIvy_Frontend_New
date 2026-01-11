@@ -4,7 +4,7 @@ import React, { JSX } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Paragraph, Heading, Label } from '@/app/_components/Typography';
-import Sidebar from './Sidebar';
+import Sidebar from '@/app/(saas)/profile/_components/Sidebar';
 import {
   personalFieldDefs,
   personalLayout,
@@ -15,10 +15,11 @@ import {
   educationalFieldDefs,
   educationalLayout,
   extraCurricularFieldDefs,
+  getExtraCurricularLayout,
   sectionConfigs,
   type LayoutBlock,
   type SectionConfig,
-} from '../_config/fieldDefinitions';
+} from '@/app/(saas)/profile/_config/fieldDefinitions';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 
 type DefaultValues = Record<string, unknown>;
@@ -33,29 +34,6 @@ const getDisplayValue = (value: unknown): string => {
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (value === undefined || value === null || value === '') return 'N/A';
   return String(value);
-};
-
-const getExtracurricularTitle = (
-  academicLevel: string[] | string | undefined
-): string => {
-  if (!academicLevel) return 'Extra Curricular Activities';
-  const levels = Array.isArray(academicLevel) ? academicLevel : [academicLevel];
-  if (levels.includes('10+ years post College')) {
-    return 'Extracurriculars during UG/PG, Work/Internship/Startup Experience';
-  }
-  if (
-    levels.includes('Completed College / Postgraduate') ||
-    levels.includes('In College / Undergraduate')
-  ) {
-    return 'Extracurriculars during School/Highschool, UG/PG, Work/Internship/Startup Experience';
-  }
-  if (levels.includes('High School (9th–12th)')) {
-    return 'Extracurriculars during School/Highschool';
-  }
-  if (levels.includes('Middle School (5th–8th)')) {
-    return 'Extracurriculars during Middle School';
-  }
-  return 'Extra Curricular Activities';
 };
 
 const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
@@ -75,36 +53,9 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
         ? (defaultValues.educational as { academicLevel?: unknown })
             .academicLevel
         : undefined;
-    const sectionTitle = getExtracurricularTitle(
-      academicLevel as string[] | string
-    );
     config = {
       fieldDefs: extraCurricularFieldDefs,
-      layout: [
-        {
-          type: 'heading',
-          content: sectionTitle,
-        },
-        {
-          type: 'fieldset',
-          fields: [
-            'activityType',
-            'duration',
-            'positionHeld',
-            'awardsCertifications',
-            'description',
-            'city',
-            'country',
-          ],
-          name: 'extraCurricular',
-          repeatable: true,
-          repeatable_option: {
-            add: '+ Add Activity',
-            show_default: 1,
-            min: 1,
-          },
-        },
-      ],
+      layout: getExtraCurricularLayout(academicLevel as string[] | string),
     };
   }
   const { fieldDefs, layout } = config;

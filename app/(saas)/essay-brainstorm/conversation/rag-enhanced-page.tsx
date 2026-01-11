@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Heading, Paragraph } from '../../../_components/Typography';
-import { useToast } from '../../../_components/Toast';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
-import { sessionManagementApi } from '../../../../lib/api-services';
+import { sessionManagementApi } from '@/lib/api-services';
 import {
   ragConversationApi,
   shouldUseRAGSystem,
   getCollegeSelectionIdFromLocalStorage,
   RAGConversationStartResponse,
   RAGConversationMessageResponse,
-} from '../../../../lib/rag-conversation-api';
+} from '@/lib/rag-conversation-api';
 
 // Optional: keep your text-polish step if you want (unchanged).
 // You can remove polishRAGText and buildPolishPrompt if not needed.

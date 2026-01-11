@@ -1,5 +1,5 @@
 import { FC, ReactNode, useState } from 'react';
-import { Label } from './Typography';
+import { Label } from '@/app/_components/Typography';
 
 interface CollapsibleSectionProps {
   title: string;

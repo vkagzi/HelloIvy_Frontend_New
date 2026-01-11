@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Heading, Paragraph } from '../../../../_components/Typography';
-import Button from '../../../../_components/Button';
-import { useToast } from '../../../../_components/Toast';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import Button from '@/app/_components/Button';
+import { useToast } from '@/app/_components/Toast';
 import { useRouter, useParams } from 'next/navigation';
-import api from '../../../../../lib/api';
+import api from '@/lib/api';
 import { Textarea } from '@/components/ui/textarea';
 
 interface Question {

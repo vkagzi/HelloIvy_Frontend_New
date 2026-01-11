@@ -1,5 +1,5 @@
 import { FieldDefinition } from '@/app/utils/dynamicForm';
-import { FieldType } from '../types/type';
+import { FieldType } from '@/app/_components/dynamic-form/types/type';
 
 export const getDefaultValue = (type: FieldType): string | number | boolean | string[] => {
   switch (type) {

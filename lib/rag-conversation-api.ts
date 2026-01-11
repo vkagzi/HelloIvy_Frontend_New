@@ -3,7 +3,7 @@
  * Integrates with the enhanced conversational Q&A system
  */
 
-import { getAuthHeader } from './auth-helpers';
+import { getAuthHeader } from '@/lib/auth-helpers';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const RAG_API_BASE = `${API_BASE}/api/essay-brainstorm/rag`;

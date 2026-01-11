@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { domainDiscoveryApi, SessionListItem } from '@/lib/domain-discovery-api';
-import { useOpenAITTS } from '../../_hooks/useOpenAITTS';
+import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { Checkbox } from '@/app/_components/Checkbox';
 import { BrainWithoutBGLottie } from '@/app/_components/LottieAnimation';
 import { Heading, Label, Paragraph } from '@/app/_components/Typography';

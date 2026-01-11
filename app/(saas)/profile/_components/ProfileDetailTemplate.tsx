@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import ProfileHeaderView from './ProfileHeader';
-import ProfileViewDetails from './ProfileView';
-import { ProfileDetailType, profileConfig } from '../_config/profileConfig';
-import { useProfile } from '../_context/ProfileContext';
+import ProfileHeaderView from '@/app/(saas)/profile/_components/ProfileHeader';
+import ProfileViewDetails from '@/app/(saas)/profile/_components/ProfileView';
+import { ProfileDetailType, profileConfig } from '@/app/(saas)/profile/_config/profileConfig';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 type ProfileData = Record<string, unknown>;
 

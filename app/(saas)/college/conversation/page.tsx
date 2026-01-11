@@ -2,10 +2,10 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Heading, Paragraph } from '../../../_components/Typography';
-import { useToast } from '../../../_components/Toast';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
-import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
+import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { Textarea } from '@/components/ui/textarea';
 import {
   personalStoriesApi,
@@ -16,8 +16,8 @@ import {
   ProfessionalStory,
   ShortTermGoal,
   LongTermGoal,
-} from '../../../../lib/api-services';
-import UserStorage from '../../../../lib/user-storage';
+} from '@/lib/api-services';
+import UserStorage from '@/lib/user-storage';
 
 type MsgRole = 'bot' | 'user';
 interface Message {

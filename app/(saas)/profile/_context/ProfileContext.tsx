@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { getProfileData } from '../lib/api';
+import { getProfileData } from '@/app/(saas)/profile/lib/api';
 import { getToken } from '@/lib/api';
 
 type ProfileData = Record<string, unknown>;

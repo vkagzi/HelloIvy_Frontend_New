@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Heading, Paragraph } from '../../../_components/Typography';
-import Button from '../../../_components/Button';
-import { useToast } from '../../../_components/Toast';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import Button from '@/app/_components/Button';
+import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
-import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
+import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import {
   personalStoriesApi,
   professionalStoriesApi,
@@ -16,7 +16,7 @@ import {
   ProfessionalStory,
   ShortTermGoal,
   LongTermGoal,
-} from '../../../../lib/api-services';
+} from '@/lib/api-services';
 
 /** ===================== Types ===================== */
 interface EssayStructure {

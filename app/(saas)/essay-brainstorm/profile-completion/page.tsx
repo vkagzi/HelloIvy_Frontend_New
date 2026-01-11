@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Heading, Paragraph } from '../../../_components/Typography';
-import Button from '../../../_components/Button';
-import { useToast } from '../../../_components/Toast';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import Button from '@/app/_components/Button';
+import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
-import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
+import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 
 const ProfileCompletionPage: React.FC = () => {
   const { addToast } = useToast();

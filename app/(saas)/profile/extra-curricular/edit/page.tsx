@@ -2,16 +2,16 @@
 
 import React from 'react';
 import DynamicForm from '@/app/_components/dynamic-form/DynamicForm';
-import Tabs from '../../_components/Tabs';
+import Tabs from '@/app/(saas)/profile/_components/Tabs';
 import { useToast } from '@/app/_components/Toast';
-import { getProfileData } from '../../lib/api';
+import { getProfileData } from '@/app/(saas)/profile/lib/api';
 import { SubmitHandler } from 'react-hook-form';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import Instructions from '../../_components/Instructions';
-import { extraCurricularFieldDefs as fieldDefs, getExtracurricularTitle } from '../../_config/fieldDefinitions';
-import { hasProfileSection } from '../../utils/utils';
-import { useProfile } from '../../_context/ProfileContext';
+import Instructions from '@/app/(saas)/profile/_components/Instructions';
+import { extraCurricularFieldDefs as fieldDefs, getExtraCurricularLayout } from '@/app/(saas)/profile/_config/fieldDefinitions';
+import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 const ExtraCurricularFormDetails: React.FC = () => {
   const { addToast } = useToast();
@@ -33,34 +33,7 @@ const ExtraCurricularFormDetails: React.FC = () => {
           }
         )?.academicLevel
       : undefined;
-  const sectionTitle = getExtracurricularTitle(
-    academicLevel as string[] | string
-  );
-  const layout = [
-    {
-      type: 'heading',
-      content: sectionTitle,
-    },
-    {
-      type: 'fieldset',
-      fields: [
-        'activityType',
-        'duration',
-        'positionHeld',
-        'awardsCertifications',
-        'description',
-        'city',
-        'country',
-      ],
-      name: 'extraCurricular',
-      repeatable: true,
-      repeatable_option: {
-        add: '+ Add Activity',
-        show_default: 1,
-        min: 1,
-      },
-    },
-  ];
+  const layout = getExtraCurricularLayout(academicLevel as string[] | string);
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     try {

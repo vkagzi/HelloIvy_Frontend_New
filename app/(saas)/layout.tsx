@@ -4,7 +4,7 @@ import Navbar from '@/app/_components/Navbar';
 import AppHead from '@/app/_components/AppHead';
 import { auth } from '@/auth';
 import { SessionProvider } from 'next-auth/react';
-import { ProfileProvider } from './profile/_context/ProfileContext';
+import { ProfileProvider } from '@/app/(saas)/profile/_context/ProfileContext';
 
 export const metadata: Metadata = {
   title: 'Student Dashboard',

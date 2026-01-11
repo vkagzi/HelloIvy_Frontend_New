@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Heading, Paragraph } from '../../../../_components/Typography';
-import { useToast } from '../../../../_components/Toast';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import { useToast } from '@/app/_components/Toast';
 import { Button } from '@/components/ui/button';
 import {
   domainDiscoveryApi,

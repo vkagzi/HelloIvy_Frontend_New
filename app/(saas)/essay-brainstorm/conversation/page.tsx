@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Heading, Paragraph } from '../../../_components/Typography';
-import { useToast } from '../../../_components/Toast';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
-import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
-import { useGlobalTTSManager } from '../../../_hooks/useGlobalTTSManager';
+import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
+import { useGlobalTTSManager } from '@/app/_hooks/useGlobalTTSManager';
 import { Textarea } from '@/components/ui/textarea';
 import {
   sessionManagementApi,
@@ -14,8 +14,8 @@ import {
   personalStoriesApi,
   professionalStoriesApi,
   essayGoalsApi,
-} from '../../../../lib/api-services';
-import api from '../../../../lib/api';
+} from '@/lib/api-services';
+import api from '@/lib/api';
 
 // Local types for UI state (with simplified field names)
 interface LocalPersonalStory {

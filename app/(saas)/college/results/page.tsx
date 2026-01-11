@@ -3,9 +3,9 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heading, Paragraph } from '../../../_components/Typography';
-import { useToast } from '../../../_components/Toast';
-import UserStorage from '../../../../lib/user-storage';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import { useToast } from '@/app/_components/Toast';
+import UserStorage from '@/lib/user-storage';
 
 type TranscriptMessage = {
   id: string;

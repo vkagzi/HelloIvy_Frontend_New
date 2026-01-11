@@ -6,10 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import imgTopRightPolygonBackground from '@/assets/images/top-right-polygons.svg';
 import imgBottomLeftPolygonBackground from '@/assets/images/bottom-left-polygons.svg';
-import { Heading, Paragraph } from '../Typography';
-import { BrainWithoutBGLottie } from '../LottieAnimation';
-import { EditingWithoutBGLottie } from '../LottieAnimation';
-import { IvyWithoutBGLottie } from '../LottieAnimation';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import { BrainWithoutBGLottie } from '@/app/_components/LottieAnimation';
+import { EditingWithoutBGLottie } from '@/app/_components/LottieAnimation';
+import { IvyWithoutBGLottie } from '@/app/_components/LottieAnimation';
 
 const slides = [
   {

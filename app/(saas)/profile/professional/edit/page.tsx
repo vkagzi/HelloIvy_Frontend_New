@@ -6,15 +6,15 @@ import { useRouter } from 'next/navigation';
 import { SubmitHandler } from 'react-hook-form';
 import { useToast } from '@/app/_components/Toast';
 import api from '@/lib/api';
-import { getProfileData } from '../../lib/api';
-import Instructions from '../../_components/Instructions';
-import Tabs from '../../_components/Tabs';
-import { professionalFieldDefs as fieldDefs, professionalLayout as layout } from '../../_config/fieldDefinitions';
+import { getProfileData } from '@/app/(saas)/profile/lib/api';
+import Instructions from '@/app/(saas)/profile/_components/Instructions';
+import Tabs from '@/app/(saas)/profile/_components/Tabs';
+import { professionalFieldDefs as fieldDefs, professionalLayout as layout } from '@/app/(saas)/profile/_config/fieldDefinitions';
 import {
   // getSectionCompletionStatus,
   hasProfileSection,
-} from '../../utils/utils';
-import { useProfile } from '../../_context/ProfileContext';
+} from '@/app/(saas)/profile/utils/utils';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 const ProfessionalFormDetails: React.FC = () => {
   const { addToast } = useToast();

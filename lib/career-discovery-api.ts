@@ -2,7 +2,7 @@
  * Career Discovery API Client
  * Connects to Django backend using LangChain + Azure OpenAI for AI-powered career discovery
  */
-import api from './api';
+import api from '@/lib/api';
 
 // ================== Types ==================
 

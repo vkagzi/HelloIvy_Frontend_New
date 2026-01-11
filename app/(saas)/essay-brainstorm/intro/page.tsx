@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useGlobalTTSManager } from '../../../_hooks/useGlobalTTSManager';
-import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
+import { useGlobalTTSManager } from '@/app/_hooks/useGlobalTTSManager';
+import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { Checkbox } from '@/app/_components/Checkbox';
 import { Heading, Label } from '@/app/_components/Typography';
 import { Button } from '@/app/_components/Button';

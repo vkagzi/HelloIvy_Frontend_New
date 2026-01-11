@@ -1,4 +1,4 @@
-import { COUNTRY_NAMES } from './countryCodes';
+import { COUNTRY_NAMES } from '@/app/_constants/countryCodes';
 
 export const COUNTRY_OPTIONS = COUNTRY_NAMES;
 

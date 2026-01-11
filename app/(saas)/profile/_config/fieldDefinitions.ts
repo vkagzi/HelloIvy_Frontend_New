@@ -1803,10 +1803,17 @@ export const extraCurricularFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
-    id: 'duration',
+    id: 'startDate',
     type: 'date',
-    label: 'Duration',
-    placeholder: 'Select duration',
+    label: 'Start Date',
+    placeholder: 'Select start date',
+    required: true,
+  },
+  {
+    id: 'endDate',
+    type: 'date',
+    label: 'End Date',
+    placeholder: 'Select end date',
     required: true,
   },
   {
@@ -1886,7 +1893,8 @@ export const getExtraCurricularLayout = (
       type: 'fieldset',
       fields: [
         'activityType',
-        'duration',
+        'startDate',
+        'endDate',
         'positionHeld',
         'awardsCertifications',
         'description',

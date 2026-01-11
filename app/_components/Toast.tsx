@@ -9,9 +9,9 @@ import React, {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { FiIcon as Icons } from './Icons';
-import { Button } from './Button';
-import { Paragraph } from './Typography';
+import { FiIcon as Icons } from '@/app/_components/Icons';
+import { Button } from '@/app/_components/Button';
+import { Paragraph } from '@/app/_components/Typography';
 
 interface ToastMessage {
   id: string;

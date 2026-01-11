@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Heading, Paragraph } from '../../../_components/Typography';
-import Button from '../../../_components/Button';
-import { useToast } from '../../../_components/Toast';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import Button from '@/app/_components/Button';
+import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
-import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
+import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { Input } from '@/app/_components/Input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   collegeEssayApi,
   CollegeEssayData,
-} from '../../../../lib/api-services';
+} from '@/lib/api-services';
 
 const CollegeSelectionPage: React.FC = () => {
   const { addToast } = useToast();

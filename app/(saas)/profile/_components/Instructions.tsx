@@ -1,5 +1,5 @@
 import React from 'react';
-import ListenButton from './ListenButton';
+import ListenButton from '@/app/(saas)/profile/_components/ListenButton';
 
 interface InstructionsProps {
   title?: string;

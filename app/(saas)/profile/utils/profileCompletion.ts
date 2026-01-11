@@ -8,7 +8,7 @@ import {
   professionalFieldDefs,
   additionalFieldDefs,
   extraCurricularFieldDefs,
-} from '../_config/fieldDefinitions';
+} from '@/app/(saas)/profile/_config/fieldDefinitions';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 
 type ProfileData = Record<string, unknown>;

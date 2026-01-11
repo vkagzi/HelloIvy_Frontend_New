@@ -2,16 +2,16 @@
 
 import React from 'react';
 import DynamicForm from '@/app/_components/dynamic-form/DynamicForm';
-import Tabs from '../../_components/Tabs';
+import Tabs from '@/app/(saas)/profile/_components/Tabs';
 import { useToast } from '@/app/_components/Toast';
 import { SubmitHandler } from 'react-hook-form';
 import api from '@/lib/api';
-import { getProfileData } from '../../lib/api';
-import Instructions from '../../_components/Instructions';
-import { additionalFieldDefs as fieldDefs, additionalLayout as layout } from '../../_config/fieldDefinitions';
-import { hasProfileSection } from '../../utils/utils';
+import { getProfileData } from '@/app/(saas)/profile/lib/api';
+import Instructions from '@/app/(saas)/profile/_components/Instructions';
+import { additionalFieldDefs as fieldDefs, additionalLayout as layout } from '@/app/(saas)/profile/_config/fieldDefinitions';
+import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
 import { useRouter } from 'next/navigation';
-import { useProfile } from '../../_context/ProfileContext';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 const AdditionalFormDetails: React.FC = () => {
   const { addToast } = useToast();

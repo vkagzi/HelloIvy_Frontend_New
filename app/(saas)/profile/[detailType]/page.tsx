@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { useParams, notFound } from 'next/navigation';
-import ProfileDetailTemplate from '../_components/ProfileDetailTemplate';
+import ProfileDetailTemplate from '@/app/(saas)/profile/_components/ProfileDetailTemplate';
 import {
   ProfileDetailType,
   isValidDetailType,
-} from '../_config/profileConfig';
+} from '@/app/(saas)/profile/_config/profileConfig';
 
 const ProfileDetailPage: React.FC = () => {
   const params = useParams();

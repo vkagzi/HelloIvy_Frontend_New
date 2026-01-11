@@ -4,11 +4,11 @@ import React from 'react';
 import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { UseFormReturn } from 'react-hook-form';
-import { SchoolBlock } from './School';
-import { GraduateBlock } from './Graduate';
-import { TenPlusBlock } from './TenPlus';
-import { TestBlock } from './Test';
-import { ProfessionalBlock } from '../../../professional/edit/_component/Professional';
+import { SchoolBlock } from '@/app/(saas)/profile/educational/edit/_component/School';
+import { GraduateBlock } from '@/app/(saas)/profile/educational/edit/_component/Graduate';
+import { TenPlusBlock } from '@/app/(saas)/profile/educational/edit/_component/TenPlus';
+import { TestBlock } from '@/app/(saas)/profile/educational/edit/_component/Test';
+import { ProfessionalBlock } from '@/app/(saas)/profile/professional/edit/_component/Professional';
 
 interface ComponentProps {
   section: LayoutItem;

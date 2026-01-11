@@ -5,7 +5,7 @@ import Image from 'next/image';
 import imgIcon from '@/assets/images/icon.png';
 import { Heading, Paragraph } from '@/app/_components/Typography';
 import { FiIcon } from '@/app/_components/Icons';
-import { useProfile } from '../_context/ProfileContext';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 type InfoItemProps = {
   icon: string;

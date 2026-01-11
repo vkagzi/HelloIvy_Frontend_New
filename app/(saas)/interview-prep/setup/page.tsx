@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Heading, Paragraph } from '../../../_components/Typography';
-import Button from '../../../_components/Button';
-import { useToast } from '../../../_components/Toast';
+import { Heading, Paragraph } from '@/app/_components/Typography';
+import Button from '@/app/_components/Button';
+import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
-import api from '../../../../lib/api';
+import api from '@/lib/api';
 import { Input } from '@/app/_components/Input';
 
 const InterviewSetupPage: React.FC = () => {

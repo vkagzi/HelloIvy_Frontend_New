@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Heading, Paragraph, Label } from '../../../_components/Typography';
-import Button from '../../../_components/Button';
-import { useToast } from '../../../_components/Toast';
+import { Heading, Paragraph, Label } from '@/app/_components/Typography';
+import Button from '@/app/_components/Button';
+import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
-import { useOpenAITTS } from '../../../_hooks/useOpenAITTS';
+import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { Textarea } from '@/components/ui/textarea';
-import { essayGoalsApi, EssayGoal } from '../../../../lib/api-services';
+import { essayGoalsApi, EssayGoal } from '@/lib/api-services';
 
 const GoalsPage: React.FC = () => {
   const { addToast } = useToast();

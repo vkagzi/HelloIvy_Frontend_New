@@ -1,8 +1,8 @@
 // shadcn-style reusable form components
-export { Input, type InputProps } from './Input';
-export { Checkbox } from './Checkbox';
-export { FormLabel, type FormLabelProps } from './FormLabel';
-export { OTPInput, type OTPInputProps } from './OTPInput';
+export { Input, type InputProps } from '@/app/_components/Input';
+export { Checkbox } from '@/app/_components/Checkbox';
+export { FormLabel, type FormLabelProps } from '@/app/_components/FormLabel';
+export { OTPInput, type OTPInputProps } from '@/app/_components/OTPInput';
 
 // Re-export existing components for convenience
 export {
@@ -14,4 +14,4 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from './Select';
+} from '@/app/_components/Select';

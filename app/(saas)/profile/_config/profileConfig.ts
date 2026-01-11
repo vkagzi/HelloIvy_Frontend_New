@@ -1,5 +1,3 @@
-import { FieldDefinition } from '@/app/utils/dynamicForm';
-
 // Re-export field definitions and layouts from centralized file
 export {
   personalFieldDefs,
@@ -18,7 +16,7 @@ export {
   schoolTestTypeOptions,
   type LayoutBlock,
   type SectionConfig,
-} from './fieldDefinitions';
+} from '@/app/(saas)/profile/_config/fieldDefinitions';
 
 // Profile detail types
 export type ProfileDetailType =
