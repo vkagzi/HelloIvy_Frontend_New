@@ -17,6 +17,44 @@ interface SelectAutofillProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  onSearchChange?: (query: string) => void;
+}
+
+/**
+ * Parse and format a location string like "City, State, Country" for display
+ * Shows city in regular text and state/country in italic
+ */
+function formatLocationDisplay(option: string): React.JSX.Element | string {
+  // Check if this looks like a location string (contains commas)
+  if (!option.includes(',')) {
+    return option;
+  }
+
+  const parts = option.split(',').map(p => p.trim());
+  
+  if (parts.length === 3) {
+    // Format: "City, State, Country"
+    return (
+      <span>
+        <span className="font-medium">{parts[0]}</span>
+        <span className="text-neutral-600">, </span>
+        <span className="italic text-neutral-600">{parts[1]}</span>
+        <span className="text-neutral-600">, </span>
+        <span className="italic text-neutral-600">{parts[2]}</span>
+      </span>
+    );
+  } else if (parts.length === 2) {
+    // Format: "City, Country"
+    return (
+      <span>
+        <span className="font-medium">{parts[0]}</span>
+        <span className="text-neutral-600">, </span>
+        <span className="italic text-neutral-600">{parts[1]}</span>
+      </span>
+    );
+  }
+  
+  return option;
 }
 
 export function SelectAutofill({
@@ -29,6 +67,7 @@ export function SelectAutofill({
   required = false,
   disabled = false,
   className,
+  onSearchChange,
 }: SelectAutofillProps): React.JSX.Element {
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
   const [searchQuery, setSearchQuery] = React.useState<string>('');
@@ -57,9 +96,21 @@ export function SelectAutofill({
     if (open) {
       // Focus the input when opening
       setTimeout(() => inputRef.current?.focus(), 0);
+      // Trigger search immediately with empty query to load suggestions
+      if (onSearchChange) {
+        onSearchChange('');
+      }
     } else {
       // Clear search when closing
       setSearchQuery('');
+    }
+  };
+
+  const handleSearchChange = (value: string): void => {
+    setSearchQuery(value);
+    // Notify parent component about search query changes
+    if (onSearchChange) {
+      onSearchChange(value);
     }
   };
 
@@ -74,7 +125,7 @@ export function SelectAutofill({
   };
 
   return (
-    <div className={cn('grid gap-2', className)}>
+    <div className={cn('grid gap-2 w-full', className)}>
       {label && (
         <Label className="text-sm font-medium text-neutral-900">
           {label}
@@ -130,7 +181,7 @@ export function SelectAutofill({
         <Popover.Portal>
           <Popover.Content
             className={cn(
-              'z-50 w-(--radix-popover-trigger-width) overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg',
+              'z-50 min-w-[480px] max-w-[600px] overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg',
               'data-[state=open]:animate-in data-[state=closed]:animate-out',
               'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
               'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -146,7 +197,7 @@ export function SelectAutofill({
                 type="text"
                 placeholder="Type to search..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="h-9 border-neutral-200 focus-visible:ring-1 focus-visible:ring-blue-500"
               />
@@ -155,11 +206,11 @@ export function SelectAutofill({
             {/* Options List */}
             <div className="max-h-60 overflow-auto p-1">
               {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => {
+                filteredOptions.map((option, idx) => {
                   const isSelected = value === option;
                   return (
                     <button
-                      key={option}
+                      key={`${option}-${idx}`}
                       type="button"
                       onClick={() => handleOptionSelect(option)}
                       className={cn(
@@ -168,9 +219,9 @@ export function SelectAutofill({
                         isSelected && 'bg-neutral-50'
                       )}
                     >
-                      <span className="text-left text-neutral-900">{option}</span>
+                      <span className="flex-1">{formatLocationDisplay(option)}</span>
                       {isSelected && (
-                        <Check className="h-4 w-4 text-blue-500" />
+                        <Check className="h-4 w-4 shrink-0 text-blue-500" />
                       )}
                     </button>
                   );

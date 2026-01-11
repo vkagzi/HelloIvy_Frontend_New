@@ -36,8 +36,15 @@ export interface FieldDefinition {
       value: (string | boolean)[];
     };
   };
+  optionsDependsOn?: {
+    fieldId: string;
+    map: Record<string, string[]>;
+    default?: string[];
+  };
   validationDependsOn?: ConditionalValidation[];
   width?: number;
+  stateKey?: string;
+  countryKey?: string;
 }
 
 interface DynamicFormResult {

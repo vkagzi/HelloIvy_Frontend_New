@@ -9,6 +9,8 @@ import { useToast } from '@/app/_components/Toast';
 import { getProfileData } from '@/app/(saas)/profile/lib/api';
 import { SubmitHandler } from 'react-hook-form';
 import api from '@/lib/api';
+import { parseFormLocationData } from '@/lib/utils/location-parser';
+import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import {
   educationalFieldDefs as fieldDefss,
@@ -26,7 +28,12 @@ const EducationalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, refetch } = useProfile();
-  const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
+  // Reconstruct formatted location data for display
+  const transformedResponse = React.useMemo(
+    () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
+    [rawApiResponse]
+  );
+  const defaultValues = transformedResponse as Record<string, unknown>;
 
   const [fieldDefs, setFieldDefs] = useState<FieldDefinition[]>(fieldDefss);
   const prevAcademicLevelRef = useRef<string | undefined>(undefined);
@@ -91,6 +98,9 @@ const EducationalDetailsForm: React.FC = () => {
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     try {
+      // Parse formatted city strings to extract city, state, country
+      const parsedData = parseFormLocationData(_data);
+
       // Fetch latest profile data to ensure we have the most recent data
       const latestData = await getProfileData();
       const existingProfile =
@@ -108,7 +118,7 @@ const EducationalDetailsForm: React.FC = () => {
         method: 'POST',
         body: {
           profile: {
-            educational: _data,
+            educational: parsedData,
             personalDetails: personalDetails,
             professional: professional,
             additional: additional,

@@ -7,6 +7,8 @@ import { useToast } from '@/app/_components/Toast';
 import { SubmitHandler } from 'react-hook-form';
 import api from '@/lib/api';
 import { getProfileData } from '@/app/(saas)/profile/lib/api';
+import { parseFormLocationData } from '@/lib/utils/location-parser';
+import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import { additionalFieldDefs as fieldDefs, additionalLayout as layout } from '@/app/(saas)/profile/_config/fieldDefinitions';
 import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
@@ -17,10 +19,18 @@ const AdditionalFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, refetch } = useProfile();
-  const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
+  // Reconstruct formatted location data for display
+  const transformedResponse = React.useMemo(
+    () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
+    [rawApiResponse]
+  );
+  const defaultValues = transformedResponse as Record<string, unknown>;
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     try {
+      // Parse formatted city strings to extract city, state, country
+      const parsedData = parseFormLocationData(_data);
+
       // Fetch latest profile data to ensure we have the most recent data
       const latestData = await getProfileData();
       const existingProfile =
@@ -39,7 +49,7 @@ const AdditionalFormDetails: React.FC = () => {
         body: {
           profile: {
             educational: educational,
-            additional: _data,
+            additional: parsedData,
             professional: professional,
             personalDetails: personalDetails,
             extraCurricular: extraCurricular,

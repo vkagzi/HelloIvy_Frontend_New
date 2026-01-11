@@ -91,11 +91,13 @@ export const personalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'city',
-    type: 'select_autofill',
+    type: 'location_autofill',
     label: 'City',
     placeholder: 'Select city/town',
-    options: CITY_OPTIONS,
     required: true,
+    width: 1.25,
+    stateKey: 'state',
+    countryKey: 'country',
   },
   {
     id: 'zipcode',
@@ -149,16 +151,32 @@ export const personalFieldDefs: FieldDefinition[] = [
     label: "Family's Combined annual income",
     placeholder: 'Select income range',
     required: true,
-    options: [
-      'Below ₹5 lakhs',
-      '₹5-10 lakhs',
-      '₹10-15 lakhs',
-      '₹15-20 lakhs',
-      '₹20-25 lakhs',
-      '₹25-50 lakhs',
-      '₹50 lakhs - ₹1 crore',
-      'Above ₹1 crore',
-    ],
+    optionsDependsOn: {
+      fieldId: 'country',
+      map: {
+        India: [
+          'Below ₹5 lakhs',
+          '₹5-10 lakhs',
+          '₹10-15 lakhs',
+          '₹15-20 lakhs',
+          '₹20-25 lakhs',
+          '₹25-50 lakhs',
+          '₹50 lakhs - ₹1 crore',
+          'Above ₹1 crore',
+        ],
+      },
+      // approximate rounded USD equivalents (used when country !== India)
+      default: [
+        'Below $6k',
+        '$6k - $12k',
+        '$12k - $18k',
+        '$18k - $24k',
+        '$24k - $30k',
+        '$30k - $60k',
+        '$60k - $120k',
+        'Above $120k',
+      ],
+    },
   },
   {
     id: 'maintainChannel',
@@ -333,8 +351,6 @@ export const personalLayout: LayoutBlock[] = [
       'addressline',
       'city',
       'zipcode',
-      'state',
-      'country',
       'citizenShip',
     ],
     columns: 3,
@@ -475,18 +491,9 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'city',
-    type: 'select_autofill',
+    type: 'location_autofill',
     label: 'Location (City)',
     placeholder: 'Select city/town',
-    options: CITY_OPTIONS,
-    required: true,
-  },
-  {
-    id: 'country',
-    type: 'select_autofill',
-    label: 'Location (Country)',
-    placeholder: 'Select country',
-    options: COUNTRY_OPTIONS,
     required: true,
   },
   {
@@ -501,7 +508,15 @@ export const educationalFieldDefs: FieldDefinition[] = [
     id: 'board',
     type: 'select_autofill',
     label: 'Board',
-    options: ['CBSE', 'ICSE', 'State Board'],
+    options: [
+      'CBSE',
+      'ICSE',
+      'International Baccalaureate (IB)',
+      'Cambridge (IGCSE / A-Level)',
+      'State Board',
+      'American (AP / US High School Diploma)',
+      'Others',
+    ],
     placeholder: 'Enter board name',
     required: true,
   },
@@ -732,10 +747,9 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'courseCity',
-    type: 'select_autofill',
+    type: 'location_autofill',
     label: 'City',
     placeholder: 'Select city/town',
-    options: CITY_OPTIONS,
     required: false,
     validationDependsOn: [
       {
@@ -1117,7 +1131,6 @@ export const educationalLayout: LayoutBlock[] = [
     fields: [
       'schoolName',
       'city',
-      'country',
       'yearOfCompletion',
       'board',
       'typeOfScore',
@@ -1149,7 +1162,6 @@ export const educationalLayout: LayoutBlock[] = [
     fields: [
       'schoolName',
       'city',
-      'country',
       'yearOfCompletion',
       'board',
       'typeOfScore',
@@ -1499,18 +1511,9 @@ export const professionalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'city',
-    type: 'text',
+    type: 'location_autofill',
     label: 'City',
     placeholder: 'Select city/town',
-    options: CITY_OPTIONS,
-    required: true,
-  },
-  {
-    id: 'country',
-    type: 'select_autofill',
-    label: 'Country',
-    placeholder: 'Select country',
-    options: COUNTRY_OPTIONS,
     required: true,
   },
   {
@@ -1616,7 +1619,6 @@ export const professionalLayout: LayoutBlock[] = [
     fields: [
       'currentEmployer',
       'city',
-      'country',
       'durationOfEmployment',
       'companyWebsite',
       'jobTitle',
@@ -1839,18 +1841,9 @@ export const extraCurricularFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'city',
-    type: 'select_autofill',
+    type: 'location_autofill',
     label: 'City',
     placeholder: 'Select city/town',
-    options: CITY_OPTIONS,
-    required: false,
-  },
-  {
-    id: 'country',
-    type: 'select_autofill',
-    label: 'Country',
-    placeholder: 'Select country',
-    options: COUNTRY_OPTIONS,
     required: false,
   },
 ];
@@ -1899,7 +1892,6 @@ export const getExtraCurricularLayout = (
         'awardsCertifications',
         'description',
         'city',
-        'country',
       ],
       name: 'extraCurricular',
       repeatable: true,

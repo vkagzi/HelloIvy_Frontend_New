@@ -8,6 +8,8 @@ import { Checkbox } from '@/app/_components/Checkbox';
 import 'react-datepicker/dist/react-datepicker.css';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { SelectAutofill } from '@/components/ui/select-autofill';
+import { LocationField } from '@/components/ui/location-field';
+import { LocationAutofill } from '@/components/ui/location-autofill';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -59,6 +61,24 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     if (field.type === 'multi_select') return [];
     return '';
   };
+
+  // Resolve options that depend on another field (e.g., country)
+  const dependentFieldId = (field as any).optionsDependsOn?.fieldId as
+    | string
+    | undefined;
+  const watchedDepValue = dependentFieldId ? form.watch(dependentFieldId) : undefined;
+  const resolvedOptions: string[] = React.useMemo(() => {
+    const baseOptions = field.options ?? [];
+    const od = (field as any).optionsDependsOn;
+    if (!od) return baseOptions;
+    const depVal = Array.isArray(watchedDepValue)
+      ? watchedDepValue[0]
+      : watchedDepValue;
+    if (typeof depVal === 'string' && od.map && od.map[depVal]) {
+      return od.map[depVal];
+    }
+    return od.default ?? baseOptions;
+  }, [field, watchedDepValue]);
 
   return (
     <Controller
@@ -212,7 +232,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 }
                 onChange={(value) => controllerField.onChange(value)}
                 error={error}
-                options={field.options ?? []}
+                options={resolvedOptions}
                 required={field.required}
                 disabled={disabledField}
                 placeholder={field.placeholder}
@@ -230,7 +250,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   )}
                 </Label>
                 <div className="flex flex-wrap gap-4">
-                  {field.options?.map((option) => (
+                  {resolvedOptions?.map((option) => (
                     <Label
                       key={option}
                       className={cn(
@@ -333,7 +353,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             return (
               <MultiSelect
                 label={field.label}
-                options={field.options ?? []}
+                options={resolvedOptions}
                 required={field.required}
                 placeholder={field.placeholder}
                 value={Array.isArray(controllerField.value) ? controllerField.value : []}
@@ -342,10 +362,41 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
               />
             );
           case 'select_autofill':
+            // Check if this is a location field (city or country)
+            // Includes: city, courseCity, and country/citizenShip
+            const isLocationField = 
+              field.id === 'city' || 
+              field.id === 'courseCity' ||
+              field.id === 'country' ||
+              field.id === 'citizenShip';
+            
+            if (isLocationField) {
+              const locationType: 'country' | 'city' = 
+                field.id === 'country' || field.id === 'citizenShip' ? 'country' : 'city';
+              
+              return (
+                <LocationField
+                  type={locationType}
+                  label={field.label}
+                  required={field.required}
+                  placeholder={field.placeholder}
+                  value={
+                    typeof controllerField.value === 'string'
+                      ? controllerField.value
+                      : ''
+                  }
+                  onChange={controllerField.onChange}
+                  error={error}
+                  disabled={disabledField}
+                  fallbackOptions={resolvedOptions}
+                />
+              );
+            }
+            
             return (
               <SelectAutofill
                 label={field.label}
-                options={field.options ?? []}
+                options={resolvedOptions}
                 required={field.required}
                 placeholder={field.placeholder}
                 value={
@@ -354,6 +405,39 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                     : ''
                 }
                 onChange={controllerField.onChange}
+                error={error}
+                disabled={disabledField}
+              />
+            );
+          case 'location_autofill':
+            return (
+              <LocationAutofill
+                id={field.id}
+                label={field.label}
+                required={field.required}
+                placeholder={field.placeholder}
+                value={
+                  typeof controllerField.value === 'string'
+                    ? controllerField.value
+                    : ''
+                }
+                onChange={controllerField.onChange}
+                onStateChange={
+                  (field as any).stateKey
+                    ? (value: string) => {
+                        form.setValue((field as any).stateKey, value);
+                      }
+                    : undefined
+                }
+                onCountryChange={
+                  (field as any).countryKey
+                    ? (value: string) => {
+                        form.setValue((field as any).countryKey, value);
+                      }
+                    : undefined
+                }
+                stateKey={(field as any).stateKey}
+                countryKey={(field as any).countryKey}
                 error={error}
                 disabled={disabledField}
               />

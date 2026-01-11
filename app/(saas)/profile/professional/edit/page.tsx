@@ -7,6 +7,8 @@ import { SubmitHandler } from 'react-hook-form';
 import { useToast } from '@/app/_components/Toast';
 import api from '@/lib/api';
 import { getProfileData } from '@/app/(saas)/profile/lib/api';
+import { parseFormLocationData } from '@/lib/utils/location-parser';
+import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import Tabs from '@/app/(saas)/profile/_components/Tabs';
 import { professionalFieldDefs as fieldDefs, professionalLayout as layout } from '@/app/(saas)/profile/_config/fieldDefinitions';
@@ -23,10 +25,17 @@ const ProfessionalFormDetails: React.FC = () => {
     typeof import('react-hook-form').useForm
   > | null>(null);
   const { rawApiResponse, refetch } = useProfile();
-  const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
+  // Reconstruct formatted location data for display
+  const transformedResponse = React.useMemo(
+    () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
+    [rawApiResponse]
+  );
+  const defaultValues = transformedResponse as Record<string, unknown>;
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
-    console.log('Professional form data being submitted:', _data);
+    // Parse formatted city strings to extract city, state, country
+    const parsedData = parseFormLocationData(_data);
+    console.log('Professional form data being submitted:', parsedData);
     try {
       // Fetch latest profile data to ensure we have the most recent data
       const latestData = await getProfileData();
@@ -45,7 +54,7 @@ const ProfessionalFormDetails: React.FC = () => {
         method: 'POST',
         body: {
           profile: {
-            professional: _data,
+            professional: parsedData,
             personalDetails: personalDetails,
             additional: additional,
             extraCurricular: extraCurricular,
@@ -96,7 +105,7 @@ const ProfessionalFormDetails: React.FC = () => {
               method: 'POST',
               body: {
                 profile: {
-                  professional: values,
+                  professional: parseFormLocationData(values),
                   personalDetails: personalDetails,
                   additional: additional,
                   extraCurricular: extraCurricular,

@@ -8,6 +8,8 @@ import { getProfileData } from '@/app/(saas)/profile/lib/api';
 import { SubmitHandler } from 'react-hook-form';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { parseFormLocationData } from '@/lib/utils/location-parser';
+import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import { extraCurricularFieldDefs as fieldDefs, getExtraCurricularLayout } from '@/app/(saas)/profile/_config/fieldDefinitions';
 import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
@@ -17,7 +19,12 @@ const ExtraCurricularFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, refetch } = useProfile();
-  const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
+  // Reconstruct formatted location data for display
+  const transformedResponse = React.useMemo(
+    () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
+    [rawApiResponse]
+  );
+  const defaultValues = transformedResponse as Record<string, unknown>;
   const academicLevel =
     typeof defaultValues.profile === 'object' &&
     defaultValues.profile !== null &&
@@ -37,6 +44,9 @@ const ExtraCurricularFormDetails: React.FC = () => {
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     try {
+      // Parse formatted city strings to extract city, state, country
+      const parsedData = parseFormLocationData(_data);
+
       // Fetch latest profile data to ensure we have the most recent data
       const latestData = await getProfileData();
       const existingProfile =
@@ -51,10 +61,10 @@ const ExtraCurricularFormDetails: React.FC = () => {
       const professional = existingProfile.professional ?? {};
 
       const extraCurricular =
-        typeof _data === 'object' &&
-        _data !== null &&
-        'extraCurricular' in _data
-          ? (_data.extraCurricular as unknown)
+        typeof parsedData === 'object' &&
+        parsedData !== null &&
+        'extraCurricular' in parsedData
+          ? (parsedData.extraCurricular as unknown)
           : [];
 
       const response = await api('/api/profiles/update/', {

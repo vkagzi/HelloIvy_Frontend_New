@@ -8,6 +8,8 @@ import { SubmitHandler } from 'react-hook-form';
 import api from '@/lib/api';
 import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
+import { parseFormLocationData } from '@/lib/utils/location-parser';
+import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
 import { personalFieldDefs as fieldDefs, personalLayout as layout } from '@/app/(saas)/profile/_config/fieldDefinitions';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
@@ -17,11 +19,19 @@ const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, loading, error, refetch } = useProfile();
-  const defaultValues = (rawApiResponse ?? {}) as Record<string, unknown>;
+  // Reconstruct formatted location data for display
+  const transformedResponse = React.useMemo(
+    () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
+    [rawApiResponse]
+  );
+  const defaultValues = transformedResponse as Record<string, unknown>;
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     try {
-      console.log('Submitting personal details:', _data); // Debug log
+      // Parse formatted city strings to extract city, state, country
+      const parsedData = parseFormLocationData(_data);
+
+      console.log('Submitting personal details:', parsedData); // Debug log
 
       // Show loading toast
       addToast('Updating profile...', { type: 'info' });
@@ -43,7 +53,7 @@ const PersonalDetailsForm: React.FC = () => {
 
       const payload = {
         profile: {
-          personalDetails: _data,
+          personalDetails: parsedData,
           professional: professional,
           additional: additional,
           extraCurricular: extraCurricular,
