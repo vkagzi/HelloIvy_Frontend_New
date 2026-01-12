@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ChevronDown, X } from 'lucide-react';
 import { searchCitiesFormatted } from '@/lib/api/locations';
 import { parseLocationString } from '@/lib/utils/location-parser';
 
@@ -62,7 +63,19 @@ export function LocationAutofill({
     try {
       setLoading(true);
       const results = await searchCitiesFormatted(query);
-      setOptions(results);
+
+      // Prioritize results that start with the query, then those that contain it.
+      if (query && query.trim()) {
+        const q = query.toLowerCase();
+        const startsWith = results.filter((r) => r.toLowerCase().startsWith(q));
+        const includes = results.filter(
+          (r) => !r.toLowerCase().startsWith(q) && r.toLowerCase().includes(q)
+        );
+        const others = results.filter((r) => !r.toLowerCase().includes(q));
+        setOptions([...startsWith, ...includes, ...others]);
+      } else {
+        setOptions(results);
+      }
       setHighlightedIndex(-1);
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
@@ -169,60 +182,95 @@ export function LocationAutofill({
   }, []);
 
   return (
-    <div className="space-y-2">
+    <div className="grid gap-2 w-full">
       {label && (
-        <Label htmlFor={id} className={required ? 'after:content-["*"] after:ml-1 after:text-red-500' : ''}>
+        <Label className="text-sm font-medium text-neutral-900">
           {label}
+          {required && <span className="ml-1 text-orange-500">*</span>}
         </Label>
       )}
+
       <Popover.Root open={isOpen} onOpenChange={handleOpenChange}>
-        <Popover.Trigger asChild>
-          <Input
-            ref={inputRef}
-            id={id}
-            type="text"
-            placeholder={loading ? 'Searching...' : placeholder}
-            value={searchQuery || value}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={disabled}
-            className={error ? 'border-red-500' : ''}
-          />
-        </Popover.Trigger>
-        <Popover.Content
-          className="min-w-[480px] max-w-[600px] p-0 z-50"
-          side="bottom"
-          align="start"
-        >
-          {options.length > 0 ? (
-            <div className="max-h-[300px] overflow-y-auto bg-white border rounded-md shadow-md">
-              {options.map((option, index) => (
-                <div
-                  key={option}
-                  onClick={() => handleSelectOption(option)}
-                  className={`px-4 py-2 cursor-pointer ${
-                    index === highlightedIndex
-                      ? 'bg-blue-100'
-                      : 'hover:bg-gray-100'
-                  }`}
+        <Popover.Trigger asChild disabled={disabled}>
+          <button
+            type="button"
+            className={`flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-left text-sm shadow-sm transition-colors hover:border-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50 ${
+              error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
+            } ${isOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : ''}`}
+          >
+            <span className={`flex-1 truncate ${!value && 'text-neutral-400'}`}>
+              {value || placeholder}
+            </span>
+            <div className="flex shrink-0 items-center gap-1">
+              {value && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange('');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.stopPropagation();
+                      onChange('');
+                    }
+                  }}
+                  className="cursor-pointer rounded-full p-1 transition-colors hover:bg-neutral-100"
                 >
-                  {/* Format location display: City in bold, State/Country in italic gray */}
-                  {formatLocationDisplay(option)}
+                  <X className="h-4 w-4 text-neutral-500" />
+                </span>
+              )}
+              <ChevronDown className={`h-4 w-4 text-neutral-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </button>
+        </Popover.Trigger>
+
+        <Popover.Portal>
+          <Popover.Content
+            className={`z-50 min-w-[480px] max-w-[600px] overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg`}
+            sideOffset={4}
+            align="start"
+          >
+            {/* Search Input inside dropdown (matches SelectAutofill UX) */}
+            <div className="border-b border-neutral-200 p-2">
+              <Input
+                ref={inputRef}
+                type="text"
+                placeholder={loading ? 'Searching...' : 'Type to search...'}
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="h-9 border-neutral-200 focus-visible:ring-1 focus-visible:ring-blue-500"
+              />
+            </div>
+
+            {/* Options List */}
+            <div className="max-h-60 overflow-auto p-1">
+              {options.length > 0 ? (
+                options.map((option, index) => (
+                  <button
+                    key={`${option}-${index}`}
+                    type="button"
+                    onClick={() => handleSelectOption(option)}
+                    className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-neutral-100 ${
+                      value === option ? 'bg-neutral-50' : ''
+                    }`}
+                  >
+                    <span className="flex-1">{formatLocationDisplay(option)}</span>
+                  </button>
+                ))
+              ) : (
+                <div className="px-2 py-4 text-center text-sm text-neutral-500">
+                  {searchQuery ? 'No cities found' : 'Start typing to search cities'}
                 </div>
-              ))}
+              )}
             </div>
-          ) : searchQuery ? (
-            <div className="px-4 py-3 text-gray-500 text-sm">
-              No cities found
-            </div>
-          ) : (
-            <div className="px-4 py-3 text-gray-500 text-sm">
-              Start typing to search cities
-            </div>
-          )}
-        </Popover.Content>
+          </Popover.Content>
+        </Popover.Portal>
       </Popover.Root>
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
     </div>
   );
 }
