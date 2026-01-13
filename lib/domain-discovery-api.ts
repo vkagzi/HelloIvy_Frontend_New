@@ -26,6 +26,15 @@ export interface DomainDiscoverySession {
   messages: DomainMessage[];
 }
 
+export interface RIASECScores {
+  realistic: number;
+  investigative: number;
+  artistic: number;
+  social: number;
+  enterprising: number;
+  conventional: number;
+}
+
 export interface SendMessageResponse {
   session_id: string;
   user_message: string;
@@ -34,6 +43,46 @@ export interface SendMessageResponse {
   total_steps: number;
   is_complete: boolean;
   phase: 'exploration' | 'mapping';
+  progress_percentage: number;
+  questions_completed: number;
+  partial_riasec_analysis?: RIASECScores | null;
+}
+
+export interface TopDimension {
+  dimension: string;
+  score: number;
+  rank: number;
+}
+
+export interface ResultsSummary {
+  session_id: string;
+  student_name: string;
+  current_step: number;
+  total_steps: number;
+  completion_percentage: number;
+  interests_identified: string[];
+  strengths_identified: string[];
+  riasec_scores: RIASECScores;
+  top_dimensions: TopDimension[];
+  primary_domains: DomainRecommendation[];
+  secondary_domains: DomainRecommendation[];
+}
+
+export interface TranscriptMessage {
+  question_number: number;
+  phase: 'exploration' | 'mapping';
+  bot_question: string;
+  student_response: string;
+  timestamp: string;
+}
+
+export interface TranscriptData {
+  session_id: string;
+  student_name: string;
+  started_at: string;
+  completed_at?: string;
+  total_questions: number;
+  messages: TranscriptMessage[];
 }
 
 export interface DomainRecommendation {
@@ -214,6 +263,41 @@ class DomainDiscoveryAPI {
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Failed to generate speech: ${errorText}`);
+    }
+
+    return response.blob();
+  }
+
+  /**
+   * Get comprehensive results summary after conversation completion
+   */
+  async getResultsSummary(sessionId: string): Promise<ResultsSummary> {
+    return api<ResultsSummary>(`${this.baseUrl}/${sessionId}/results/`);
+  }
+
+  /**
+   * Get conversation transcript as JSON with Q&A pairs
+   */
+  async getTranscript(sessionId: string): Promise<TranscriptData> {
+    return api<TranscriptData>(`${this.baseUrl}/${sessionId}/transcript/`);
+  }
+
+  /**
+   * Download conversation transcript as text file
+   */
+  async downloadTranscript(sessionId: string): Promise<Blob> {
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    const fullUrl = `${baseUrl}${this.baseUrl}/${sessionId}/transcript/download/`;
+
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to download transcript: ${errorText}`);
     }
 
     return response.blob();

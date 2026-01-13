@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { z } from 'zod';
 import type { FieldDefinition } from '@/app/utils/dynamicForm';
 import {
   generateDynamicFormSchema,
@@ -13,6 +14,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { FieldType, LayoutItem } from '@/app/_components/dynamic-form/types/type';
 import CollapsibleSection from '@/app/_components/CollapsibleSection';
 import Component from '@/app/(saas)/profile/educational/edit/_component/Component';
+import { TestScoresBlock } from '@/app/(saas)/profile/educational/edit/_component/TestScores';
 import { getDefaultValue, isFieldVisible } from '@/app/_components/dynamic-form/utils/utils';
 import { Heading, Label } from '@/app/_components/Typography';
 import Image from 'next/image';
@@ -142,6 +144,56 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   // Generate Zod schema
   let { schema } = generateDynamicFormSchema(fieldDefs, layout);
 
+  // Add test scores validation schema
+  const testScoresSchema = z.object({
+    testScores: z.array(
+      z.object({
+        testType: z.string().min(1, 'Test type is required'),
+        testDate: z.string().optional(),
+        totalScore: z.string().optional(),
+        yourScore: z.string().optional(),
+        yourPercentile: z.string().optional(),
+        writingYourScore: z.string().optional(),
+        writingYourPercentile: z.string().optional(),
+        mathYourScore: z.string().optional(),
+        mathYourPercentile: z.string().optional(),
+        criticalReadingYourScore: z.string().optional(),
+        criticalReadingYourPercentile: z.string().optional(),
+        analyticalWritingScore: z.string().optional(),
+        analyticalWritingPercentile: z.string().optional(),
+        verbalReasoningScore: z.string().optional(),
+        verbalReasoningPercentile: z.string().optional(),
+        quantitativeReasoningScore: z.string().optional(),
+        quantitativeReasoningPercentile: z.string().optional(),
+        dataInsightsScore: z.string().optional(),
+        dataInsightsPercentile: z.string().optional(),
+        englishYourScore: z.string().optional(),
+        englishYourPercentile: z.string().optional(),
+        readingYourScore: z.string().optional(),
+        readingYourPercentile: z.string().optional(),
+        scienceYourScore: z.string().optional(),
+        scienceYourPercentile: z.string().optional(),
+        integratedReasoningScore: z.string().optional(),
+        integratedReasoningPercentile: z.string().optional(),
+        retakeExamDate: z.string().optional(),
+        tookCoaching: z.string().optional(),
+        coachingName: z.string().optional(),
+      }).refine((data) => {
+        // If test type is selected, testDate is required
+        if (data.testType && data.testType.length > 0) {
+          return data.testDate && data.testDate.length > 0;
+        }
+        return true;
+      }, {
+        message: 'Test date is required',
+        path: ['testDate'],
+      })
+    ).optional(),
+  });
+
+  // Merge test scores schema with main schema
+  schema = schema.and(testScoresSchema);
+
   const handleAddRepeatable = (groupName: string, fields: string[]): void => {
     const arrUnknown: unknown = form.getValues(groupName);
     const arr: Record<string, unknown>[] = Array.isArray(arrUnknown)
@@ -248,6 +300,181 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       const disableRemove = (repeatArr?.length ?? 0) <= minRows;
       const repeatableColumns = repeatableOption.columns ?? item.columns ?? 3;
 
+      // Special rendering for courses - display in boxes with numbered headings
+      if (item.name === 'courses') {
+        return (
+          <div key={item.name} className="mt-5 flex flex-col gap-6">
+            {(repeatArr ?? []).map((row, rIdx) => (
+              <div
+                key={rIdx}
+                className="flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
+              >
+                {/* Course Heading and Remove Button */}
+                <div className="mb-5 flex items-center justify-between">
+                  <h3 className="text-label-lg font-semibold text-neutral-900">
+                    Course {rIdx + 1}
+                  </h3>
+                  {!disableRemove && (
+                    <button
+                      type="button"
+                      className="text-label-sm cursor-pointer font-medium text-blue-500 transition-colors hover:text-blue-700"
+                      onClick={() => handleRemoveRepeatable(item.name!, rIdx)}
+                      disabled={disableRemove}
+                      aria-label="Remove Course"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {/* Course Fields Grid */}
+                <div
+                  className={`grid gap-4 ${getGridColsClass(repeatableColumns)}`}
+                >
+                  {item.fields?.map((fid) => {
+                    const field = fieldDefs.find((f) => f.id === fid);
+                    if (!field || !isFieldVisible(field, formValues))
+                      return null;
+                    const errorKey = `${item.name}.${rIdx}.${fid}`;
+                    const repeatableField: FieldDefinition = {
+                      ...field,
+                      id: `${item.name}.${rIdx}.${fid}`,
+                    };
+                    const widthClass = getFieldWidthClass(field);
+                    return (
+                      <div
+                        key={`${item.name}.${rIdx}.${fid}`}
+                        className={widthClass}
+                      >
+                        <Controller
+                          name={`${item.name}.${rIdx}.${fid}` as never}
+                          control={form.control}
+                          defaultValue={
+                            (form.getValues(`${item.name}.${rIdx}.${fid}`) ??
+                              '') as never
+                          }
+                          render={() => (
+                            <FieldRenderer
+                              field={repeatableField}
+                              form={form}
+                              error={errors[errorKey]}
+                              inputHeightClass="py-2"
+                              labelHeightClass="text-label-md"
+                              inputWidthClass="w-full"
+                            />
+                          )}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Add Course Button */}
+            <button
+              type="button"
+              className="text-label-sm cursor-pointer self-start font-medium text-blue-500"
+              onClick={() => handleAddRepeatable(item.name!, item.fields ?? [])}
+              disabled={
+                item.repeatable_option?.max !== undefined &&
+                (repeatArr?.length ?? 0) >= item.repeatable_option.max
+              }
+            >
+              {item.repeatable_option?.add ?? '+ Add Course'}
+            </button>
+          </div>
+        );
+      }
+
+      // Special rendering for awards - display in boxes with numbered headings
+      if (item.name === 'awards') {
+        return (
+          <div key={item.name} className="mt-5 flex flex-col gap-6">
+            {(repeatArr ?? []).map((row, rIdx) => (
+              <div
+                key={rIdx}
+                className="flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
+              >
+                {/* Awards Heading and Remove Button */}
+                <div className="mb-5 flex items-center justify-between">
+                  <h3 className="text-label-lg font-semibold text-neutral-900">
+                    Awards & Scholarships {rIdx + 1}
+                  </h3>
+                  {!disableRemove && (
+                    <button
+                      type="button"
+                      className="text-label-sm cursor-pointer font-medium text-blue-500 transition-colors hover:text-blue-700"
+                      onClick={() => handleRemoveRepeatable(item.name!, rIdx)}
+                      disabled={disableRemove}
+                      aria-label="Remove Award"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {/* Awards Fields Grid */}
+                <div
+                  className={`grid gap-4 ${getGridColsClass(repeatableColumns)}`}
+                >
+                  {item.fields?.map((fid) => {
+                    const field = fieldDefs.find((f) => f.id === fid);
+                    if (!field || !isFieldVisible(field, formValues))
+                      return null;
+                    const errorKey = `${item.name}.${rIdx}.${fid}`;
+                    const repeatableField: FieldDefinition = {
+                      ...field,
+                      id: `${item.name}.${rIdx}.${fid}`,
+                    };
+                    const widthClass = getFieldWidthClass(field);
+                    return (
+                      <div
+                        key={`${item.name}.${rIdx}.${fid}`}
+                        className={widthClass}
+                      >
+                        <Controller
+                          name={`${item.name}.${rIdx}.${fid}` as never}
+                          control={form.control}
+                          defaultValue={
+                            (form.getValues(`${item.name}.${rIdx}.${fid}`) ??
+                              '') as never
+                          }
+                          render={() => (
+                            <FieldRenderer
+                              field={repeatableField}
+                              form={form}
+                              error={errors[errorKey]}
+                              inputHeightClass="py-2"
+                              labelHeightClass="text-label-md"
+                              inputWidthClass="w-full"
+                            />
+                          )}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Add Awards Button */}
+            <button
+              type="button"
+              className="text-label-sm cursor-pointer self-start font-medium text-blue-500"
+              onClick={() => handleAddRepeatable(item.name!, item.fields ?? [])}
+              disabled={
+                item.repeatable_option?.max !== undefined &&
+                (repeatArr?.length ?? 0) >= item.repeatable_option.max
+              }
+            >
+              {item.repeatable_option?.add ?? '+ Add Awards & Scholarships'}
+            </button>
+          </div>
+        );
+      }
+
+      // Default rendering for other repeatable fieldsets
       return (
         <div key={item.name} className="mt-5 flex flex-col gap-4">
           <div className={`grid gap-4 ${getGridColsClass(item.columns ?? 1)}`}>
@@ -467,26 +694,33 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         } else if (innerItem.type === 'seperator') {
           sectionContent.push(renderSeparator(i));
         } else if (innerItem.type === 'fieldset' && innerItem.fields) {
-          if (innerItem.repeatable && innerItem.name) {
+          // Check if this is the testType fieldset - render TestScoresBlock instead
+          if (innerItem.fields.includes('testType') && innerItem.fields.length === 1) {
+            // Get test type options from the field definition
+            const testTypeField = fieldDefs.find((f) => f.id === 'testType');
+            const testTypeOptions = testTypeField?.options ?? [];
+            
+            sectionContent.push(
+              <TestScoresBlock
+                key="test-scores-block"
+                testTypeOptions={testTypeOptions}
+                fieldDefs={fieldDefs}
+                form={form}
+                errors={errors}
+              />
+            );
+          } else if (innerItem.repeatable && innerItem.name) {
             sectionContent.push(renderRepeatableFieldset(innerItem));
           } else {
             sectionContent.push(renderFieldset(innerItem, formValues));
           }
         } else if (
-          innerItem.type === 'middleSchool' ||
-          innerItem.type === 'highSchool' ||
+          (innerItem.type === 'highSchool' ||
           innerItem.type === 'undergraduate' ||
           innerItem.type === 'postgraduate' ||
           innerItem.type === 'tenPlus' ||
-          innerItem.type === 'professional' ||
-          innerItem.type === 'SAT' ||
-          innerItem.type === 'TOEFL' ||
-          innerItem.type === 'IELTS' ||
-          innerItem.type === 'GRE' ||
-          innerItem.type === 'GMAT' ||
-          innerItem.type === 'Duolingo' ||
-          innerItem.type === 'ACT' ||
-          innerItem.type === 'Executive Assessment'
+          innerItem.type === 'professional') &&
+          isFieldVisible(innerItem, formValues)
         ) {
           const subSchema = generateSubSchema(fieldDefs, innerItem).schema;
           // Combine schemas by extracting shape and creating new object
@@ -500,6 +734,18 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               errors={errors}
             />
           );
+        } else if (
+          innerItem.type === 'SAT' ||
+          innerItem.type === 'TOEFL' ||
+          innerItem.type === 'IELTS' ||
+          innerItem.type === 'GRE' ||
+          innerItem.type === 'GMAT' ||
+          innerItem.type === 'Duolingo' ||
+          innerItem.type === 'ACT' ||
+          innerItem.type === 'Executive Assessment'
+        ) {
+          // Skip individual test type blocks - they will be handled by TestScoresBlock
+          // Do nothing, just continue to next item
         }
         i++;
       }
@@ -615,11 +861,40 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   }, [form, layout, form.watch('maintainChannel')]);
   // Add other dependencies if you have more repeatableDependsOn fields
 
+  // Helper function to filter out empty rows from repeatable arrays
+  const filterEmptyRows = (data: Record<string, unknown>): Record<string, unknown> => {
+    const filtered: Record<string, unknown> = { ...data };
+    
+    // Handle regular repeatable fieldsets
+    layout.forEach((item) => {
+      if (item.repeatable && item.name) {
+        const arr = filtered[item.name];
+        if (Array.isArray(arr)) {
+          // Filter out rows where all fields are empty strings
+          filtered[item.name] = arr.filter((row) => {
+            if (typeof row !== 'object' || row === null) return true;
+            const rowObj = row as Record<string, unknown>;
+            // Check if any field in this row has a non-empty value
+            return (item.fields ?? []).some((fieldId) => {
+              const value = rowObj[fieldId];
+              return value !== '' && value !== null && value !== undefined;
+            });
+          });
+        }
+      }
+    });
+    
+    return filtered;
+  };
+
   return (
     <form
       onSubmit={form.handleSubmit((values) => {
-        const result = schema.safeParse(values);
+        // Filter out empty rows before validation
+        const cleanedValues = filterEmptyRows(values);
+        const result = schema.safeParse(cleanedValues);
         console.log('Form values:', values);
+        console.log('Cleaned values:', cleanedValues);
         console.log('Validation result:', result);
         if (!result.success) {
           console.error('Form validation errors:', result.error.issues);
@@ -632,7 +907,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           return;
         }
         setErrors({});
-        onSubmit(values);
+        onSubmit(cleanedValues);
       })}
       noValidate
       autoComplete="off"

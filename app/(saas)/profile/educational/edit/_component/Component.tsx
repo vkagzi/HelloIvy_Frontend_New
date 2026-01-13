@@ -23,6 +23,12 @@ const Component: React.FC<ComponentProps> = ({
   form,
   errors,
 }) => {
+  // Extract grade number from gradeLevel field (e.g., 'Grade 9' -> 9)
+  const gradeLevel = form.watch('gradeLevel') as string | undefined;
+  const selectedGrade = gradeLevel
+    ? parseInt(gradeLevel.replace('Grade ', ''), 10)
+    : 9;
+
   return (
     <div
       className="mt-4 mb-2 rounded-xl border border-neutral-200"
@@ -42,14 +48,14 @@ const Component: React.FC<ComponentProps> = ({
               errors={errors}
             />
           )}
-          {(section.type === 'middleSchool' ||
-            section.type === 'highSchool') && (
+          {section.type === 'highSchool' && (
             <SchoolBlock
               section={section}
               sectionType={section.type}
               fieldDefs={fieldDefs}
               form={form}
               errors={errors}
+              selectedGrade={selectedGrade}
             />
           )}
           {(section.type === 'undergraduate' ||

@@ -57,6 +57,8 @@ const DomainConversationPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [progressPercentage, setProgressPercentage] = useState(0);
+  const [questionsCompleted, setQuestionsCompleted] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -175,8 +177,10 @@ const DomainConversationPage: React.FC = () => {
         userMessage
       );
 
-      // Update step
+      // Update step and progress tracking
       setCurrentStep(response.current_step);
+      setProgressPercentage(response.progress_percentage);
+      setQuestionsCompleted(response.questions_completed);
 
       // Check if conversation is complete
       if (response.is_complete) {
@@ -415,7 +419,7 @@ const DomainConversationPage: React.FC = () => {
         {/* Header */}
         <div className="border-b bg-white px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <Heading
                 level={2}
                 className="text-xl font-semibold text-gray-900"
@@ -423,11 +427,27 @@ const DomainConversationPage: React.FC = () => {
                 🧭 Domain Discovery Journey
               </Heading>
               <Paragraph className="mt-1 text-sm text-gray-600">
-                {askedCount}/{TOTAL_QUESTIONS} questions asked • Phase:{' '}
+                Question {questionsCompleted}/{TOTAL_QUESTIONS} • Phase:{' '}
                 <span className="font-medium">
                   {phase === 'exploration' ? 'Interest Exploration' : 'Domain Mapping'}
                 </span>
               </Paragraph>
+              
+              {/* Progress Bar */}
+              <div className="mt-3 w-full">
+                <div className="mb-1 flex justify-between text-xs text-gray-500">
+                  <span>Progress</span>
+                  <span>{progressPercentage}%</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-2 rounded-full bg-linear-to-r from-teal-500 to-cyan-500 transition-all duration-300"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+              </div>
+
+
             </div>
             <button
               onClick={handleEnd}
@@ -437,13 +457,13 @@ const DomainConversationPage: React.FC = () => {
                   ? `Answer at least ${MIN_QUESTIONS_FOR_RECOMMENDATIONS} questions`
                   : 'End conversation and get results'
               }
-              className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
+              className={`ml-4 whitespace-nowrap rounded-lg px-4 py-2 text-white ${
                 canEndConversation
                   ? 'cursor-pointer bg-linear-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700'
                   : 'cursor-not-allowed bg-gray-400 opacity-60'
               }`}
             >
-              End →
+              View Results →
             </button>
           </div>
         </div>

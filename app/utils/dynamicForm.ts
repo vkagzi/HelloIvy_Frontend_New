@@ -380,7 +380,34 @@ export const generateSubSchema = (
     }
     shape[layout.repeatables.name] = arrSchema;
   }
-  const schema = z.object({ [layout.type]: z.array(z.object(shape)) });
+  
+  // Create the object schema for the layout type
+  let layoutObjectSchema: ZodType<{ [x: string]: unknown }> = z.object(shape);
+  
+  // Add year range validation for undergraduate/postgraduate sections
+  if (layout.type === 'undergraduate' || layout.type === 'postgraduate') {
+    layoutObjectSchema = (layoutObjectSchema as ZodObject<any>).refine(
+      (data) => {
+        const startYear = data.startYear;
+        const endYear = data.endYear;
+        
+        // If either is missing, skip validation (required field will catch it)
+        if (!startYear || !endYear) return true;
+        
+        const start = parseInt(String(startYear), 10);
+        const end = parseInt(String(endYear), 10);
+        
+        // Check if end year is not more than 10 years after start year
+        return end <= start + 10;
+      },
+      {
+        message: 'End Year cannot be more than 10 years after Start Year',
+        path: ['endYear'],
+      }
+    );
+  }
+  
+  const schema = z.object({ [layout.type]: z.array(layoutObjectSchema) });
   return {
     schema,
   };

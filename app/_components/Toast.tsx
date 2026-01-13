@@ -110,6 +110,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  const toastCounterRef = React.useRef(0);
 
   useEffect(() => {
     setIsMounted(true);
@@ -117,7 +118,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({
 
   const addToast = useCallback(
     (message: string, options?: Omit<ToastMessage, 'id' | 'message'>): void => {
-      const id = new Date().toISOString();
+      const id = `${new Date().toISOString()}-${++toastCounterRef.current}`;
       setToasts((prevToasts) => [...prevToasts, { id, message, ...options }]);
     },
     []

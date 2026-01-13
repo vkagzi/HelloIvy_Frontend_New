@@ -15,6 +15,7 @@ interface SchoolBlockProps {
   fieldDefs: FieldDefinition[];
   form: UseFormReturn<Record<string, unknown>>;
   errors: Record<string, string>;
+  selectedGrade?: number;
 }
 
 type SubjectRows = Record<string, unknown>[];
@@ -30,9 +31,20 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
   fieldDefs,
   form,
   errors,
+  selectedGrade = 9,
 }) => {
   const minSchools = 1;
   const minSubjects = section.repeatables?.repeatable_option?.min ?? 1;
+
+  // Helper to get ordinal suffix for numbers (1st, 2nd, 3rd, etc.)
+  const getOrdinalSuffix = (num: number): string => {
+    const j = num % 10;
+    const k = num % 100;
+    if (j === 1 && k !== 11) return num + 'st';
+    if (j === 2 && k !== 12) return num + 'nd';
+    if (j === 3 && k !== 13) return num + 'rd';
+    return num + 'th';
+  };
 
   // Helper to calculate grid template columns with field widths
   const getGridTemplateColumns = (fieldIds: string[]): string => {
@@ -44,16 +56,30 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
   };
 
   // Array of school blocks, each with a unique key and its own subject rows
-  const [schools, setSchools] = useState<SchoolInstance[]>(() =>
-    Array.from({ length: minSchools }, () => ({
-      key: nanoid(),
-      subjectRows: Array.from({ length: minSubjects }, () =>
-        Object.fromEntries(
-          (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
-        )
-      ),
-    }))
-  );
+  const [schools, setSchools] = useState<SchoolInstance[]>(() => {
+    // Check if there's existing school data in the form
+    const existingSchools = form.getValues(sectionType) as unknown[];
+    const existingCount = Array.isArray(existingSchools) ? existingSchools.length : 0;
+    const initialCount = Math.max(minSchools, existingCount);
+
+    return Array.from({ length: initialCount }, (_, idx) => {
+      const existingSubjects = Array.isArray(existingSchools) && existingSchools[idx]
+        ? (existingSchools[idx] as Record<string, unknown>)[section.repeatables?.name ?? 'subjects']
+        : null;
+      const subjectsCount = Array.isArray(existingSubjects)
+        ? existingSubjects.length
+        : minSubjects;
+
+      return {
+        key: nanoid(),
+        subjectRows: Array.from({ length: subjectsCount }, () =>
+          Object.fromEntries(
+            (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+          )
+        ),
+      };
+    });
+  });
 
   // Add a new school block
   const handleAddSchool = (): void => {
@@ -115,18 +141,27 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
   const columns = section.columns ?? 1;
   return (
     <div>
-      {schools.map((school, schoolIdx) => (
-        <div
-          key={school.key}
-          className="mb-6 flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
-        >
-          {/* School Heading and Remove Button */}
+      {schools.map((school, schoolIdx) => {
+        // Check if existing form data has grade information
+        const existingGrade = form.getValues(`${sectionType}.${schoolIdx}.grade`) as number | undefined;
+        const gradeForSchool = existingGrade ?? (selectedGrade - schoolIdx);
+        const gradeLabel = getOrdinalSuffix(gradeForSchool);
+        // Show "(Grade Not Specified)" if no existing grade data
+        const gradeLabelDisplay = existingGrade 
+          ? `${gradeLabel} Grade Basic Details` 
+          : `${gradeLabel} Grade Basic Details (Unsaved)`;
+        
+        return (
+          <div
+            key={school.key}
+            className="mb-6 flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
+          >
+            {/* School Heading and Remove Button */}
 
-          <div className="mb-5 flex items-center justify-between">
-            <Label size="lg" className="font-semibold text-neutral-900">
-              {schoolIdx + (sectionType === 'middleSchool' ? 5 : 9)}th Class
-              Basic Details
-            </Label>
+            <div className="mb-5 flex items-center justify-between">
+              <Label size="lg" className="font-semibold text-neutral-900">
+                {gradeLabelDisplay}
+              </Label>
             {schools.length > minSchools && (
               <Button
                 type="button"
@@ -138,6 +173,12 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
               />
             )}
           </div>
+          {/* Hidden field to store grade information */}
+          <input
+            type="hidden"
+            {...form.register(`${sectionType}.${schoolIdx}.grade`)}
+            value={gradeForSchool}
+          />
           <div
             className="grid gap-4"
             style={{
@@ -147,7 +188,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
             {section?.fields
               ?.filter(
                 (fieldId: string) =>
-                  fieldId !== 'redFlags' && fieldId !== 'gapYears'
+                  fieldId !== 'redFlags'
               )
               .map((fieldId: string) => {
                 const fieldDef = fieldDefs.find((def) => def.id === fieldId);
@@ -184,8 +225,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           />
           {/* Subjects Section */}
           <Label size="lg" className="font-semibold text-neutral-900">
-            {schoolIdx + (sectionType === 'middleSchool' ? 5 : 9)}th Class
-            Subject Details
+            {gradeLabelDisplay} Grade Subject Details
           </Label>
           <div
             className="mt-5 grid gap-4"
@@ -246,8 +286,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           </button>
           <hr className="mt-5 mb-10 border-t border-neutral-200" />
           <Label size="lg" className="font-semibold text-neutral-900">
-            {schoolIdx + (sectionType === 'middleSchool' ? 5 : 9)}th Class Other
-            Details
+            {gradeLabelDisplay} Grade Other Details
           </Label>
           <div
             className="mt-5 grid gap-4"
@@ -257,7 +296,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           >
             {section?.fields
               ?.filter((fieldId: string) =>
-                ['redFlags', 'gapYears'].includes(fieldId)
+                ['redFlags'].includes(fieldId)
               )
               .map((fieldId: string) => {
                 const fieldDef = fieldDefs.find((def) => def.id === fieldId);
@@ -289,8 +328,9 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
               })}
           </div>
         </div>
-      ))}
-      {schools.length < 4 && (
+      );
+      })}
+      {schools.length < 2 && (
         <button
           type="button"
           className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"

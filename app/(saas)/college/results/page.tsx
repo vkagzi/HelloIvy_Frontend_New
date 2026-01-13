@@ -249,11 +249,6 @@ const CollegeResultsPage: React.FC = () => {
       );
     }
 
-    // Gap years (affects application strategy)
-    if (educational.gapYears && educational.gapYears !== '0 Year') {
-      lines.push(`• Gap Years: ${educational.gapYears}`);
-    }
-
     // Awards and courses (additional strengths)
     if (educational.awards)
       lines.push(`• Academic Awards: ${educational.awards}`);

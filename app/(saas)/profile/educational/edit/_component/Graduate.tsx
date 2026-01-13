@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { Controller, UseFormReturn } from 'react-hook-form';
 import Button from '@/app/_components/Button';
@@ -9,7 +9,7 @@ import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
 
-interface SchoolBlockProps {
+interface GraduateBlockProps {
   section: LayoutItem;
   sectionType: string;
   fieldDefs: FieldDefinition[];
@@ -17,22 +17,23 @@ interface SchoolBlockProps {
   errors: Record<string, string>;
 }
 
-type SubjectRows = Record<string, unknown>[];
+type YearRow = Record<string, unknown>;
 
-interface SchoolInstance {
+interface DegreeInstance {
   key: string;
-  subjectRows: SubjectRows;
+  yearRows: YearRow[];
 }
 
-export const GraduateBlock: React.FC<SchoolBlockProps> = ({
+export const GraduateBlock: React.FC<GraduateBlockProps> = ({
   section,
   sectionType,
   fieldDefs,
   form,
   errors,
 }) => {
-  const minSchools = 1;
-  const minSubjects = section.repeatables?.repeatable_option?.min ?? 1;
+  const minDegrees = 1;
+  const minYears = section.repeatables?.repeatable_option?.min ?? 1;
+  const yearsFieldName = section.repeatables?.name ?? 'years';
 
   // Helper to calculate grid template columns with field widths
   const getGridTemplateColumns = (fieldIds: string[]): string => {
@@ -43,24 +44,63 @@ export const GraduateBlock: React.FC<SchoolBlockProps> = ({
     return widths.map((w) => `${w}fr`).join(' ');
   };
 
-  //   Array of school blocks, each with a unique key and its own subject rows
-  const [schools, setSchools] = useState<SchoolInstance[]>(() =>
-    Array.from({ length: minSchools }, () => ({
-      key: nanoid(),
-      subjectRows: Array.from({ length: minSubjects }, () =>
-        Object.fromEntries(
-          (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
-        )
-      ),
-    }))
-  );
+  // Helper to get ordinal suffix for numbers (1st, 2nd, 3rd, etc.)
+  const getOrdinalSuffix = (num: number): string => {
+    const j = num % 10;
+    const k = num % 100;
+    if (j === 1 && k !== 11) return num + 'st';
+    if (j === 2 && k !== 12) return num + 'nd';
+    if (j === 3 && k !== 13) return num + 'rd';
+    return num + 'th';
+  };
 
-  const handleAddSchool = (): void => {
-    setSchools((prev) => [
+  // Initialize degrees from existing form data
+  const [degrees, setDegrees] = useState<DegreeInstance[]>(() => {
+    // Check if there's existing degree data in the form
+    const existingDegrees = form.getValues(sectionType) as unknown[];
+    const existingCount = Array.isArray(existingDegrees) ? existingDegrees.length : 0;
+    const initialCount = Math.max(minDegrees, existingCount);
+
+    return Array.from({ length: initialCount }, (_, idx) => {
+      const existingYears = Array.isArray(existingDegrees) && existingDegrees[idx]
+        ? (existingDegrees[idx] as Record<string, unknown>)[yearsFieldName]
+        : null;
+      const yearsCount = Array.isArray(existingYears)
+        ? existingYears.length
+        : Math.max(minYears, 1);
+
+      return {
+        key: nanoid(),
+        yearRows: Array.from({ length: yearsCount }, () =>
+          Object.fromEntries(
+            (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+          )
+        ),
+      };
+    });
+  });
+
+  // Set year values in form when degrees/years change
+  useEffect(() => {
+    degrees.forEach((degree, degreeIdx) => {
+      degree.yearRows.forEach((_, yearIdx) => {
+        const yearFieldPath = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year`;
+        const currentValue = form.getValues(yearFieldPath);
+        // Only set if not already set or different
+        if (currentValue !== yearIdx + 1) {
+          form.setValue(yearFieldPath, yearIdx + 1);
+        }
+      });
+    });
+  }, [degrees, form, sectionType, yearsFieldName]);
+
+  // Add a new degree block
+  const handleAddDegree = (): void => {
+    setDegrees((prev) => [
       ...prev,
       {
         key: nanoid(),
-        subjectRows: Array.from({ length: minSubjects }, () =>
+        yearRows: Array.from({ length: Math.max(minYears, 1) }, () =>
           Object.fromEntries(
             (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
           )
@@ -68,15 +108,38 @@ export const GraduateBlock: React.FC<SchoolBlockProps> = ({
       },
     ]);
   };
-  //   // Add a new school block
-  const handleAddSubjectRow = (schoolIdx: number): void => {
-    setSchools((prev) =>
-      prev.map((school, idx) =>
-        idx === schoolIdx
+
+  // Remove a degree block by key
+  const handleRemoveDegree = (key: string, degreeIdx: number): void => {
+    if (degrees.length <= minDegrees) return;
+    
+    // Clear form values for this degree
+    const degreeFields = section.fields ?? [];
+    degreeFields.forEach((fieldId: string) => {
+      form.setValue(`${sectionType}.${degreeIdx}.${fieldId}`, undefined);
+    });
+    
+    // Clear year values for this degree
+    const currentYears = degrees.find((d) => d.key === key)?.yearRows ?? [];
+    currentYears.forEach((_, yearIdx) => {
+      (section.repeatables?.fields ?? []).forEach((fieldId: string) => {
+        form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}`, undefined);
+      });
+      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year`, undefined);
+    });
+    
+    setDegrees((prev) => prev.filter((degree) => degree.key !== key));
+  };
+
+  // Add a year row to a specific degree
+  const handleAddYear = (degreeIdx: number): void => {
+    setDegrees((prev) =>
+      prev.map((degree, idx) =>
+        idx === degreeIdx
           ? {
-              ...school,
-              subjectRows: [
-                ...school.subjectRows,
+              ...degree,
+              yearRows: [
+                ...degree.yearRows,
                 Object.fromEntries(
                   (section.repeatables?.fields ?? []).map((fid: string) => [
                     fid,
@@ -85,53 +148,61 @@ export const GraduateBlock: React.FC<SchoolBlockProps> = ({
                 ),
               ],
             }
-          : school
+          : degree
       )
     );
   };
 
-  // Remove a subject row from a specific school
-  const handleRemoveSubjectRow = (schoolIdx: number, rowIdx: number): void => {
-    setSchools((prev) =>
-      prev.map((school, idx) =>
-        idx === schoolIdx
+  // Remove a year row from a specific degree
+  const handleRemoveYear = (degreeIdx: number, yearIdx: number): void => {
+    const degree = degrees[degreeIdx];
+    if (!degree || degree.yearRows.length <= minYears) return;
+    
+    // Clear form values for this year
+    (section.repeatables?.fields ?? []).forEach((fieldId: string) => {
+      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}`, undefined);
+    });
+    form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year`, undefined);
+    
+    setDegrees((prev) =>
+      prev.map((deg, idx) =>
+        idx === degreeIdx
           ? {
-              ...school,
-              subjectRows: school.subjectRows.filter((_, i) => i !== rowIdx),
+              ...deg,
+              yearRows: deg.yearRows.filter((_, i) => i !== yearIdx),
             }
-          : school
+          : deg
       )
     );
-  };
-
-  const handleRemoveSchool = (key: string): void => {
-    if (schools.length <= minSchools) return;
-    setSchools((prev) => prev.filter((school) => school.key !== key));
   };
 
   const columns = section.columns ?? 1;
+
   return (
     <div className="flex flex-col gap-7">
-      {schools.map((school, schoolIdx) => (
+      {degrees.map((degree, degreeIdx) => (
         <div
-          key={school.key}
+          key={degree.key}
           className="flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
         >
+          {/* Degree Header */}
           <div className="mb-5 flex items-center justify-between">
             <Label size="lg" className="font-semibold text-neutral-900">
-              Year {schoolIdx + 1} Basic Details
+              Degree {degreeIdx + 1} - Basic Details
             </Label>
-            {schools.length > minSchools && (
+            {degrees.length > minDegrees && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                label="Remove"
+                label="Remove Degree"
                 className="text-blue-500"
-                onClick={() => handleRemoveSchool(school.key)}
+                onClick={() => handleRemoveDegree(degree.key, degreeIdx)}
               />
             )}
           </div>
+
+          {/* Degree Fields */}
           <div
             className="grid gap-4"
             style={{
@@ -139,13 +210,11 @@ export const GraduateBlock: React.FC<SchoolBlockProps> = ({
             }}
           >
             {section?.fields
-              ?.filter(
-                (fieldId: string) => !['redFlags', 'gapYears'].includes(fieldId)
-              )
+              ?.filter((fieldId: string) => !['redFlags'].includes(fieldId))
               .map((fieldId: string) => {
                 const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                 if (!fieldDef) return null;
-                const controllerName = `${sectionType}.${schoolIdx}.${fieldDef.id}`;
+                const controllerName = `${sectionType}.${degreeIdx}.${fieldDef.id}`;
                 const repeatableField: FieldDefinition = {
                   ...fieldDef,
                   id: controllerName,
@@ -171,25 +240,34 @@ export const GraduateBlock: React.FC<SchoolBlockProps> = ({
                 );
               })}
           </div>
-          <hr
-            className="my-10 border-t border-neutral-200"
-            aria-hidden="true"
-          />
+
+          <hr className="my-10 border-t border-neutral-200" aria-hidden="true" />
+
+          {/* Year Score Details */}
           <Label size="lg" className="font-semibold text-neutral-900">
-            Year {schoolIdx + 1} Score Details
+            Degree {degreeIdx + 1} - Year-wise Score Details
           </Label>
+          
           <div
-            className="grid gap-4"
+            className="mt-5 grid gap-4"
             style={{
-              gridTemplateColumns: `${getGridTemplateColumns(section.repeatables?.fields ?? [])} 100px`,
+              gridTemplateColumns: `auto ${getGridTemplateColumns(section.repeatables?.fields ?? [])} 100px`,
             }}
           >
-            {school.subjectRows.map((row, rowIdx) => (
-              <React.Fragment key={rowIdx}>
+            {degree.yearRows.map((_, yearIdx) => (
+              <React.Fragment key={yearIdx}>
+                {/* Year label */}
+                <div className="flex items-center">
+                  <Label size="md" className="font-medium text-neutral-700">
+                    {getOrdinalSuffix(yearIdx + 1)} Year
+                  </Label>
+                </div>
+                
+                {/* Year fields */}
                 {section.repeatables?.fields.map((fieldId: string) => {
                   const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                   if (!fieldDef) return null;
-                  const controllerName = `${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.${fieldDef.id}`;
+                  const controllerName = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldDef.id}`;
                   const repeatableField: FieldDefinition = {
                     ...fieldDef,
                     id: controllerName,
@@ -214,6 +292,8 @@ export const GraduateBlock: React.FC<SchoolBlockProps> = ({
                     </div>
                   );
                 })}
+                
+                {/* Remove year button */}
                 <div className="flex items-center justify-end">
                   <Button
                     variant="ghost"
@@ -221,29 +301,27 @@ export const GraduateBlock: React.FC<SchoolBlockProps> = ({
                     type="button"
                     label="Remove"
                     className="text-blue-500"
-                    onClick={() => handleRemoveSubjectRow(schoolIdx, rowIdx)}
-                    disabled={
-                      school.subjectRows.length <=
-                      (section.repeatables?.repeatable_option?.min ?? 1)
-                    }
+                    onClick={() => handleRemoveYear(degreeIdx, yearIdx)}
+                    disabled={degree.yearRows.length <= minYears}
                   />
                 </div>
               </React.Fragment>
             ))}
           </div>
+
           <button
             type="button"
             className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"
-            onClick={() => handleAddSubjectRow(schoolIdx)}
+            onClick={() => handleAddYear(degreeIdx)}
           >
-            {section.repeatables?.repeatable_option?.add ?? '+ Add Year'}
+            + Add Year
           </button>
-          <hr
-            className="mt-5 mb-10 border-t border-neutral-200"
-            aria-hidden="true"
-          />
+
+          <hr className="mt-5 mb-10 border-t border-neutral-200" aria-hidden="true" />
+
+          {/* Other Details (redFlags) */}
           <Label size="lg" className="font-semibold text-neutral-900">
-            Year {schoolIdx + 1} Other Details
+            Degree {degreeIdx + 1} - Other Details
           </Label>
           <div
             className="mt-5 grid gap-4"
@@ -252,13 +330,11 @@ export const GraduateBlock: React.FC<SchoolBlockProps> = ({
             }}
           >
             {section?.fields
-              ?.filter((fieldId: string) =>
-                ['redFlags', 'gapYears'].includes(fieldId)
-              )
+              ?.filter((fieldId: string) => ['redFlags'].includes(fieldId))
               .map((fieldId: string) => {
                 const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                 if (!fieldDef) return null;
-                const controllerName = `${sectionType}.${schoolIdx}.${fieldDef.id}`;
+                const controllerName = `${sectionType}.${degreeIdx}.${fieldDef.id}`;
                 const repeatableField: FieldDefinition = {
                   ...fieldDef,
                   id: controllerName,
@@ -286,12 +362,13 @@ export const GraduateBlock: React.FC<SchoolBlockProps> = ({
           </div>
         </div>
       ))}
+
       <button
         type="button"
         className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"
-        onClick={() => handleAddSchool()}
+        onClick={() => handleAddDegree()}
       >
-        {'+ Add Degree'}
+        + Add Degree
       </button>
     </div>
   );

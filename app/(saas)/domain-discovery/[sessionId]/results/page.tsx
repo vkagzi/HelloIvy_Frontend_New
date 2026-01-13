@@ -9,6 +9,10 @@ import { Button } from '@/components/ui/button';
 import {
   domainDiscoveryApi,
   DomainRecommendation,
+  ResultsSummary,
+  RIASECScores,
+  TranscriptData,
+  TranscriptMessage,
 } from '@/lib/domain-discovery-api';
 
 type Role = 'bot' | 'user';
@@ -31,15 +35,20 @@ const DomainResultsPage: React.FC = () => {
 
   const [recommendations, setRecommendations] = useState<DomainRecommendation[]>([]);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
+  const [riasecScores, setRiasecScores] = useState<RIASECScores | null>(null);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [strengths, setStrengths] = useState<string[]>([]);
+  const [transcript, setTranscript] = useState<TranscriptData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+  const [isDownloadingTranscript, setIsDownloadingTranscript] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('results');
 
-  // Load recommendations on mount
+  // Load results on mount
   useEffect(() => {
     if (sessionId) {
-      loadRecommendations();
+      loadResults();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
@@ -52,7 +61,7 @@ const DomainResultsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, sessionId]);
 
-  async function loadRecommendations() {
+  async function loadResults() {
     try {
       setIsLoading(true);
       setError(null);
@@ -64,30 +73,19 @@ const DomainResultsPage: React.FC = () => {
         return;
       }
 
-      // First try to get existing recommendations
-      try {
-        const existingRecs = await domainDiscoveryApi.getRecommendations(sessionId);
-        if (existingRecs.recommendations && existingRecs.recommendations.length > 0) {
-          setRecommendations(existingRecs.recommendations);
-          setIsLoading(false);
-          return;
-        }
-      } catch (e) {
-        console.log('No existing recommendations, generating new ones...');
-      }
+      // Fetch comprehensive results from new endpoint
+      const results: ResultsSummary = await domainDiscoveryApi.getResultsSummary(sessionId);
 
-      // Generate new recommendations via backend
-      const result = await domainDiscoveryApi.generateRecommendations(sessionId);
-
-      if (result.recommendations && result.recommendations.length > 0) {
-        setRecommendations(result.recommendations);
-      } else {
-        setError('No domain recommendations were generated. Please try again.');
-      }
+      setRecommendations([...results.primary_domains, ...results.secondary_domains]);
+      setRiasecScores(results.riasec_scores);
+      setInterests(results.interests_identified);
+      setStrengths(results.strengths_identified);
+      
+      addToast('Results loaded successfully!', { type: 'success' });
     } catch (e) {
-      console.error('Failed to load recommendations:', e);
-      setError('Failed to load domain recommendations. Please try again.');
-      addToast('Failed to load domain recommendations', { type: 'error' });
+      console.error('Failed to load results:', e);
+      setError('Failed to load results. Please try again.');
+      addToast('Failed to load results', { type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -98,13 +96,40 @@ const DomainResultsPage: React.FC = () => {
     
     try {
       setIsLoadingHistory(true);
-      const historyResponse = await domainDiscoveryApi.getMessages(sessionId);
-      setConversationHistory(historyResponse.messages);
+      const transcriptData: TranscriptData = await domainDiscoveryApi.getTranscript(sessionId);
+      setTranscript(transcriptData);
+      addToast('Transcript loaded!', { type: 'success' });
     } catch (e) {
-      console.error('Failed to load conversation history:', e);
-      addToast('Failed to load conversation history', { type: 'error' });
+      console.error('Failed to load transcript:', e);
+      addToast('Failed to load transcript', { type: 'error' });
     } finally {
       setIsLoadingHistory(false);
+    }
+  }
+
+  async function downloadTranscriptFile() {
+    if (!sessionId) return;
+
+    try {
+      setIsDownloadingTranscript(true);
+      const blob = await domainDiscoveryApi.downloadTranscript(sessionId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Domain_Discovery_Transcript.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      addToast('Transcript downloaded!', { type: 'success' });
+    } catch (e) {
+      console.error('Failed to download transcript:', e);
+      addToast('Failed to download transcript', { type: 'error' });
+    } finally {
+      setIsDownloadingTranscript(false);
     }
   }
 
@@ -251,6 +276,81 @@ const DomainResultsPage: React.FC = () => {
         {/* Tab Content */}
         {activeTab === 'results' ? (
           <>
+            {/* RIASEC Profile Chart */}
+            {riasecScores && (
+              <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white p-8 shadow-lg">
+                <h2 className="mb-6 text-2xl font-bold text-gray-900">
+                  📊 Your RIASEC Profile
+                </h2>
+                <div className="grid gap-4 md:grid-cols-3">
+                  {Object.entries(riasecScores).map(([dimension, score]) => (
+                    <div key={dimension}>
+                      <div className="mb-2 flex justify-between">
+                        <span className="font-semibold capitalize text-gray-700">
+                          {dimension}
+                        </span>
+                        <span className="text-sm font-bold text-teal-600">
+                          {score}
+                        </span>
+                      </div>
+                      <div className="h-3 rounded-full bg-gray-200">
+                        <div
+                          className="h-3 rounded-full bg-linear-to-r from-teal-500 to-cyan-500 transition-all"
+                          style={{ width: `${(score / 100) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-sm text-gray-600">
+                  Your RIASEC scores show how aligned you are with different work
+                  environments and activities.
+                </p>
+              </div>
+            )}
+
+            {/* Interests & Strengths */}
+            {(interests.length > 0 || strengths.length > 0) && (
+              <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white p-6 shadow-lg">
+                <div className="grid gap-6 md:grid-cols-2">
+                  {interests.length > 0 && (
+                    <div>
+                      <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                        💡 Your Interests
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {interests.map((interest, idx) => (
+                          <span
+                            key={idx}
+                            className="rounded-full bg-teal-100 px-4 py-1 text-sm text-teal-700"
+                          >
+                            {interest}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {strengths.length > 0 && (
+                    <div>
+                      <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                        💪 Your Strengths
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {strengths.map((strength, idx) => (
+                          <span
+                            key={idx}
+                            className="rounded-full bg-cyan-100 px-4 py-1 text-sm text-cyan-700"
+                          >
+                            {strength}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Summary Stats */}
             <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white p-6 shadow-lg">
               <div className="grid gap-6 text-center md:grid-cols-3">
@@ -459,56 +559,65 @@ const DomainResultsPage: React.FC = () => {
                   Loading conversation history...
                 </span>
               </div>
-            ) : conversationHistory.length === 0 ? (
-              <div className="rounded-lg bg-white p-8 text-center shadow-lg">
-                <p className="text-gray-600">No conversation history found.</p>
-              </div>
-            ) : (
+            ) : transcript && transcript.messages.length > 0 ? (
               <div className="space-y-4 rounded-lg bg-white p-6 shadow-lg">
-                <Heading level={3} className="mb-6 text-lg font-semibold text-gray-900">
-                  Full Conversation Transcript
-                </Heading>
-                <div className="space-y-4">
-                  {conversationHistory.map((message) => (
-                    <div
-                      key={message.message_id}
-                      className={`flex ${
-                        message.type === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      <div
-                        className={`max-w-3xl ${
-                          message.type === 'user' ? 'text-right' : 'text-left'
-                        }`}
-                      >
-                        <div className="mb-1 text-xs text-gray-500">
-                          {message.type === 'user' ? 'You' : 'Domain Coach'} •{' '}
-                          {new Date(message.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                <div className="mb-6 flex items-center justify-between">
+                  <Heading level={3} className="text-lg font-semibold text-gray-900">
+                    Full Conversation Transcript
+                  </Heading>
+                  <Button
+                    onClick={downloadTranscriptFile}
+                    disabled={isDownloadingTranscript}
+                    className="bg-linear-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                  >
+                    {isDownloadingTranscript ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        📄 Download Transcript
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <div className="space-y-6">
+                  {transcript.messages.map((message) => (
+                    <div key={message.question_number} className="border-l-4 border-teal-500 bg-gray-50 p-4">
+                      <div className="mb-4">
+                        <div className="mb-2 flex items-center">
+                          <span className="inline-block rounded-full bg-teal-600 px-3 py-1 text-xs font-semibold text-white">
+                            Q{message.question_number}
+                          </span>
+                          <span className="ml-3 text-xs text-gray-500">
+                            {message.phase === 'exploration' ? '🔍 Exploration' : '📍 Domain Mapping'}
+                          </span>
+                          {message.timestamp && (
+                            <span className="ml-auto text-xs text-gray-500">
+                              {new Date(message.timestamp).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          )}
                         </div>
-                        <div
-                          className={`rounded-lg px-4 py-3 ${
-                            message.type === 'user'
-                              ? 'bg-linear-to-r from-teal-500 to-cyan-500 text-white'
-                              : 'border border-gray-200 bg-gray-50 text-gray-900'
-                          }`}
-                        >
-                          <Paragraph
-                            className={
-                              message.type === 'user'
-                                ? 'text-white'
-                                : 'text-gray-900'
-                            }
-                          >
-                            {message.content}
-                          </Paragraph>
+                        <div className="mb-3">
+                          <p className="text-sm font-semibold text-gray-900">Domain Coach:</p>
+                          <p className="mt-1 text-gray-700">{message.bot_question}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">You:</p>
+                          <p className="mt-1 text-gray-700">{message.student_response}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+              </div>
+            ) : (
+              <div className="rounded-lg bg-white p-8 text-center shadow-lg">
+                <p className="text-gray-600">No conversation history found.</p>
               </div>
             )}
           </div>

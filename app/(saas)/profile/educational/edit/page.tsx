@@ -11,6 +11,7 @@ import { SubmitHandler } from 'react-hook-form';
 import api from '@/lib/api';
 import { parseFormLocationData } from '@/lib/utils/location-parser';
 import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
+import { transformEducationalData } from '@/lib/utils/educational-data-transformer';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import {
   educationalFieldDefs as fieldDefss,
@@ -45,8 +46,7 @@ const EducationalDetailsForm: React.FC = () => {
   ];
 
   const SCHOOL_LEVELS = [
-    'High School (9th–12th grade)',
-    'Middle School (7th–8th grade)',
+    'High School (7th–12th grade)',
   ];
 
   // Helper to get options based on academic level selected in the form
@@ -100,6 +100,9 @@ const EducationalDetailsForm: React.FC = () => {
     try {
       // Parse formatted city strings to extract city, state, country
       const parsedData = parseFormLocationData(_data);
+      
+      // Transform educational data to proper structure with year identifiers
+      const transformedData = transformEducationalData(parsedData);
 
       // Fetch latest profile data to ensure we have the most recent data
       const latestData = await getProfileData();
@@ -118,7 +121,7 @@ const EducationalDetailsForm: React.FC = () => {
         method: 'POST',
         body: {
           profile: {
-            educational: parsedData,
+            educational: transformedData,
             personalDetails: personalDetails,
             professional: professional,
             additional: additional,

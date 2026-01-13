@@ -15,6 +15,57 @@ import {
 } from '@/app/_constants/locations';
 
 // =============================================================================
+// DEGREE PROGRAMS - CONSTANTS
+// =============================================================================
+
+export const UNDERGRADUATE_DEGREE_PROGRAMS = [
+  'B.Tech (Bachelor of Technology)',
+  'B.E. (Bachelor of Engineering)',
+  'B.Pharm (Bachelor of Pharmacy)',
+  'B.Sc (Bachelor of Science)',
+  'B.A. (Bachelor of Arts)',
+  'B.Com (Bachelor of Commerce)',
+  'B.B.A. (Bachelor of Business Administration)',
+  'B.Des (Bachelor of Design)',
+  'B.Arch (Bachelor of Architecture)',
+  'B.F.A. (Bachelor of Fine Arts)',
+  'B.V.Sc (Bachelor of Veterinary Science)',
+  'B.Ed (Bachelor of Education)',
+  'B.L.L.B. (Bachelor of Laws)',
+  'B.P.T. (Bachelor of Physiotherapy)',
+  'B.M.B.B.S. (Bachelor of Medicine & Surgery)',
+  'B.D.S. (Bachelor of Dental Surgery)',
+  'B.N. (Bachelor of Nursing)',
+  'B.J. (Bachelor of Journalism)',
+  'B.C.A. (Bachelor of Computer Applications)',
+  'Other',
+];
+
+export const POSTGRADUATE_DEGREE_PROGRAMS = [
+  'M.Tech (Master of Technology)',
+  'M.E. (Master of Engineering)',
+  'M.Pharm (Master of Pharmacy)',
+  'M.Sc (Master of Science)',
+  'M.A. (Master of Arts)',
+  'M.Com (Master of Commerce)',
+  'M.B.A. (Master of Business Administration)',
+  'M.Des (Master of Design)',
+  'M.Arch (Master of Architecture)',
+  'M.F.A. (Master of Fine Arts)',
+  'M.Ed (Master of Education)',
+  'M.L.L.B. (Master of Laws)',
+  'M.P.T. (Master of Physiotherapy)',
+  'M.D. (Doctor of Medicine)',
+  'M.D.S. (Master of Dental Surgery)',
+  'M.C.A. (Master of Computer Applications)',
+  'M.S.W. (Master of Social Work)',
+  'LL.M. (Master of Laws)',
+  'M.B.B.S. (Master of Medicine & Surgery)',
+  'Ph.D. (Doctor of Philosophy)',
+  'Other',
+];
+
+// =============================================================================
 // LAYOUT BLOCK TYPE
 // =============================================================================
 
@@ -466,8 +517,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     label: 'Currently I am in ',
     placeholder: 'Select academic level',
     options: [
-      'Middle School (7th–8th grade)',
-      'High School (9th–12th grade)',
+      'High School (7th–12th grade)',
       'College/Undergraduate',
       'Postgraduate',
       'Working/Completed College',
@@ -476,11 +526,43 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'gradeLevel',
-    type: 'number',
+    type: 'select',
     label: 'Which grade/year are you in?',
-    placeholder: 'Enter grade number',
+    placeholder: 'Select grade/year',
     required: false,
-    validation: { regex: Regexvalidations.justNumberWithBlank },
+    optionsDependsOn: {
+      fieldId: 'academicLevel',
+      map: {
+        'High School (7th–12th grade)': [
+          'Grade 7',
+          'Grade 8',
+          'Grade 9',
+          'Grade 10',
+          'Grade 11',
+          'Grade 12',
+        ],
+        'College/Undergraduate': [
+          'Year 1',
+          'Year 2',
+          'Year 3',
+          'Year 4',
+          'Year 5',
+        ],
+        'Postgraduate': [
+          'Year 1',
+          'Year 2',
+          'Year 3',
+          'Year 4',
+          'Year 5',
+        ],
+      },
+    },
+    visibility: {
+      depends_on: {
+        field_id: 'academicLevel',
+        value: ['High School (7th–12th grade)', 'College/Undergraduate', 'Postgraduate'],
+      },
+    },
   },
   {
     id: 'schoolName',
@@ -501,7 +583,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'Year of Completion',
     placeholder: 'Enter year of completion',
-    options: ['2000', '2001', '2003', '2004'],
+    // make options dynamic from last 10 years to next 10 years
+    options: Array.from({ length: 31 }, (_, i) => {
+      const year = new Date().getFullYear() - 20 + i;
+      return year.toString();
+    }),
     required: true,
   },
   {
@@ -579,27 +665,6 @@ export const educationalFieldDefs: FieldDefinition[] = [
     required: false,
   },
   {
-    id: 'gapYears',
-    type: 'select',
-    options: [
-      'Select gap years',
-      '0 Year',
-      '1 Year',
-      '2 Years',
-      '3 Years',
-      '4 Years',
-      '5 Years',
-      '6 Years',
-      '7 Years',
-      '8 Years',
-      '9 Years',
-      '10+ Years',
-    ],
-    label: 'Gap Years (if any)',
-    placeholder: 'Enter gap years',
-    required: false,
-  },
-  {
     id: 'institutionName',
     type: 'text',
     label: 'Institution Name',
@@ -608,18 +673,25 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'degree',
-    type: 'select',
+    type: 'select_autofill',
     label: 'Degree',
     placeholder: 'Select degree',
-    options: [
-      'Associate',
-      'Bachelor',
-      'Master',
-      'Doctorate',
-      'Professional',
-      'Certificate',
-      'Diploma',
-    ],
+    optionsDependsOn: {
+      fieldId: 'academicLevel',
+      map: {
+        'College/Undergraduate': UNDERGRADUATE_DEGREE_PROGRAMS,
+        'Postgraduate': POSTGRADUATE_DEGREE_PROGRAMS,
+      },
+      default: [
+        'Associate',
+        'Bachelor',
+        'Master',
+        'Doctorate',
+        'Professional',
+        'Certificate',
+        'Diploma',
+      ],
+    },
     required: true,
   },
   {
@@ -638,10 +710,25 @@ export const educationalFieldDefs: FieldDefinition[] = [
   //   required: true,
   // },
   {
-    id: 'startToEndYear',
-    type: 'text',
-    label: 'Start to End Year',
-    placeholder: 'Enter start to end year',
+    id: 'startYear',
+    type: 'select_autofill',
+    label: 'Start Year',
+    placeholder: 'Select start year',
+    options: Array.from({ length: 31 }, (_, i) => {
+      const year = new Date().getFullYear() - 20 + i;
+      return year.toString();
+    }),
+    required: true,
+  },
+  {
+    id: 'endYear',
+    type: 'select_autofill',
+    label: 'End Year',
+    placeholder: 'Select end year',
+    options: Array.from({ length: 31 }, (_, i) => {
+      const year = new Date().getFullYear() - 20 + i;
+      return year.toString();
+    }),
     required: true,
   },
   {
@@ -1127,37 +1214,6 @@ export const educationalLayout: LayoutBlock[] = [
     columns: 3,
   },
   {
-    type: 'middleSchool',
-    fields: [
-      'schoolName',
-      'city',
-      'yearOfCompletion',
-      'board',
-      'typeOfScore',
-      'yourTotalScore',
-      'highestTotalScore',
-      'redFlags',
-      'gapYears',
-    ],
-    columns: 3,
-    visibility: {
-      depends_on: {
-        field_id: 'academicLevel',
-        value: ['Middle School (7th–8th grade)'],
-      },
-    },
-    repeatables: {
-      fields: ['subject', 'yourTotalScore', 'highestTotalScore'],
-      name: 'subjects',
-      repeatable: true,
-      repeatable_option: {
-        add: '+ Add Subject',
-        show_default: 3,
-        min: 3,
-      },
-    },
-  },
-  {
     type: 'highSchool',
     fields: [
       'schoolName',
@@ -1168,13 +1224,12 @@ export const educationalLayout: LayoutBlock[] = [
       'yourTotalScore',
       'highestTotalScore',
       'redFlags',
-      'gapYears',
     ],
     columns: 3,
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['High School (9th–12th grade)'],
+        value: ['High School (7th–12th grade)'],
       },
     },
     repeatables: {
@@ -1195,11 +1250,11 @@ export const educationalLayout: LayoutBlock[] = [
       'degree',
       'major',
       'durationOfDegree',
-      'startToEndYear',
+      'startYear',
+      'endYear',
       'overallPercentage',
       'estimatedRank',
       'redFlags',
-      'gapYears',
     ],
     columns: 3,
     visibility: {
@@ -1225,11 +1280,11 @@ export const educationalLayout: LayoutBlock[] = [
       'institutionName',
       'degree',
       'major',
-      'startToEndYear',
+      'startYear',
+      'endYear',
       'overallPercentage',
       'estimatedRank',
       'redFlags',
-      'gapYears',
     ],
     columns: 3,
     visibility: {
@@ -1863,11 +1918,8 @@ export const getExtracurricularTitle = (
   ) {
     return 'Extracurriculars during School/Highschool, UG/PG, Work/Internship/Startup Experience';
   }
-  if (levels.includes('High School (9th–12th grade)')) {
+  if (levels.includes('High School (7th–12th grade)')) {
     return 'Extracurriculars during School/Highschool';
-  }
-  if (levels.includes('Middle School (7th–8th grade)')) {
-    return 'Extracurriculars during Middle School';
   }
   return 'Extra Curricular Activities';
 };
