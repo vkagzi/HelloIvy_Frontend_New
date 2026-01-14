@@ -372,17 +372,32 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             ))}
 
             {/* Add Course Button */}
-            <button
-              type="button"
-              className="text-label-sm cursor-pointer self-start font-medium text-blue-500"
-              onClick={() => handleAddRepeatable(item.name!, item.fields ?? [])}
-              disabled={
+            {(() => {
+              const isMaxReached =
                 item.repeatable_option?.max !== undefined &&
-                (repeatArr?.length ?? 0) >= item.repeatable_option.max
-              }
-            >
-              {item.repeatable_option?.add ?? '+ Add Course'}
-            </button>
+                (repeatArr?.length ?? 0) >= item.repeatable_option.max;
+              return (
+                <button
+                  type="button"
+                  className={`text-label-sm self-start font-medium ${
+                    isMaxReached
+                      ? 'cursor-not-allowed text-neutral-400'
+                      : 'cursor-pointer text-blue-500'
+                  }`}
+                  onClick={() =>
+                    handleAddRepeatable(item.name!, item.fields ?? [])
+                  }
+                  disabled={isMaxReached}
+                  title={
+                    isMaxReached
+                      ? `Maximum ${item.repeatable_option?.max} courses allowed`
+                      : undefined
+                  }
+                >
+                  {item.repeatable_option?.add ?? '+ Add Course'}
+                </button>
+              );
+            })()}
           </div>
         );
       }
@@ -459,6 +474,108 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             ))}
 
             {/* Add Awards Button */}
+            {(() => {
+              const isMaxReached =
+                item.repeatable_option?.max !== undefined &&
+                (repeatArr?.length ?? 0) >= item.repeatable_option.max;
+              return (
+                <button
+                  type="button"
+                  className={`text-label-sm self-start font-medium ${
+                    isMaxReached
+                      ? 'cursor-not-allowed text-neutral-400'
+                      : 'cursor-pointer text-blue-500'
+                  }`}
+                  onClick={() =>
+                    handleAddRepeatable(item.name!, item.fields ?? [])
+                  }
+                  disabled={isMaxReached}
+                  title={
+                    isMaxReached
+                      ? `Maximum ${item.repeatable_option?.max} awards allowed`
+                      : undefined
+                  }
+                >
+                  {item.repeatable_option?.add ?? '+ Add Awards & Scholarships'}
+                </button>
+              );
+            })()}
+          </div>
+        );
+      }
+
+      // Special rendering for experiences - display in boxes with numbered headings
+      if (item.name === 'experiences') {
+        return (
+          <div key={item.name} className="mt-5 flex flex-col gap-6">
+            {(repeatArr ?? []).map((row, rIdx) => (
+              <div
+                key={rIdx}
+                className="flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
+              >
+                {/* Experience Heading and Remove Button */}
+                <div className="mb-5 flex items-center justify-between">
+                  <h3 className="text-label-lg font-semibold text-neutral-900">
+                    Experience {rIdx + 1}
+                  </h3>
+                  {!disableRemove && (
+                    <button
+                      type="button"
+                      className="text-label-sm cursor-pointer font-medium text-blue-500 transition-colors hover:text-blue-700"
+                      onClick={() => handleRemoveRepeatable(item.name!, rIdx)}
+                      disabled={disableRemove}
+                      aria-label="Remove Experience"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {/* Experience Fields Grid */}
+                <div
+                  className={`grid gap-4 ${getGridColsClass(repeatableColumns)}`}
+                >
+                  {item.fields?.map((fid) => {
+                    const field = fieldDefs.find((f) => f.id === fid);
+                    if (!field || !isFieldVisible(field, formValues))
+                      return null;
+                    const errorKey = `${item.name}.${rIdx}.${fid}`;
+                    const repeatableField: FieldDefinition = {
+                      ...field,
+                      id: `${item.name}.${rIdx}.${fid}`,
+                    };
+                    const widthClass = getFieldWidthClass(field);
+                    return (
+                      <div
+                        key={`${item.name}.${rIdx}.${fid}`}
+                        className={widthClass}
+                      >
+                        <Controller
+                          name={`${item.name}.${rIdx}.${fid}` as never}
+                          control={form.control}
+                          defaultValue={
+                            (form.getValues(`${item.name}.${rIdx}.${fid}`) ??
+                              '') as never
+                          }
+                          render={() => (
+                            <FieldRenderer
+                              field={repeatableField}
+                              form={form}
+                              error={errors[errorKey]}
+                              inputHeightClass="py-2"
+                              labelHeightClass="text-label-md"
+                              inputWidthClass="w-full"
+                            />
+                          )}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Add Experience Button */}
             <button
               type="button"
               className="text-label-sm cursor-pointer self-start font-medium text-blue-500"
@@ -468,8 +585,110 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 (repeatArr?.length ?? 0) >= item.repeatable_option.max
               }
             >
-              {item.repeatable_option?.add ?? '+ Add Awards & Scholarships'}
+              {item.repeatable_option?.add ?? '+ Add Experience'}
             </button>
+          </div>
+        );
+      }
+
+      // Special rendering for extraCurricular - display in boxes with numbered headings
+      if (item.name === 'extraCurricular') {
+        return (
+          <div key={item.name} className="mt-5 flex flex-col gap-6">
+            {(repeatArr ?? []).map((row, rIdx) => (
+              <div
+                key={rIdx}
+                className="flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
+              >
+                {/* Activity Heading and Remove Button */}
+                <div className="mb-5 flex items-center justify-between">
+                  <h3 className="text-label-lg font-semibold text-neutral-900">
+                    Activity {rIdx + 1}
+                  </h3>
+                  {!disableRemove && (
+                    <button
+                      type="button"
+                      className="text-label-sm cursor-pointer font-medium text-blue-500 transition-colors hover:text-blue-700"
+                      onClick={() => handleRemoveRepeatable(item.name!, rIdx)}
+                      disabled={disableRemove}
+                      aria-label="Remove Activity"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {/* Activity Fields Grid */}
+                <div
+                  className={`grid gap-4 ${getGridColsClass(repeatableColumns)}`}
+                >
+                  {item.fields?.map((fid) => {
+                    const field = fieldDefs.find((f) => f.id === fid);
+                    if (!field || !isFieldVisible(field, formValues))
+                      return null;
+                    const errorKey = `${item.name}.${rIdx}.${fid}`;
+                    const repeatableField: FieldDefinition = {
+                      ...field,
+                      id: `${item.name}.${rIdx}.${fid}`,
+                    };
+                    const widthClass = getFieldWidthClass(field);
+                    return (
+                      <div
+                        key={`${item.name}.${rIdx}.${fid}`}
+                        className={widthClass}
+                      >
+                        <Controller
+                          name={`${item.name}.${rIdx}.${fid}` as never}
+                          control={form.control}
+                          defaultValue={
+                            (form.getValues(`${item.name}.${rIdx}.${fid}`) ??
+                              '') as never
+                          }
+                          render={() => (
+                            <FieldRenderer
+                              field={repeatableField}
+                              form={form}
+                              error={errors[errorKey]}
+                              inputHeightClass="py-2"
+                              labelHeightClass="text-label-md"
+                              inputWidthClass="w-full"
+                            />
+                          )}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Add Activity Button */}
+            {(() => {
+              const isMaxReached =
+                item.repeatable_option?.max !== undefined &&
+                (repeatArr?.length ?? 0) >= item.repeatable_option.max;
+              return (
+                <button
+                  type="button"
+                  className={`text-label-sm self-start font-medium ${
+                    isMaxReached
+                      ? 'cursor-not-allowed text-neutral-400'
+                      : 'cursor-pointer text-blue-500'
+                  }`}
+                  onClick={() =>
+                    handleAddRepeatable(item.name!, item.fields ?? [])
+                  }
+                  disabled={isMaxReached}
+                  title={
+                    isMaxReached
+                      ? `Maximum ${item.repeatable_option?.max} activities allowed`
+                      : undefined
+                  }
+                >
+                  {item.repeatable_option?.add ?? '+ Add Activity'}
+                </button>
+              );
+            })()}
           </div>
         );
       }
@@ -740,7 +959,6 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           innerItem.type === 'IELTS' ||
           innerItem.type === 'GRE' ||
           innerItem.type === 'GMAT' ||
-          innerItem.type === 'Duolingo' ||
           innerItem.type === 'ACT' ||
           innerItem.type === 'Executive Assessment'
         ) {
@@ -861,13 +1079,17 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   }, [form, layout, form.watch('maintainChannel')]);
   // Add other dependencies if you have more repeatableDependsOn fields
 
-  // Helper function to filter out empty rows from repeatable arrays
+  // Helper function to filter out empty rows from repeatable arrays and remove flattened keys
   const filterEmptyRows = (data: Record<string, unknown>): Record<string, unknown> => {
     const filtered: Record<string, unknown> = { ...data };
+    
+    // Collect all repeatable field names
+    const repeatableNames: string[] = [];
     
     // Handle regular repeatable fieldsets
     layout.forEach((item) => {
       if (item.repeatable && item.name) {
+        repeatableNames.push(item.name);
         const arr = filtered[item.name];
         if (Array.isArray(arr)) {
           // Filter out rows where all fields are empty strings
@@ -881,6 +1103,19 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             });
           });
         }
+      }
+    });
+    
+    // Remove flattened keys (e.g., "awards.0.description", "courses.0.name")
+    // These are created by flattenDefaultValues for React Hook Form but should not be in the final output
+    Object.keys(filtered).forEach((key) => {
+      // Check if the key matches a flattened pattern: repeatableName.index.fieldName
+      const isFlattened = repeatableNames.some((name) => {
+        const pattern = new RegExp(`^${name}\\.\\d+\\.`);
+        return pattern.test(key);
+      });
+      if (isFlattened) {
+        delete filtered[key];
       }
     });
     

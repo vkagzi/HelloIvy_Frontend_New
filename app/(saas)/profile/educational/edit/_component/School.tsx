@@ -81,17 +81,82 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     });
   });
 
-  // Add a new school block
+  // Add a new school block with prefilled values from the previous class
   const handleAddSchool = (): void => {
+    const lastSchoolIdx = schools.length - 1;
+    
+    // Get the last class's grade and calculate 1 grade lower
+    const lastGrade = form.getValues(`${sectionType}.${lastSchoolIdx}.grade`) as number | undefined;
+    const newGrade = lastGrade ? lastGrade - 1 : selectedGrade - schools.length;
+    
+    // Get values from the last school to prefill
+    const lastSchoolName = form.getValues(`${sectionType}.${lastSchoolIdx}.schoolName`) as string | undefined;
+    const lastCity = form.getValues(`${sectionType}.${lastSchoolIdx}.city`) as string | undefined;
+    const lastYearOfCompletion = form.getValues(`${sectionType}.${lastSchoolIdx}.yearOfCompletion`) as string | undefined;
+    
+    // Calculate year of completion as 1 year lower
+    const newYearOfCompletion = lastYearOfCompletion 
+      ? String(parseInt(lastYearOfCompletion, 10) - 1) 
+      : '';
+    
+    // Get subjects from the last school
+    const lastSubjects = form.getValues(`${sectionType}.${lastSchoolIdx}.${section.repeatables?.name}`) as SubjectRows | undefined;
+    
+    // Create new subject rows, prefilling subject names and highest possible score from the previous class
+    const newSubjectRows = lastSubjects && Array.isArray(lastSubjects) && lastSubjects.length > 0
+      ? lastSubjects.map((subj) => 
+          Object.fromEntries(
+            (section.repeatables?.fields ?? []).map((fid: string) => [
+              fid,
+              fid === 'subject' ? (subj.subject ?? '') : 
+              fid === 'highestTotalScore' ? (subj.highestTotalScore ?? '') : '',
+            ])
+          )
+        )
+      : Array.from({ length: minSubjects }, () =>
+          Object.fromEntries(
+            (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+          )
+        );
+    
+    const newSchoolIdx = schools.length;
+    
+    // Set the prefilled values for the new school block
+    setTimeout(() => {
+      form.setValue(`${sectionType}.${newSchoolIdx}.grade` as keyof Record<string, unknown>, newGrade as never);
+      if (lastSchoolName) {
+        form.setValue(`${sectionType}.${newSchoolIdx}.schoolName` as keyof Record<string, unknown>, lastSchoolName as never);
+      }
+      if (lastCity) {
+        form.setValue(`${sectionType}.${newSchoolIdx}.city` as keyof Record<string, unknown>, lastCity as never);
+      }
+      if (newYearOfCompletion) {
+        form.setValue(`${sectionType}.${newSchoolIdx}.yearOfCompletion` as keyof Record<string, unknown>, newYearOfCompletion as never);
+      }
+      // Prefill subject names and highest possible score
+      if (lastSubjects && Array.isArray(lastSubjects)) {
+        lastSubjects.forEach((subj, subjIdx) => {
+          if (subj.subject) {
+            form.setValue(
+              `${sectionType}.${newSchoolIdx}.${section.repeatables?.name}.${subjIdx}.subject` as keyof Record<string, unknown>,
+              subj.subject as never
+            );
+          }
+          if (subj.highestTotalScore) {
+            form.setValue(
+              `${sectionType}.${newSchoolIdx}.${section.repeatables?.name}.${subjIdx}.highestTotalScore` as keyof Record<string, unknown>,
+              subj.highestTotalScore as never
+            );
+          }
+        });
+      }
+    }, 0);
+    
     setSchools((prev) => [
       ...prev,
       {
         key: nanoid(),
-        subjectRows: Array.from({ length: minSubjects }, () =>
-          Object.fromEntries(
-            (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
-          )
-        ),
+        subjectRows: newSubjectRows,
       },
     ]);
   };

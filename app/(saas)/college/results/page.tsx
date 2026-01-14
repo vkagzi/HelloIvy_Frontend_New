@@ -288,12 +288,6 @@ const CollegeResultsPage: React.FC = () => {
           parts.push(`Awards: ${activity.awardsCertifications}`);
         }
 
-        if (activity.city || activity.country) {
-          parts.push(
-            `Location: ${[activity.city, activity.country].filter(Boolean).join(', ')}`
-          );
-        }
-
         return `• ${parts.join(' | ')}`;
       })
       .join('\n');

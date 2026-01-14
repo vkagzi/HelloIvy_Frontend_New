@@ -492,9 +492,8 @@ export const personalLayout: LayoutBlock[] = [
 export const ugPgTestTypeOptions = [
   'SAT',
   'ACT',
-  // 'TOEFL',
-  // 'IELTS',
-  'Duolingo',
+  'TOEFL',
+  'IELTS',
   'GMAT',
   'GRE',
   'Executive Assessment',
@@ -505,8 +504,8 @@ export const schoolTestTypeOptions = [
   'SAT',
   'ACT',
   'AP',
-  // 'TOEFL',
-  // 'IELTS',
+  'TOEFL',
+  'IELTS',
   'Others',
 ];
 
@@ -895,7 +894,6 @@ export const educationalFieldDefs: FieldDefinition[] = [
       'ACT',
       'TOEFL',
       'IELTS',
-      'Duolingo',
       'GMAT',
       'GRE',
       'Executive Assessment',
@@ -1340,6 +1338,7 @@ export const educationalLayout: LayoutBlock[] = [
       add: '+ Add Course',
       show_default: 1,
       min: 0,
+      max: 5,
     },
   },
   {
@@ -1366,6 +1365,7 @@ export const educationalLayout: LayoutBlock[] = [
       add: '+ Add Awards',
       show_default: 1,
       min: 0,
+      max: 5,
     },
   },
   {
@@ -1476,17 +1476,6 @@ export const educationalLayout: LayoutBlock[] = [
     },
   },
   {
-    type: 'Duolingo',
-    fields: ['testDate', 'yourScore', 'yourPercentile'],
-    columns: 3,
-    visibility: {
-      depends_on: {
-        field_id: 'testType',
-        value: ['Duolingo'],
-      },
-    },
-  },
-  {
     type: 'ACT',
     fields: [
       'testDate',
@@ -1540,6 +1529,17 @@ export const educationalLayout: LayoutBlock[] = [
     },
   },
   {
+    type: 'Others',
+    fields: ['testDate', 'yourScore'],
+    columns: 3,
+    visibility: {
+      depends_on: {
+        field_id: 'testType',
+        value: ['Others'],
+      },
+    },
+  },
+  {
     type: 'collapsible_section_end',
   },
 ];
@@ -1549,18 +1549,19 @@ export const educationalLayout: LayoutBlock[] = [
 // =============================================================================
 
 export const professionalFieldDefs: FieldDefinition[] = [
+  // Experience fields (used in repeatable experiences array)
   {
-    id: 'experience',
+    id: 'experienceType',
     type: 'select',
-    label: 'What is your work experience?',
-    options: ['Internship', 'Full time', 'No experience'],
-    placeholder: 'Select work experience',
+    label: 'Experience Type',
+    options: ['Internship', 'Full time', 'Part time', 'Freelance', 'Contract'],
+    placeholder: 'Select experience type',
     required: true,
   },
   {
     id: 'currentEmployer',
     type: 'text',
-    label: 'Current/Most Recent Employer',
+    label: 'Employer/Company Name',
     placeholder: 'Enter employer name',
     required: true,
   },
@@ -1608,17 +1609,18 @@ export const professionalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'responsibilities',
-    type: 'text',
+    type: 'textarea',
     label: 'Your Responsibilities',
     placeholder: 'Describe your responsibilities',
     required: false,
   },
   {
-    id: 'achievement',
-    type: 'text',
+    id: 'achievements',
+    type: 'textarea',
     label: 'Mention Your Achievements (Top 3)',
     placeholder: 'List your top 3 achievements',
     required: false,
+    width: 2,
   },
   {
     id: 'reasonForLeaving',
@@ -1626,35 +1628,6 @@ export const professionalFieldDefs: FieldDefinition[] = [
     label: 'Reason for Leaving',
     placeholder: 'Enter reason for leaving',
     required: false,
-  },
-  // {
-  //   id: 'preferredRecommender',
-  //   type: 'checkbox',
-  //   label: 'Preferred Recommender',
-  //   placeholder: 'Enter preferred recommender',
-  //   required: false,
-  // },
-  {
-    id: 'recommenderChoice',
-    type: 'select',
-    label: 'Recommender Choice',
-    options: [
-      'Direct Manager/Supervisor',
-      'Senior Manager/Director',
-      'Professor/Academic Advisor',
-      'Colleague/Peer',
-      'Mentor',
-      'Client/Customer',
-      'Other',
-    ],
-    placeholder: 'Select recommender choice',
-    required: false,
-    visibility: {
-      depends_on: {
-        field_id: 'preferredRecommender',
-        value: [true],
-      },
-    },
   },
 ];
 
@@ -1666,12 +1639,8 @@ export const professionalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: ['experience'],
-    columns: 3,
-  },
-  {
-    type: 'fieldset',
     fields: [
+      'experienceType',
       'currentEmployer',
       'city',
       'durationOfEmployment',
@@ -1680,33 +1649,17 @@ export const professionalLayout: LayoutBlock[] = [
       'jobFunction',
       'industrySector',
       'responsibilities',
+      'achievements',
       'reasonForLeaving',
-      'preferredRecommender',
       'recommenderChoice',
     ],
-    columns: 3,
-    visibility: {
-      depends_on: {
-        field_id: 'experience',
-        value: ['Internship', 'Full time'],
-      },
-    },
-  },
-  {
-    type: 'fieldset',
-    fields: ['achievement'],
-    name: 'achievements',
+    name: 'experiences',
     repeatable: true,
     repeatable_option: {
-      add: '+ Add achievement',
-      show_default: 1,
+      add: '+ Add Experience',
+      show_default: 0,
       min: 0,
-    },
-    visibility: {
-      depends_on: {
-        field_id: 'experience',
-        value: ['Internship', 'Full time'],
-      },
+      columns: 3,
     },
   },
   {
@@ -1725,6 +1678,7 @@ export const additionalFieldDefs: FieldDefinition[] = [
     label: 'What program/ degree are you interested in ?',
     placeholder: 'Select program/degree',
     options: [
+      'Not sure',
       'Associate Degree',
       'Bachelor of Arts (BA)',
       'Bachelor of Science (BS)',
@@ -1732,6 +1686,8 @@ export const additionalFieldDefs: FieldDefinition[] = [
       'Bachelor of Engineering (BE/B.Tech)',
       'Bachelor of Fine Arts (BFA)',
       'Bachelor of Commerce (B.Com)',
+      'MBBS',
+      'LLB',
       'Master of Arts (MA)',
       'Master of Science (MS)',
       'Master of Business Administration (MBA)',
@@ -1758,13 +1714,6 @@ export const additionalFieldDefs: FieldDefinition[] = [
     width: 2,
   },
   {
-    id: 'campusVisited',
-    type: 'radio',
-    label: 'Have you visited any Campus?',
-    options: ['Yes', 'No'],
-    required: false,
-  },
-  {
     id: 'shareInformation',
     type: 'radio',
     label: 'Is there anything else you want to share?',
@@ -1780,9 +1729,9 @@ export const additionalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'shareInformationDescription',
-    type: 'text',
-    label: 'Share Information description',
-    placeholder: 'Enter a brief description',
+    type: 'textarea',
+    label: 'Share Information description (Under 300 words)',
+    placeholder: 'Enter a brief description in 300 words',
     required: false,
   },
 ];
@@ -1894,13 +1843,6 @@ export const extraCurricularFieldDefs: FieldDefinition[] = [
     placeholder: 'Enter description',
     required: false,
   },
-  {
-    id: 'city',
-    type: 'location_autofill',
-    label: 'City',
-    placeholder: 'Select city/town',
-    required: false,
-  },
 ];
 
 // Helper to get title based on academic level for extra-curricular
@@ -1943,7 +1885,6 @@ export const getExtraCurricularLayout = (
         'positionHeld',
         'awardsCertifications',
         'description',
-        'city',
       ],
       name: 'extraCurricular',
       repeatable: true,

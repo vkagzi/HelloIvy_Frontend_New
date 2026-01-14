@@ -82,56 +82,6 @@ const ProfessionalFormDetails: React.FC = () => {
     }
   };
 
-  // Watch the experience field and save + route if "No experience"
-  React.useEffect(() => {
-    if (!formRef.current) return;
-    const subscription = formRef.current.watch(
-      async (values: Record<string, unknown>, { name }) => {
-        if (name === 'experience' && values.experience === 'No experience') {
-          // Save the current form data before navigating
-          try {
-            // Fetch latest profile data to ensure we have the most recent data
-            const latestData = await getProfileData();
-            const existingProfile =
-              ((latestData?.profile as Record<string, unknown>)
-                ?.profile as Record<string, unknown>) || {};
-
-            const educational = existingProfile.educational ?? {};
-            const extraCurricular = existingProfile.extraCurricular ?? {};
-            const personalDetails = existingProfile.personalDetails ?? {};
-            const additional = existingProfile.additional ?? {};
-
-            await api('/api/profiles/update/', {
-              method: 'POST',
-              body: {
-                profile: {
-                  professional: parseFormLocationData(values),
-                  personalDetails: personalDetails,
-                  additional: additional,
-                  extraCurricular: extraCurricular,
-                  educational: educational,
-                },
-              },
-            });
-
-            addToast('Professional details saved successfully!', {
-              type: 'success',
-            });
-            // Refetch profile data to update the context
-            await refetch();
-            router.push('/profile/extra-curricular/edit');
-          } catch (error) {
-            console.error('Error saving professional data:', error);
-            addToast('Failed to save professional details', { type: 'error' });
-          }
-        }
-      }
-    );
-    return () => {
-      subscription.unsubscribe?.();
-    };
-  }, [router, defaultValues, addToast, refetch]);
-
   // Extract professional details from the nested structure
   let professionalDetails: Record<string, unknown> = {};
 

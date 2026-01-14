@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { Controller, UseFormReturn } from 'react-hook-form';
 import Button from '@/app/_components/Button';
@@ -66,7 +66,6 @@ const TEST_TYPE_FIELDS: Record<string, string[]> = {
     'quantitativeReasoningPercentile',
     'retakeExamDate',
   ],
-  Duolingo: ['testDate', 'yourScore', 'yourPercentile'],
   ACT: [
     'testDate',
     'totalScore',
@@ -100,6 +99,7 @@ const TEST_TYPE_FIELDS: Record<string, string[]> = {
     'tookCoaching',
     'coachingName',
   ],
+  Others: ['testDate', 'yourScore'],
 };
 
 export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
@@ -114,13 +114,43 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
   const [testScores, setTestScores] = useState<TestScoreInstance[]>(() => {
     const existingScores = form.getValues('testScores') as unknown[];
     if (Array.isArray(existingScores) && existingScores.length > 0) {
-      return existingScores.map((score) => ({
-        key: nanoid(),
-        testType: (score as Record<string, unknown>)?.testType as string ?? '',
-      }));
+      return existingScores
+        .filter((score) => {
+          // Only include test scores that have a testType
+          const testType = (score as Record<string, unknown>)?.testType as string | undefined;
+          return testType && testType.length > 0;
+        })
+        .map((score) => ({
+          key: nanoid(),
+          testType: (score as Record<string, unknown>)?.testType as string ?? '',
+        }));
     }
     return [];
   });
+
+  // Sync testScores state with form data when form data changes
+  useEffect(() => {
+    const formTestScores = form.getValues('testScores') as unknown[];
+    if (Array.isArray(formTestScores) && formTestScores.length > 0) {
+      const filteredScores = formTestScores
+        .filter((score) => {
+          const testType = (score as Record<string, unknown>)?.testType as string | undefined;
+          return testType && testType.length > 0;
+        })
+        .map((score) => ({
+          key: nanoid(),
+          testType: (score as Record<string, unknown>)?.testType as string ?? '',
+        }));
+      
+      // Only update if the number of test scores changed
+      if (filteredScores.length !== testScores.length) {
+        setTestScores(filteredScores);
+      }
+    } else if (testScores.length > 0) {
+      // If form data is empty but we have local state, clear it
+      setTestScores([]);
+    }
+  }, [form.getValues('testScores')]);
 
   // Add a new test score
   const handleAddTestScore = (): void => {

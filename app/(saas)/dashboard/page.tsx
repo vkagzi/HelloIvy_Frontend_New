@@ -12,7 +12,6 @@ export default function Dashboard(): React.ReactElement {
   const {
     personalDetails,
     educationalDetails,
-    professionalDetails,
     additionalDetails,
     extraCurricularDetails,
     loading,
@@ -21,7 +20,6 @@ export default function Dashboard(): React.ReactElement {
   const completionPercentage = calculateProfileCompletion({
     personalDetails,
     educationalDetails,
-    professionalDetails,
     additionalDetails,
     extraCurricularDetails,
   });

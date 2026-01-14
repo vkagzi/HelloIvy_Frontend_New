@@ -5,7 +5,6 @@
 import {
   personalFieldDefs,
   educationalFieldDefs,
-  professionalFieldDefs,
   additionalFieldDefs,
   extraCurricularFieldDefs,
 } from '@/app/(saas)/profile/_config/fieldDefinitions';
@@ -197,7 +196,6 @@ const calculateExtraCurricularCompletion = (
 export const calculateProfileCompletion = (profileData: {
   personalDetails?: ProfileData;
   educationalDetails?: ProfileData;
-  professionalDetails?: ProfileData;
   additionalDetails?: ProfileData;
   extraCurricularDetails?: ProfileData;
 }): number => {
@@ -220,14 +218,6 @@ export const calculateProfileCompletion = (profileData: {
   totalFilled += educational.filled;
   totalFields += educational.total;
 
-  // Professional details
-  const professional = calculateProfessionalCompletion(
-    profileData.professionalDetails ?? {},
-    professionalFieldDefs
-  );
-  totalFilled += professional.filled;
-  totalFields += professional.total;
-
   // Additional details
   const additional = calculateAdditionalCompletion(
     profileData.additionalDetails ?? {},
@@ -244,16 +234,13 @@ export const calculateProfileCompletion = (profileData: {
   totalFilled += extraCurricular.filled;
   totalFields += extraCurricular.total;
 
-    console.log({
+  console.log('Total Filled:', totalFilled, 'Total Fields:', totalFields);
+  console.log('Completion Breakdown:', {
     personal,
     educational,
-    professional,
     additional,
     extraCurricular,
-    totalFilled,
-    totalFields,
-  })
-
+  });
   // Calculate percentage
   if (totalFields === 0) {
     return 0;
@@ -269,13 +256,11 @@ export const calculateProfileCompletion = (profileData: {
 export const getSectionCompletionDetails = (profileData: {
   personalDetails?: ProfileData;
   educationalDetails?: ProfileData;
-  professionalDetails?: ProfileData;
   additionalDetails?: ProfileData;
   extraCurricularDetails?: ProfileData;
 }): {
   personal: number;
   educational: number;
-  professional: number;
   additional: number;
   extraCurricular: number;
 } => {
@@ -286,10 +271,6 @@ export const getSectionCompletionDetails = (profileData: {
   const educational = calculateEducationalCompletion(
     profileData.educationalDetails ?? {},
     educationalFieldDefs
-  );
-  const professional = calculateProfessionalCompletion(
-    profileData.professionalDetails ?? {},
-    professionalFieldDefs
   );
   const additional = calculateAdditionalCompletion(
     profileData.additionalDetails ?? {},
@@ -304,7 +285,6 @@ export const getSectionCompletionDetails = (profileData: {
   return {
     personal: personal.percentage,
     educational: educational.percentage,
-    professional: professional.percentage,
     additional: additional.percentage,
     extraCurricular: extraCurricular.percentage,
   };

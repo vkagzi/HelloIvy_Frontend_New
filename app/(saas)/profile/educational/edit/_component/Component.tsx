@@ -91,8 +91,7 @@ const Component: React.FC<ComponentProps> = ({
             />
           )}
           {(section.type === 'TOEFL' ||
-            section.type === 'IELTS' ||
-            section.type === 'Duolingo') && (
+            section.type === 'IELTS') && (
             <TestBlock
               section={section}
               fieldDefs={fieldDefs}
