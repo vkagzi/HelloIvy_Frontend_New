@@ -46,7 +46,7 @@ const EducationalDetailsForm: React.FC = () => {
   ];
 
   const SCHOOL_LEVELS = [
-    'High School (7th–12th grade)',
+    'High School (9th–12th grade)',
   ];
 
   // Helper to get options based on academic level selected in the form

@@ -62,6 +62,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     const existingCount = Array.isArray(existingSchools) ? existingSchools.length : 0;
     const initialCount = Math.max(minSchools, existingCount);
 
+    // Start from (selectedGrade - 2) and go up in ascending order
     return Array.from({ length: initialCount }, (_, idx) => {
       const existingSubjects = Array.isArray(existingSchools) && existingSchools[idx]
         ? (existingSchools[idx] as Record<string, unknown>)[section.repeatables?.name ?? 'subjects']
@@ -85,18 +86,27 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
   const handleAddSchool = (): void => {
     const lastSchoolIdx = schools.length - 1;
     
-    // Get the last class's grade and calculate 1 grade lower
-    const lastGrade = form.getValues(`${sectionType}.${lastSchoolIdx}.grade`) as number | undefined;
-    const newGrade = lastGrade ? lastGrade - 1 : selectedGrade - schools.length;
+    // Get the last class's grade and calculate 1 grade higher (ascending order)
+    const lastGradeRaw = form.getValues(`${sectionType}.${lastSchoolIdx}.grade`);
+    const parsedLastGrade = typeof lastGradeRaw === 'number' 
+      ? lastGradeRaw 
+      : typeof lastGradeRaw === 'string' 
+        ? parseInt(lastGradeRaw, 10) 
+        : undefined;
+    // Validate grade is within reasonable range (1-12)
+    const lastGrade = parsedLastGrade && !isNaN(parsedLastGrade) && parsedLastGrade >= 1 && parsedLastGrade <= 12 
+      ? parsedLastGrade 
+      : undefined;
+    const newGrade = lastGrade ? lastGrade + 1 : selectedGrade - 2 + schools.length;
     
     // Get values from the last school to prefill
     const lastSchoolName = form.getValues(`${sectionType}.${lastSchoolIdx}.schoolName`) as string | undefined;
     const lastCity = form.getValues(`${sectionType}.${lastSchoolIdx}.city`) as string | undefined;
     const lastYearOfCompletion = form.getValues(`${sectionType}.${lastSchoolIdx}.yearOfCompletion`) as string | undefined;
     
-    // Calculate year of completion as 1 year lower
+    // Calculate year of completion as 1 year higher (ascending order)
     const newYearOfCompletion = lastYearOfCompletion 
-      ? String(parseInt(lastYearOfCompletion, 10) - 1) 
+      ? String(parseInt(lastYearOfCompletion, 10) + 1) 
       : '';
     
     // Get subjects from the last school
@@ -208,13 +218,21 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     <div>
       {schools.map((school, schoolIdx) => {
         // Check if existing form data has grade information
-        const existingGrade = form.getValues(`${sectionType}.${schoolIdx}.grade`) as number | undefined;
-        const gradeForSchool = existingGrade ?? (selectedGrade - schoolIdx);
+        // Start from (selectedGrade - 2) and go up in ascending order
+        const existingGradeRaw = form.getValues(`${sectionType}.${schoolIdx}.grade`);
+        const parsedGrade = typeof existingGradeRaw === 'number' 
+          ? existingGradeRaw 
+          : typeof existingGradeRaw === 'string' 
+            ? parseInt(existingGradeRaw, 10) 
+            : undefined;
+        // Validate grade is within reasonable range (1-12)
+        const existingGrade = parsedGrade && !isNaN(parsedGrade) && parsedGrade >= 1 && parsedGrade <= 12 
+          ? parsedGrade 
+          : undefined;
+        const gradeForSchool = existingGrade ?? (selectedGrade - 2 + schoolIdx);
         const gradeLabel = getOrdinalSuffix(gradeForSchool);
-        // Show "(Grade Not Specified)" if no existing grade data
-        const gradeLabelDisplay = existingGrade 
-          ? `${gradeLabel} Grade Basic Details` 
-          : `${gradeLabel} Grade Basic Details (Unsaved)`;
+        // Show "(Unsaved)" suffix if no existing grade data
+        const unsavedSuffix = existingGrade ? '' : ' (Unsaved)';
         
         return (
           <div
@@ -225,7 +243,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
             <div className="mb-5 flex items-center justify-between">
               <Label size="lg" className="font-semibold text-neutral-900">
-                {gradeLabelDisplay}
+                {gradeLabel} Grade Basic Details{unsavedSuffix}
               </Label>
             {schools.length > minSchools && (
               <Button
@@ -290,7 +308,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           />
           {/* Subjects Section */}
           <Label size="lg" className="font-semibold text-neutral-900">
-            {gradeLabelDisplay} Grade Subject Details
+            {gradeLabel} Grade Subject Details{unsavedSuffix}
           </Label>
           <div
             className="mt-5 grid gap-4"
@@ -351,7 +369,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           </button>
           <hr className="mt-5 mb-10 border-t border-neutral-200" />
           <Label size="lg" className="font-semibold text-neutral-900">
-            {gradeLabelDisplay} Grade Other Details
+            {gradeLabel} Grade Other Details{unsavedSuffix}
           </Label>
           <div
             className="mt-5 grid gap-4"
@@ -395,7 +413,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
         </div>
       );
       })}
-      {schools.length < 2 && (
+      {schools.length < 3 && (
         <button
           type="button"
           className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"

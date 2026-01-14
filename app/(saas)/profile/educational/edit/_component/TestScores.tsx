@@ -1,16 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { nanoid } from 'nanoid';
 import { Controller, UseFormReturn } from 'react-hook-form';
 import Button from '@/app/_components/Button';
 import { FieldRenderer } from '@/app/_components/dynamic-form/FieldRenderer';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
+import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
 
 interface TestScoresBlockProps {
   testTypeOptions: string[];
   fieldDefs: FieldDefinition[];
+  layout: LayoutItem[];
   form: UseFormReturn<Record<string, unknown>>;
   errors: Record<string, string>;
 }
@@ -20,95 +22,37 @@ interface TestScoreInstance {
   testType: string;
 }
 
-// Field configurations for each test type
-const TEST_TYPE_FIELDS: Record<string, string[]> = {
-  SAT: [
-    'testDate',
-    'totalScore',
-    'writingTitle',
-    'writingYourScore',
-    'writingYourPercentile',
-    'mathTitle',
-    'mathYourScore',
-    'mathYourPercentile',
-    'criticalReadingTitle',
-    'criticalReadingYourScore',
-    'criticalReadingYourPercentile',
-    'retakeExamDate',
-  ],
-  TOEFL: ['testDate', 'yourScore', 'yourPercentile'],
-  IELTS: ['testDate', 'yourScore', 'yourPercentile'],
-  GRE: [
-    'testDate',
-    'totalScore',
-    'analyticalWritingTitle',
-    'analyticalWritingScore',
-    'analyticalWritingPercentile',
-    'verbalReasoningTitle',
-    'verbalReasoningScore',
-    'verbalReasoningPercentile',
-    'quantitativeReasoningTitle',
-    'quantitativeReasoningScore',
-    'quantitativeReasoningPercentile',
-    'retakeExamDate',
-  ],
-  GMAT: [
-    'testDate',
-    'totalScore',
-    'dataInsightsTitle',
-    'dataInsightsScore',
-    'dataInsightsPercentile',
-    'verbalReasoningTitle',
-    'verbalReasoningScore',
-    'verbalReasoningPercentile',
-    'quantitativeReasoningTitle',
-    'quantitativeReasoningScore',
-    'quantitativeReasoningPercentile',
-    'retakeExamDate',
-  ],
-  ACT: [
-    'testDate',
-    'totalScore',
-    'englishTitle',
-    'englishYourScore',
-    'englishYourPercentile',
-    'mathTitle',
-    'mathYourScore',
-    'mathYourPercentile',
-    'readingTitle',
-    'readingYourScore',
-    'readingYourPercentile',
-    'scienceTitle',
-    'scienceYourScore',
-    'scienceYourPercentile',
-    'retakeExamDate',
-  ],
-  'Executive Assessment': [
-    'testDate',
-    'totalScore',
-    'integratedReasoningTitle',
-    'integratedReasoningScore',
-    'integratedReasoningPercentile',
-    'verbalReasoningTitle',
-    'verbalReasoningScore',
-    'verbalReasoningPercentile',
-    'quantitativeReasoningTitle',
-    'quantitativeReasoningScore',
-    'quantitativeReasoningPercentile',
-    'retakeExamDate',
-    'tookCoaching',
-    'coachingName',
-  ],
-  Others: ['testDate', 'yourScore'],
-};
+// List of test type layout block types
+const TEST_TYPE_LAYOUT_TYPES = [
+  'SAT',
+  'TOEFL',
+  'IELTS',
+  'GRE',
+  'GMAT',
+  'ACT',
+  'Executive Assessment',
+  'Others',
+];
 
 export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
   testTypeOptions,
   fieldDefs,
+  layout,
   form,
   errors,
 }) => {
   const minTests = 0;
+
+  // Derive test type fields mapping from layout
+  const testTypeFieldsMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const item of layout) {
+      if (TEST_TYPE_LAYOUT_TYPES.includes(item.type) && item.fields) {
+        map[item.type] = item.fields;
+      }
+    }
+    return map;
+  }, [layout]);
 
   // Initialize test scores from existing form data
   const [testScores, setTestScores] = useState<TestScoreInstance[]>(() => {
@@ -168,7 +112,8 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
     // Clear form values for this test
     const testType = testScores.find((t) => t.key === key)?.testType;
     if (testType) {
-      const fields = TEST_TYPE_FIELDS[testType] ?? [];
+      const fields = testTypeFieldsMap[testType] ?? [];
+      console.log('Clearing fields for removal:', fields);
       fields.forEach((fieldId) => {
         form.setValue(`testScores.${testIdx}.${fieldId}` as keyof Record<string, unknown>, undefined as never);
       });
@@ -192,7 +137,7 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
         // Watch the specific testType for this test score to trigger re-render on change
         const watchedTestType = form.watch(`testScores.${testIdx}.testType`) as string | undefined;
         const selectedTestType = watchedTestType ?? test.testType;
-        const testFields = selectedTestType ? TEST_TYPE_FIELDS[selectedTestType] ?? [] : [];
+        const testFields = selectedTestType ? testTypeFieldsMap[selectedTestType] ?? [] : [];
 
         return (
           <div
@@ -229,7 +174,7 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
                       label: 'Test Type',
                       placeholder: 'Select test type',
                       options: testTypeOptions,
-                      required: true,
+                      required: false,
                     };
                     return (
                       <FieldRenderer

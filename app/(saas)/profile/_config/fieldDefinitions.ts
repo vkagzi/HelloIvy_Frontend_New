@@ -516,7 +516,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     label: 'Currently I am in ',
     placeholder: 'Select academic level',
     options: [
-      'High School (7th–12th grade)',
+      'High School (9th–12th grade)',
       'College/Undergraduate',
       'Postgraduate',
       'Working/Completed College',
@@ -532,9 +532,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     optionsDependsOn: {
       fieldId: 'academicLevel',
       map: {
-        'High School (7th–12th grade)': [
-          'Grade 7',
-          'Grade 8',
+        'High School (9th–12th grade)': [
           'Grade 9',
           'Grade 10',
           'Grade 11',
@@ -559,7 +557,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['High School (7th–12th grade)', 'College/Undergraduate', 'Postgraduate'],
+        value: ['High School (9th–12th grade)', 'College/Undergraduate', 'Postgraduate'],
       },
     },
   },
@@ -738,6 +736,13 @@ export const educationalFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
+    id: 'maximumPossibleGPA',
+    type: 'text',
+    label: 'Maximum GPA / Percentage',
+    placeholder: 'Enter maximum possible GPA or percentage',
+    required: true,
+  },
+  {
     id: 'estimatedRank',
     type: 'text',
     label: 'Estimated Overall Rank',
@@ -783,6 +788,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     placeholder: 'Select course type',
     options: [
       'Online Course',
+      'CFA/CPA/FRM',
       'In-Person Workshop',
       'Professional Certification',
       'MOOCs (Coursera, edX, Udemy)',
@@ -830,20 +836,6 @@ export const educationalFieldDefs: FieldDefinition[] = [
     options: ['On-site', 'Online', 'Hybrid'],
     placeholder: 'Select location',
     required: true,
-  },
-  {
-    id: 'courseCity',
-    type: 'location_autofill',
-    label: 'City',
-    placeholder: 'Select city/town',
-    required: false,
-    validationDependsOn: [
-      {
-        fieldId: 'location',
-        values: ['On-site', 'Hybrid'],
-        validation: { required: true },
-      },
-    ],
   },
   {
     id: 'nameOfHonorReceived',
@@ -905,14 +897,14 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'date',
     label: 'Test Date',
     placeholder: 'Select test date',
-    required: true,
+    required: false,
   },
   {
     id: 'totalScore',
     type: 'text',
     label: 'Total Score',
     placeholder: 'Enter total score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -925,7 +917,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -933,7 +925,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -946,7 +938,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -954,7 +946,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -967,7 +959,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -975,7 +967,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -983,14 +975,14 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'date',
     label: 'Retake Exam Date',
     placeholder: 'Enter retake exam date',
-    required: true,
+    required: false,
   },
   {
     id: 'yourPercentile',
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -998,7 +990,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -1011,7 +1003,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -1019,7 +1011,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -1032,7 +1024,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -1040,7 +1032,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -1053,7 +1045,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -1061,7 +1053,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -1074,7 +1066,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -1082,7 +1074,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -1095,7 +1087,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -1103,7 +1095,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -1111,7 +1103,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -1124,7 +1116,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -1132,7 +1124,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -1145,7 +1137,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -1153,7 +1145,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -1166,7 +1158,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score',
     placeholder: 'Enter your score',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.justNumberWithBlank },
   },
   {
@@ -1174,7 +1166,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
-    required: true,
+    required: false,
     validation: { regex: Regexvalidations.percentage },
   },
   {
@@ -1183,7 +1175,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     options: ['Yes', 'No'],
     label: 'Did you take coaching?',
     placeholder: 'Select yes or no',
-    required: true,
+    required: false,
   },
   {
     id: 'coachingName',
@@ -1196,6 +1188,16 @@ export const educationalFieldDefs: FieldDefinition[] = [
         field_id: 'tookCoaching',
         value: ['Yes'],
       },
+    },
+  },
+  {
+    id: 'numberOfAttempts',
+    type: 'text',
+    label: 'Number of Attempts',
+    placeholder: 'Enter number of attempts (1-10)',
+    required: false,
+    validation: { 
+      regex: Regexvalidations.justNumberWithBlank,
     },
   },
 ];
@@ -1227,7 +1229,7 @@ export const educationalLayout: LayoutBlock[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['High School (7th–12th grade)'],
+        value: ['High School (9th–12th grade)'],
       },
     },
     repeatables: {
@@ -1251,6 +1253,7 @@ export const educationalLayout: LayoutBlock[] = [
       'startYear',
       'endYear',
       'overallPercentage',
+      'maximumPossibleGPA',
       'estimatedRank',
       'redFlags',
     ],
@@ -1330,7 +1333,6 @@ export const educationalLayout: LayoutBlock[] = [
       'description',
       'duration',
       'location',
-      'courseCity',
     ],
     name: 'courses',
     repeatable: true,
@@ -1396,6 +1398,7 @@ export const educationalLayout: LayoutBlock[] = [
       'criticalReadingYourScore',
       'criticalReadingYourPercentile',
       'retakeExamDate',
+      'numberOfAttempts',
     ],
     columns: 3,
     visibility: {
@@ -1407,7 +1410,7 @@ export const educationalLayout: LayoutBlock[] = [
   },
   {
     type: 'TOEFL',
-    fields: ['testDate', 'yourScore', 'yourPercentile'],
+    fields: ['testDate', 'yourScore', 'yourPercentile', 'numberOfAttempts'],
     columns: 3,
     visibility: {
       depends_on: {
@@ -1418,7 +1421,7 @@ export const educationalLayout: LayoutBlock[] = [
   },
   {
     type: 'IELTS',
-    fields: ['testDate', 'yourScore', 'yourPercentile'],
+    fields: ['testDate', 'yourScore', 'yourPercentile', 'numberOfAttempts'],
     columns: 3,
     visibility: {
       depends_on: {
@@ -1442,6 +1445,7 @@ export const educationalLayout: LayoutBlock[] = [
       'quantitativeReasoningScore',
       'quantitativeReasoningPercentile',
       'retakeExamDate',
+      'numberOfAttempts',
     ],
     columns: 3,
     visibility: {
@@ -1466,6 +1470,7 @@ export const educationalLayout: LayoutBlock[] = [
       'quantitativeReasoningScore',
       'quantitativeReasoningPercentile',
       'retakeExamDate',
+      'numberOfAttempts',
     ],
     columns: 3,
     visibility: {
@@ -1493,6 +1498,7 @@ export const educationalLayout: LayoutBlock[] = [
       'scienceYourScore',
       'scienceYourPercentile',
       'retakeExamDate',
+      'numberOfAttempts',
     ],
     columns: 3,
     visibility: {
@@ -1519,6 +1525,7 @@ export const educationalLayout: LayoutBlock[] = [
       'retakeExamDate',
       'tookCoaching',
       'coachingName',
+      'numberOfAttempts',
     ],
     columns: 3,
     visibility: {
@@ -1530,7 +1537,7 @@ export const educationalLayout: LayoutBlock[] = [
   },
   {
     type: 'Others',
-    fields: ['testDate', 'yourScore'],
+    fields: ['testDate', 'yourScore', 'numberOfAttempts'],
     columns: 3,
     visibility: {
       depends_on: {
@@ -1679,7 +1686,6 @@ export const additionalFieldDefs: FieldDefinition[] = [
     placeholder: 'Select program/degree',
     options: [
       'Not sure',
-      'Associate Degree',
       'Bachelor of Arts (BA)',
       'Bachelor of Science (BS)',
       'Bachelor of Business Administration (BBA)',
@@ -1714,6 +1720,42 @@ export const additionalFieldDefs: FieldDefinition[] = [
     width: 2,
   },
   {
+    id: 'domainInterest',
+    type: 'select_autofill',
+    label: 'What domain are you interested in ?',
+    placeholder: 'Select domain',
+    options: [
+      'Not sure',
+      'Technology & IT',
+      'Business & Management',
+      'Healthcare & Medicine',
+      'Engineering',
+      'Law & Legal Services',
+      'Finance & Accounting',
+      'Education',
+      'Arts & Design',
+      'Science & Research',
+      'Agriculture',
+      'Hospitality & Tourism',
+      'Retail & E-commerce',
+      'Manufacturing',
+      'Media & Journalism',
+      'Real Estate',
+      'Government & Public Service',
+      'Other',
+    ],
+    required: true,
+    width: 1,
+  },
+  {
+    id: 'domainWhyInterest',
+    type: 'text',
+    label: 'And why ?',
+    placeholder: 'Enter your reasons for interest in this domain',
+    required: false,
+    width: 2,
+  },
+  {
     id: 'shareInformation',
     type: 'radio',
     label: 'Is there anything else you want to share?',
@@ -1744,6 +1786,14 @@ export const additionalLayout: LayoutBlock[] = [
   {
     type: 'fieldset',
     fields: ['degreeInterest', 'whyInterest'],
+    columns: 3,
+  },
+  {
+    type: 'seperator',
+  },
+  {
+    type: 'fieldset',
+    fields: ['domainInterest', 'domainWhyInterest'],
     columns: 3,
   },
   {
@@ -1860,7 +1910,7 @@ export const getExtracurricularTitle = (
   ) {
     return 'Extracurriculars during School/Highschool, UG/PG, Work/Internship/Startup Experience';
   }
-  if (levels.includes('High School (7th–12th grade)')) {
+  if (levels.includes('High School (9th–12th grade)')) {
     return 'Extracurriculars during School/Highschool';
   }
   return 'Extra Curricular Activities';
@@ -1892,6 +1942,7 @@ export const getExtraCurricularLayout = (
         add: '+ Add Activity',
         show_default: 1,
         min: 0,
+        max: 5,
         columns: 3,
       },
     },

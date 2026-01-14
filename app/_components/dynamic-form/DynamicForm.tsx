@@ -148,7 +148,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   const testScoresSchema = z.object({
     testScores: z.array(
       z.object({
-        testType: z.string().min(1, 'Test type is required'),
+        testType: z.string().optional(),
         testDate: z.string().optional(),
         totalScore: z.string().optional(),
         yourScore: z.string().optional(),
@@ -188,7 +188,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         message: 'Test date is required',
         path: ['testDate'],
       })
-    ).optional(),
+    ).default([]),
   });
 
   // Merge test scores schema with main schema
@@ -924,6 +924,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 key="test-scores-block"
                 testTypeOptions={testTypeOptions}
                 fieldDefs={fieldDefs}
+                layout={layout}
                 form={form}
                 errors={errors}
               />
