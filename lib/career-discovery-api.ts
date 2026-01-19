@@ -17,6 +17,7 @@ export interface CareerMessage {
 
 export interface CareerDiscoverySession {
   session_id: string;
+  domain_session_id?: string | null;
   current_step: number;
   total_steps: number;
   current_phase: 'profile' | 'explorer';
@@ -70,6 +71,7 @@ export interface TranscribeResponse {
 
 export interface SessionListItem {
   session_id: string;
+  domain_session_id?: string | null;
   current_step: number;
   total_steps: number;
   current_phase: 'profile' | 'explorer';

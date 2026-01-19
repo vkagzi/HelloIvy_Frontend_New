@@ -20,7 +20,7 @@ interface Message {
   timestamp: string; // ISO
 }
 
-const TOTAL_QUESTIONS = 8;
+const TOTAL_QUESTIONS = 20;
 const EXPLORATION_QUESTIONS_COUNT = 4;
 const MIN_QUESTIONS_FOR_RECOMMENDATIONS = 3;
 
@@ -59,6 +59,9 @@ const DomainConversationPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [questionsCompleted, setQuestionsCompleted] = useState(0);
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [isGeneratingResults, setIsGeneratingResults] = useState(false);
+  const [resultsGenerationFailed, setResultsGenerationFailed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -77,6 +80,7 @@ const DomainConversationPage: React.FC = () => {
     [messages]
   );
   const canEndConversation = userAnswerCount >= MIN_QUESTIONS_FOR_RECOMMENDATIONS;
+  const allQuestionsCompleted = userAnswerCount >= TOTAL_QUESTIONS;
   const phase: Phase =
     askedCount < EXPLORATION_QUESTIONS_COUNT ? 'exploration' : 'mapping';
 
@@ -192,27 +196,6 @@ const DomainConversationPage: React.FC = () => {
           timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, botMsg]);
-
-        addToast('Great! Generating your domain recommendations…', { type: 'success' });
-
-        // Generate recommendations before redirecting
-        try {
-          const result = await domainDiscoveryApi.generateRecommendations(sessionId);
-          if (result.recommendations && result.recommendations.length > 0) {
-            addToast('Your results are ready!', { type: 'success' });
-            router.push(`/domain-discovery/${sessionId}/results`);
-          } else {
-            addToast('Could not generate recommendations. Please try again.', {
-              type: 'error',
-            });
-          }
-        } catch (genError) {
-          console.error('Failed to generate recommendations:', genError);
-          addToast('Failed to generate recommendations. Redirecting anyway...', {
-            type: 'warning',
-          });
-          router.push(`/domain-discovery/${sessionId}/results`);
-        }
         return;
       }
 
@@ -245,15 +228,91 @@ const DomainConversationPage: React.FC = () => {
   }
 
   async function handleEnd() {
-    if (sessionId) {
+    if (!allQuestionsCompleted) {
+      // Show confirmation dialog
+      setShowExitDialog(true);
+      return;
+    }
+    
+    // All questions completed - generate results
+    await generateAndShowResults();
+  }
+
+  async function generateAndShowResults() {
+    if (!sessionId) return;
+    
+    setIsGeneratingResults(true);
+    setResultsGenerationFailed(false);
+
+    // Add a notification message in the chat
+    const generatingMsg: Message = {
+      id: `system-${Date.now()}`,
+      type: 'bot',
+      content: '🔄 Generating your personalized domain recommendations... This may take a moment.',
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, generatingMsg]);
+    addToast('Generating your domain recommendations…', { type: 'success' });
+
+    try {
+      // End session on server
       try {
         await domainDiscoveryApi.endSession(sessionId);
       } catch (error) {
         console.log('Could not end session on server');
       }
+
+      // Generate recommendations
+      const result = await domainDiscoveryApi.generateRecommendations(sessionId);
+      if (result.recommendations && result.recommendations.length > 0) {
+        // Remove the generating message
+        setMessages((prev) => prev.filter((m) => m.id !== generatingMsg.id));
+        // Add success message
+        const successMsg: Message = {
+          id: `system-${Date.now()}`,
+          type: 'bot',
+          content: '✅ Your domain recommendations are ready! Click the button below to view them.',
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, successMsg]);
+        addToast('Your results are ready!', { type: 'success' });
+      } else {
+        throw new Error('No recommendations generated');
+      }
+    } catch (genError) {
+      console.error('Failed to generate recommendations:', genError);
+      // Remove the generating message
+      setMessages((prev) => prev.filter((m) => m.id !== generatingMsg.id));
+      // Add error message
+      const errorMsg: Message = {
+        id: `system-${Date.now()}`,
+        type: 'bot',
+        content: '❌ There was an issue generating your recommendations. Please try again or contact support.',
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+      setResultsGenerationFailed(true);
+      addToast('Failed to generate recommendations. Please try again.', {
+        type: 'error',
+      });
+    } finally {
+      setIsGeneratingResults(false);
     }
-    addToast('Wrapping up and generating your results…', { type: 'success' });
+  }
+
+  async function handleViewResults() {
+    if (!sessionId) return;
     router.push(`/domain-discovery/${sessionId}/results`);
+  }
+
+  function handleConfirmExit() {
+    setShowExitDialog(false);
+    addToast('Exiting without generating results', { type: 'info' });
+    router.push('/domain-discovery');
+  }
+
+  function handleCancelExit() {
+    setShowExitDialog(false);
   }
 
   // STT functions - using backend Whisper API
@@ -505,7 +564,7 @@ const DomainConversationPage: React.FC = () => {
             </div>
           ))}
 
-          {isLoading && (
+          {isLoading && !allQuestionsCompleted && (
             <div className="flex justify-start">
               <div className="max-w-3xl">
                 <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">
@@ -516,6 +575,28 @@ const DomainConversationPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          {allQuestionsCompleted && !isGeneratingResults && !resultsGenerationFailed && (
+            <div className="flex justify-center">
+              <div className="max-w-3xl">
+                <div className="rounded-lg border-2 border-green-300 bg-green-50 px-6 py-4 text-center shadow-sm">
+                  <p className="mb-4 text-sm font-semibold text-green-900">
+                    🎉 All questions completed!
+                  </p>
+                  <p className="mb-4 text-sm text-green-800">
+                    You've completed all {TOTAL_QUESTIONS} questions. Click below to generate your personalized domain recommendations.
+                  </p>
+                  <button
+                    onClick={handleViewResults}
+                    className="rounded-lg bg-linear-to-r from-purple-600 to-blue-600 px-6 py-2 text-white hover:from-purple-700 hover:to-blue-700"
+                  >
+                    View Results →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -593,6 +674,40 @@ const DomainConversationPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Exit Confirmation Dialog */}
+      {showExitDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Domain Discovery Not Complete
+              </h3>
+              <p className="mt-2 text-sm text-gray-600">
+                You've answered {userAnswerCount} out of {TOTAL_QUESTIONS} questions. 
+                You need to complete all questions to get your personalized domain recommendations.
+              </p>
+              <p className="mt-2 text-sm font-medium text-gray-700">
+                Are you sure you want to exit without getting your results?
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelExit}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+              >
+                Continue Session
+              </button>
+              <button
+                onClick={handleConfirmExit}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+              >
+                Exit Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

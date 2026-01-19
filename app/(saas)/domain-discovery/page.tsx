@@ -27,7 +27,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const { speakText, isSpeaking } = useOpenAITTS();
 
-  const instructions = `This module helps you discover your ideal academic and interest domains through personalized, AI-powered analysis based on your unique curiosities and passions. We analyze your existing profile data and guide you through 8 thoughtful questions about your interests. You'll receive personalized domain recommendations with related subjects, exploration activities, and potential career paths. The process takes about 5-7 minutes and is completely personalized to your background.`;
+  const instructions = `This module helps you discover your ideal academic and interest domains through personalized, AI-powered analysis based on your unique curiosities and passions. We analyze your existing profile data and guide you through 20 thoughtful questions about your interests. You'll receive personalized domain recommendations with related subjects, exploration activities, and potential career paths. The process takes about 30-40 minutes and is completely personalized to your background.`;
 
   useEffect(() => {
     loadSessions();
@@ -249,42 +249,42 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
 
           <ol className="space-y-3 text-gray-700">
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">1</span>
+              <span className="min-w-5 font-semibold">1</span>
               <span>
                 This module helps you discover academic and interest domains that
                 match your natural curiosities, passions, and learning preferences.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">2</span>
+              <span className="min-w-5 font-semibold">2</span>
               <span>
                 We analyze your existing profile data, interests, and activities
                 to provide tailored domain recommendations.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">3</span>
+              <span className="min-w-5 font-semibold">3</span>
               <span>
-                You'll go through an 8-step guided conversation to uncover your
+                You'll go through a 20-step guided conversation to uncover your
                 interests and map them to potential domains.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">4</span>
+              <span className="min-w-5 font-semibold">4</span>
               <span>
                 Receive detailed domain matches with related subjects, exploration
                 activities, and potential career paths to pursue.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">5</span>
+              <span className="min-w-5 font-semibold">5</span>
               <span>
-                The entire process takes about 5-7 minutes and is completely
+                The entire process takes about 30-40 minutes and is completely
                 personalized to your background and interests.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">6</span>
+              <span className="min-w-5 font-semibold">6</span>
               <span>
                 Domain Discovery is a prerequisite for Career Discovery - understanding
                 your domains helps identify specific career paths later.

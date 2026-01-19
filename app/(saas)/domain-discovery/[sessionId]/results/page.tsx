@@ -81,7 +81,7 @@ const DomainResultsPage: React.FC = () => {
       setInterests(results.interests_identified);
       setStrengths(results.strengths_identified);
       
-      addToast('Results loaded successfully!', { type: 'success' });
+      // addToast('Results loaded successfully!', { type: 'success' });
     } catch (e) {
       console.error('Failed to load results:', e);
       setError('Failed to load results. Please try again.');
@@ -455,28 +455,40 @@ const DomainResultsPage: React.FC = () => {
                           Your Key Interests
                         </h4>
                         <div className="mb-4 flex flex-wrap gap-2">
-                          {domain.key_interests?.map((interest, idx) => (
-                            <span
-                              key={idx}
-                              className="rounded-full bg-teal-100 px-3 py-1 text-sm font-medium text-teal-700"
-                            >
-                              {interest}
+                          {domain.key_interests && domain.key_interests.length > 0 ? (
+                            domain.key_interests.map((interest, idx) => (
+                              <span
+                                key={idx}
+                                className="rounded-full bg-teal-100 px-3 py-1 text-sm font-medium text-teal-700"
+                              >
+                                {interest}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500 italic">
+                              No specific interests identified for this domain
                             </span>
-                          ))}
+                          )}
                         </div>
 
                         <h4 className="mb-3 text-lg font-semibold text-gray-900">
                           Related School Subjects
                         </h4>
                         <div className="mb-4 flex flex-wrap gap-2">
-                          {domain.related_subjects?.map((subject, idx) => (
-                            <span
-                              key={idx}
-                              className="rounded-full bg-cyan-100 px-3 py-1 text-sm font-medium text-cyan-700"
-                            >
-                              {subject}
+                          {domain.related_subjects && domain.related_subjects.length > 0 ? (
+                            domain.related_subjects.map((subject, idx) => (
+                              <span
+                                key={idx}
+                                className="rounded-full bg-cyan-100 px-3 py-1 text-sm font-medium text-cyan-700"
+                              >
+                                {subject}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500 italic">
+                              No specific subjects identified for this domain
                             </span>
-                          ))}
+                          )}
                         </div>
                       </div>
 
@@ -484,63 +496,81 @@ const DomainResultsPage: React.FC = () => {
                         <h4 className="mb-3 text-lg font-semibold text-gray-900">
                           Sub-Domains to Explore
                         </h4>
-                        <ul className="mb-6 space-y-2">
-                          {domain.sub_domains?.map((subDomain, idx) => (
-                            <li key={idx} className="flex items-start space-x-2">
-                              <svg
-                                className="mt-0.5 h-5 w-5 shrink-0 text-teal-500"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              <span className="text-gray-600">{subDomain}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        {domain.sub_domains && domain.sub_domains.length > 0 ? (
+                          <ul className="mb-6 space-y-2">
+                            {domain.sub_domains.map((subDomain, idx) => (
+                              <li key={idx} className="flex items-start space-x-2">
+                                <svg
+                                  className="mt-0.5 h-5 w-5 shrink-0 text-teal-500"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                                <span className="text-gray-600">{subDomain}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mb-6 text-sm text-gray-500 italic">
+                            No specific sub-domains identified for this domain
+                          </p>
+                        )}
 
                         <h4 className="mb-3 text-lg font-semibold text-gray-900">
                           Exploration Activities
                         </h4>
-                        <ul className="mb-6 space-y-2">
-                          {domain.exploration_activities?.map((activity, idx) => (
-                            <li key={idx} className="flex items-start space-x-2">
-                              <svg
-                                className="mt-0.5 h-5 w-5 shrink-0 text-green-500"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              <span className="text-gray-600">{activity}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        {domain.exploration_activities && domain.exploration_activities.length > 0 ? (
+                          <ul className="mb-6 space-y-2">
+                            {domain.exploration_activities.map((activity, idx) => (
+                              <li key={idx} className="flex items-start space-x-2">
+                                <svg
+                                  className="mt-0.5 h-5 w-5 shrink-0 text-green-500"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                                <span className="text-gray-600">{activity}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mb-6 text-sm text-gray-500 italic">
+                            No specific exploration activities identified for this domain
+                          </p>
+                        )}
 
                         <h4 className="mb-3 text-lg font-semibold text-gray-900">
                           Potential Career Paths
                         </h4>
                         <div className="flex flex-wrap gap-2">
-                          {domain.potential_careers?.map((career, idx) => (
-                            <span
-                              key={idx}
-                              className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-700"
-                            >
-                              {career}
+                          {domain.potential_careers && domain.potential_careers.length > 0 ? (
+                            domain.potential_careers.map((career, idx) => (
+                              <span
+                                key={idx}
+                                className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-700"
+                              >
+                                {career}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500 italic">
+                              No specific career paths identified for this domain
                             </span>
-                          ))}
+                          )}
                         </div>
                       </div>
                     </div>
