@@ -620,9 +620,6 @@ const DomainResultsPage: React.FC = () => {
                           <span className="inline-block rounded-full bg-teal-600 px-3 py-1 text-xs font-semibold text-white">
                             Q{message.question_number}
                           </span>
-                          <span className="ml-3 text-xs text-gray-500">
-                            {message.phase === 'exploration' ? '🔍 Exploration' : '📍 Domain Mapping'}
-                          </span>
                           {message.timestamp && (
                             <span className="ml-auto text-xs text-gray-500">
                               {new Date(message.timestamp).toLocaleTimeString([], {

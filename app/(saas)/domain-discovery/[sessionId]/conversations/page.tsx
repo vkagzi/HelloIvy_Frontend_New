@@ -9,14 +9,18 @@ import {
   domainDiscoveryApi,
   SendMessageResponse,
 } from '@/lib/domain-discovery-api';
+import { marked } from 'marked';
 
 type Role = 'bot' | 'user';
-type Phase = 'exploration' | 'mapping';
+type Phase = 'riasec' | 'deepdive';
+type QuestionType = 'riasec' | 'deepdive' | 'general';
 
 interface Message {
   id: string;
   type: Role;
   content: string;
+  question_type?: QuestionType;
+  choices?: string[];  // For RIASEC questions
   timestamp: string; // ISO
 }
 
@@ -59,6 +63,8 @@ const DomainConversationPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [questionsCompleted, setQuestionsCompleted] = useState(0);
+  const [riasecCompleted, setRiasecCompleted] = useState(0);
+  const [deepdiveCompleted, setDeepdiveCompleted] = useState(0);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [isGeneratingResults, setIsGeneratingResults] = useState(false);
   const [resultsGenerationFailed, setResultsGenerationFailed] = useState(false);
@@ -81,8 +87,7 @@ const DomainConversationPage: React.FC = () => {
   );
   const canEndConversation = userAnswerCount >= MIN_QUESTIONS_FOR_RECOMMENDATIONS;
   const allQuestionsCompleted = userAnswerCount >= TOTAL_QUESTIONS;
-  const phase: Phase =
-    askedCount < EXPLORATION_QUESTIONS_COUNT ? 'exploration' : 'mapping';
+  const phase: Phase = riasecCompleted < 10 ? 'riasec' : 'deepdive';
 
   // Initialize session on mount
   useEffect(() => {
@@ -111,6 +116,8 @@ const DomainConversationPage: React.FC = () => {
             id: m.message_id,
             type: m.type,
             content: m.content,
+            question_type: m.question_type,
+            choices: m.choices,
             timestamp: m.timestamp,
           }));
           setMessages(loadedMessages);
@@ -185,6 +192,8 @@ const DomainConversationPage: React.FC = () => {
       setCurrentStep(response.current_step);
       setProgressPercentage(response.progress_percentage);
       setQuestionsCompleted(response.questions_completed);
+      setRiasecCompleted(response.riasec_completed);
+      setDeepdiveCompleted(response.deepdive_completed);
 
       // Check if conversation is complete
       if (response.is_complete) {
@@ -199,11 +208,13 @@ const DomainConversationPage: React.FC = () => {
         return;
       }
 
-      // Add bot response
+      // Add bot response with question type and choices
       const botMsg: Message = {
         id: `bot-${Date.now()}`,
         type: 'bot',
         content: response.bot_response,
+        question_type: response.question_type,
+        choices: response.choices,
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, botMsg]);
@@ -215,6 +226,72 @@ const DomainConversationPage: React.FC = () => {
       // Remove the user message if we failed
       setMessages((prev) => prev.slice(0, -1));
       setInput(userMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  // Handle RIASEC option selection
+  async function handleOptionSelect(choice: string) {
+    if (isLoading || !sessionId) return;
+    
+    // Treat it like sending a text message
+    const userMessage = choice;
+
+    // Add user message to UI immediately
+    const studentMsg: Message = {
+      id: `user-${Date.now()}`,
+      type: 'user',
+      content: userMessage,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, studentMsg]);
+    setIsLoading(true);
+
+    try {
+      // Send message to backend and get AI response
+      const response: SendMessageResponse = await domainDiscoveryApi.sendMessage(
+        sessionId,
+        userMessage
+      );
+
+      // Update step and progress tracking
+      setCurrentStep(response.current_step);
+      setProgressPercentage(response.progress_percentage);
+      setQuestionsCompleted(response.questions_completed);
+      setRiasecCompleted(response.riasec_completed);
+      setDeepdiveCompleted(response.deepdive_completed);
+
+      // Check if conversation is complete
+      if (response.is_complete) {
+        // Add final bot message
+        const botMsg: Message = {
+          id: `bot-${Date.now()}`,
+          type: 'bot',
+          content: response.bot_response,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, botMsg]);
+        return;
+      }
+
+      // Add bot response with question type and choices
+      const botMsg: Message = {
+        id: `bot-${Date.now()}`,
+        type: 'bot',
+        content: response.bot_response,
+        question_type: response.question_type,
+        choices: response.choices,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      addToast('Could not get a response. Please try again.', {
+        type: 'error',
+      });
+      // Remove the user message if we failed
+      setMessages((prev) => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
     }
@@ -472,6 +549,16 @@ const DomainConversationPage: React.FC = () => {
     isRecording ? stopRecording() : startRecording();
   };
 
+  // Convert markdown to HTML
+  const renderMarkdown = (content: string): string => {
+    try {
+      return marked.parse(content, { async: false }) as string;
+    } catch (error) {
+      console.error('Markdown parsing error:', error);
+      return content;
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 bg-linear-to-br from-teal-50 to-cyan-100">
       <div className="flex min-h-0 flex-1 flex-col">
@@ -486,9 +573,9 @@ const DomainConversationPage: React.FC = () => {
                 🧭 Domain Discovery Journey
               </Heading>
               <Paragraph className="mt-1 text-sm text-gray-600">
-                Question {questionsCompleted}/{TOTAL_QUESTIONS} • Phase:{' '}
+                Question {questionsCompleted}/{TOTAL_QUESTIONS} •{' '}
                 <span className="font-medium">
-                  {phase === 'exploration' ? 'Interest Exploration' : 'Domain Mapping'}
+                  {phase === 'riasec' ? `RIASEC: ${riasecCompleted}/10` : `Deep Dive: ${deepdiveCompleted}/10`}
                 </span>
               </Paragraph>
               
@@ -529,40 +616,64 @@ const DomainConversationPage: React.FC = () => {
 
         {/* Messages */}
         <div ref={messagesContainerRef} className="flex-1 space-y-6 overflow-y-auto px-6 py-4">
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${m.type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          {messages.map((m, index) => {
+            const isLatestBotMessage = m.type === 'bot' && index === messages.length - 1;
+            const isRiasecQuestion = m.question_type === 'riasec' && m.choices && m.choices.length > 0;
+            
+            return (
               <div
-                className={`max-w-3xl ${m.type === 'user' ? 'text-right' : 'text-left'}`}
+                key={m.id}
+                className={`flex ${m.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`rounded-lg px-4 py-3 ${
-                    m.type === 'user'
-                      ? 'ml-12 bg-linear-to-r from-teal-500 to-cyan-500 text-white'
-                      : 'border bg-white text-gray-900 shadow-sm'
-                  } `}
+                  className={`max-w-3xl ${m.type === 'user' ? 'text-right' : 'text-left'}`}
                 >
-                  <Paragraph
-                    className={
-                      m.type === 'user' ? 'text-white' : 'text-gray-900'
-                    }
+                  <div
+                    className={`rounded-lg px-4 py-3 ${
+                      m.type === 'user'
+                        ? 'ml-12 bg-linear-to-r from-teal-500 to-cyan-500 text-white'
+                        : 'border bg-white text-gray-900 shadow-sm'
+                    } `}
                   >
-                    {m.content}
-                  </Paragraph>
-                </div>
-                <div
-                  className={`mt-1 text-xs ${m.type === 'user' ? 'text-teal-100' : 'text-gray-500'}`}
-                >
-                  {new Date(m.timestamp).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                    {m.type === 'user' ? (
+                      <Paragraph className="text-white">
+                        {m.content}
+                      </Paragraph>
+                    ) : (
+                      <div
+                        className="prose prose-sm max-w-none text-gray-900 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-2 [&_p]:mt-0 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }}
+                      />
+                    )}
+                  </div>
+                  
+                  {/* RIASEC Choice Buttons - show only on latest bot message if it's a RIASEC question */}
+                  {m.type === 'bot' && isLatestBotMessage && isRiasecQuestion && !isLoading && (
+                    <div className="mt-3 flex gap-3">
+                      {m.choices!.map((choice, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleOptionSelect(choice)}
+                          className="flex-1 rounded-lg border-2 border-teal-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 transition-all hover:border-teal-500 hover:bg-teal-50 hover:shadow-md"
+                        >
+                          {choice}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div
+                    className={`mt-1 text-xs ${m.type === 'user' ? 'text-teal-100' : 'text-gray-500'}`}
+                  >
+                    {new Date(m.timestamp).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {isLoading && !allQuestionsCompleted && (
             <div className="flex justify-start">
@@ -602,76 +713,102 @@ const DomainConversationPage: React.FC = () => {
 
         {/* Input */}
         <div className="border-t bg-white px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex-1">
-              <Textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your response…"
-                className="min-h-10! py-2!"
-                disabled={isLoading}
-              />
-            </div>
-            <div className="flex space-x-2">
-              {/* STT: Voice recording */}
-              <button
-                onClick={toggleRecording}
-                disabled={isLoading || isTranscribing}
-                className={`rounded-lg border px-3 py-2 transition-colors hover:bg-gray-50 ${
-                  isRecording
-                    ? 'border-red-300 bg-red-100 text-red-700'
-                    : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                } ${isLoading || isTranscribing ? 'cursor-not-allowed opacity-50' : ''}`}
-                title={isRecording ? 'Stop recording' : 'Start voice input'}
-              >
-                {isRecording ? (
-                  <div className="flex items-center space-x-1">
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
-                    <span className="text-xs">🎤</span>
+          {(() => {
+            // Show "thinking" message when loading
+            if (isLoading) {
+              return (
+                <div className="text-center text-sm text-gray-600">
+                  ⏳ 
+                </div>
+              );
+            }
+            
+            const latestBotMessage = messages.filter(m => m.type === 'bot').slice(-1)[0];
+            const isRiasecQuestion = latestBotMessage?.question_type === 'riasec' && latestBotMessage?.choices && latestBotMessage.choices.length > 0;
+            
+            if (isRiasecQuestion) {
+              return (
+                <div className="text-center text-sm text-gray-600">
+                  👆 Please select one of the options above to continue
+                </div>
+              );
+            }
+            
+            return (
+              <>
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <Textarea
+                      ref={inputRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Type your response…"
+                      className="min-h-10! py-2!"
+                      disabled={isLoading}
+                    />
                   </div>
-                ) : isTranscribing ? (
-                  <div className="flex items-center space-x-1">
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-teal-500 border-t-transparent"></div>
-                    <span className="text-xs">⏳</span>
-                  </div>
-                ) : (
-                  '🎤'
-                )}
-              </button>
+                  <div className="flex space-x-2">
+                    {/* STT: Voice recording */}
+                    <button
+                      onClick={toggleRecording}
+                      disabled={isLoading || isTranscribing}
+                      className={`rounded-lg border px-3 py-2 transition-colors hover:bg-gray-50 ${
+                        isRecording
+                          ? 'border-red-300 bg-red-100 text-red-700'
+                          : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                      } ${isLoading || isTranscribing ? 'cursor-not-allowed opacity-50' : ''}`}
+                      title={isRecording ? 'Stop recording' : 'Start voice input'}
+                    >
+                      {isRecording ? (
+                        <div className="flex items-center space-x-1">
+                          <div className="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
+                          <span className="text-xs">🎤</span>
+                        </div>
+                      ) : isTranscribing ? (
+                        <div className="flex items-center space-x-1">
+                          <div className="h-3 w-3 animate-spin rounded-full border-2 border-teal-500 border-t-transparent"></div>
+                          <span className="text-xs">⏳</span>
+                        </div>
+                      ) : (
+                        '🎤'
+                      )}
+                    </button>
 
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading}
-                className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 disabled:opacity-50"
-              >
-                Send
-              </button>
-              <button
-                onClick={handleEnd}
-                disabled={!canEndConversation}
-                title={
-                  !canEndConversation
-                    ? `Answer at least ${MIN_QUESTIONS_FOR_RECOMMENDATIONS} questions`
-                    : 'End conversation and get results'
-                }
-                className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
-                  canEndConversation
-                    ? 'bg-linear-to-r cursor-pointer from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700'
-                    : 'cursor-not-allowed bg-gray-400 opacity-60'
-                }`}
-              >
-                End →
-              </button>
-            </div>
-          </div>
-          <div className="mt-2 text-xs text-gray-500">
-            Tip: Press <span className="font-semibold">Enter</span> to send,{' '}
-            <span className="font-semibold">Shift+Enter</span> for a new line.{' '}
-            {isRecording && '🎤 Recording...'}{' '}
-            {isTranscribing && '⏳ Processing speech...'}
-          </div>
+                    <button
+                      onClick={handleSend}
+                      disabled={!input.trim() || isLoading}
+                      className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Send
+                    </button>
+                    <button
+                      onClick={handleEnd}
+                      disabled={!canEndConversation}
+                      title={
+                        !canEndConversation
+                          ? `Answer at least ${MIN_QUESTIONS_FOR_RECOMMENDATIONS} questions`
+                          : 'End conversation and get results'
+                      }
+                      className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
+                        canEndConversation
+                          ? 'bg-linear-to-r cursor-pointer from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700'
+                          : 'cursor-not-allowed bg-gray-400 opacity-60'
+                      }`}
+                    >
+                      End →
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  Tip: Press <span className="font-semibold">Enter</span> to send,{' '}
+                  <span className="font-semibold">Shift+Enter</span> for a new line.{' '}
+                  {isRecording && '🎤 Recording...'}{' '}
+                  {isTranscribing && '⏳ Processing speech...'}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 

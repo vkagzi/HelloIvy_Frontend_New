@@ -10,8 +10,8 @@ export interface DomainMessage {
   message_id: string;
   type: 'bot' | 'user';
   content: string;
-  step_number: number;
-  phase: 'exploration' | 'mapping';
+  question_type?: 'riasec' | 'deepdive' | 'general';
+  choices?: string[];  // For RIASEC questions
   timestamp: string;
 }
 
@@ -19,7 +19,11 @@ export interface DomainDiscoverySession {
   session_id: string;
   current_step: number;
   total_steps: number;
-  current_phase: 'exploration' | 'mapping';
+  riasec_questions_count: number;
+  deepdive_questions_count: number;
+  riasec_completed: number;
+  deepdive_completed: number;
+  current_phase: 'riasec' | 'deepdive';
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -39,10 +43,14 @@ export interface SendMessageResponse {
   session_id: string;
   user_message: string;
   bot_response: string;
+  question_type?: 'riasec' | 'deepdive' | 'general';
+  choices?: string[];  // For RIASEC questions
   current_step: number;
   total_steps: number;
+  riasec_completed: number;
+  deepdive_completed: number;
   is_complete: boolean;
-  phase: 'exploration' | 'mapping';
+  phase: 'riasec' | 'deepdive';
   progress_percentage: number;
   questions_completed: number;
   partial_riasec_analysis?: RIASECScores | null;
@@ -70,7 +78,6 @@ export interface ResultsSummary {
 
 export interface TranscriptMessage {
   question_number: number;
-  phase: 'exploration' | 'mapping';
   bot_question: string;
   student_response: string;
   timestamp: string;
@@ -111,7 +118,9 @@ export interface MessageHistoryResponse {
   messages: DomainMessage[];
   current_step: number;
   total_steps: number;
-  current_phase: 'exploration' | 'mapping';
+  riasec_completed: number;
+  deepdive_completed: number;
+  current_phase: 'riasec' | 'deepdive';
   is_active: boolean;
 }
 
@@ -123,7 +132,9 @@ export interface SessionListItem {
   session_id: string;
   current_step: number;
   total_steps: number;
-  current_phase: 'exploration' | 'mapping';
+  riasec_completed: number;
+  deepdive_completed: number;
+  current_phase: 'riasec' | 'deepdive';
   is_active: boolean;
   created_at: string;
   updated_at: string;

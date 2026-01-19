@@ -183,9 +183,9 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                             <div className="mt-1 text-sm text-gray-600">
                               Progress: {session.current_step}/{session.total_steps}{' '}
                               questions •{' '}
-                              {session.current_phase === 'exploration'
-                                ? 'Interest Exploration'
-                                : 'Domain Mapping'}
+                              {session.current_phase === 'riasec'
+                                ? `RIASEC: ${session.riasec_completed}/10`
+                                : `Deep Dive: ${session.deepdive_completed}/10`}
                             </div>
                           </div>
                           <div className="flex gap-2">
