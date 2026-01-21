@@ -10,6 +10,7 @@ import {
   SendMessageResponse,
 } from '@/lib/domain-discovery-api';
 import { marked } from 'marked';
+import { Button } from '@/components/ui/button';
 
 type Role = 'bot' | 'user';
 type Phase = 'riasec' | 'deepdive';
@@ -23,10 +24,6 @@ interface Message {
   choices?: string[];  // For RIASEC questions
   timestamp: string; // ISO
 }
-
-const TOTAL_QUESTIONS = 20;
-const EXPLORATION_QUESTIONS_COUNT = 4;
-const MIN_QUESTIONS_FOR_RECOMMENDATIONS = 3;
 
 /** ================== Transcript Helpers ================== */
 function loadTranscript(sessionId: string): Message[] {
@@ -63,8 +60,12 @@ const DomainConversationPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [questionsCompleted, setQuestionsCompleted] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState(20);
+  const [serverPhase, setServerPhase] = useState<Phase>('riasec');
   const [riasecCompleted, setRiasecCompleted] = useState(0);
   const [deepdiveCompleted, setDeepdiveCompleted] = useState(0);
+  const [riasecQuestionsCount, setRiasecQuestionsCount] = useState(10);
+  const [deepdiveQuestionsCount, setDeepdiveQuestionsCount] = useState(10);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [isGeneratingResults, setIsGeneratingResults] = useState(false);
   const [resultsGenerationFailed, setResultsGenerationFailed] = useState(false);
@@ -85,9 +86,9 @@ const DomainConversationPage: React.FC = () => {
     () => messages.filter((m) => m.type === 'user').length,
     [messages]
   );
-  const canEndConversation = userAnswerCount >= MIN_QUESTIONS_FOR_RECOMMENDATIONS;
-  const allQuestionsCompleted = userAnswerCount >= TOTAL_QUESTIONS;
-  const phase: Phase = riasecCompleted < 10 ? 'riasec' : 'deepdive';
+  const allQuestionsCompleted = userAnswerCount >= totalQuestions;
+  const canEndConversation = allQuestionsCompleted;
+  const phase: Phase = serverPhase;
 
   // Initialize session on mount
   useEffect(() => {
@@ -103,15 +104,52 @@ const DomainConversationPage: React.FC = () => {
       return;
     }
     
-    try {
+      try {
       setIsLoading(true);
 
-      // Try to load existing session
+      // Try to load existing session messages and also fetch session details for totals
       try {
         const historyResponse = await domainDiscoveryApi.getMessages(sessionId);
         if (historyResponse.messages.length > 0) {
           // Restore existing session
           setCurrentStep(historyResponse.current_step);
+
+          // Set counts from message history as a fallback
+          const rq = historyResponse.riasec_completed ?? 0;
+          const dq = historyResponse.deepdive_completed ?? 0;
+          setRiasecCompleted(rq);
+          setDeepdiveCompleted(dq);
+          setQuestionsCompleted(rq + dq);
+
+          // Try to get authoritative totals from the session endpoint
+          try {
+            const sessionResp = await domainDiscoveryApi.getCurrentSession();
+            if (sessionResp) {
+              // Set individual question counts
+              const riasecCount = sessionResp.riasec_questions_count ?? 10;
+              const deepdiveCount = sessionResp.deepdive_questions_count ?? 10;
+              setRiasecQuestionsCount(riasecCount);
+              setDeepdiveQuestionsCount(deepdiveCount);
+              
+              const total = sessionResp.total_steps ?? (riasecCount + deepdiveCount);
+              if (total) setTotalQuestions(total);
+
+              const rqCompleted = sessionResp.riasec_completed ?? rq;
+              const dqCompleted = sessionResp.deepdive_completed ?? dq;
+              setRiasecCompleted(rqCompleted);
+              setDeepdiveCompleted(dqCompleted);
+              setQuestionsCompleted(rqCompleted + dqCompleted);
+
+              if (sessionResp.current_phase) setServerPhase(sessionResp.current_phase);
+
+              if (total) {
+                setProgressPercentage(Math.round(((rqCompleted + dqCompleted) / total) * 100));
+              }
+            }
+          } catch (e) {
+            // ignore and continue with historyResponse fallback values
+          }
+
           const loadedMessages: Message[] = historyResponse.messages.map((m) => ({
             id: m.message_id,
             type: m.type,
@@ -194,6 +232,10 @@ const DomainConversationPage: React.FC = () => {
       setQuestionsCompleted(response.questions_completed);
       setRiasecCompleted(response.riasec_completed);
       setDeepdiveCompleted(response.deepdive_completed);
+      // Update server phase if provided
+      if (response.phase) {
+        setServerPhase(response.phase);
+      }
 
       // Check if conversation is complete
       if (response.is_complete) {
@@ -261,6 +303,10 @@ const DomainConversationPage: React.FC = () => {
       setQuestionsCompleted(response.questions_completed);
       setRiasecCompleted(response.riasec_completed);
       setDeepdiveCompleted(response.deepdive_completed);
+      // Update server phase if provided
+      if (response.phase) {
+        setServerPhase(response.phase);
+      }
 
       // Check if conversation is complete
       if (response.is_complete) {
@@ -560,7 +606,7 @@ const DomainConversationPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full min-h-0 bg-linear-to-br from-teal-50 to-cyan-100">
+    <div className="flex h-[calc(100vh-6rem)] min-h-0 bg-linear-to-br from-teal-50 to-cyan-100">
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header */}
         <div className="border-b bg-white px-6 py-4 shadow-sm">
@@ -573,9 +619,9 @@ const DomainConversationPage: React.FC = () => {
                 🧭 Domain Discovery Journey
               </Heading>
               <Paragraph className="mt-1 text-sm text-gray-600">
-                Question {questionsCompleted}/{TOTAL_QUESTIONS} •{' '}
+                Question {questionsCompleted}/{totalQuestions} •{' '}
                 <span className="font-medium">
-                  {phase === 'riasec' ? `RIASEC: ${riasecCompleted}/10` : `Deep Dive: ${deepdiveCompleted}/10`}
+                  {phase === 'riasec' ? `RIASEC: ${riasecCompleted}/${riasecQuestionsCount}` : `Deep Dive: ${deepdiveCompleted}/${deepdiveQuestionsCount}`}
                 </span>
               </Paragraph>
               
@@ -600,7 +646,7 @@ const DomainConversationPage: React.FC = () => {
               disabled={!canEndConversation}
               title={
                 !canEndConversation
-                  ? `Answer at least ${MIN_QUESTIONS_FOR_RECOMMENDATIONS} questions`
+                  ? `Complete all ${totalQuestions} questions to view results`
                   : 'End conversation and get results'
               }
               className={`ml-4 whitespace-nowrap rounded-lg px-4 py-2 text-white ${
@@ -615,7 +661,7 @@ const DomainConversationPage: React.FC = () => {
         </div>
 
         {/* Messages */}
-        <div ref={messagesContainerRef} className="flex-1 space-y-6 overflow-y-auto px-6 py-4">
+        <div ref={messagesContainerRef} className="flex-1 min-h-0 space-y-6 overflow-y-auto px-6 py-4">
           {messages.map((m, index) => {
             const isLatestBotMessage = m.type === 'bot' && index === messages.length - 1;
             const isRiasecQuestion = m.question_type === 'riasec' && m.choices && m.choices.length > 0;
@@ -626,7 +672,7 @@ const DomainConversationPage: React.FC = () => {
                 className={`flex ${m.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-3xl ${m.type === 'user' ? 'text-right' : 'text-left'}`}
+                  className={`${m.type === 'user' ? 'text-right' : 'w-full text-left'}`}
                 >
                   <div
                     className={`rounded-lg px-4 py-3 ${
@@ -651,13 +697,13 @@ const DomainConversationPage: React.FC = () => {
                   {m.type === 'bot' && isLatestBotMessage && isRiasecQuestion && !isLoading && (
                     <div className="mt-3 flex gap-3">
                       {m.choices!.map((choice, idx) => (
-                        <button
+                        <Button
                           key={idx}
                           onClick={() => handleOptionSelect(choice)}
-                          className="flex-1 rounded-lg border-2 border-teal-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 transition-all hover:border-teal-500 hover:bg-teal-50 hover:shadow-md"
+                          className="rounded-lg border-2 border-teal-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 transition-all hover:border-teal-500 hover:bg-teal-50 hover:shadow-md"
                         >
                           {choice}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   )}
@@ -695,7 +741,7 @@ const DomainConversationPage: React.FC = () => {
                     🎉 All questions completed!
                   </p>
                   <p className="mb-4 text-sm text-green-800">
-                    You've completed all {TOTAL_QUESTIONS} questions. Click below to generate your personalized domain recommendations.
+                    You've completed all {totalQuestions} questions. Click below to generate your personalized domain recommendations.
                   </p>
                   <button
                     onClick={handleViewResults}
@@ -787,7 +833,7 @@ const DomainConversationPage: React.FC = () => {
                       disabled={!canEndConversation}
                       title={
                         !canEndConversation
-                          ? `Answer at least ${MIN_QUESTIONS_FOR_RECOMMENDATIONS} questions`
+                          ? `Complete all ${totalQuestions} questions to view results`
                           : 'End conversation and get results'
                       }
                       className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
@@ -821,7 +867,7 @@ const DomainConversationPage: React.FC = () => {
                 Domain Discovery Not Complete
               </h3>
               <p className="mt-2 text-sm text-gray-600">
-                You've answered {userAnswerCount} out of {TOTAL_QUESTIONS} questions. 
+                You've answered {userAnswerCount} out of {totalQuestions} questions. 
                 You need to complete all questions to get your personalized domain recommendations.
               </p>
               <p className="mt-2 text-sm font-medium text-gray-700">

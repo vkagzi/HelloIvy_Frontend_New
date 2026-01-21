@@ -20,7 +20,6 @@ interface Message {
   timestamp: string; // ISO
 }
 
-const TOTAL_QUESTIONS = 20;
 const PROFILE_QUESTIONS_COUNT = 5;
 const MIN_QUESTIONS_FOR_RECOMMENDATIONS = 3;
 
@@ -57,6 +56,7 @@ const CareerConversationPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState(20); // Default value
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [isGeneratingResults, setIsGeneratingResults] = useState(false);
   const [resultsGenerationFailed, setResultsGenerationFailed] = useState(false);
@@ -78,7 +78,7 @@ const CareerConversationPage: React.FC = () => {
     [messages]
   );
   const canEndConversation = userAnswerCount >= MIN_QUESTIONS_FOR_RECOMMENDATIONS;
-  const allQuestionsCompleted = userAnswerCount >= TOTAL_QUESTIONS;
+  const allQuestionsCompleted = userAnswerCount >= totalQuestions;
   const phase: Phase =
     askedCount < PROFILE_QUESTIONS_COUNT ? 'profile' : 'explorer';
 
@@ -105,6 +105,7 @@ const CareerConversationPage: React.FC = () => {
         if (historyResponse.messages.length > 0) {
           // Restore existing session
           setCurrentStep(historyResponse.current_step);
+          setTotalQuestions(historyResponse.total_questions || historyResponse.total_steps || 20);
           const loadedMessages: Message[] = historyResponse.messages.map((m) => ({
             id: m.message_id,
             type: m.type,
@@ -563,7 +564,7 @@ const CareerConversationPage: React.FC = () => {
                 🚀 Career Journey
               </Heading>
               <Paragraph className="mt-1 text-sm text-gray-600">
-                {askedCount}/{TOTAL_QUESTIONS} questions asked • Phase:{' '}
+                {askedCount}/{totalQuestions} questions asked • Phase:{' '}
                 <span className="font-medium">
                   {phase === 'profile' ? 'Profile Builder' : 'Career Explorer'}
                 </span>
@@ -645,7 +646,7 @@ const CareerConversationPage: React.FC = () => {
                     🎉 All questions completed!
                   </p>
                   <p className="mb-4 text-sm text-green-800">
-                    You've completed all {TOTAL_QUESTIONS} questions. Click below to generate your personalized career recommendations.
+                    You've completed all {totalQuestions} questions. Click below to generate your personalized career recommendations.
                   </p>
                   <button
                     onClick={handleViewResults}
@@ -745,7 +746,7 @@ const CareerConversationPage: React.FC = () => {
                 Career Discovery Not Complete
               </h3>
               <p className="mt-2 text-sm text-gray-600">
-                You've answered {userAnswerCount} out of {TOTAL_QUESTIONS} questions. 
+                You've answered {userAnswerCount} out of {totalQuestions} questions. 
                 You need to complete all questions to get your personalized career recommendations.
               </p>
               <p className="mt-2 text-sm font-medium text-gray-700">

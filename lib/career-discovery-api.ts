@@ -61,6 +61,7 @@ export interface MessageHistoryResponse {
   messages: CareerMessage[];
   current_step: number;
   total_steps: number;
+  total_questions: number;
   current_phase: 'profile' | 'explorer';
   is_active: boolean;
 }

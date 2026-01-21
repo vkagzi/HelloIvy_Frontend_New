@@ -47,6 +47,8 @@ export interface SendMessageResponse {
   choices?: string[];  // For RIASEC questions
   current_step: number;
   total_steps: number;
+  // Total number of questions expected for the session
+  total_questions?: number;
   riasec_completed: number;
   deepdive_completed: number;
   is_complete: boolean;
@@ -117,7 +119,6 @@ export interface MessageHistoryResponse {
   session_id: string;
   messages: DomainMessage[];
   current_step: number;
-  total_steps: number;
   riasec_completed: number;
   deepdive_completed: number;
   current_phase: 'riasec' | 'deepdive';
@@ -132,6 +133,10 @@ export interface SessionListItem {
   session_id: string;
   current_step: number;
   total_steps: number;
+  // Optional counts for question breakdowns (provided by backend when available)
+  riasec_questions_count?: number;
+  deepdive_questions_count?: number;
+  total_questions?: number;
   riasec_completed: number;
   deepdive_completed: number;
   current_phase: 'riasec' | 'deepdive';
