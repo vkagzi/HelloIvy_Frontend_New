@@ -331,6 +331,47 @@ class DomainDiscoveryAPI {
       `${this.baseUrl}/health/`
     );
   }
+
+  /**
+   * Get debug information including system prompts, model info, and user profile context
+   */
+  async getDebugInfo(sessionId: string): Promise<DebugInfo> {
+    return api<DebugInfo>(`${this.baseUrl}/${sessionId}/debug/`);
+  }
+}
+
+export interface DebugInfo {
+  session_id: string;
+  current_phase: 'riasec' | 'deepdive';
+  model_info: {
+    provider: string;
+    main_llm: {
+      type: string;
+      model: string;
+      temperature: number | null;
+      max_tokens: number | null;
+    };
+    recommendations_llm: {
+      type: string;
+      model: string;
+      temperature: number | null;
+      max_tokens: number | null;
+    };
+  };
+  system_prompts: {
+    deepdive_question_prompt: string;
+    recommendations_prompt: string;
+  };
+  user_profile_context: string;
+  riasec_context: string;
+  session_state: {
+    current_step: number;
+    total_steps: number;
+    riasec_completed: number;
+    deepdive_completed: number;
+    riasec_questions_count: number;
+    deepdive_questions_count: number;
+  };
 }
 
 // Export singleton instance

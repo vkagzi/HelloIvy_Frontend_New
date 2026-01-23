@@ -11,6 +11,7 @@ import {
 } from '@/lib/domain-discovery-api';
 import { marked } from 'marked';
 import { Button } from '@/components/ui/button';
+import { DomainDebugDialog } from '@/components/DomainDebugDialog';
 
 type Role = 'bot' | 'user';
 type Phase = 'riasec' | 'deepdive';
@@ -69,6 +70,7 @@ const DomainConversationPage: React.FC = () => {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [isGeneratingResults, setIsGeneratingResults] = useState(false);
   const [resultsGenerationFailed, setResultsGenerationFailed] = useState(false);
+  const [showDebugDialog, setShowDebugDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -612,12 +614,24 @@ const DomainConversationPage: React.FC = () => {
         <div className="border-b bg-white px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <Heading
-                level={2}
-                className="text-xl font-semibold text-gray-900"
-              >
-                🧭 Domain Discovery Journey
-              </Heading>
+              <div className="flex items-center gap-3">
+                <Heading
+                  level={2}
+                  className="text-xl font-semibold text-gray-900"
+                >
+                  🧭 Domain Discovery Journey
+                </Heading>
+                <button
+                  onClick={() => setShowDebugDialog(true)}
+                  className="group flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-purple-100 hover:shadow-sm"
+                  title="View debugging information"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                  <span>Debug</span>
+                </button>
+              </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
                 Question {questionsCompleted}/{totalQuestions} •{' '}
                 <span className="font-medium">
@@ -890,6 +904,15 @@ const DomainConversationPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Debug Dialog */}
+      {sessionId && (
+        <DomainDebugDialog
+          open={showDebugDialog}
+          onOpenChange={setShowDebugDialog}
+          sessionId={sessionId}
+        />
       )}
     </div>
   );
