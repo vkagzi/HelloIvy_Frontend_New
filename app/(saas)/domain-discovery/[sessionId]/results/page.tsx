@@ -14,6 +14,7 @@ import {
   TranscriptData,
   TranscriptMessage,
 } from '@/lib/domain-discovery-api';
+import { generateTranscriptPDF } from '@/lib/pdf-utils';
 
 type Role = 'bot' | 'user';
 
@@ -112,13 +113,21 @@ const DomainResultsPage: React.FC = () => {
 
     try {
       setIsDownloadingTranscript(true);
-      const blob = await domainDiscoveryApi.downloadTranscript(sessionId);
+      
+      // Use existing transcript data if available, otherwise fetch it
+      let transcriptData = transcript;
+      if (!transcriptData) {
+        transcriptData = await domainDiscoveryApi.getTranscript(sessionId);
+      }
+      
+      // Generate PDF on the frontend
+      const pdfBlob = generateTranscriptPDF(transcriptData);
       
       // Create download link
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Domain_Discovery_Transcript.txt`;
+      link.download = `Domain_Discovery_Transcript_${transcriptData.student_name.replace(/\s+/g, '_')}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

@@ -80,6 +80,7 @@ export interface ResultsSummary {
 
 export interface TranscriptMessage {
   question_number: number;
+  phase?: string;
   bot_question: string;
   student_response: string;
   timestamp: string;
@@ -299,7 +300,8 @@ class DomainDiscoveryAPI {
   }
 
   /**
-   * Download conversation transcript as text file
+   * @deprecated Use getTranscript() and generateTranscriptPDF() from pdf-utils instead
+   * Download conversation transcript as text file (legacy method)
    */
   async downloadTranscript(sessionId: string): Promise<Blob> {
     const baseUrl =
