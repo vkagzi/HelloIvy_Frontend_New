@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { getProfileData } from '@/app/(saas)/profile/lib/api';
 import { getToken } from '@/lib/api';
 
@@ -31,6 +31,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [extraCurricularDetails, setExtraCurricularDetails] = useState<ProfileData>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
 
   const fetchProfileData = useCallback(async (): Promise<void> => {
     try {
@@ -101,6 +102,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     fetchProfileData();
   }, [fetchProfileData]);
 

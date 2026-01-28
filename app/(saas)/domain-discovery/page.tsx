@@ -18,6 +18,16 @@ import {
 
 interface DomainDiscoveryPageProps {}
 
+// Module-level cache to prevent duplicate API calls in Strict Mode
+let sessionsCache: { data: SessionListItem[] | null; promise: Promise<SessionListItem[]> | null; timestamp: number } = {
+  data: null,
+  promise: null,
+  timestamp: 0,
+};
+
+// Cache expires after 30 seconds to ensure fresh data on real navigation
+const CACHE_TTL = 30000;
+
 export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -30,20 +40,54 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
   const instructions = `This module helps you discover your ideal academic and interest domains through personalized, AI-powered analysis based on your unique curiosities and passions. We analyze your existing profile data and guide you through 20 thoughtful questions about your interests. You'll receive personalized domain recommendations with related subjects, exploration activities, and potential career paths. The process takes about 30-40 minutes and is completely personalized to your background.`;
 
   useEffect(() => {
+    let isCancelled = false;
+    
+    const loadSessions = async () => {
+      try {
+        setIsLoadingSessions(true);
+        
+        const now = Date.now();
+        const isCacheValid = sessionsCache.data !== null && (now - sessionsCache.timestamp) < CACHE_TTL;
+        
+        // Use cached data if available and not expired
+        if (isCacheValid) {
+          setSessions(sessionsCache.data!);
+          setIsLoadingSessions(false);
+          return;
+        }
+        
+        // Reuse in-flight request if one exists
+        if (!sessionsCache.promise) {
+          sessionsCache.promise = domainDiscoveryApi.listSessions().then(res => {
+            sessionsCache.data = res.sessions;
+            sessionsCache.promise = null;
+            sessionsCache.timestamp = Date.now();
+            return res.sessions;
+          }).catch(err => {
+            sessionsCache.promise = null;
+            throw err;
+          });
+        }
+        
+        const sessionsList = await sessionsCache.promise;
+        if (!isCancelled) {
+          setSessions(sessionsList);
+        }
+      } catch (err) {
+        console.error('Failed to load sessions:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingSessions(false);
+        }
+      }
+    };
+    
     loadSessions();
+    
+    return () => {
+      isCancelled = true;
+    };
   }, []);
-
-  const loadSessions = async () => {
-    try {
-      setIsLoadingSessions(true);
-      const response = await domainDiscoveryApi.listSessions();
-      setSessions(response.sessions);
-    } catch (err) {
-      console.error('Failed to load sessions:', err);
-    } finally {
-      setIsLoadingSessions(false);
-    }
-  };
 
   const handleListen = () => {
     speakText(instructions);
@@ -70,6 +114,9 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
       // Create a new session
       const session = await domainDiscoveryApi.createSession();
       console.log('Created new session:', session);
+
+      // Clear cache so session list is refreshed on return
+      sessionsCache = { data: null, promise: null, timestamp: 0 };
 
       // Navigate to conversation page with session ID
       router.push(`/domain-discovery/${session.session_id}/conversations`);

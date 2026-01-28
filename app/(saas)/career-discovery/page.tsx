@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { careerDiscoveryApi, SessionListItem } from '@/lib/career-discovery-api';
 import { 
@@ -35,54 +35,58 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   const [domainRecommendations, setDomainRecommendations] = useState<DomainRecommendation[]>([]);
   const [isCheckingDomain, setIsCheckingDomain] = useState(true);
   const { speakText, isSpeaking } = useOpenAITTS();
+  const hasFetchedRef = useRef(false);
 
   const instructions = `This module helps you discover your ideal career path through personalized, AI-powered analysis based on your unique profile and experiences. We analyze your existing profile data and guide you through 20 thoughtful questions about your preferences. You'll receive personalized career recommendations with detailed insights, salary ranges, and specific next steps. The process takes about 30-40 minutes and is completely personalized to your background.`;
 
   useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+
+    const checkDomainDiscovery = async () => {
+      try {
+        setIsCheckingDomain(true);
+        const response = await domainDiscoveryApi.listSessions();
+        setHasDomainSessions(response.sessions.length > 0);
+        if (response.sessions.length > 0) {
+          // Get the most recent session (sessions are already ordered by -created_at)
+          const latestSession = response.sessions[0];
+          setLatestDomainSession(latestSession);
+          
+          // Fetch recommendations for the latest session
+          try {
+            const recsResponse = await domainDiscoveryApi.getRecommendations(latestSession.session_id);
+            setDomainRecommendations(recsResponse.recommendations || []);
+          } catch (err) {
+            console.error('Failed to fetch domain recommendations:', err);
+            setDomainRecommendations([]);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check domain discovery sessions:', err);
+        setHasDomainSessions(false);
+        setLatestDomainSession(null);
+        setDomainRecommendations([]);
+      } finally {
+        setIsCheckingDomain(false);
+      }
+    };
+
+    const loadSessions = async () => {
+      try {
+        setIsLoadingSessions(true);
+        const response = await careerDiscoveryApi.listSessions();
+        setSessions(response.sessions);
+      } catch (err) {
+        console.error('Failed to load sessions:', err);
+      } finally {
+        setIsLoadingSessions(false);
+      }
+    };
+
     checkDomainDiscovery();
     loadSessions();
   }, []);
-
-  const checkDomainDiscovery = async () => {
-    try {
-      setIsCheckingDomain(true);
-      const response = await domainDiscoveryApi.listSessions();
-      setHasDomainSessions(response.sessions.length > 0);
-      if (response.sessions.length > 0) {
-        // Get the most recent session (sessions are already ordered by -created_at)
-        const latestSession = response.sessions[0];
-        setLatestDomainSession(latestSession);
-        
-        // Fetch recommendations for the latest session
-        try {
-          const recsResponse = await domainDiscoveryApi.getRecommendations(latestSession.session_id);
-          setDomainRecommendations(recsResponse.recommendations || []);
-        } catch (err) {
-          console.error('Failed to fetch domain recommendations:', err);
-          setDomainRecommendations([]);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to check domain discovery sessions:', err);
-      setHasDomainSessions(false);
-      setLatestDomainSession(null);
-      setDomainRecommendations([]);
-    } finally {
-      setIsCheckingDomain(false);
-    }
-  };
-
-  const loadSessions = async () => {
-    try {
-      setIsLoadingSessions(true);
-      const response = await careerDiscoveryApi.listSessions();
-      setSessions(response.sessions);
-    } catch (err) {
-      console.error('Failed to load sessions:', err);
-    } finally {
-      setIsLoadingSessions(false);
-    }
-  };
 
   const handleListen = () => {
     speakText(instructions);

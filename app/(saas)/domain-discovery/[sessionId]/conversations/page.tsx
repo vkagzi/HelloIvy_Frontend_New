@@ -71,6 +71,7 @@ const DomainConversationPage: React.FC = () => {
   const [isGeneratingResults, setIsGeneratingResults] = useState(false);
   const [resultsGenerationFailed, setResultsGenerationFailed] = useState(false);
   const [showDebugDialog, setShowDebugDialog] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -149,7 +150,16 @@ const DomainConversationPage: React.FC = () => {
               }
             }
           } catch (e) {
-            // ignore and continue with historyResponse fallback values
+            // Session may have ended - check if it's because session is complete
+            const error = e as { message?: string };
+            if (error.message?.includes('No active domain discovery session found')) {
+              // Session has ended - mark it as complete
+              setSessionEnded(true);
+              setProgressPercentage(100);
+              setQuestionsCompleted(totalQuestions);
+              console.log('Session has ended. Showing results view.');
+            }
+            // Continue with historyResponse fallback values
           }
 
           const loadedMessages: Message[] = historyResponse.messages.map((m) => ({
@@ -773,7 +783,11 @@ const DomainConversationPage: React.FC = () => {
 
         {/* Input */}
         <div className="border-t bg-white px-6 py-4">
-          {(() => {
+          {sessionEnded ? (
+            <div className="text-center text-sm text-gray-600">
+              ✅ This session has ended. Click "View Your Results" above to see your domain recommendations.
+            </div>
+          ) : (() => {
             // Show "thinking" message when loading
             if (isLoading) {
               return (

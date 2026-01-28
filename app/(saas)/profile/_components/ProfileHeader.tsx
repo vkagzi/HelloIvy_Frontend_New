@@ -6,6 +6,7 @@ import imgIcon from '@/assets/images/icon.png';
 import { Heading, Paragraph } from '@/app/_components/Typography';
 import { FiIcon } from '@/app/_components/Icons';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import { useUserAuth } from '@/app/_hooks/useUserAuth';
 
 type InfoItemProps = {
   icon: string;
@@ -48,6 +49,7 @@ const ProfileHeaderSkeleton: React.FC = () => (
 
 const ProfileHeaderView: React.FC = () => {
   const { personalDetails: defaultValues, loading } = useProfile();
+  const { userDetails } = useUserAuth();
 
   if (loading) {
     return <ProfileHeaderSkeleton />;
@@ -65,7 +67,7 @@ const ProfileHeaderView: React.FC = () => {
   };
 
   const profileInfo = [
-    { icon: 'envelope', value: getStringValue(defaultValues.email) },
+    { icon: 'envelope', value: userDetails.email || undefined },
     { icon: 'phone-call', value: getStringValue(defaultValues.phoneNumber) },
     { icon: 'user', value: getStringValue(defaultValues.gender) },
     { icon: 'cake-birthday', value: getStringValue(defaultValues.dob) },

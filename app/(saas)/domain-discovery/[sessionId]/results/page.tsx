@@ -14,7 +14,7 @@ import {
   TranscriptData,
   TranscriptMessage,
 } from '@/lib/domain-discovery-api';
-import { generateTranscriptPDF } from '@/lib/pdf-utils';
+import { generateTranscriptPDF, generateDomainResultsPDF, DomainResultsData } from '@/lib/pdf-utils';
 
 type Role = 'bot' | 'user';
 
@@ -43,6 +43,7 @@ const DomainResultsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
   const [isDownloadingTranscript, setIsDownloadingTranscript] = useState(false);
+  const [isDownloadingResults, setIsDownloadingResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('results');
 
@@ -139,6 +140,65 @@ const DomainResultsPage: React.FC = () => {
       addToast('Failed to download transcript', { type: 'error' });
     } finally {
       setIsDownloadingTranscript(false);
+    }
+  }
+
+  async function downloadResultsFile() {
+    if (!sessionId) return;
+
+    try {
+      setIsDownloadingResults(true);
+      
+      // Fetch results summary if not already loaded
+      let studentName = 'Student';
+      if (transcript?.student_name) {
+        studentName = transcript.student_name;
+      } else {
+        // Try to get from results summary
+        try {
+          const results = await domainDiscoveryApi.getResultsSummary(sessionId);
+          studentName = results.student_name || 'Student';
+        } catch {
+          // Use default name if fetch fails
+        }
+      }
+
+      const resultsData: DomainResultsData = {
+        studentName,
+        sessionId,
+        completedAt: new Date().toISOString(),
+        riasecScores: riasecScores || {
+          realistic: 0,
+          investigative: 0,
+          artistic: 0,
+          social: 0,
+          enterprising: 0,
+          conventional: 0,
+        },
+        interests,
+        strengths,
+        recommendations,
+      };
+      
+      // Generate PDF on the frontend
+      const pdfBlob = generateDomainResultsPDF(resultsData);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Domain_Discovery_Results_${studentName.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      addToast('Results downloaded successfully!', { type: 'success' });
+    } catch (e) {
+      console.error('Failed to download results:', e);
+      addToast('Failed to download results', { type: 'error' });
+    } finally {
+      setIsDownloadingResults(false);
     }
   }
 
@@ -676,12 +736,20 @@ const DomainResultsPage: React.FC = () => {
             <Link href="/career-discovery">🚀 Start Career Discovery</Link>
           </Button>
           <Button
-            onClick={() => window.print()}
+            onClick={downloadResultsFile}
+            disabled={isDownloadingResults}
             variant="outline"
             size="lg"
             className="font-semibold"
           >
-            📄 Save Results
+            {isDownloadingResults ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-teal-600 border-t-transparent"></div>
+                Downloading...
+              </>
+            ) : (
+              <>📄 Download Results</>
+            )}
           </Button>
         </div>
       </div>
