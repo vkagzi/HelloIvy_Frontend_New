@@ -110,6 +110,142 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
     );
   };
 
+  // Helper to get ordinal suffix for numbers (1st, 2nd, 3rd, etc.)
+  const getOrdinalSuffix = (num: number): string => {
+    const j = num % 10;
+    const k = num % 100;
+    if (j === 1 && k !== 11) return num + 'st';
+    if (j === 2 && k !== 12) return num + 'nd';
+    if (j === 3 && k !== 13) return num + 'rd';
+    return num + 'th';
+  };
+
+  // Helper to format repeatable section name properly
+  const formatRepeatableName = (name: string, item: Record<string, unknown>, idx: number): string => {
+    // Special handling for 'years' - show as "1st Year", "2nd Year" etc.
+    if (name.toLowerCase() === 'years') {
+      const yearValue = item.year;
+      const yearNum = typeof yearValue === 'number' ? yearValue : idx + 1;
+      return `${getOrdinalSuffix(yearNum)} Year`;
+    }
+    // Special handling for 'subjects' - show as "Subject 1", "Subject 2" etc.
+    if (name.toLowerCase() === 'subjects') {
+      return `Subject ${idx + 1}`;
+    }
+    // Default: capitalize first letter and add index
+    const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
+    return `${formattedName} ${idx + 1}`;
+  };
+
+  // Render year-wise scores as a table
+  const renderYearsTable = (
+    fieldDefs: FieldDefinition[],
+    fields: string[],
+    values: Record<string, unknown>[]
+  ): JSX.Element => {
+    // Get field labels for table headers
+    const fieldLabels = fields.map((fid) => {
+      const def = fieldDefs.find((f) => f.id === fid);
+      return def?.label ?? fid;
+    });
+
+    return (
+      <div className="mt-3 overflow-x-auto">
+        {/* <Label size="md" className="mb-3 block font-semibold text-neutral-800">
+          Year Wise Scores
+        </Label> */}
+        <table className="min-w-full border-collapse">
+          <thead>
+            <tr className="bg-neutral-100">
+              <th className="border border-neutral-200 px-4 py-2 text-left">
+                <Label size="sm" className="font-semibold text-neutral-700">
+                  Year
+                </Label>
+              </th>
+              {fieldLabels.map((label, idx) => (
+                <th key={idx} className="border border-neutral-200 px-4 py-2 text-left">
+                  <Label size="sm" className="font-semibold text-neutral-700">
+                    {label}
+                  </Label>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {values.map((item, idx) => {
+              const yearValue = item.year;
+              const yearNum = typeof yearValue === 'number' ? yearValue : idx + 1;
+              const bgClass = idx % 2 === 0 ? 'bg-white' : 'bg-neutral-50';
+              return (
+                <tr key={idx} className={bgClass}>
+                  <td className="border border-neutral-200 px-4 py-2">
+                    <Paragraph size="sm" className="font-medium text-blue-600">
+                      {getOrdinalSuffix(yearNum)} Year
+                    </Paragraph>
+                  </td>
+                  {fields.map((fid) => (
+                    <td key={fid} className="border border-neutral-200 px-4 py-2">
+                      <Paragraph size="xs" className="text-neutral-900">
+                        {getDisplayValue(item[fid])}
+                      </Paragraph>
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // Render subject-wise scores as a table
+  const renderSubjectsTable = (
+    fieldDefs: FieldDefinition[],
+    fields: string[],
+    values: Record<string, unknown>[]
+  ): JSX.Element => {
+    // Get field labels for table headers
+    const fieldLabels = fields.map((fid) => {
+      const def = fieldDefs.find((f) => f.id === fid);
+      return def?.label ?? fid;
+    });
+
+    return (
+      <div className="mt-3 overflow-x-auto">
+        <table className="min-w-full border-collapse">
+          <thead>
+            <tr className="bg-neutral-100">
+              {fieldLabels.map((label, idx) => (
+                <th key={idx} className="border border-neutral-200 px-4 py-2 text-left">
+                  <Label size="sm" className="font-semibold text-neutral-700">
+                    {label}
+                  </Label>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {values.map((item, idx) => {
+              const bgClass = idx % 2 === 0 ? 'bg-white' : 'bg-neutral-50';
+              return (
+                <tr key={idx} className={bgClass}>
+                  {fields.map((fid) => (
+                    <td key={fid} className="border border-neutral-200 px-4 py-2">
+                      <Paragraph size="xs" className="text-neutral-900">
+                        {getDisplayValue(item[fid])}
+                      </Paragraph>
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   // Modified renderRepeatable to use the same rowIndex
   const renderRepeatable = (
     fieldDefs: FieldDefinition[],
@@ -124,12 +260,23 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
         </Paragraph>
       );
     }
+
+    // Special handling for years - render as a table
+    if (name.toLowerCase() === 'years') {
+      return renderYearsTable(fieldDefs, fields, values as Record<string, unknown>[]);
+    }
+
+    // Special handling for subjects - render as a table
+    if (name.toLowerCase() === 'subjects') {
+      return renderSubjectsTable(fieldDefs, fields, values as Record<string, unknown>[]);
+    }
+
     return (
       <div className="flex flex-col gap-4">
         {(values as Record<string, unknown>[]).map((item, idx) => (
           <div key={idx} className="rounded-md px-2">
             <Paragraph size="sm" className="font-semibold text-blue-600">
-              {name} {idx + 1}
+              {formatRepeatableName(name, item, idx)}
             </Paragraph>
             {renderFields(fieldDefs, fields, item)}
           </div>
@@ -218,14 +365,41 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
 
       const groupData = defaultValues[block.type];
       if (Array.isArray(groupData)) {
+        // Add separator before degree section blocks (highSchool, undergraduate, postgraduate, tenPlus)
+        const degreeTypes = ['highSchool', 'undergraduate', 'postgraduate', 'tenPlus'];
+        if (degreeTypes.includes(block.type)) {
+          blocks.push(
+            <hr key={`degree-separator-${block.type}-${idx}`} className="border-neutral-300" />
+          );
+        }
+        
+        // For highSchool, add a main "High School" heading first
+        if (block.type === 'highSchool') {
+          blocks.push(
+            <div key={`${block.type}-main-heading`} className="px-3 mb-4">
+              <Heading level={5} className="text-blue-700 font-bold">
+                High School
+              </Heading>
+            </div>
+          );
+        }
+        
         groupData.forEach((row, rowIdx) => {
+          // Get grade information if it exists (for highSchool)
+          const gradeValue = typeof row.grade === 'number' ? row.grade : typeof row.grade === 'string' ? parseInt(row.grade, 10) : null;
+          const gradeLabel = gradeValue ? `${getOrdinalSuffix(gradeValue)} Grade` : '';
+          
+          // For highSchool, show grade as subtitle; for others, show the formatted block type
+          const headingText = block.type === 'highSchool' 
+            ? (gradeLabel || `Entry ${rowIdx + 1}`)
+            : (gradeLabel || `${block.type
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, (str) => str.toUpperCase())}`);
+          
           blocks.push(
             <div key={`${block.type}-${rowIdx}`} className="px-3">
               <Heading level={6} className="mb-2 text-blue-700 font-bold">
-                {block.type
-                  .replace(/([A-Z])/g, ' $1')
-                  .replace(/^./, (str) => str.toUpperCase())}{' '}
-                {/* {rowIdx + 1} */}
+                {headingText}
               </Heading>
               {renderFields(fieldDefs, block.fields!, row)}
               {block.repeatables &&
@@ -237,6 +411,13 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
                 )}
             </div>
           );
+          
+          // Add separator between degrees (not after the last one)
+          if (rowIdx < groupData.length - 1) {
+            blocks.push(
+              <hr key={`degree-item-separator-${block.type}-${rowIdx}`} className="border-neutral-300" />
+            );
+          }
         });
       }
       return;

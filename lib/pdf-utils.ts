@@ -484,10 +484,19 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
         yPosition += 3;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        doc.text('Key Interests: ', margin + 5, yPosition);
+        const keyInterestsLabel = 'Key Interests: ';
+        doc.text(keyInterestsLabel, margin + 5, yPosition);
         doc.setFont('helvetica', 'normal');
-        const interestsX = margin + 5 + doc.getTextWidth('Key Interests: ');
-        doc.text(sanitizeText(domain.key_interests.slice(0, 5).join(', ')), interestsX, yPosition);
+        const interestsLabelWidth = doc.getTextWidth(keyInterestsLabel);
+        const interestsText = sanitizeText(domain.key_interests.slice(0, 5).join(', '));
+        const interestsMaxWidth = contentWidth - 10 - interestsLabelWidth;
+        const interestsLines = doc.splitTextToSize(interestsText, interestsMaxWidth);
+        doc.text(interestsLines[0], margin + 5 + interestsLabelWidth, yPosition);
+        for (let i = 1; i < interestsLines.length; i++) {
+          yPosition += 4;
+          checkPageBreak(4);
+          doc.text(interestsLines[i], margin + 5, yPosition);
+        }
         yPosition += 5;
       }
       
@@ -495,10 +504,19 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
       if (domain.sub_domains && domain.sub_domains.length > 0) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        doc.text('Sub-domains: ', margin + 5, yPosition);
+        const subDomainsLabel = 'Sub-domains: ';
+        doc.text(subDomainsLabel, margin + 5, yPosition);
         doc.setFont('helvetica', 'normal');
-        const subDomainsX = margin + 5 + doc.getTextWidth('Sub-domains: ');
-        doc.text(sanitizeText(domain.sub_domains.slice(0, 4).join(', ')), subDomainsX, yPosition);
+        const subDomainsLabelWidth = doc.getTextWidth(subDomainsLabel);
+        const subDomainsText = sanitizeText(domain.sub_domains.slice(0, 4).join(', '));
+        const subDomainsMaxWidth = contentWidth - 10 - subDomainsLabelWidth;
+        const subDomainsLines = doc.splitTextToSize(subDomainsText, subDomainsMaxWidth);
+        doc.text(subDomainsLines[0], margin + 5 + subDomainsLabelWidth, yPosition);
+        for (let i = 1; i < subDomainsLines.length; i++) {
+          yPosition += 4;
+          checkPageBreak(4);
+          doc.text(subDomainsLines[i], margin + 5, yPosition);
+        }
         yPosition += 5;
       }
       
@@ -506,10 +524,19 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
       if (domain.potential_careers && domain.potential_careers.length > 0) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        doc.text('Careers: ', margin + 5, yPosition);
+        const careersLabel = 'Careers: ';
+        doc.text(careersLabel, margin + 5, yPosition);
         doc.setFont('helvetica', 'normal');
-        const careersX = margin + 5 + doc.getTextWidth('Careers: ');
-        doc.text(sanitizeText(domain.potential_careers.slice(0, 4).join(', ')), careersX, yPosition);
+        const careersLabelWidth = doc.getTextWidth(careersLabel);
+        const careersText = sanitizeText(domain.potential_careers.slice(0, 4).join(', '));
+        const careersMaxWidth = contentWidth - 10 - careersLabelWidth;
+        const careersLines = doc.splitTextToSize(careersText, careersMaxWidth);
+        doc.text(careersLines[0], margin + 5 + careersLabelWidth, yPosition);
+        for (let i = 1; i < careersLines.length; i++) {
+          yPosition += 4;
+          checkPageBreak(4);
+          doc.text(careersLines[i], margin + 5, yPosition);
+        }
         yPosition += 5;
       }
 

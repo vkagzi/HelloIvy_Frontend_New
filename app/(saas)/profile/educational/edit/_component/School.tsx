@@ -230,7 +230,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           ? parsedGrade 
           : undefined;
         const gradeForSchool = existingGrade ?? (selectedGrade - 2 + schoolIdx);
-        const gradeLabel = getOrdinalSuffix(gradeForSchool);
+        const gradeLabel = `${getOrdinalSuffix(gradeForSchool)} Grade`;
         // Show "(Unsaved)" suffix if no existing grade data
         const unsavedSuffix = existingGrade ? '' : ' (Unsaved)';
         
@@ -243,7 +243,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
             <div className="mb-5 flex items-center justify-between">
               <Label size="lg" className="font-semibold text-neutral-900">
-                {gradeLabel} Grade Basic Details{unsavedSuffix}
+                {gradeLabel} Basic Details{unsavedSuffix}
               </Label>
             {schools.length > minSchools && (
               <Button
@@ -308,57 +308,76 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           />
           {/* Subjects Section */}
           <Label size="lg" className="font-semibold text-neutral-900">
-            {gradeLabel} Grade Subject Details{unsavedSuffix}
+            {gradeLabel} Subject Details{unsavedSuffix}
           </Label>
-          <div
-            className="mt-5 grid gap-4"
-            style={{
-              gridTemplateColumns: `${getGridTemplateColumns(section.repeatables?.fields ?? [])} 100px`,
-            }}
-          >
-            {school.subjectRows.map((row, rowIdx) => (
-              <React.Fragment key={rowIdx}>
-                {section.repeatables?.fields.map((fieldId: string) => {
-                  const fieldDef = fieldDefs.find((def) => def.id === fieldId);
-                  if (!fieldDef) return null;
-                  const controllerName = `${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.${fieldDef.id}`;
-                  const repeatableField: FieldDefinition = {
-                    ...fieldDef,
-                    id: controllerName,
-                  };
-                  return (
-                    <div key={controllerName}>
-                      <Controller
-                        name={controllerName}
-                        control={form.control}
-                        defaultValue={form.getValues(controllerName) ?? ''}
-                        render={() => (
-                          <FieldRenderer
-                            field={repeatableField}
-                            form={form}
-                            error={errors[controllerName]}
-                            inputHeightClass="py-2"
-                            labelHeightClass="text-label-md"
-                            inputWidthClass="w-full"
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-neutral-200">
+                  {section.repeatables?.fields.map((fieldId: string) => {
+                    const fieldDef = fieldDefs.find((def) => def.id === fieldId);
+                    if (!fieldDef) return null;
+                    return (
+                      <th
+                        key={fieldId}
+                        className="px-4 py-3 text-left text-label-md font-semibold text-neutral-900"
+                      >
+                        {fieldDef.label}
+                      </th>
+                    );
+                  })}
+                  <th className="px-4 py-3 text-right text-label-md font-semibold text-neutral-900">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {school.subjectRows.map((row, rowIdx) => (
+                  <tr key={rowIdx} className="border-b border-neutral-200">
+                    {section.repeatables?.fields.map((fieldId: string) => {
+                      const fieldDef = fieldDefs.find((def) => def.id === fieldId);
+                      if (!fieldDef) return null;
+                      const controllerName = `${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.${fieldDef.id}`;
+                      const repeatableField: FieldDefinition = {
+                        ...fieldDef,
+                        id: controllerName,
+                        label: '', // Remove label in table cells
+                      };
+                      return (
+                        <td key={controllerName} className="px-4 py-3">
+                          <Controller
+                            name={controllerName}
+                            control={form.control}
+                            defaultValue={form.getValues(controllerName) ?? ''}
+                            render={() => (
+                              <FieldRenderer
+                                field={repeatableField}
+                                form={form}
+                                error={errors[controllerName]}
+                                inputHeightClass="py-2"
+                                labelHeightClass="text-label-md"
+                                inputWidthClass="w-full"
+                              />
+                            )}
                           />
-                        )}
+                        </td>
+                      );
+                    })}
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        type="button"
+                        label="Remove"
+                        className="text-blue-500"
+                        onClick={() => handleRemoveSubjectRow(schoolIdx, rowIdx)}
+                        disabled={school.subjectRows.length <= minSubjects}
                       />
-                    </div>
-                  );
-                })}
-                <div className="flex items-center justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    type="button"
-                    label="Remove"
-                    className="text-blue-500"
-                    onClick={() => handleRemoveSubjectRow(schoolIdx, rowIdx)}
-                    disabled={school.subjectRows.length <= minSubjects}
-                  />
-                </div>
-              </React.Fragment>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
           <button
             type="button"
@@ -369,7 +388,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           </button>
           <hr className="mt-5 mb-10 border-t border-neutral-200" />
           <Label size="lg" className="font-semibold text-neutral-900">
-            {gradeLabel} Grade Other Details{unsavedSuffix}
+            {gradeLabel} Other Details{unsavedSuffix}
           </Label>
           <div
             className="mt-5 grid gap-4"
