@@ -72,6 +72,8 @@ const DomainConversationPage: React.FC = () => {
   const [resultsGenerationFailed, setResultsGenerationFailed] = useState(false);
   const [showDebugDialog, setShowDebugDialog] = useState(false);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [sessionCreatedAt, setSessionCreatedAt] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -128,6 +130,11 @@ const DomainConversationPage: React.FC = () => {
           try {
             const sessionResp = await domainDiscoveryApi.getCurrentSession();
             if (sessionResp) {
+              // Store the session creation time for timer
+              if (sessionResp.created_at) {
+                setSessionCreatedAt(sessionResp.created_at);
+              }
+              
               // Set individual question counts
               const riasecCount = sessionResp.riasec_questions_count ?? 10;
               const deepdiveCount = sessionResp.deepdive_questions_count ?? 10;
@@ -214,6 +221,38 @@ const DomainConversationPage: React.FC = () => {
       });
     }
   }, [messages]);
+
+  // Timer effect - updates every second
+  useEffect(() => {
+    if (!sessionCreatedAt) return;
+
+    const updateTimer = () => {
+      const createdTime = new Date(sessionCreatedAt).getTime();
+      const currentTime = Date.now();
+      const elapsedSeconds = Math.floor((currentTime - createdTime) / 1000);
+      
+      // 30 minutes + 5 seconds grace = 1805 seconds
+      const totalSeconds = 30 * 60 + 5;
+      const remaining = Math.max(0, totalSeconds - elapsedSeconds);
+      
+      setTimeRemaining(remaining);
+    };
+
+    // Update immediately
+    updateTimer();
+
+    // Update every second
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [sessionCreatedAt]);
+
+  // Format time remaining as MM:SS
+  const formatTimeRemaining = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   async function handleSend() {
     if (!input.trim() || isLoading || !sessionId) return;
@@ -631,6 +670,28 @@ const DomainConversationPage: React.FC = () => {
                 >
                   🧭 Domain Discovery Journey
                 </Heading>
+                {sessionCreatedAt && (
+                  <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
+                    timeRemaining <= 60 
+                      ? 'border-red-300 bg-red-50' 
+                      : timeRemaining <= 300 
+                      ? 'border-orange-300 bg-orange-50' 
+                      : 'border-teal-300 bg-teal-50'
+                  }`}>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className={`text-sm font-semibold ${
+                      timeRemaining <= 60 
+                        ? 'text-red-700' 
+                        : timeRemaining <= 300 
+                        ? 'text-orange-700' 
+                        : 'text-teal-700'
+                    }`}>
+                      {formatTimeRemaining(timeRemaining)}
+                    </span>
+                  </div>
+                )}
                 <button
                   onClick={() => setShowDebugDialog(true)}
                   className="group flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-purple-100 hover:shadow-sm"
@@ -643,10 +704,10 @@ const DomainConversationPage: React.FC = () => {
                 </button>
               </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
-                Question {questionsCompleted}/{totalQuestions} •{' '}
-                <span className="font-medium">
+                Question {questionsCompleted}/{totalQuestions}
+                {/* <span className="font-medium">
                   {phase === 'riasec' ? `RIASEC: ${riasecCompleted}/${riasecQuestionsCount}` : `Deep Dive: ${deepdiveCompleted}/${deepdiveQuestionsCount}`}
-                </span>
+                </span> */}
               </Paragraph>
               
               {/* Progress Bar */}

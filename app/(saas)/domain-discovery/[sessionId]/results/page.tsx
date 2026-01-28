@@ -421,36 +421,13 @@ const DomainResultsPage: React.FC = () => {
             )}
 
             {/* Summary Stats */}
-            <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white p-6 shadow-lg">
-              <div className="grid gap-6 text-center md:grid-cols-3">
+            <div className="mx-auto mb-8 max-w-5xl rounded-lg bg-white py-6 shadow-lg">
+              <div className="grid text-center">
                 <div>
                   <div className="text-3xl font-bold text-teal-600">
                     {recommendations.length}
                   </div>
                   <div className="text-sm text-gray-600">Domain Matches</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-cyan-600">
-                    {recommendations.length > 0
-                      ? Math.round(
-                          recommendations.reduce(
-                            (sum, rec) => sum + rec.match_percentage,
-                            0
-                          ) / recommendations.length
-                        )
-                      : 0}
-                    %
-                  </div>
-                  <div className="text-sm text-gray-600">Average Match</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-green-600">
-                    {
-                      recommendations.filter((rec) => rec.match_percentage >= 80)
-                        .length
-                    }
-                  </div>
-                  <div className="text-sm text-gray-600">High Matches</div>
                 </div>
               </div>
             </div>

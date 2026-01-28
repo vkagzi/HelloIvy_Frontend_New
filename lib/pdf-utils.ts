@@ -439,7 +439,7 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Total Domains: ${data.recommendations.length} | Average Match: ${avgMatch}% | High Matches (80%+): ${highMatches}`, margin, yPosition);
+    doc.text(`Total Domains: ${data.recommendations.length}`, margin, yPosition);
     yPosition += 10;
 
     // Each domain recommendation
