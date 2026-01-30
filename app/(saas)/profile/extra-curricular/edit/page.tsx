@@ -19,6 +19,7 @@ const ExtraCurricularFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, refetch } = useProfile();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
     () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
@@ -44,6 +45,7 @@ const ExtraCurricularFormDetails: React.FC = () => {
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     try {
+      setIsSubmitting(true);
       // Parse formatted city strings to extract city, state, country
       const parsedData = parseFormLocationData(_data);
 
@@ -82,7 +84,6 @@ const ExtraCurricularFormDetails: React.FC = () => {
       if (response['message'] === 'Profile updated successfully.') {
         // Refetch profile data to update the context
         await refetch();
-        router.push('/profile/additional/edit');
       } else {
         addToast('Failed to update profile.', { type: 'error' });
       }
@@ -92,6 +93,8 @@ const ExtraCurricularFormDetails: React.FC = () => {
           ? String((error as { message: unknown }).message)
           : 'An unknown error occurred';
       addToast(message, { type: 'error' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -131,6 +134,15 @@ const ExtraCurricularFormDetails: React.FC = () => {
         }}
         buttonName="Add Additional Details"
         formClassName="space-y-6"
+        showSaveButton={{ showSave: true, href: '/profile/additional/edit' }}
+        isSubmitting={isSubmitting}
+        onSaveOnly={() => {
+          addToast('Extra-curricular details saved successfully!', { type: 'success' });
+        }}
+        onSaveAndNavigate={() => {
+          addToast('Extra-curricular details saved! Navigating to additional details...', { type: 'success' });
+          router.push('/profile/additional/edit');
+        }}
       />
     </div>
   );

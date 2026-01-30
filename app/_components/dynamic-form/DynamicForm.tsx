@@ -19,7 +19,6 @@ import { getDefaultValue, isFieldVisible } from '@/app/_components/dynamic-form/
 import { Heading, Label } from '@/app/_components/Typography';
 import Image from 'next/image';
 import bin from '@/assets/images/bin.svg';
-import Link from 'next/link';
 
 type DynamicFormProps = {
   fieldDefs: FieldDefinition[];
@@ -30,6 +29,9 @@ type DynamicFormProps = {
   defaultValues?: Record<string, unknown>;
   onFormInit?: (form: UseFormReturn<Record<string, unknown>>) => void;
   showSaveButton?: { showSave: boolean; href?: string };
+  onSaveAndNavigate?: () => void;
+  onSaveOnly?: () => void;
+  isSubmitting?: boolean;
 };
 
 // Utility to flatten repeatable fields for React Hook Form
@@ -62,7 +64,11 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   defaultValues,
   onFormInit,
   showSaveButton = { showSave: false },
+  onSaveAndNavigate,
+  onSaveOnly,
+  isSubmitting = false,
 }) => {
+  const [shouldNavigate, setShouldNavigate] = React.useState(false);
   const initialState: Record<string, unknown> = {};
   layout.forEach((item) => {
     if (item.type === 'fieldset' && item.fields) {
@@ -1144,6 +1150,12 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         }
         setErrors({});
         onSubmit(cleanedValues);
+        if (shouldNavigate && onSaveAndNavigate) {
+          onSaveAndNavigate();
+          setShouldNavigate(false);
+        } else if (!shouldNavigate && onSaveOnly) {
+          onSaveOnly();
+        }
       })}
       noValidate
       autoComplete="off"
@@ -1157,29 +1169,32 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             <>
               <Button
                 variant="outline"
-                size="lg"
+                size="default"
                 type="submit"
-                className="min-w-[120px]"
+                className="min-w-[100px]"
+                onClick={() => setShouldNavigate(false)}
+                disabled={isSubmitting}
               >
                 Save
               </Button>
               <Button
                 variant="default"
-                size="lg"
-                asChild
-                className="min-w-[140px]"
+                size="default"
+                type="submit"
+                className="min-w-[120px]"
+                onClick={() => setShouldNavigate(true)}
+                disabled={isSubmitting}
               >
-                <Link href={showSaveButton.href || '#'}>
-                  {buttonName}
-                </Link>
+                {buttonName}
               </Button>
             </>
           ) : (
             <Button
               variant="default"
-              size="lg"
+              size="default"
               type="submit"
-              className="min-w-[140px]"
+              className="min-w-[120px]"
+              disabled={isSubmitting}
             >
               {buttonName}
             </Button>

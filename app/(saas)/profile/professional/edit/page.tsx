@@ -25,6 +25,7 @@ const ProfessionalFormDetails: React.FC = () => {
     typeof import('react-hook-form').useForm
   > | null>(null);
   const { rawApiResponse, refetch } = useProfile();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
     () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
@@ -37,6 +38,7 @@ const ProfessionalFormDetails: React.FC = () => {
     const parsedData = parseFormLocationData(_data);
     console.log('Professional form data being submitted:', parsedData);
     try {
+      setIsSubmitting(true);
       // Fetch latest profile data to ensure we have the most recent data
       const latestData = await getProfileData();
       const existingProfile =
@@ -63,12 +65,8 @@ const ProfessionalFormDetails: React.FC = () => {
         },
       });
       if (response['message'] === 'Profile updated successfully.') {
-        addToast('Professional details saved successfully!', {
-          type: 'success',
-        });
         // Refetch profile data to update the context
         await refetch();
-        router.push('/profile/extra-curricular/edit');
       } else {
         addToast('Failed to update profile.', { type: 'error' });
       }
@@ -79,6 +77,8 @@ const ProfessionalFormDetails: React.FC = () => {
           ? String((error as { message: unknown }).message)
           : 'An unknown error occurred';
       addToast(message, { type: 'error' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -125,7 +125,15 @@ const ProfessionalFormDetails: React.FC = () => {
         onFormInit={(form) => {
           formRef.current = form;
         }}
-        showSaveButton={{ showSave: false }}
+        showSaveButton={{ showSave: true, href: '/profile/extra-curricular/edit' }}
+        isSubmitting={isSubmitting}
+        onSaveOnly={() => {
+          addToast('Professional details saved successfully!', { type: 'success' });
+        }}
+        onSaveAndNavigate={() => {
+          addToast('Professional details saved! Navigating to extra-curricular details...', { type: 'success' });
+          router.push('/profile/extra-curricular/edit');
+        }}
       />
     </div>
   );

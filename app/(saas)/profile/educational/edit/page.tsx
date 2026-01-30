@@ -29,6 +29,7 @@ const EducationalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, refetch } = useProfile();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
     () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
@@ -98,6 +99,7 @@ const EducationalDetailsForm: React.FC = () => {
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     try {
+      setIsSubmitting(true);
       // Parse formatted city strings to extract city, state, country
       const parsedData = parseFormLocationData(_data);
       
@@ -132,7 +134,6 @@ const EducationalDetailsForm: React.FC = () => {
       if (response['message'] === 'Profile updated successfully.') {
         // Refetch profile data to update the context
         await refetch();
-        router.push('/profile/professional/edit');
       } else {
         addToast('Failed to update profile.', { type: 'error' });
       }
@@ -142,6 +143,8 @@ const EducationalDetailsForm: React.FC = () => {
           ? String((error as { message: unknown }).message)
           : 'An unknown error occurred';
       addToast(message, { type: 'error' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -184,11 +187,15 @@ const EducationalDetailsForm: React.FC = () => {
         onFormInit={handleFormInit}
         formClassName="space-y-6"
         buttonName="Add Professional Details"
-        showSaveButton={
-          hasProfileSection(defaultValues, 'educational')
-            ? { showSave: true, href: '/profile/professional/edit' }
-            : { showSave: false }
-        }
+        showSaveButton={{ showSave: true, href: '/profile/professional/edit' }}
+        isSubmitting={isSubmitting}
+        onSaveOnly={() => {
+          addToast('Educational details saved successfully!', { type: 'success' });
+        }}
+        onSaveAndNavigate={() => {
+          addToast('Educational details saved! Navigating to professional details...', { type: 'success' });
+          router.push('/profile/professional/edit');
+        }}
       />
     </div>
   );

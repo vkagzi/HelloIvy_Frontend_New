@@ -19,6 +19,7 @@ const AdditionalFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, refetch } = useProfile();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
     () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
@@ -28,6 +29,7 @@ const AdditionalFormDetails: React.FC = () => {
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     try {
+      setIsSubmitting(true);
       // Parse formatted city strings to extract city, state, country
       const parsedData = parseFormLocationData(_data);
 
@@ -59,7 +61,6 @@ const AdditionalFormDetails: React.FC = () => {
       if (response['message'] === 'Profile updated successfully.') {
         // Refetch profile data to update the context
         await refetch();
-        router.push('/profile/personal');
       } else {
         addToast('Failed to update profile.', { type: 'error' });
       }
@@ -69,6 +70,8 @@ const AdditionalFormDetails: React.FC = () => {
           ? String((error as { message: unknown }).message)
           : 'An unknown error occurred';
       addToast(message, { type: 'error' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   // Extract additional details from the nested structure
@@ -106,11 +109,15 @@ const AdditionalFormDetails: React.FC = () => {
         onSubmit={onSubmit}
         formClassName="space-y-6"
         buttonName="Complete Profile"
-        showSaveButton={
-          hasProfileSection(defaultValues, 'additional')
-            ? { showSave: true, href: '/profile/personal' }
-            : { showSave: false }
-        }
+        showSaveButton={{ showSave: true, href: '/profile/personal' }}
+        isSubmitting={isSubmitting}
+        onSaveOnly={() => {
+          addToast('Additional details saved successfully!', { type: 'success' });
+        }}
+        onSaveAndNavigate={() => {
+          addToast('Profile completed successfully!', { type: 'success' });
+          router.push('/profile/personal');
+        }}
       />
     </div>
   );

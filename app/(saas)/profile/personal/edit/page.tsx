@@ -19,6 +19,7 @@ const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, loading, error, refetch } = useProfile();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
     () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
@@ -28,6 +29,7 @@ const PersonalDetailsForm: React.FC = () => {
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     try {
+      setIsSubmitting(true);
       // Parse formatted city strings to extract city, state, country
       const parsedData = parseFormLocationData(_data);
 
@@ -71,13 +73,8 @@ const PersonalDetailsForm: React.FC = () => {
       console.log('Update response:', response); // Debug log
 
       if (response['message'] === 'Profile updated successfully.') {
-        addToast('Profile updated successfully!', { type: 'success' });
         // Refetch profile data to update the context
         await refetch();
-        // Small delay to show success message before navigation
-        setTimeout(() => {
-          router.push('/profile/educational/edit');
-        }, 500);
       } else {
         addToast('Failed to update profile. Please try again.', {
           type: 'error',
@@ -90,6 +87,8 @@ const PersonalDetailsForm: React.FC = () => {
           ? String((error as { message: unknown }).message)
           : 'An error occurred while updating your profile';
       addToast(message, { type: 'error' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -182,11 +181,17 @@ const PersonalDetailsForm: React.FC = () => {
         defaultValues={personalDetails}
         formClassName="space-y-6"
         buttonName="Add Educational Details"
-        showSaveButton={
-          hasProfileSection(defaultValues, 'personalDetails')
-            ? { showSave: true, href: '/profile/educational/edit' }
-            : { showSave: false }
-        }
+        showSaveButton={{ showSave: true, href: '/profile/educational/edit' }}
+        isSubmitting={isSubmitting}
+        onSaveOnly={() => {
+          addToast('Personal details saved successfully!', { type: 'success' });
+        }}
+        onSaveAndNavigate={() => {
+          addToast('Personal details saved! Navigating to educational details...', { type: 'success' });
+          setTimeout(() => {
+            router.push('/profile/educational/edit');
+          }, 500);
+        }}
       />
     </div>
   );
