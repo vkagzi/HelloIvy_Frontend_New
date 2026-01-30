@@ -15,6 +15,7 @@ import {
   TranscriptMessage,
 } from '@/lib/domain-discovery-api';
 import { generateTranscriptPDF, generateDomainResultsPDF, DomainResultsData } from '@/lib/pdf-utils';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 type Role = 'bot' | 'user';
 
@@ -33,6 +34,7 @@ const DomainResultsPage: React.FC = () => {
   const params = useParams();
   const sessionId = params?.sessionId as string | undefined;
   const { addToast } = useToast();
+  const { personalDetails, educationalDetails } = useProfile();
 
   const [recommendations, setRecommendations] = useState<DomainRecommendation[]>([]);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
@@ -149,24 +151,52 @@ const DomainResultsPage: React.FC = () => {
     try {
       setIsDownloadingResults(true);
       
-      // Fetch results summary if not already loaded
-      let studentName = 'Student';
-      if (transcript?.student_name) {
-        studentName = transcript.student_name;
-      } else {
-        // Try to get from results summary
+      // Fetch transcript data if not already loaded to get timestamps
+      let transcriptData = transcript;
+      if (!transcriptData) {
         try {
-          const results = await domainDiscoveryApi.getResultsSummary(sessionId);
-          studentName = results.student_name || 'Student';
+          transcriptData = await domainDiscoveryApi.getTranscript(sessionId);
         } catch {
-          // Use default name if fetch fails
+          // Transcript fetch failed, will use fallback values
         }
       }
+      
+      // Get student name from profile or transcript
+      const firstName = (personalDetails?.firstName as string) || '';
+      const lastName = (personalDetails?.lastName as string) || '';
+      let studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName);
+      if (!studentName) {
+        if (transcriptData?.student_name) {
+          studentName = transcriptData.student_name;
+        } else {
+          // Try to get from results summary
+          try {
+            const results = await domainDiscoveryApi.getResultsSummary(sessionId);
+            studentName = results.student_name || 'Student';
+          } catch {
+            studentName = 'Student';
+          }
+        }
+      }
+      
+      // Build location string from profile
+      const buildLocation = () => {
+        const city = (personalDetails?.city as string) || '';
+        const state = (personalDetails?.state as string) || '';
+        const country = (personalDetails?.country as string) || '';
+        const parts = [city, state, country].filter(Boolean);
+        return parts.join(', ') || undefined;
+      };
 
       const resultsData: DomainResultsData = {
         studentName,
         sessionId,
-        completedAt: new Date().toISOString(),
+        startedAt: transcriptData?.started_at,
+        completedAt: transcriptData?.completed_at || new Date().toISOString(),
+        dateOfBirth: (personalDetails?.dob as string) || undefined,
+        academicLevel: (educationalDetails?.academicLevel as string) || undefined,
+        gradeLevel: (educationalDetails?.gradeLevel as string) || undefined,
+        location: buildLocation(),
         interestScores: interestScores || {
           realistic: 0,
           investigative: 0,

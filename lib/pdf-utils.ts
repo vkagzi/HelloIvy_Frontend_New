@@ -7,7 +7,13 @@ import { TranscriptData, InterestScores, DomainRecommendation } from './domain-d
 export interface DomainResultsData {
   studentName: string;
   sessionId: string;
+  startedAt?: string;
   completedAt?: string;
+  // Student profile details
+  dateOfBirth?: string;
+  academicLevel?: string;
+  gradeLevel?: string;
+  location?: string;
   interestScores: InterestScores;
   interests: string[];
   strengths: string[];
@@ -286,10 +292,53 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   
+  // Format dates in human-readable format
+  const formatDateTime = (dateStr?: string) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+  
+  // Calculate duration in minutes (rounded up)
+  const calculateDuration = () => {
+    if (!data.startedAt || !data.completedAt) return null;
+    const start = new Date(data.startedAt).getTime();
+    const end = new Date(data.completedAt).getTime();
+    const durationMs = end - start;
+    return Math.ceil(durationMs / 60000); // Round up to minutes
+  };
+  
+  const duration = calculateDuration();
+  
+  // Format date of birth in human-readable format  
+  const formatDateOfBirth = (dateStr?: string) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+  
   const metadata = [
-    `Student: ${sanitizeText(data.studentName || 'Student')}`,
+    `Student Name: ${sanitizeText(data.studentName || 'Student')}`,
+    ...(data.dateOfBirth ? [`Date of Birth: ${formatDateOfBirth(data.dateOfBirth)}`] : []),
+    ...(data.academicLevel ? [`Academic Level: ${data.academicLevel}`] : []),
+    ...(data.gradeLevel ? [`Grade Level: ${data.gradeLevel}`] : []),
+    ...(data.location ? [`Location: ${data.location}`] : []),
     `Session ID: ${data.sessionId}`,
-    `Date: ${data.completedAt ? new Date(data.completedAt).toLocaleDateString() : new Date().toLocaleDateString()}`,
+    `Started: ${formatDateTime(data.startedAt)}`,
+    `Completed: ${formatDateTime(data.completedAt)}`,
+    ...(duration ? [`Duration: ${duration} minute${duration === 1 ? '' : 's'}`] : []),
   ];
 
   metadata.forEach((line) => {
@@ -385,9 +434,27 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
     data.recommendations.forEach((domain, index) => {
       checkPageBreak(70);
       
-      // Domain card header
+      // Calculate content height for this domain card
+      const cardStartY = yPosition;
+      let estimatedHeight = 25; // Base height for title, category
+      
+      // Estimate height for why_recommended text
+      doc.setFontSize(9);
+      const whyText = sanitizeText(domain.why_recommended || domain.description);
+      const whyLines = doc.splitTextToSize(whyText, contentWidth - 10);
+      estimatedHeight += whyLines.length * 4 + 5;
+      
+      // Add space for key interests, sub-domains, careers if present
+      if (domain.key_interests && domain.key_interests.length > 0) estimatedHeight += 10;
+      if (domain.sub_domains && domain.sub_domains.length > 0) estimatedHeight += 10;
+      if (domain.potential_careers && domain.potential_careers.length > 0) estimatedHeight += 10;
+      
+      // Add buffer for safe rendering
+      estimatedHeight = Math.max(estimatedHeight, 50);
+      
+      // Domain card header with dynamic height
       doc.setFillColor(240, 253, 250); // Teal-50 background
-      doc.rect(margin, yPosition, contentWidth, 50, 'F');
+      doc.rect(margin, yPosition, contentWidth, estimatedHeight, 'F');
       
       // Domain rank and title
       doc.setFont('helvetica', 'bold');

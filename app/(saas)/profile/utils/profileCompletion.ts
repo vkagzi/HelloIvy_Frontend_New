@@ -41,8 +41,7 @@ const isFieldFilled = (value: unknown): boolean => {
  * 1. Basic Details (firstName, lastName, dob)
  * 2. Address (addressline, city, country)
  * 3. Family Details (annualIncome)
- * 4. Social Media (socialMedia array)
- * 5. Languages (languages array)
+ * 4. Languages (languages array)
  */
 const calculatePersonalCompletion = (
   data: ProfileData,
@@ -66,12 +65,7 @@ const calculatePersonalCompletion = (
     filled++;
   }
 
-  // // 4. Social Media
-  // if (Array.isArray(data.socialMedia) && data.socialMedia.length > 0) {
-  //   filled++;
-  // }
-
-  // 5. Languages
+  // 4. Languages
   if (Array.isArray(data.languages) && data.languages.length > 0) {
     filled++;
   }
@@ -162,7 +156,7 @@ const calculateAdditionalCompletion = (
   }
 
   // 2. Campus Visit or Additional Information
-  if (isFieldFilled(data.campusVisited) || isFieldFilled(data.shareInformation)) {
+  if (isFieldFilled(data.shareInformation)) {
     filled++;
   }
 

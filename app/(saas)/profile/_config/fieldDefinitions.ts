@@ -230,36 +230,6 @@ export const personalFieldDefs: FieldDefinition[] = [
     },
   },
   {
-    id: 'maintainChannel',
-    type: 'select',
-    label: 'Do you maintain Blog/YouTube/Insta Channel?',
-    placeholder: 'Enter details',
-    options: ['Yes', 'No'],
-    required: false,
-  },
-  {
-    id: 'platformName',
-    type: 'select',
-    label: 'Platform Name',
-    placeholder: 'Enter social media platform name',
-    options: [
-      'Facebook',
-      'Instagram',
-      'Twitter',
-      'LinkedIn',
-      'YouTube',
-      'TikTok',
-    ],
-    required: true,
-  },
-  {
-    id: 'accountLinks',
-    type: 'text',
-    label: 'Account Link',
-    placeholder: 'Enter social media account links',
-    required: true,
-  },
-  {
     id: 'language',
     type: 'select',
     label: 'Language',
@@ -421,37 +391,6 @@ export const personalLayout: LayoutBlock[] = [
       'annualIncome',
     ],
     columns: 3,
-  },
-  {
-    type: 'seperator',
-  },
-  {
-    type: 'heading',
-    content: 'Social Media',
-  },
-  {
-    type: 'fieldset',
-    fields: ['maintainChannel'],
-    columns: 3,
-  },
-  {
-    type: 'fieldset',
-    fields: ['platformName', 'accountLinks'],
-    name: 'socialMedia',
-    repeatable: true,
-    repeatable_option: {
-      add: '+ Add Platform',
-      show_default: 0,
-      min: 0,
-      columns: 3,
-    },
-    repeatableDependsOn: [
-      {
-        fieldId: 'maintainChannel',
-        values: ['Yes'],
-        option: { show_default: 1, min: 1 },
-      },
-    ],
   },
   {
     type: 'seperator',
@@ -1099,14 +1038,6 @@ export const educationalFieldDefs: FieldDefinition[] = [
     validation: { regex: Regexvalidations.percentage },
   },
   {
-    id: 'mathPercentile',
-    type: 'text',
-    label: 'Your Percentile',
-    placeholder: 'Enter your percentile',
-    required: false,
-    validation: { regex: Regexvalidations.percentage },
-  },
-  {
     id: 'readingTitle',
     type: 'title',
     label: 'Reading',
@@ -1658,7 +1589,6 @@ export const professionalLayout: LayoutBlock[] = [
       'responsibilities',
       'achievements',
       'reasonForLeaving',
-      'recommenderChoice',
     ],
     name: 'experiences',
     repeatable: true,
@@ -1763,13 +1693,6 @@ export const additionalFieldDefs: FieldDefinition[] = [
     required: false,
   },
   {
-    id: 'campusVisitedDescription',
-    type: 'text',
-    label: 'Campus Description',
-    placeholder: 'Enter a brief description',
-    required: false,
-  },
-  {
     id: 'shareInformationDescription',
     type: 'textarea',
     label: 'Share Information description (Under 300 words)',
@@ -1798,22 +1721,6 @@ export const additionalLayout: LayoutBlock[] = [
   },
   {
     type: 'seperator',
-  },
-  {
-    type: 'fieldset',
-    fields: ['campusVisited'],
-    columns: 2,
-  },
-  {
-    type: 'fieldset',
-    fields: ['campusVisitedDescription'],
-    columns: 1,
-    visibility: {
-      depends_on: {
-        field_id: 'campusVisited',
-        value: ['Yes'],
-      },
-    },
   },
   {
     type: 'fieldset',
