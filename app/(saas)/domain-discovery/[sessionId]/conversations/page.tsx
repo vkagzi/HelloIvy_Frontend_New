@@ -22,7 +22,7 @@ interface Message {
   type: Role;
   content: string;
   question_type?: QuestionType;
-  choices?: string[];  // For RIASEC questions
+  choices?: string[];  // For initial assessment questions
   timestamp: string; // ISO
 }
 
@@ -63,9 +63,9 @@ const DomainConversationPage: React.FC = () => {
   const [questionsCompleted, setQuestionsCompleted] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(20);
   const [serverPhase, setServerPhase] = useState<Phase>('riasec');
-  const [riasecCompleted, setRiasecCompleted] = useState(0);
+  const [initialCompleted, setInitialCompleted] = useState(0);
   const [deepdiveCompleted, setDeepdiveCompleted] = useState(0);
-  const [riasecQuestionsCount, setRiasecQuestionsCount] = useState(10);
+  const [initialQuestionsCount, setInitialQuestionsCount] = useState(10);
   const [deepdiveQuestionsCount, setDeepdiveQuestionsCount] = useState(10);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [isGeneratingResults, setIsGeneratingResults] = useState(false);
@@ -122,7 +122,7 @@ const DomainConversationPage: React.FC = () => {
           // Set counts from message history as a fallback
           const rq = historyResponse.riasec_completed ?? 0;
           const dq = historyResponse.deepdive_completed ?? 0;
-          setRiasecCompleted(rq);
+          setInitialCompleted(rq);
           setDeepdiveCompleted(dq);
           setQuestionsCompleted(rq + dq);
 
@@ -136,17 +136,17 @@ const DomainConversationPage: React.FC = () => {
               }
               
               // Set individual question counts
-              const riasecCount = sessionResp.riasec_questions_count ?? 10;
+              const initialCount = sessionResp.riasec_questions_count ?? 10;
               const deepdiveCount = sessionResp.deepdive_questions_count ?? 10;
-              setRiasecQuestionsCount(riasecCount);
+              setInitialQuestionsCount(initialCount);
               setDeepdiveQuestionsCount(deepdiveCount);
               
-              const total = sessionResp.total_steps ?? (riasecCount + deepdiveCount);
+              const total = sessionResp.total_steps ?? (initialCount + deepdiveCount);
               if (total) setTotalQuestions(total);
 
               const rqCompleted = sessionResp.riasec_completed ?? rq;
               const dqCompleted = sessionResp.deepdive_completed ?? dq;
-              setRiasecCompleted(rqCompleted);
+              setInitialCompleted(rqCompleted);
               setDeepdiveCompleted(dqCompleted);
               setQuestionsCompleted(rqCompleted + dqCompleted);
 
@@ -281,7 +281,7 @@ const DomainConversationPage: React.FC = () => {
       setCurrentStep(response.current_step);
       setProgressPercentage(response.progress_percentage);
       setQuestionsCompleted(response.questions_completed);
-      setRiasecCompleted(response.riasec_completed);
+      setInitialCompleted(response.riasec_completed);
       setDeepdiveCompleted(response.deepdive_completed);
       // Update server phase if provided
       if (response.phase) {
@@ -324,7 +324,7 @@ const DomainConversationPage: React.FC = () => {
     }
   }
 
-  // Handle RIASEC option selection
+  // Handle initial assessment option selection
   async function handleOptionSelect(choice: string) {
     if (isLoading || !sessionId) return;
     
@@ -352,7 +352,7 @@ const DomainConversationPage: React.FC = () => {
       setCurrentStep(response.current_step);
       setProgressPercentage(response.progress_percentage);
       setQuestionsCompleted(response.questions_completed);
-      setRiasecCompleted(response.riasec_completed);
+      setInitialCompleted(response.riasec_completed);
       setDeepdiveCompleted(response.deepdive_completed);
       // Update server phase if provided
       if (response.phase) {
@@ -706,7 +706,7 @@ const DomainConversationPage: React.FC = () => {
               <Paragraph className="mt-1 text-sm text-gray-600">
                 Question {questionsCompleted}/{totalQuestions}
                 {/* <span className="font-medium">
-                  {phase === 'riasec' ? `RIASEC: ${riasecCompleted}/${riasecQuestionsCount}` : `Deep Dive: ${deepdiveCompleted}/${deepdiveQuestionsCount}`}
+                  {phase === 'riasec' ? `Initial: ${initialCompleted}/${initialQuestionsCount}` : `Deep Dive: ${deepdiveCompleted}/${deepdiveQuestionsCount}`}
                 </span> */}
               </Paragraph>
               
@@ -749,7 +749,7 @@ const DomainConversationPage: React.FC = () => {
         <div ref={messagesContainerRef} className="flex-1 min-h-0 space-y-6 overflow-y-auto px-6 py-4">
           {messages.map((m, index) => {
             const isLatestBotMessage = m.type === 'bot' && index === messages.length - 1;
-            const isRiasecQuestion = m.question_type === 'riasec' && m.choices && m.choices.length > 0;
+            const isInitialQuestion = m.question_type === 'riasec' && m.choices && m.choices.length > 0;
             
             return (
               <div
@@ -778,8 +778,8 @@ const DomainConversationPage: React.FC = () => {
                     )}
                   </div>
                   
-                  {/* RIASEC Choice Buttons - show only on latest bot message if it's a RIASEC question */}
-                  {m.type === 'bot' && isLatestBotMessage && isRiasecQuestion && !isLoading && (
+                  {/* Initial Assessment Choice Buttons - show only on latest bot message if it's an initial question */}
+                  {m.type === 'bot' && isLatestBotMessage && isInitialQuestion && !isLoading && (
                     <div className="mt-3 flex gap-3">
                       {m.choices!.map((choice, idx) => (
                         <Button
@@ -859,9 +859,9 @@ const DomainConversationPage: React.FC = () => {
             }
             
             const latestBotMessage = messages.filter(m => m.type === 'bot').slice(-1)[0];
-            const isRiasecQuestion = latestBotMessage?.question_type === 'riasec' && latestBotMessage?.choices && latestBotMessage.choices.length > 0;
-            
-            if (isRiasecQuestion) {
+            const isInitialQuestion = latestBotMessage?.question_type === 'riasec' && latestBotMessage?.choices && latestBotMessage.choices.length > 0;
+
+            if (isInitialQuestion) {
               return (
                 <div className="text-center text-sm text-gray-600">
                   👆 Please select one of the options above to continue

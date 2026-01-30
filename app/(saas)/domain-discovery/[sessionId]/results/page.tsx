@@ -10,7 +10,7 @@ import {
   domainDiscoveryApi,
   DomainRecommendation,
   ResultsSummary,
-  RIASECScores,
+  InterestScores,
   TranscriptData,
   TranscriptMessage,
 } from '@/lib/domain-discovery-api';
@@ -36,7 +36,7 @@ const DomainResultsPage: React.FC = () => {
 
   const [recommendations, setRecommendations] = useState<DomainRecommendation[]>([]);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
-  const [riasecScores, setRiasecScores] = useState<RIASECScores | null>(null);
+  const [interestScores, setInterestScores] = useState<InterestScores | null>(null);
   const [interests, setInterests] = useState<string[]>([]);
   const [strengths, setStrengths] = useState<string[]>([]);
   const [transcript, setTranscript] = useState<TranscriptData | null>(null);
@@ -79,7 +79,7 @@ const DomainResultsPage: React.FC = () => {
       const results: ResultsSummary = await domainDiscoveryApi.getResultsSummary(sessionId);
 
       setRecommendations([...results.primary_domains, ...results.secondary_domains]);
-      setRiasecScores(results.riasec_scores);
+      setInterestScores(results.riasec_scores);
       setInterests(results.interests_identified);
       setStrengths(results.strengths_identified);
       
@@ -167,7 +167,7 @@ const DomainResultsPage: React.FC = () => {
         studentName,
         sessionId,
         completedAt: new Date().toISOString(),
-        riasecScores: riasecScores || {
+        interestScores: interestScores || {
           realistic: 0,
           investigative: 0,
           artistic: 0,
@@ -345,14 +345,14 @@ const DomainResultsPage: React.FC = () => {
         {/* Tab Content */}
         {activeTab === 'results' ? (
           <>
-            {/* RIASEC Profile Chart */}
-            {riasecScores && (
+            {/* Interest Profile Chart */}
+            {interestScores && (
               <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white p-8 shadow-lg">
                 <h2 className="mb-6 text-2xl font-bold text-gray-900">
-                  📊 Your RIASEC Profile
+                  📊 Your Interest Profile
                 </h2>
                 <div className="grid gap-4 md:grid-cols-3">
-                  {Object.entries(riasecScores).map(([dimension, score]) => (
+                  {Object.entries(interestScores).map(([dimension, score]) => (
                     <div key={dimension}>
                       <div className="mb-2 flex justify-between">
                         <span className="font-semibold capitalize text-gray-700">
@@ -372,7 +372,7 @@ const DomainResultsPage: React.FC = () => {
                   ))}
                 </div>
                 <p className="mt-4 text-sm text-gray-600">
-                  Your RIASEC scores show how aligned you are with different work
+                  Your interest profile shows how aligned you are with different work
                   environments and activities.
                 </p>
               </div>

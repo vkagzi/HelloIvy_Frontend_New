@@ -69,6 +69,7 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
   const initialStep = parseInt(searchParams?.get('step') || '0', 10);
   const [step, setStep] = useState<number>(initialStep);
   const [email, setEmail] = useState<string>('');
+  const [otpCode, setOtpCode] = useState<string>('');
   const [hasAgreed, setHasAgreed] = useState<boolean>(false);
   const [isResending, setIsResending] = useState<boolean>(false);
   const [otpTimer, setOtpTimer] = useState<number>(60);
@@ -170,16 +171,18 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
     _data: OtpFormValues
   ) => {
     try {
+      const code = _data.otp.replace(/-/g, '');
       const r = await api('/api/accounts/verify/', {
         method: 'POST',
         body: {
           email,
-          code: _data.otp.replace(/-/g, ''),
+          code,
         },
         tokenOverride: '', // Exclude any existing token for OTP verification
       });
       const { token } = r;
       setToken(token);
+      setOtpCode(code); // Store the verified OTP code
 
       if (isForgot) {
         // For forgot password, go to password reset
@@ -208,6 +211,8 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
       await api('/api/accounts/password-reset/confirm/', {
         method: 'POST',
         body: {
+          email,
+          code: otpCode,
           new_password: _data.password,
         },
       });

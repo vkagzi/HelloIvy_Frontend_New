@@ -231,7 +231,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                               Progress: {session.current_step}/{session.total_steps}{' '}
                               questions answered
                               {/* {session.current_phase === 'riasec'
-                                ? `RIASEC: ${session.riasec_completed}/${session.riasec_questions_count ?? 10}`
+                                ? `Initial: ${session.riasec_completed}/${session.riasec_questions_count ?? 10}`
                                 : `Deep Dive: ${session.deepdive_completed}/${session.deepdive_questions_count ?? 10}`} */}
                             </div>
                           </div>

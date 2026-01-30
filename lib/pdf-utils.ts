@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { TranscriptData, RIASECScores, DomainRecommendation } from './domain-discovery-api';
+import { TranscriptData, InterestScores, DomainRecommendation } from './domain-discovery-api';
 
 /**
  * Data structure for the comprehensive domain results PDF
@@ -8,7 +8,7 @@ export interface DomainResultsData {
   studentName: string;
   sessionId: string;
   completedAt?: string;
-  riasecScores: RIASECScores;
+  interestScores: InterestScores;
   interests: string[];
   strengths: string[];
   recommendations: DomainRecommendation[];
@@ -224,7 +224,7 @@ export function generateTranscriptPDF(transcript: TranscriptData): Blob {
 }
 
 /**
- * Generate a comprehensive PDF with RIASEC scores and domain recommendations
+ * Generate a comprehensive PDF with interest profile scores and domain recommendations
  */
 export function generateDomainResultsPDF(data: DomainResultsData): Blob {
   const doc = new jsPDF({
@@ -304,7 +304,7 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
   doc.line(margin, yPosition, pageWidth - margin, yPosition);
   yPosition += 10;
 
-  // ==================== RIASEC Profile Section ====================
+  // ==================== Interest Profile Section ====================
   checkPageBreak(60);
   
   // Section header
@@ -314,12 +314,12 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(255, 255, 255);
-  doc.text('YOUR RIASEC PROFILE', margin + 5, yPosition + 7);
+  doc.text('YOUR INTEREST PROFILE', margin + 5, yPosition + 7);
   doc.setTextColor(0, 0, 0);
   yPosition += 15;
 
-  // RIASEC dimension descriptions
-  const riasecDescriptions: Record<string, string> = {
+  // Interest dimension descriptions
+  const interestDescriptions: Record<string, string> = {
     realistic: 'Practical, hands-on activities and working with tools/machinery',
     investigative: 'Research, analysis, and problem-solving',
     artistic: 'Creative expression and artistic activities',
@@ -328,11 +328,11 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
     conventional: 'Organization, data management, and structured tasks',
   };
 
-  // Sort RIASEC scores by value (highest first)
-  const sortedScores = Object.entries(data.riasecScores)
+  // Sort interest scores by value (highest first)
+  const sortedScores = Object.entries(data.interestScores)
     .sort(([, a], [, b]) => b - a);
 
-  // Draw RIASEC bars
+  // Draw interest profile bars
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   
@@ -361,7 +361,7 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(107, 114, 128); // Gray-500
-    doc.text(riasecDescriptions[dimension] || '', margin, yPosition);
+    doc.text(interestDescriptions[dimension] || '', margin, yPosition);
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     yPosition += 8;

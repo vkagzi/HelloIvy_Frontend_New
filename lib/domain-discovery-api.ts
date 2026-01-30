@@ -11,7 +11,7 @@ export interface DomainMessage {
   type: 'bot' | 'user';
   content: string;
   question_type?: 'riasec' | 'deepdive' | 'general';
-  choices?: string[];  // For RIASEC questions
+  choices?: string[];  // For initial assessment questions
   timestamp: string;
 }
 
@@ -30,7 +30,7 @@ export interface DomainDiscoverySession {
   messages: DomainMessage[];
 }
 
-export interface RIASECScores {
+export interface InterestScores {
   realistic: number;
   investigative: number;
   artistic: number;
@@ -44,7 +44,7 @@ export interface SendMessageResponse {
   user_message: string;
   bot_response: string;
   question_type?: 'riasec' | 'deepdive' | 'general';
-  choices?: string[];  // For RIASEC questions
+  choices?: string[];  // For initial assessment questions
   current_step: number;
   total_steps: number;
   // Total number of questions expected for the session
@@ -55,7 +55,7 @@ export interface SendMessageResponse {
   phase: 'riasec' | 'deepdive';
   progress_percentage: number;
   questions_completed: number;
-  partial_riasec_analysis?: RIASECScores | null;
+  partial_interest_analysis?: InterestScores | null;
 }
 
 export interface TopDimension {
@@ -72,7 +72,7 @@ export interface ResultsSummary {
   completion_percentage: number;
   interests_identified: string[];
   strengths_identified: string[];
-  riasec_scores: RIASECScores;
+  riasec_scores: InterestScores;
   top_dimensions: TopDimension[];
   primary_domains: DomainRecommendation[];
   secondary_domains: DomainRecommendation[];

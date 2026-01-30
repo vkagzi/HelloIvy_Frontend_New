@@ -232,7 +232,7 @@ export function DomainDebugDialog({
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-700">RIASEC Completed</p>
+                    <p className="text-sm font-medium text-gray-700">Initial Assessment</p>
                     <p className="mt-1 text-sm text-gray-900">
                       {debugInfo.session_state.riasec_completed} / {debugInfo.session_state.riasec_questions_count}
                     </p>
