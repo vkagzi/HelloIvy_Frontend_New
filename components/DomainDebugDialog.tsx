@@ -80,9 +80,6 @@ export function DomainDebugDialog({
               <TabsTrigger value="user-profile" className="flex-1">
                 User Profile Context
               </TabsTrigger>
-              <TabsTrigger value="session-state" className="flex-1">
-                Session State
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="model" className="space-y-4">
@@ -204,52 +201,6 @@ export function DomainDebugDialog({
                 <pre className="max-h-[500px] overflow-y-auto whitespace-pre-wrap rounded bg-gray-900 p-4 text-xs text-green-400">
                   {debugInfo.user_profile_context}
                 </pre>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="session-state">
-              <div className="rounded-lg bg-gray-50 p-4">
-                <h3 className="mb-3 text-lg font-semibold text-gray-900">
-                  Current Session State
-                </h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Current Step</p>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.session_state.current_step}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Total Steps</p>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.session_state.total_steps}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Session ID</p>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.session_id}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Initial Assessment</p>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.session_state.riasec_completed} / {debugInfo.session_state.riasec_questions_count}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Deep Dive Completed</p>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.session_state.deepdive_completed} / {debugInfo.session_state.deepdive_questions_count}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Current Phase</p>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.current_phase.toUpperCase()}
-                    </p>
-                  </div>
-                </div>
               </div>
             </TabsContent>
           </Tabs>
