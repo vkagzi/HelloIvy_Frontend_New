@@ -304,70 +304,9 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
   doc.line(margin, yPosition, pageWidth - margin, yPosition);
   yPosition += 10;
 
-  // ==================== Interest Profile Section ====================
-  checkPageBreak(60);
-  
-  // Section header
-  doc.setFillColor(16, 185, 129); // Teal color
-  doc.rect(margin, yPosition, contentWidth, 10, 'F');
-  
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(255, 255, 255);
-  doc.text('YOUR INTEREST PROFILE', margin + 5, yPosition + 7);
-  doc.setTextColor(0, 0, 0);
-  yPosition += 15;
-
-  // Interest dimension descriptions
-  const interestDescriptions: Record<string, string> = {
-    realistic: 'Practical, hands-on activities and working with tools/machinery',
-    investigative: 'Research, analysis, and problem-solving',
-    artistic: 'Creative expression and artistic activities',
-    social: 'Helping, teaching, and working with people',
-    enterprising: 'Leadership, persuasion, and business activities',
-    conventional: 'Organization, data management, and structured tasks',
-  };
-
-  // Sort interest scores by value (highest first)
-  const sortedScores = Object.entries(data.interestScores)
-    .sort(([, a], [, b]) => b - a);
-
-  // Draw interest profile bars
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  
-  sortedScores.forEach(([dimension, score]) => {
-    checkPageBreak(18);
-    
-    // Dimension name
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${dimension.charAt(0).toUpperCase() + dimension.slice(1)}`, margin, yPosition);
-    
-    // Score value
-    doc.text(`${score}%`, pageWidth - margin - 15, yPosition);
-    yPosition += 4;
-    
-    // Progress bar background
-    doc.setFillColor(229, 231, 235); // Gray-200
-    doc.rect(margin, yPosition, contentWidth - 20, 4, 'F');
-    
-    // Progress bar fill
-    doc.setFillColor(20, 184, 166); // Teal-500
-    const barWidth = ((score / 100) * (contentWidth - 20));
-    doc.rect(margin, yPosition, barWidth, 4, 'F');
-    yPosition += 6;
-    
-    // Description
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(107, 114, 128); // Gray-500
-    doc.text(interestDescriptions[dimension] || '', margin, yPosition);
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(10);
-    yPosition += 8;
-  });
-
-  yPosition += 5;
+  // ==================== Interest Profile Section (DISABLED - RIASEC removed) ====================
+  // The interest profile section has been disabled as RIASEC analysis is no longer included.
+  // Keeping this comment for future reference if we need to re-enable it.
 
   // ==================== Interests & Strengths Section ====================
   if (data.interests.length > 0 || data.strengths.length > 0) {

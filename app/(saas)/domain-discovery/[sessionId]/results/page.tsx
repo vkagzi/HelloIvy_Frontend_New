@@ -247,7 +247,7 @@ const DomainResultsPage: React.FC = () => {
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-teal-600"></div>
           <h2 className="mb-2 text-xl font-semibold text-gray-900">
-            Analyzing Your Interest Profile
+            Analyzing Your Responses
           </h2>
           <p className="text-gray-600">
             Generating personalized domain recommendations based on your
@@ -345,42 +345,33 @@ const DomainResultsPage: React.FC = () => {
         {/* Tab Content */}
         {activeTab === 'results' ? (
           <>
-            {/* Interest Profile Chart */}
-            {interestScores && (
-              <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white p-8 shadow-lg">
-                <h2 className="mb-6 text-2xl font-bold text-gray-900">
-                  📊 Your Interest Profile
-                </h2>
-                <div className="grid gap-4 md:grid-cols-3">
-                  {Object.entries(interestScores).map(([dimension, score]) => (
-                    <div key={dimension}>
-                      <div className="mb-2 flex justify-between">
-                        <span className="font-semibold capitalize text-gray-700">
-                          {dimension}
-                        </span>
-                        <span className="text-sm font-bold text-teal-600">
-                          {score}
-                        </span>
-                      </div>
-                      <div className="h-3 rounded-full bg-gray-200">
-                        <div
-                          className="h-3 rounded-full bg-linear-to-r from-teal-500 to-cyan-500 transition-all"
-                          style={{ width: `${(score / 100) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-4 text-sm text-gray-600">
-                  Your interest profile shows how aligned you are with different work
-                  environments and activities.
-                </p>
-              </div>
-            )}
+            {/* Interest Profile Chart - DISABLED (RIASEC removed) */}
+            {/* The interest profile section has been disabled as RIASEC analysis is no longer included. */}
 
             {/* Interests & Strengths */}
             {(interests.length > 0 || strengths.length > 0) && (
               <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white p-6 shadow-lg">
+                <div className="mb-6 flex items-center justify-between">
+                  <Heading level={3} className="text-lg font-semibold text-gray-900">
+                    Results Summary
+                  </Heading>
+                  <Button
+                    onClick={downloadResultsFile}
+                    disabled={isDownloadingResults}
+                    className="bg-linear-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                  >
+                    {isDownloadingResults ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        📄 Download Results
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <div className="grid gap-6 md:grid-cols-2">
                   {interests.length > 0 && (
                     <div>
@@ -421,7 +412,7 @@ const DomainResultsPage: React.FC = () => {
             )}
 
             {/* Summary Stats */}
-            <div className="mx-auto mb-8 max-w-5xl rounded-lg bg-white py-6 shadow-lg">
+            <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white py-6 shadow-lg">
               <div className="grid text-center">
                 <div>
                   <div className="text-3xl font-bold text-teal-600">
@@ -433,7 +424,7 @@ const DomainResultsPage: React.FC = () => {
             </div>
 
             {/* Recommendation Cards */}
-            <div className="mx-auto max-w-5xl space-y-6">
+            <div className="mx-auto max-w-4xl space-y-6">
               {recommendations.map((domain, index) => (
                 <div
                   key={index}
@@ -698,13 +689,13 @@ const DomainResultsPage: React.FC = () => {
 
         {/* Actions */}
         <div className="mt-8 space-x-4 text-center">
-          <Button
+          {/* <Button
             asChild
             size="lg"
             className="bg-linear-to-r from-teal-600 to-cyan-600 font-semibold hover:from-teal-700 hover:to-cyan-700"
           >
             <Link href="/domain-discovery">Discover More Domains</Link>
-          </Button>
+          </Button> */}
           <Button
             asChild
             size="lg"
@@ -712,7 +703,7 @@ const DomainResultsPage: React.FC = () => {
           >
             <Link href="/career-discovery">🚀 Start Career Discovery</Link>
           </Button>
-          <Button
+          {/* <Button
             onClick={downloadResultsFile}
             disabled={isDownloadingResults}
             variant="outline"
@@ -727,7 +718,7 @@ const DomainResultsPage: React.FC = () => {
             ) : (
               <>📄 Download Results</>
             )}
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>
