@@ -9,6 +9,8 @@ import {
   careerDiscoveryApi,
   SendMessageResponse,
 } from '@/lib/career-discovery-api';
+import { marked } from 'marked';
+import { Button } from '@/components/ui/button';
 
 type Role = 'bot' | 'user';
 type Phase = 'profile' | 'explorer';
@@ -56,10 +58,15 @@ const CareerConversationPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [progressPercentage, setProgressPercentage] = useState(0);
+  const [questionsCompleted, setQuestionsCompleted] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(20); // Default value
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [isGeneratingResults, setIsGeneratingResults] = useState(false);
   const [resultsGenerationFailed, setResultsGenerationFailed] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(false);
+  const [sessionCreatedAt, setSessionCreatedAt] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -106,6 +113,28 @@ const CareerConversationPage: React.FC = () => {
           // Restore existing session
           setCurrentStep(historyResponse.current_step);
           setTotalQuestions(historyResponse.total_questions || historyResponse.total_steps || 20);
+          
+          // Try to get session details for timer
+          try {
+            const sessionResp = await careerDiscoveryApi.getCurrentSession();
+            if (sessionResp) {
+              if (sessionResp.created_at) {
+                setSessionCreatedAt(sessionResp.created_at);
+              }
+              const completed = historyResponse.current_step;
+              setQuestionsCompleted(completed);
+              const total = historyResponse.total_questions || historyResponse.total_steps || 20;
+              setProgressPercentage(Math.round((completed / total) * 100));
+            }
+          } catch (e) {
+            const error = e as { message?: string };
+            if (error.message?.includes('No active career discovery session found')) {
+              setSessionEnded(true);
+              setProgressPercentage(100);
+              setQuestionsCompleted(totalQuestions);
+            }
+          }
+          
           const loadedMessages: Message[] = historyResponse.messages.map((m) => ({
             id: m.message_id,
             type: m.type,
@@ -157,6 +186,38 @@ const CareerConversationPage: React.FC = () => {
     }
   }, [messages]);
 
+  // Timer effect - updates every second
+  useEffect(() => {
+    if (!sessionCreatedAt) return;
+
+    const updateTimer = () => {
+      const createdTime = new Date(sessionCreatedAt).getTime();
+      const currentTime = Date.now();
+      const elapsedSeconds = Math.floor((currentTime - createdTime) / 1000);
+      
+      // 30 minutes + 5 seconds grace = 1805 seconds
+      const totalSeconds = 30 * 60 + 5;
+      const remaining = Math.max(0, totalSeconds - elapsedSeconds);
+      
+      setTimeRemaining(remaining);
+    };
+
+    // Update immediately
+    updateTimer();
+
+    // Update every second
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [sessionCreatedAt]);
+
+  // Format time remaining as MM:SS
+  const formatTimeRemaining = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   async function handleSend() {
     if (!input.trim() || isLoading || !sessionId) return;
 
@@ -180,8 +241,11 @@ const CareerConversationPage: React.FC = () => {
         userMessage
       );
 
-      // Update step
+      // Update step and progress tracking
       setCurrentStep(response.current_step);
+      const total = response.total_steps || totalQuestions;
+      setQuestionsCompleted(response.current_step);
+      setProgressPercentage(Math.round((response.current_step / total) * 100));
 
       // Check if conversation is complete
       if (response.is_complete) {
@@ -550,54 +614,99 @@ const CareerConversationPage: React.FC = () => {
     isRecording ? stopRecording() : startRecording();
   };
 
+  // Convert markdown to HTML
+  const renderMarkdown = (content: string): string => {
+    try {
+      return marked.parse(content, { async: false }) as string;
+    } catch (error) {
+      console.error('Markdown parsing error:', error);
+      return content;
+    }
+  };
+
   return (
-    <div className="flex h-full min-h-0 bg-linear-to-br from-purple-50 to-blue-100">
+    <div className="flex h-[calc(100vh-6rem)] min-h-0 bg-linear-to-br from-purple-50 to-blue-100">
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header */}
         <div className="border-b bg-white px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <Heading
-                level={2}
-                className="text-xl font-semibold text-gray-900"
-              >
-                🚀 Career Journey
-              </Heading>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <Heading
+                  level={2}
+                  className="text-xl font-semibold text-gray-900"
+                >
+                  🚀 Career Discovery Journey
+                </Heading>
+                {sessionCreatedAt && (
+                  <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
+                    timeRemaining <= 60 
+                      ? 'border-red-300 bg-red-50' 
+                      : timeRemaining <= 300 
+                      ? 'border-orange-300 bg-orange-50' 
+                      : 'border-purple-300 bg-purple-50'
+                  }`}>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className={`text-sm font-semibold ${
+                      timeRemaining <= 60 
+                        ? 'text-red-700' 
+                        : timeRemaining <= 300 
+                        ? 'text-orange-700' 
+                        : 'text-purple-700'
+                    }`}>
+                      {formatTimeRemaining(timeRemaining)}
+                    </span>
+                  </div>
+                )}
+              </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
-                {askedCount}/{totalQuestions} questions asked • Phase:{' '}
-                <span className="font-medium">
-                  {phase === 'profile' ? 'Profile Builder' : 'Career Explorer'}
-                </span>
+                Question {questionsCompleted}/{totalQuestions}
               </Paragraph>
+              
+              {/* Progress Bar */}
+              <div className="mt-3 w-full">
+                <div className="mb-1 flex justify-between text-xs text-gray-500">
+                  <span>Progress</span>
+                  <span>{progressPercentage}%</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-2 rounded-full bg-linear-to-r from-purple-500 to-blue-500 transition-all duration-300"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+              </div>
             </div>
             <button
               onClick={handleEnd}
               disabled={!canEndConversation}
               title={
                 !canEndConversation
-                  ? `Answer at least ${MIN_QUESTIONS_FOR_RECOMMENDATIONS} questions`
+                  ? `Complete all ${totalQuestions} questions to view results`
                   : 'End conversation and get results'
               }
-              className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
+              className={`ml-4 whitespace-nowrap rounded-lg px-4 py-2 text-white ${
                 canEndConversation
                   ? 'cursor-pointer bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
                   : 'cursor-not-allowed bg-gray-400 opacity-60'
               }`}
             >
-              End →
+              View Results →
             </button>
           </div>
         </div>
 
         {/* Messages */}
-        <div ref={messagesContainerRef} className="flex-1 space-y-6 overflow-y-auto px-6 py-4">
+        <div ref={messagesContainerRef} className="flex-1 min-h-0 space-y-6 overflow-y-auto px-6 py-4">
           {messages.map((m) => (
             <div
               key={m.id}
               className={`flex ${m.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-3xl ${m.type === 'user' ? 'text-right' : 'text-left'}`}
+                className={`${m.type === 'user' ? 'text-right' : 'w-full text-left'}`}
               >
                 <div
                   className={`rounded-lg px-4 py-3 ${
@@ -606,13 +715,16 @@ const CareerConversationPage: React.FC = () => {
                       : 'border bg-white text-gray-900 shadow-sm'
                   } `}
                 >
-                  <Paragraph
-                    className={
-                      m.type === 'user' ? 'text-white' : 'text-gray-900'
-                    }
-                  >
-                    {m.content}
-                  </Paragraph>
+                  {m.type === 'user' ? (
+                    <Paragraph className="text-white">
+                      {m.content}
+                    </Paragraph>
+                  ) : (
+                    <div
+                      className="prose prose-sm max-w-none text-gray-900 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-2 [&_p]:mt-0 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }}
+                    />
+                  )}
                 </div>
                 <div
                   className={`mt-1 text-xs ${m.type === 'user' ? 'text-purple-100' : 'text-gray-500'}`}
@@ -664,76 +776,89 @@ const CareerConversationPage: React.FC = () => {
 
         {/* Input */}
         <div className="border-t bg-white px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex-1">
-              <Textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your response…"
-                className="min-h-10! py-2!"
-                disabled={isLoading}
-              />
+          {sessionEnded ? (
+            <div className="text-center text-sm text-gray-600">
+              ✅ This session has ended. Click "View Your Results" above to see your career recommendations.
             </div>
-            <div className="flex space-x-2">
-              {/* STT: Voice recording */}
-              <button
-                onClick={toggleRecording}
-                disabled={isLoading || isTranscribing}
-                className={`rounded-lg border px-3 py-2 transition-colors hover:bg-gray-50 ${
-                  isRecording
-                    ? 'border-red-300 bg-red-100 text-red-700'
-                    : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                } ${isLoading || isTranscribing ? 'cursor-not-allowed opacity-50' : ''}`}
-                title={isRecording ? 'Stop recording' : 'Start voice input'}
-              >
-                {isRecording ? (
-                  <div className="flex items-center space-x-1">
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
-                    <span className="text-xs">🎤</span>
-                  </div>
-                ) : isTranscribing ? (
-                  <div className="flex items-center space-x-1">
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-                    <span className="text-xs">⏳</span>
-                  </div>
-                ) : (
-                  '🎤'
-                )}
-              </button>
+          ) : isLoading ? (
+            <div className="text-center text-sm text-gray-600">
+              ⏳
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center space-x-4">
+                <div className="flex-1">
+                  <Textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type your response…"
+                    className="min-h-10! py-2!"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  {/* STT: Voice recording */}
+                  <Button
+                    variant="icon-outline"
+                    onClick={toggleRecording}
+                    disabled={isLoading || isTranscribing}
+                    className={`px-3 py-2 transition-colors ${
+                      isRecording
+                        ? 'border-red-300 bg-red-100 text-red-700'
+                        : ''
+                    }`}
+                    title={isRecording ? 'Stop recording' : 'Start voice input'}
+                  >
+                    {isRecording ? (
+                      <div className="flex items-center space-x-1">
+                        <div className="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
+                        <span className="text-xs">🎤</span>
+                      </div>
+                    ) : isTranscribing ? (
+                      <div className="flex items-center space-x-1">
+                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-purple-500 border-t-transparent"></div>
+                        <span className="text-xs">⏳</span>
+                      </div>
+                    ) : (
+                      '🎤'
+                    )}
+                  </Button>
 
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading}
-                className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 disabled:opacity-50"
-              >
-                Send
-              </button>
-              <button
-                onClick={handleEnd}
-                disabled={!canEndConversation}
-                title={
-                  !canEndConversation
-                    ? `Answer at least ${MIN_QUESTIONS_FOR_RECOMMENDATIONS} questions`
-                    : 'End conversation and get results'
-                }
-                className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
-                  canEndConversation
-                    ? 'bg-linear-to-r cursor-pointer from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
-                    : 'cursor-not-allowed bg-gray-400 opacity-60'
-                }`}
-              >
-                End →
-              </button>
-            </div>
-          </div>
-          <div className="mt-2 text-xs text-gray-500">
-            Tip: Press <span className="font-semibold">Enter</span> to send,{' '}
-            <span className="font-semibold">Shift+Enter</span> for a new line.{' '}
-            {isRecording && '🎤 Recording...'}{' '}
-            {isTranscribing && '⏳ Processing speech...'}
-          </div>
+                  <button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isLoading}
+                    className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Send
+                  </button>
+                  <button
+                    onClick={handleEnd}
+                    disabled={!canEndConversation}
+                    title={
+                      !canEndConversation
+                        ? `Complete all ${totalQuestions} questions to view results`
+                        : 'End conversation and get results'
+                    }
+                    className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
+                      canEndConversation
+                        ? 'bg-linear-to-r cursor-pointer from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
+                        : 'cursor-not-allowed bg-gray-400 opacity-60'
+                    }`}
+                  >
+                    End →
+                  </button>
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">
+                Tip: Press <span className="font-semibold">Enter</span> to send,{' '}
+                <span className="font-semibold">Shift+Enter</span> for a new line.{' '}
+                {isRecording && '🎤 Recording...'}{' '}
+                {isTranscribing && '⏳ Processing speech...'}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

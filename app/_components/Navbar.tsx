@@ -16,16 +16,17 @@ const Navbar: React.FC = () => {
 
   return (
     <nav
-      className={`relative flex flex-col bg-white transition-all duration-200 ${
-        collapsed ? 'w-14' : 'w-50 border-r border-neutral-200'
-      }  min-h-screen px-2`}
+      className={`relative flex flex-col bg-white transition-all duration-200 ${collapsed ? 'w-14' : 'w-50 border-r border-neutral-200'
+        }  min-h-screen px-2`}
     >
       <div className="flex h-12 items-center justify-between pb-3">
-        <Image
-          src={collapsed ? imgIcon : imgLogoApp}
-          alt="HelloIvy Logo"
-          className={`h-6 w-auto transition-all duration-200`}
-        />
+        <Link href="/dashboard">
+          <Image
+            src={collapsed ? imgIcon : imgLogoApp}
+            alt="HelloIvy Logo"
+            className={`h-6 w-auto transition-all duration-200`}
+          />
+        </Link>
         <button
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className="overflow-clip rounded-full bg-neutral-100 p-1 leading-none transition hover:bg-neutral-300"
@@ -46,11 +47,10 @@ const Navbar: React.FC = () => {
             <li key={item.href} className="h-10">
               <Link
                 href={item.href}
-                className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all ${
-                  active
+                className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all ${active
                     ? 'bg-action-gradient-800 font-semibold text-white'
                     : 'hover:bg-purple-50'
-                } ${collapsed ? 'w-11' : ''}`}
+                  } ${collapsed ? 'w-11' : ''}`}
               >
                 <FiIcon
                   name={item.icon}

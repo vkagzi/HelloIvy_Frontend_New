@@ -175,9 +175,20 @@ class DomainDiscoveryAPI {
 
   /**
    * List all sessions for the user
+   * @param isActive - Optional filter for active/inactive sessions
+   * @param limit - Optional limit on number of sessions to return
    */
-  async listSessions(): Promise<SessionListResponse> {
-    return api<SessionListResponse>(`${this.baseUrl}/list/`);
+  async listSessions(isActive?: boolean, limit?: number): Promise<SessionListResponse> {
+    const params = new URLSearchParams();
+    if (isActive !== undefined) {
+      params.append('is_active', isActive.toString());
+    }
+    if (limit !== undefined) {
+      params.append('limit', limit.toString());
+    }
+    const queryString = params.toString();
+    const url = queryString ? `${this.baseUrl}/list/?${queryString}` : `${this.baseUrl}/list/`;
+    return api<SessionListResponse>(url);
   }
 
   /**

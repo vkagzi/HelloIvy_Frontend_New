@@ -95,9 +95,12 @@ class CareerDiscoveryAPI {
    * Create a new career discovery session
    * Returns the session with the initial bot message
    */
-  async createSession(): Promise<CareerDiscoverySession> {
+  async createSession(domainSessionId: string): Promise<CareerDiscoverySession> {
     return api<CareerDiscoverySession>(`${this.baseUrl}/`, {
       method: 'POST',
+      body: {
+        domain_session_id: domainSessionId,
+      },
     });
   }
 

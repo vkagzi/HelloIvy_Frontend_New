@@ -19,6 +19,8 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-neutral-100 hover:text-neutral-900",
         link: "text-blue-600 underline-offset-4 hover:underline",
+        "icon-outline":
+          "border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-400",
       },
       size: {
         default: "h-10 px-4 py-2",

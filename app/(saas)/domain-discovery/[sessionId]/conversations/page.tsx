@@ -885,14 +885,15 @@ const DomainConversationPage: React.FC = () => {
                   </div>
                   <div className="flex space-x-2">
                     {/* STT: Voice recording */}
-                    <button
+                    <Button
+                      variant="icon-outline"
                       onClick={toggleRecording}
                       disabled={isLoading || isTranscribing}
-                      className={`rounded-lg border px-3 py-2 transition-colors hover:bg-gray-50 ${
+                      className={`px-3 py-2 transition-colors ${
                         isRecording
                           ? 'border-red-300 bg-red-100 text-red-700'
-                          : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                      } ${isLoading || isTranscribing ? 'cursor-not-allowed opacity-50' : ''}`}
+                          : ''
+                      }`}
                       title={isRecording ? 'Stop recording' : 'Start voice input'}
                     >
                       {isRecording ? (
@@ -908,7 +909,7 @@ const DomainConversationPage: React.FC = () => {
                       ) : (
                         '🎤'
                       )}
-                    </button>
+                    </Button>
 
                     <button
                       onClick={handleSend}

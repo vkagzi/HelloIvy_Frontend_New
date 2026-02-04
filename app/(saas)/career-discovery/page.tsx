@@ -46,10 +46,11 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     const checkDomainDiscovery = async () => {
       try {
         setIsCheckingDomain(true);
-        const response = await domainDiscoveryApi.listSessions();
-        setHasDomainSessions(response.sessions.length > 0);
+        // Fetch only the last completed session (is_active=false, limit=1)
+        const response = await domainDiscoveryApi.listSessions(false, 1);
+        setHasDomainSessions(response.total_count > 0);
         if (response.sessions.length > 0) {
-          // Get the most recent session (sessions are already ordered by -created_at)
+          // Get the most recent completed session
           const latestSession = response.sessions[0];
           setLatestDomainSession(latestSession);
           
@@ -98,7 +99,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       return;
     }
 
-    if (!hasDomainSessions) {
+    if (!hasDomainSessions || !latestDomainSession) {
       setError('Please complete Domain Discovery before starting Career Discovery');
       return;
     }
@@ -115,8 +116,8 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
         // ignore
       }
 
-      // Create a new session
-      const session = await careerDiscoveryApi.createSession();
+      // Create a new session with the latest domain session ID
+      const session = await careerDiscoveryApi.createSession(latestDomainSession.session_id);
       console.log('Created new session:', session);
 
       // Navigate to conversation page with session ID
