@@ -124,7 +124,7 @@ export const ProfessionalBlock: React.FC<SchoolBlockProps> = ({
           {/* Basic Professional Details */}
           <div className="mb-5 flex items-center justify-between">
             <Label size="lg" className="font-semibold text-neutral-900">
-              Job {schoolIdx + 1} Details
+              Work Experience {schoolIdx + 1}
             </Label>
             {schools.length > minSchools && (
               <Button
@@ -257,7 +257,7 @@ export const ProfessionalBlock: React.FC<SchoolBlockProps> = ({
           className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"
           onClick={() => handleAddSchool()}
         >
-          {'+ Add Job'}
+          {'+ Add Work Experience'}
         </button>
       )}
     </div>

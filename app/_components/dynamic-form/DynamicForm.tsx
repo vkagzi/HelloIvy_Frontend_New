@@ -522,7 +522,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 {/* Experience Heading and Remove Button */}
                 <div className="mb-5 flex items-center justify-between">
                   <h3 className="text-label-lg font-semibold text-neutral-900">
-                    Experience {rIdx + 1}
+                    Work Experience {rIdx + 1}
                   </h3>
                   {!disableRemove && (
                     <button
@@ -1108,6 +1108,20 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               const value = rowObj[fieldId];
               return value !== '' && value !== null && value !== undefined;
             });
+          }).map((row) => {
+            // Clean up conditionally dependent fields
+            if (typeof row !== 'object' || row === null) return row;
+            const rowObj = { ...row } as Record<string, unknown>;
+            
+            // For subjects: clear subjectOther if subject is not "Other"
+            if ('subject' in rowObj) {
+              if (rowObj.subject !== 'Other') {
+                // Remove subjectOther field completely when subject is not "Other"
+                delete rowObj.subjectOther;
+              }
+            }
+            
+            return rowObj;
           });
         }
       }
@@ -1126,6 +1140,58 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       }
     });
     
+    // Handle nested repeatables in highSchool/undergraduate/postgraduate sections
+    // e.g., highSchool[0].subjects[0].subjectOther should be cleared if subject !== 'Other'
+    layout.forEach((item) => {
+      if (item.type === 'highSchool' || item.type === 'undergraduate' || item.type === 'postgraduate') {
+        const sectionData = filtered[item.type as string];
+        if (Array.isArray(sectionData)) {
+          filtered[item.type as string] = sectionData.map((school) => {
+            if (typeof school !== 'object' || school === null) return school;
+            const schoolObj = { ...school } as Record<string, unknown>;
+            
+            // Handle subjects/years array within each school
+            if (item.repeatables?.name && schoolObj[item.repeatables.name]) {
+              const nestedArray = schoolObj[item.repeatables.name];
+              if (Array.isArray(nestedArray)) {
+                // First, filter out empty rows
+                const filteredNested = nestedArray.filter((row) => {
+                  if (typeof row !== 'object' || row === null) return true;
+                  const rowObj = row as Record<string, unknown>;
+                  // Check if any field in this row has a non-empty value
+                  return (item.repeatables?.fields ?? []).some((fieldId) => {
+                    const value = rowObj[fieldId];
+                    return value !== '' && value !== null && value !== undefined;
+                  });
+                });
+                
+                // Then, clean up conditional fields
+                schoolObj[item.repeatables.name] = filteredNested.map((row) => {
+                  if (typeof row !== 'object' || row === null) return row;
+                  const rowObj = { ...row } as Record<string, unknown>;
+                  
+                  // Clear subjectOther if subject is not "Other" or if it's undefined/empty
+                  if ('subject' in rowObj) {
+                    if (rowObj.subject !== 'Other') {
+                      // Remove subjectOther field completely when subject is not "Other"
+                      delete rowObj.subjectOther;
+                    } else if (rowObj.subjectOther === undefined || rowObj.subjectOther === null || rowObj.subjectOther === '') {
+                      // If subject is "Other" but subjectOther is empty, keep it but as empty string
+                      // This will trigger validation error which is correct
+                    }
+                  }
+                  
+                  return rowObj;
+                });
+              }
+            }
+            
+            return schoolObj;
+          });
+        }
+      }
+    });
+    
     return filtered;
   };
 
@@ -1140,6 +1206,14 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         console.log('Validation result:', result);
         if (!result.success) {
           console.error('Form validation errors:', result.error.issues);
+          console.error('Detailed validation errors:');
+          result.error.issues.forEach((err, index) => {
+            console.error(`Error ${index + 1}:`);
+            console.error('  Path:', err.path.join('.'));
+            console.error('  Message:', err.message);
+            console.error('  Code:', err.code);
+            console.error('  Received value:', err.path.reduce((obj: any, key) => obj?.[key], cleanedValues));
+          });
           const fieldErrors: Record<string, string> = {};
           result.error.issues.forEach((err) => {
             const errorKey = err.path.map((p) => String(p)).join('.');

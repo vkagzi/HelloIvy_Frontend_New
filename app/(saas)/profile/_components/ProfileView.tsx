@@ -29,11 +29,15 @@ const getSectionFromPath = (pathname: string): string => {
   return parts[parts.length - 1] || 'personal';
 };
 
-const getDisplayValue = (value: unknown): string => {
+const getDisplayValue = (value: unknown, fieldId?: string): string => {
   if (Array.isArray(value)) return value.join(', ');
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (value === undefined || value === null || value === '') return 'N/A';
-  return String(value);
+  const str = String(value);
+  // Format YYYY-MM-DD dates to DD/MM/YYYY
+  const dateMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateMatch) return `${dateMatch[3]}/${dateMatch[2]}/${dateMatch[1]}`;
+  return str;
 };
 
 const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({

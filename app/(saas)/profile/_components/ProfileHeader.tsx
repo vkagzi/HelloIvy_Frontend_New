@@ -59,6 +59,15 @@ const ProfileHeaderView: React.FC = () => {
     return typeof value === 'string' && value ? value : undefined;
   };
 
+  const formatDob = (value: unknown): string | undefined => {
+    const str = getStringValue(value);
+    if (!str) return undefined;
+    // Format YYYY-MM-DD to DD/MM/YYYY
+    const match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+    return str;
+  };
+
   const getFullName = (): string => {
     const firstName = getStringValue(defaultValues.firstName) ?? 'Not Provided';
     const lastName = getStringValue(defaultValues.lastName) ?? '';
@@ -70,7 +79,7 @@ const ProfileHeaderView: React.FC = () => {
     { icon: 'envelope', value: userDetails.email || undefined },
     { icon: 'phone-call', value: getStringValue(defaultValues.phoneNumber) },
     { icon: 'user', value: getStringValue(defaultValues.gender) },
-    { icon: 'cake-birthday', value: getStringValue(defaultValues.dob) },
+    { icon: 'cake-birthday', value: formatDob(defaultValues.dob) },
     { icon: 'marker', value: getStringValue(defaultValues.addressline) },
   ];
 

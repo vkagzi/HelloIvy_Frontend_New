@@ -4,6 +4,7 @@ import { FieldDefinition } from '@/app/utils/dynamicForm';
 import InputField from '@/app/_components/InputField';
 import SelectField from '@/app/_components/Select';
 import CustomDatePicker from '@/app/_components/CustomDatePicker';
+import { MonthYearPicker, formatMonthYear } from '@/app/_components/MonthYearPicker';
 import { Checkbox } from '@/app/_components/Checkbox';
 import 'react-datepicker/dist/react-datepicker.css';
 import { MultiSelect } from '@/components/ui/multi-select';
@@ -67,13 +68,22 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     | string
     | undefined;
   const watchedDepValue = dependentFieldId ? form.watch(dependentFieldId) : undefined;
+  
   const resolvedOptions: string[] = React.useMemo(() => {
     const baseOptions = field.options ?? [];
     const od = (field as any).optionsDependsOn;
     if (!od) return baseOptions;
-    const depVal = Array.isArray(watchedDepValue)
+    
+    let depVal = Array.isArray(watchedDepValue)
       ? watchedDepValue[0]
       : watchedDepValue;
+    
+    // If extractCountry flag is set, extract country from "City, State, Country" format
+    if (od.extractCountry && typeof depVal === 'string' && depVal.includes(',')) {
+      const parts = depVal.split(',').map((p: string) => p.trim());
+      depVal = parts[parts.length - 1]; // Get the last part (country)
+    }
+    
     if (typeof depVal === 'string' && od.map && od.map[depVal]) {
       return od.map[depVal];
     }
@@ -299,8 +309,13 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   required={field.required}
                   placeholder={field.placeholder}
                   value={
-                    typeof controllerField.value === 'string'
-                      ? controllerField.value
+                    typeof controllerField.value === 'string' && controllerField.value
+                      ? (() => {
+                          // Format YYYY-MM-DD to DD/MM/YYYY for display
+                          const match = controllerField.value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                          if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+                          return controllerField.value;
+                        })()
                       : ''
                   }
                   onChange={() => undefined}
@@ -339,6 +354,70 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   inputWidthClass={inputWidthClass}
                 />
                 <CustomDatePicker
+                  value={controllerField.value as string}
+                  onChange={controllerField.onChange}
+                  open={showDatePicker}
+                  onClose={() => setShowDatePicker(false)}
+                  anchorRef={anchorRef}
+                />
+              </div>
+            );
+          case 'month_year':
+            return (
+              <div
+                className="relative"
+                ref={anchorRef}
+                onClick={() => setShowDatePicker(true)}
+                tabIndex={0}
+                role="button"
+                aria-label={`Select ${field.label}`}
+              >
+                <InputField
+                  label={field.label}
+                  inputHeightClass={inputHeightClass}
+                  labelHeightClass={labelHeightClass}
+                  name={field.id}
+                  type="text"
+                  required={field.required}
+                  placeholder={field.placeholder}
+                  value={
+                    typeof controllerField.value === 'string'
+                      ? formatMonthYear(controllerField.value)
+                      : ''
+                  }
+                  onChange={() => undefined}
+                  onBlur={controllerField.onBlur}
+                  error={error}
+                  iconRight={
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      className="h-4 w-4 text-neutral-500"
+                    >
+                      <rect
+                        x="3"
+                        y="5"
+                        width="18"
+                        height="16"
+                        rx="4"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        fill="none"
+                      />
+                      <path
+                        d="M16 3v4M8 3v4M3 9h18"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  }
+                  readOnly={true}
+                  inputWidthClass={inputWidthClass}
+                />
+                <MonthYearPicker
                   value={controllerField.value as string}
                   onChange={controllerField.onChange}
                   open={showDatePicker}

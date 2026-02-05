@@ -38,6 +38,7 @@ export interface FieldDefinition {
   };
   optionsDependsOn?: {
     fieldId: string;
+    extractCountry?: boolean;
     map: Record<string, string[]>;
     default?: string[];
   };
@@ -56,7 +57,14 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
     case 'text':
     case 'textarea': {
       let base = z.string();
-      if (field.required) base = base.min(1, `${field.label} is required`);
+      // If field has validationDependsOn, make it optional and allow empty string
+      // The conditional validation will be added via refine in the schema builder
+      if (field.validationDependsOn) {
+        // Return early with an optional string schema
+        return z.string().optional();
+      } else if (field.required) {
+        base = base.min(1, `${field.label} is required`);
+      }
       if (field.validation?.maxLength)
         base = base.max(field.validation.maxLength, `${field.label} must be at most ${field.validation.maxLength} characters`);
       if (field.validation?.regex)
@@ -134,7 +142,8 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
       return base;
     }
     case 'text_select':
-    case 'select_autofill': {
+    case 'select_autofill':
+    case 'month_year': {
       let base = z.string();
       if (field.required) base = base.min(1, `${field.label} is required`);
       return base;
@@ -365,7 +374,39 @@ export const generateSubSchema = (
       }
     });
 
-    let arrSchema = z.array(z.object(repeatableShape));
+    // Add conditional validation for fields inside repeatables
+    let objSchema: ZodType<{ [x: string]: unknown }> = z.object(repeatableShape);
+    layout.repeatables.fields.forEach((fid) => {
+      const field = fieldDefs.find((f) => f.id === fid);
+      if (field?.validationDependsOn) {
+        field.validationDependsOn.forEach((cond) => {
+          if (cond.validation.required) {
+            objSchema = objSchema.refine(
+              (data) => {
+                // If the dependent field doesn't match the condition, validation passes
+                if (!cond.values.includes(data[cond.fieldId])) return true;
+                // If the dependent field matches, check that the field has a value
+                const value = data[fid];
+                return typeof value === 'string' && value.trim().length > 0;
+              },
+              {
+                message: `${field.label} is required when ${
+                  fieldDefs.find((f) => f.id === cond.fieldId)?.label ??
+                  cond.fieldId
+                } is ${
+                  cond.values.length === 1
+                    ? `"${cond.values[0]}"`
+                    : `one of: ${cond.values.map((v) => `"${v}"`).join(', ')}`
+                }`,
+                path: [fid],
+              }
+            );
+          }
+        });
+      }
+    });
+
+    let arrSchema = z.array(objSchema);
     if (layout.repeatables.repeatable_option?.min !== undefined) {
       arrSchema = arrSchema.min(
         layout.repeatables.repeatable_option.min,

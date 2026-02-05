@@ -2,7 +2,8 @@ import { COUNTRY_NAMES } from '@/app/_constants/countryCodes';
 
 export const COUNTRY_OPTIONS = COUNTRY_NAMES;
 
-export const STATE_OPTIONS = [
+// US States
+const US_STATES = [
   'Alabama',
   'Alaska',
   'Arizona',
@@ -10,32 +11,20 @@ export const STATE_OPTIONS = [
   'California',
   'Colorado',
   'Connecticut',
-  'Bangalore',
   'Delaware',
   'District of Columbia',
   'Florida',
   'Georgia',
   'Hawaii',
   'Idaho',
-  'Calgary',
-  'Chandigarh',
-  'Charlotte',
   'Illinois',
   'Indiana',
-  'Coimbatore',
-  'Dallas',
-  'Delhi',
   'Iowa',
   'Kansas',
   'Kentucky',
-  'Doha',
-  'Dubai',
-  'Edmonton',
   'Louisiana',
   'Maine',
-  'Gurgaon',
   'Maryland',
-  'Halifax',
   'Massachusetts',
   'Michigan',
   'Minnesota',
@@ -44,66 +33,35 @@ export const STATE_OPTIONS = [
   'Montana',
   'Nebraska',
   'Nevada',
-  'Kochi',
-  'Kuwait City',
   'New Hampshire',
   'New Jersey',
   'New Mexico',
   'New York',
-  'Lahore',
-  'Las Vegas',
-  'Leeds',
-  'Lille',
-  'Lodz',
   'North Carolina',
   'North Dakota',
   'Ohio',
   'Oklahoma',
   'Oregon',
-  'Lucknow',
   'Pennsylvania',
-  'Puerto Rico',
-  'Manama',
   'Rhode Island',
   'South Carolina',
   'South Dakota',
-  'Mecca',
-  'Minneapolis',
-  'Mississauga',
   'Tennessee',
-  'Montreal',
   'Texas',
-  'New Delhi',
-  'Noida',
   'Utah',
-  'Ottawa',
-  'Pittsburgh',
-  'Pune',
   'Vermont',
   'Virginia',
   'Washington',
   'West Virginia',
   'Wisconsin',
   'Wyoming',
+  'Puerto Rico',
   'Guam',
-  'Riyadh',
   'US Virgin Islands',
-  'San Antonio',
-  'San Diego',
-  'San Francisco',
-  'San Jose',
-  'San Juan',
-  'San Jose',
-  'San Juan',
-  'San Jose',
-  'San Juan',
-  // Canada
-  'Sanaa',
-  'Saskatoon',
-  'Sharjah',
-  'St Louis',
-  'St Petersburg',
-  'Surat',
+];
+
+// Canadian Provinces
+const CANADA_PROVINCES = [
   'Alberta',
   'British Columbia',
   'Manitoba',
@@ -112,13 +70,15 @@ export const STATE_OPTIONS = [
   'Nova Scotia',
   'Ontario',
   'Prince Edward Island',
-  'Vancouver',
   'Quebec',
   'Saskatchewan',
   'Northwest Territories',
   'Nunavut',
   'Yukon',
-  // India
+];
+
+// Indian States
+const INDIA_STATES = [
   'Andhra Pradesh',
   'Arunachal Pradesh',
   'Assam',
@@ -155,7 +115,10 @@ export const STATE_OPTIONS = [
   'Ladakh',
   'Lakshadweep',
   'Puducherry',
-  // Australia
+];
+
+// Australian States
+const AUSTRALIA_STATES = [
   'Australian Capital Territory',
   'New South Wales',
   'Northern Territory',
@@ -164,11 +127,32 @@ export const STATE_OPTIONS = [
   'Tasmania',
   'Victoria',
   'Western Australia',
-  // United Kingdom
+];
+
+// UK Countries
+const UK_STATES = [
   'England',
   'Northern Ireland',
   'Scotland',
   'Wales',
+];
+
+// Map of countries to their states/provinces
+export const STATES_BY_COUNTRY: Record<string, string[]> = {
+  'United States': US_STATES,
+  'Canada': CANADA_PROVINCES,
+  'India': INDIA_STATES,
+  'Australia': AUSTRALIA_STATES,
+  'UK': UK_STATES,
+};
+
+// Legacy export - all states combined (for backward compatibility)
+export const STATE_OPTIONS = [
+  ...US_STATES,
+  ...CANADA_PROVINCES,
+  ...INDIA_STATES,
+  ...AUSTRALIA_STATES,
+  ...UK_STATES,
 ];
 
 export const CITY_OPTIONS = [

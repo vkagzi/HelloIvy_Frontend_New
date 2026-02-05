@@ -12,6 +12,7 @@ import {
   CITY_OPTIONS,
   COUNTRY_OPTIONS,
   STATE_OPTIONS,
+  STATES_BY_COUNTRY,
 } from '@/app/_constants/locations';
 
 // =============================================================================
@@ -99,14 +100,6 @@ export const personalFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
-    id: 'email',
-    type: 'text',
-    label: 'Email',
-    placeholder: 'Enter email id',
-    required: true,
-    validation: { format: 'email' },
-  },
-  {
     id: 'countryCode',
     type: 'select_autofill',
     label: 'Country code',
@@ -163,8 +156,12 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'State',
     placeholder: 'Select state',
-    options: STATE_OPTIONS,
-    required: true,
+    required: false,
+    optionsDependsOn: {
+      fieldId: 'country',
+      map: STATES_BY_COUNTRY,
+      default: STATE_OPTIONS,
+    },
   },
   {
     id: 'country',
@@ -172,7 +169,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     label: 'Country',
     placeholder: 'Select country',
     options: COUNTRY_OPTIONS,
-    required: true,
+    required: false,
   },
   {
     id: 'citizenShip',
@@ -203,7 +200,8 @@ export const personalFieldDefs: FieldDefinition[] = [
     placeholder: 'Select income range',
     required: true,
     optionsDependsOn: {
-      fieldId: 'country',
+      fieldId: 'city',
+      extractCountry: true,
       map: {
         India: [
           'Below ₹5 lakhs',
@@ -218,20 +216,16 @@ export const personalFieldDefs: FieldDefinition[] = [
       },
       // approximate rounded USD equivalents (used when country !== India)
       default: [
-        'Below $6k',
-        '$6k - $12k',
-        '$12k - $18k',
-        '$18k - $24k',
-        '$24k - $30k',
-        '$30k - $60k',
-        '$60k - $120k',
-        'Above $120k',
+        '< USD 20K',
+        'USD 21K - 100K',
+        'USD 101K - USD 250K',
+        '> USD 250K',
       ],
     },
   },
   {
     id: 'language',
-    type: 'select',
+    type: 'select_autofill',
     label: 'Language',
     placeholder: 'Enter language',
     options: [
@@ -240,19 +234,66 @@ export const personalFieldDefs: FieldDefinition[] = [
       'French',
       'German',
       'Japanese',
-      'Chinese',
+      'Chinese (Mandarin)',
+      'Chinese (Cantonese)',
       'Arabic',
       'Hindi',
       'Portuguese',
       'Russian',
+      'Italian',
+      'Korean',
+      'Dutch',
+      'Swedish',
+      'Turkish',
+      'Polish',
+      'Thai',
+      'Vietnamese',
+      'Indonesian',
+      'Malay',
+      'Tamil',
+      'Telugu',
+      'Bengali',
+      'Marathi',
+      'Gujarati',
+      'Kannada',
+      'Malayalam',
+      'Punjabi',
+      'Urdu',
+      'Persian (Farsi)',
+      'Hebrew',
+      'Greek',
+      'Czech',
+      'Romanian',
+      'Hungarian',
+      'Finnish',
+      'Danish',
+      'Norwegian',
+      'Swahili',
+      'Tagalog',
+      'Ukrainian',
+      'Serbian',
+      'Croatian',
+      'Bulgarian',
+      'Slovak',
+      'Nepali',
+      'Sinhala',
+      'Burmese',
+      'Khmer',
+      'Lao',
+      'Amharic',
+      'Yoruba',
+      'Igbo',
+      'Hausa',
+      'Zulu',
+      'Other',
     ],
     required: true,
   },
   {
     id: 'type',
-    type: 'select',
+    type: 'multi_select',
     label: 'Type',
-    placeholder: 'Skills',
+    placeholder: 'Select skills',
     options: ['Read', 'Write', 'Speak'],
     required: true,
   },
@@ -290,8 +331,8 @@ export const personalFieldDefs: FieldDefinition[] = [
   {
     id: 'learningDifficultiesComments',
     type: 'text',
-    label: 'Comments (if any)',
-    placeholder: 'Enter comments',
+    label: 'Please specify',
+    placeholder: 'Describe your learning difficulty',
     required: false,
     validationDependsOn: [
       {
@@ -300,6 +341,12 @@ export const personalFieldDefs: FieldDefinition[] = [
         validation: { required: true },
       },
     ],
+    visibility: {
+      depends_on: {
+        field_id: 'learningDifficulties',
+        value: ['Other (please specify)'],
+      },
+    },
   },
   {
     id: 'physicalDisabilities',
@@ -321,8 +368,8 @@ export const personalFieldDefs: FieldDefinition[] = [
   {
     id: 'physicalDisabilitiesComments',
     type: 'text',
-    label: 'Comments (if any)',
-    placeholder: 'Enter comments',
+    label: 'Please specify',
+    placeholder: 'Describe your physical disability',
     required: false,
     validationDependsOn: [
       {
@@ -331,6 +378,12 @@ export const personalFieldDefs: FieldDefinition[] = [
         validation: { required: true },
       },
     ],
+    visibility: {
+      depends_on: {
+        field_id: 'physicalDisabilities',
+        value: ['Other (please specify)'],
+      },
+    },
   },
 ];
 
@@ -346,18 +399,8 @@ export const personalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: ['email'],
-    columns: 3,
-  },
-  {
-    type: 'fieldset',
-    fields: ['countryCode', 'phoneNumber'],
-    columns: 3,
-  },
-  {
-    type: 'fieldset',
-    fields: ['gender'],
-    columns: 3,
+    fields: ['countryCode', 'phoneNumber', 'gender'],
+    columns: 4,
   },
   {
     type: 'seperator',
@@ -516,14 +559,9 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'yearOfCompletion',
-    type: 'select_autofill',
+    type: 'month_year',
     label: 'Year of Completion',
-    placeholder: 'Enter year of completion',
-    // make options dynamic from last 10 years to next 10 years
-    options: Array.from({ length: 31 }, (_, i) => {
-      const year = new Date().getFullYear() - 20 + i;
-      return year.toString();
-    }),
+    placeholder: 'Select month & year',
     required: true,
   },
   {
@@ -532,15 +570,38 @@ export const educationalFieldDefs: FieldDefinition[] = [
     label: 'Board',
     options: [
       'CBSE',
-      'ICSE',
+      'HSC',
+      'ISC',
       'International Baccalaureate (IB)',
-      'Cambridge (IGCSE / A-Level)',
+      'Cambridge - IGCSE',
+      'Cambridge - A Levels',
       'State Board',
       'American (AP / US High School Diploma)',
+      'NIOS',
       'Others',
     ],
     placeholder: 'Enter board name',
     required: true,
+  },
+  {
+    id: 'boardOther',
+    type: 'text',
+    label: 'Please specify board',
+    placeholder: 'Enter your board name',
+    required: false,
+    validationDependsOn: [
+      {
+        fieldId: 'board',
+        values: ['Others'],
+        validation: { required: true },
+      },
+    ],
+    visibility: {
+      depends_on: {
+        field_id: 'board',
+        value: ['Others'],
+      },
+    },
   },
   {
     id: 'subject',
@@ -566,6 +627,26 @@ export const educationalFieldDefs: FieldDefinition[] = [
       'Other',
     ],
     required: true,
+  },
+  {
+    id: 'subjectOther',
+    type: 'text',
+    label: 'Other Subject Name',
+    placeholder: 'Enter other subject name',
+    required: false,
+    validationDependsOn: [
+      {
+        fieldId: 'subject',
+        values: ['Other'],
+        validation: { required: true },
+      },
+    ],
+    visibility: {
+      depends_on: {
+        field_id: 'subject',
+        value: ['Other'],
+      },
+    },
   },
   {
     id: 'typeOfScore',
@@ -801,7 +882,10 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'year',
     type: 'select_autofill',
-    options: ['2020', '2021', '2022', '2023'],
+    options: Array.from({ length: 11 }, (_, i) => {
+      const year = new Date().getFullYear() - 5 + i;
+      return year.toString();
+    }),
     label: 'Year',
     placeholder: 'Enter year',
     required: true,
@@ -1151,6 +1235,7 @@ export const educationalLayout: LayoutBlock[] = [
       'city',
       'yearOfCompletion',
       'board',
+      'boardOther',
       'typeOfScore',
       'yourTotalScore',
       'highestTotalScore',
@@ -1164,7 +1249,7 @@ export const educationalLayout: LayoutBlock[] = [
       },
     },
     repeatables: {
-      fields: ['subject', 'yourTotalScore', 'highestTotalScore'],
+      fields: ['subject', 'subjectOther', 'yourTotalScore', 'highestTotalScore'],
       name: 'subjects',
       repeatable: true,
       repeatable_option: {
@@ -1492,9 +1577,44 @@ export const professionalFieldDefs: FieldDefinition[] = [
     id: 'experienceType',
     type: 'select',
     label: 'Experience Type',
-    options: ['Internship', 'Full time', 'Part time', 'Freelance', 'Contract'],
+    options: ['Internship', 'Full time', 'Part time'],
     placeholder: 'Select experience type',
     required: true,
+  },
+  {
+    id: 'industrySector',
+    type: 'select_autofill',
+    label: 'Industry/Sector',
+    placeholder: 'Select industry or sector',
+    required: true,
+    options: [
+      'Technology & IT',
+      'Finance & Banking',
+      'Healthcare & Pharmaceuticals',
+      'Education',
+      'Manufacturing',
+      'Retail & E-commerce',
+      'Media & Entertainment',
+      'Consulting',
+      'Real Estate',
+      'Energy & Utilities',
+      'Telecommunications',
+      'Government & Public Sector',
+      'Non-Profit & NGO',
+      'Legal',
+      'Hospitality & Tourism',
+      'Agriculture',
+      'Automotive',
+      'Aerospace & Defense',
+      'FMCG / Consumer Goods',
+      'Logistics & Supply Chain',
+      'Insurance',
+      'Construction & Infrastructure',
+      'Sports & Fitness',
+      'Arts & Design',
+      'Research & Development',
+      'Other',
+    ],
   },
   {
     id: 'currentEmployer',
@@ -1511,38 +1631,26 @@ export const professionalFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
-    id: 'durationOfEmployment',
-    type: 'text',
-    label: 'Duration of Employment',
-    placeholder: 'Enter duration',
+    id: 'durationValue',
+    type: 'select',
+    label: 'Duration',
+    placeholder: 'Select',
     required: true,
+    options: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
   },
   {
-    id: 'companyWebsite',
-    type: 'url',
-    label: 'Company Website',
-    placeholder: 'Enter company website',
-    required: false,
+    id: 'durationUnit',
+    type: 'select',
+    label: 'Unit',
+    placeholder: 'Select unit',
+    required: true,
+    options: ['Weeks', 'Months', 'Years'],
   },
   {
     id: 'jobTitle',
     type: 'text',
-    label: 'Job Title',
-    placeholder: 'Enter job title',
-    required: true,
-  },
-  {
-    id: 'jobFunction',
-    type: 'text',
-    label: 'Job Function',
-    placeholder: 'Enter job function',
-    required: false,
-  },
-  {
-    id: 'industrySector',
-    type: 'text',
-    label: 'Industry/Sector',
-    placeholder: 'Enter industry or sector',
+    label: 'Your Title',
+    placeholder: 'Enter your title',
     required: true,
   },
   {
@@ -1555,7 +1663,7 @@ export const professionalFieldDefs: FieldDefinition[] = [
   {
     id: 'achievements',
     type: 'textarea',
-    label: 'Mention Your Achievements (Top 3)',
+    label: 'Your Achievements (Top 3)',
     placeholder: 'List your top 3 achievements',
     required: false,
     width: 2,
@@ -1572,20 +1680,19 @@ export const professionalFieldDefs: FieldDefinition[] = [
 export const professionalLayout: LayoutBlock[] = [
   {
     type: 'collapsible_section_start',
-    content: 'Professional Details',
+    content: 'List upto 5 Most Recent Work Experiences',
     columns: 3,
   },
   {
     type: 'fieldset',
     fields: [
       'experienceType',
+      'industrySector',
       'currentEmployer',
       'city',
-      'durationOfEmployment',
-      'companyWebsite',
+      'durationValue',
+      'durationUnit',
       'jobTitle',
-      'jobFunction',
-      'industrySector',
       'responsibilities',
       'achievements',
       'reasonForLeaving',
@@ -1596,6 +1703,7 @@ export const professionalLayout: LayoutBlock[] = [
       add: '+ Add Experience',
       show_default: 0,
       min: 0,
+      max: 5,
       columns: 3,
     },
   },
@@ -1831,7 +1939,7 @@ export const getExtraCurricularLayout = (
   return [
     {
       type: 'heading',
-      content: sectionTitle,
+      content: 'List upto 5 Most Recent Activities in order of important to you',
     },
     {
       type: 'fieldset',

@@ -35,7 +35,7 @@ export function LocationField({
   disabled = false,
   fallbackOptions = [],
 }: LocationFieldProps): React.JSX.Element {
-  const [options, setOptions] = useState<string[]>([]);
+  const [options, setOptions] = useState<string[]>(fallbackOptions);
   const [loading, setLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -47,10 +47,9 @@ export function LocationField({
         abortControllerRef.current.abort();
       }
 
-      // For city type, allow empty query to show suggestions
-      // For country type, require 2+ characters
-      if (type === 'country' && (!query || query.length < 2)) {
-        setOptions([]);
+      // Show fallback options when query is empty
+      if (!query || query.length < 2) {
+        setOptions(fallbackOptions);
         setLoading(false);
         return;
       }

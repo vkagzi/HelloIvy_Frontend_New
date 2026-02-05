@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { nanoid } from 'nanoid';
-import { Controller, UseFormReturn } from 'react-hook-form';
+import { Controller, UseFormReturn, useWatch } from 'react-hook-form';
 import Button from '@/app/_components/Button';
 import { FieldRenderer } from '@/app/_components/dynamic-form/FieldRenderer';
 import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
+import { isFieldVisible } from '@/app/_components/dynamic-form/utils/utils';
 
 interface SchoolBlockProps {
   section: LayoutItem;
@@ -73,11 +74,12 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
       return {
         key: nanoid(),
-        subjectRows: Array.from({ length: subjectsCount }, () =>
-          Object.fromEntries(
+        subjectRows: Array.from({ length: subjectsCount }, () => ({
+          _id: nanoid(),
+          ...Object.fromEntries(
             (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
-          )
-        ),
+          ),
+        })),
       };
     });
   });
@@ -114,20 +116,22 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     
     // Create new subject rows, prefilling subject names and highest possible score from the previous class
     const newSubjectRows = lastSubjects && Array.isArray(lastSubjects) && lastSubjects.length > 0
-      ? lastSubjects.map((subj) => 
-          Object.fromEntries(
+      ? lastSubjects.map((subj) => ({
+          _id: nanoid(),
+          ...Object.fromEntries(
             (section.repeatables?.fields ?? []).map((fid: string) => [
               fid,
               fid === 'subject' ? (subj.subject ?? '') : 
               fid === 'highestTotalScore' ? (subj.highestTotalScore ?? '') : '',
             ])
-          )
-        )
-      : Array.from({ length: minSubjects }, () =>
-          Object.fromEntries(
+          ),
+        }))
+      : Array.from({ length: minSubjects }, () => ({
+          _id: nanoid(),
+          ...Object.fromEntries(
             (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
-          )
-        );
+          ),
+        }));
     
     const newSchoolIdx = schools.length;
     
@@ -179,41 +183,99 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
   // Add a subject row to a specific school
   const handleAddSubjectRow = (schoolIdx: number): void => {
+    const newRow = {
+      _id: nanoid(),
+      ...Object.fromEntries(
+        (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+      ),
+    };
+    
+    // Update local state
     setSchools((prev) =>
       prev.map((school, idx) =>
         idx === schoolIdx
           ? {
               ...school,
-              subjectRows: [
-                ...school.subjectRows,
-                Object.fromEntries(
-                  (section.repeatables?.fields ?? []).map((fid: string) => [
-                    fid,
-                    '',
-                  ])
-                ),
-              ],
+              subjectRows: [...school.subjectRows, newRow],
             }
           : school
       )
     );
+    
+    // Update form values: add new subject row
+    const subjectsFieldName = section.repeatables?.name ?? 'subjects';
+    const currentSubjects = form.getValues(`${sectionType}.${schoolIdx}.${subjectsFieldName}`) as SubjectRows | undefined;
+    const newSubjectIdx = Array.isArray(currentSubjects) ? currentSubjects.length : 0;
+    
+    // Initialize form values for the new subject row
+    setTimeout(() => {
+      section.repeatables?.fields.forEach((fieldId: string) => {
+        form.setValue(
+          `${sectionType}.${schoolIdx}.${subjectsFieldName}.${newSubjectIdx}.${fieldId}` as keyof Record<string, unknown>,
+          '' as never
+        );
+      });
+    }, 0);
   };
 
   // Remove a subject row from a specific school
   const handleRemoveSubjectRow = (schoolIdx: number, rowIdx: number): void => {
+    const school = schools[schoolIdx];
+    if (!school || school.subjectRows.length <= minSubjects) return;
+
+    // Update local state
     setSchools((prev) =>
-      prev.map((school, idx) =>
+      prev.map((s, idx) =>
         idx === schoolIdx
           ? {
-              ...school,
-              subjectRows: school.subjectRows.filter((_, i) => i !== rowIdx),
+              ...s,
+              subjectRows: s.subjectRows.filter((_, i) => i !== rowIdx),
             }
-          : school
+          : s
       )
     );
+
+    // Update form values: re-index all subjects after removal
+    const subjectsFieldName = section.repeatables?.name ?? 'subjects';
+    const currentSubjects = form.getValues(`${sectionType}.${schoolIdx}.${subjectsFieldName}`) as SubjectRows | undefined;
+    
+    if (Array.isArray(currentSubjects)) {
+      // Remove the subject at rowIdx
+      const updatedSubjects = currentSubjects.filter((_, i) => i !== rowIdx);
+      
+      // Set the updated array directly — avoid unregister which destroys Controller bindings
+      form.setValue(
+        `${sectionType}.${schoolIdx}.${subjectsFieldName}` as keyof Record<string, unknown>,
+        updatedSubjects as never,
+        { shouldDirty: true }
+      );
+      
+      // Re-set each field individually so the Controllers pick up the shifted values
+      updatedSubjects.forEach((subject, newIdx) => {
+        section.repeatables?.fields.forEach((fieldId: string) => {
+          const value = subject[fieldId];
+          form.setValue(
+            `${sectionType}.${schoolIdx}.${subjectsFieldName}.${newIdx}.${fieldId}` as keyof Record<string, unknown>,
+            (value ?? '') as never
+          );
+        });
+      });
+
+      // Unregister only the now-extra last slot (the old tail that no longer exists)
+      const lastIdx = currentSubjects.length - 1;
+      section.repeatables?.fields.forEach((fieldId: string) => {
+        form.unregister(
+          `${sectionType}.${schoolIdx}.${subjectsFieldName}.${lastIdx}.${fieldId}` as keyof Record<string, unknown>
+        );
+      });
+    }
   };
 
   const columns = section.columns ?? 1;
+
+  // Watch all form values to reactively show/hide fields based on visibility config
+  const formValues = useWatch({ control: form.control });
+
   return (
     <div>
       {schools.map((school, schoolIdx) => {
@@ -260,7 +322,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           <input
             type="hidden"
             {...form.register(`${sectionType}.${schoolIdx}.grade`)}
-            value={gradeForSchool}
+            value={String(gradeForSchool)}
           />
           <div
             className="grid gap-4"
@@ -276,6 +338,10 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
               .map((fieldId: string) => {
                 const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                 if (!fieldDef) return null;
+                // Check field-level visibility (e.g., boardOther only when board === 'Others')
+                const sectionValues = (formValues as Record<string, unknown>)?.[sectionType];
+                const schoolValues = Array.isArray(sectionValues) ? (sectionValues[schoolIdx] as Record<string, unknown>) ?? {} : {};
+                if (!isFieldVisible(fieldDef, schoolValues)) return null;
                 const controllerName = `${sectionType}.${schoolIdx}.${fieldDef.id}`;
                 const repeatableField: FieldDefinition = {
                   ...fieldDef,
@@ -311,10 +377,26 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
             {gradeLabel} Subject Details{unsavedSuffix}
           </Label>
           <div className="mt-5 overflow-x-auto">
+            {(() => {
+              // Check if any subject in this school has 'Other' selected
+              const hasOtherSubject = school.subjectRows.some((_, rowIdx) => {
+                const subjectValue = form.watch(`${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.subject`) as string | undefined;
+                return subjectValue === 'Other';
+              });
+
+              // Filter fields to exclude 'subjectOther' if no 'Other' subject exists
+              const visibleFields = section.repeatables?.fields.filter((fieldId: string) => {
+                if (fieldId === 'subjectOther') {
+                  return hasOtherSubject;
+                }
+                return true;
+              }) ?? [];
+
+              return (
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-neutral-200">
-                  {section.repeatables?.fields.map((fieldId: string) => {
+                  {visibleFields.map((fieldId: string) => {
                     const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                     if (!fieldDef) return null;
                     return (
@@ -332,11 +414,26 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {school.subjectRows.map((row, rowIdx) => (
-                  <tr key={rowIdx} className="border-b border-neutral-200">
-                    {section.repeatables?.fields.map((fieldId: string) => {
+                {school.subjectRows.map((row, rowIdx) => {
+                  // Watch the subject value for this row to conditionally show subjectOther
+                  const subjectValue = form.watch(`${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.subject`) as string | undefined;
+                  const showSubjectOther = subjectValue === 'Other';
+
+                  return (
+                  <tr key={(row._id as string) ?? rowIdx} className="border-b border-neutral-200">
+                    {visibleFields.map((fieldId: string) => {
                       const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                       if (!fieldDef) return null;
+                      
+                      // For subjectOther field, only render if this row has 'Other' selected
+                      if (fieldId === 'subjectOther' && !showSubjectOther) {
+                        return (
+                          <td key={fieldId} className="px-4 py-3">
+                            <span className="text-neutral-400">-</span>
+                          </td>
+                        );
+                      }
+                      
                       const controllerName = `${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.${fieldDef.id}`;
                       const repeatableField: FieldDefinition = {
                         ...fieldDef,
@@ -375,9 +472,12 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                       />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
+              );
+            })()}
           </div>
           <button
             type="button"

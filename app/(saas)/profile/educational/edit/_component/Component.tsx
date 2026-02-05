@@ -25,9 +25,11 @@ const Component: React.FC<ComponentProps> = ({
 }) => {
   // Extract grade number from gradeLevel field (e.g., 'Grade 9' -> 9)
   const gradeLevel = form.watch('gradeLevel') as string | undefined;
-  const selectedGrade = gradeLevel
+  const parsedGrade = gradeLevel
     ? parseInt(gradeLevel.replace('Grade ', ''), 10)
     : 9;
+  // Ensure selectedGrade is always a valid number, default to 9 if NaN
+  const selectedGrade = !isNaN(parsedGrade) ? parsedGrade : 9;
 
   return (
     <div
