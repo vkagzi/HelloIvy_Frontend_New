@@ -275,14 +275,21 @@ const DomainResultsPage: React.FC = () => {
     return (
       <div className="flex h-full items-center justify-center bg-linear-to-br from-teal-50 to-cyan-100">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-teal-600"></div>
-          <h2 className="mb-2 text-xl font-semibold text-gray-900">
+          <div className="relative mx-auto mb-6 h-20 w-20">
+            <div className="absolute inset-0 animate-ping rounded-full bg-teal-200 opacity-75"></div>
+            <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-teal-200 border-t-teal-600"></div>
+            </div>
+          </div>
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">
             Analyzing Your Responses
           </h2>
-          <p className="text-gray-600">
-            Generating personalized domain recommendations based on your
-            conversation…
+          <p className="mb-4 text-gray-600">
+            Generating personalized domain recommendations...
           </p>
+          <div className="mx-auto w-64 overflow-hidden rounded-full bg-gray-200">
+            <div className="h-2 animate-pulse rounded-full bg-linear-to-r from-teal-500 to-cyan-500" style={{ width: '60%' }}></div>
+          </div>
         </div>
       </div>
     );
@@ -333,41 +340,43 @@ const DomainResultsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full bg-linear-to-br from-teal-50 to-cyan-100">
+    <div className="min-h-full bg-linear-to-br from-teal-50 via-white to-cyan-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <Heading level={1} className="mb-4 text-4xl font-bold text-gray-900">
-            🧭 Your Domain Recommendations
+        <div className="mb-10 text-center">
+          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-teal-100 px-4 py-2 text-sm font-medium text-teal-700">
+            <span className="mr-2">🧭</span> Domain Discovery Complete
+          </div>
+          <Heading level={1} className="mb-4 text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
+            Your Domain Recommendations
           </Heading>
-          <Paragraph className="mx-auto max-w-3xl text-xl text-gray-600">
-            Based on your interests and curiosities, here are domains aligned to
-            your passions and learning style.
+          <Paragraph className="mx-auto max-w-2xl text-lg text-gray-600">
+            Based on your interests and curiosities, we've identified domains that align with your passions and learning style.
           </Paragraph>
         </div>
 
         {/* Tabs */}
         <div className="mx-auto mb-8 max-w-5xl">
-          <div className="flex border-b border-gray-200">
+          <div className="inline-flex w-full rounded-lg bg-white p-1 shadow-sm">
             <button
               onClick={() => setActiveTab('results')}
-              className={`px-6 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 cursor-pointer rounded-md px-6 py-3 text-sm font-medium transition-all duration-200 ${
                 activeTab === 'results'
-                  ? 'border-b-2 border-teal-600 text-teal-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-linear-to-r from-teal-600 to-cyan-600 text-white shadow-md'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              Domain Results
+              <span className="mr-2">📊</span> Domain Results
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-6 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 cursor-pointer rounded-md px-6 py-3 text-sm font-medium transition-all duration-200 ${
                 activeTab === 'history'
-                  ? 'border-b-2 border-teal-600 text-teal-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-linear-to-r from-teal-600 to-cyan-600 text-white shadow-md'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              Conversation History
+              <span className="mr-2">💬</span> Conversation History
             </button>
           </div>
         </div>
@@ -380,75 +389,91 @@ const DomainResultsPage: React.FC = () => {
 
             {/* Interests & Strengths */}
             {(interests.length > 0 || strengths.length > 0) && (
-              <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white p-6 shadow-lg">
-                <div className="mb-6 flex items-center justify-between">
-                  <Heading level={3} className="text-lg font-semibold text-gray-900">
-                    Results Summary
-                  </Heading>
-                  <Button
-                    onClick={downloadResultsFile}
-                    disabled={isDownloadingResults}
-                    className="bg-linear-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
-                  >
-                    {isDownloadingResults ? (
-                      <>
-                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                        Downloading...
-                      </>
-                    ) : (
-                      <>
-                        📄 Download Results
-                      </>
-                    )}
-                  </Button>
+              <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
+                <div className="bg-linear-to-r from-teal-600 to-cyan-600 px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-white">Results Summary</h3>
+                    <Button
+                      onClick={downloadResultsFile}
+                      disabled={isDownloadingResults}
+                      variant="secondary"
+                      className="bg-white/20 text-white hover:bg-white/30"
+                    >
+                      {isDownloadingResults ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Download PDF
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <div className="grid gap-6 md:grid-cols-2">
-                  {interests.length > 0 && (
-                    <div>
-                      <h3 className="mb-4 text-lg font-semibold text-gray-900">
-                        💡 Your Interests
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {interests.map((interest, idx) => (
-                          <span
-                            key={idx}
-                            className="rounded-full bg-teal-100 px-4 py-1 text-sm text-teal-700"
-                          >
-                            {interest}
+                <div className="p-6">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {interests.length > 0 && (
+                      <div className="rounded-xl bg-teal-50 p-4">
+                        <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
+                          <span className="mr-2 rounded-lg bg-teal-100 p-1.5">
+                            <svg className="h-4 w-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
                           </span>
-                        ))}
+                          Your Interests
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {interests.map((interest, idx) => (
+                            <span
+                              key={idx}
+                              className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-teal-700 shadow-sm"
+                            >
+                              {interest}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {strengths.length > 0 && (
-                    <div>
-                      <h3 className="mb-4 text-lg font-semibold text-gray-900">
-                        💪 Your Strengths
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {strengths.map((strength, idx) => (
-                          <span
-                            key={idx}
-                            className="rounded-full bg-cyan-100 px-4 py-1 text-sm text-cyan-700"
-                          >
-                            {strength}
+                    )}
+                    {strengths.length > 0 && (
+                      <div className="rounded-xl bg-cyan-50 p-4">
+                        <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
+                          <span className="mr-2 rounded-lg bg-cyan-100 p-1.5">
+                            <svg className="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
                           </span>
-                        ))}
+                          Your Strengths
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {strengths.map((strength, idx) => (
+                            <span
+                              key={idx}
+                              className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-cyan-700 shadow-sm"
+                            >
+                              {strength}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Summary Stats */}
-            <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white py-6 shadow-lg">
-              <div className="grid text-center">
-                <div>
-                  <div className="text-3xl font-bold text-teal-600">
+            <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-2xl bg-white p-6 shadow-xl">
+              <div className="flex justify-center">
+                <div className="rounded-xl bg-teal-50 px-8 py-4 text-center">
+                  <div className="text-4xl font-bold text-teal-600">
                     {recommendations.length}
                   </div>
-                  <div className="text-sm text-gray-600">Domain Matches</div>
+                  <div className="mt-1 text-sm font-medium text-teal-700">Domain Matches</div>
                 </div>
               </div>
             </div>
@@ -458,13 +483,19 @@ const DomainResultsPage: React.FC = () => {
               {recommendations.map((domain, index) => (
                 <div
                   key={index}
-                  className="overflow-hidden rounded-lg bg-white shadow-lg"
+                  className="group overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
                 >
                   {/* Header */}
-                  <div className="bg-linear-to-r from-teal-600 to-cyan-600 p-6 text-white">
+                  <div className="relative bg-linear-to-r from-teal-600 to-cyan-600 p-6 text-white">
+                    {/* Rank Badge */}
+                    <div className="absolute -left-2 top-6 flex items-center">
+                      <div className="rounded-r-full bg-white/20 py-1 pl-4 pr-3 text-sm font-bold backdrop-blur-sm">
+                        #{index + 1}
+                      </div>
+                    </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">
+                      <div className="ml-10 flex items-center space-x-3">
+                        <span className="text-3xl">
                           {domain.match_percentage >= 90
                             ? '🌟'
                             : domain.match_percentage >= 80
@@ -477,22 +508,22 @@ const DomainResultsPage: React.FC = () => {
                           <h3 className="text-2xl font-bold">
                             {domain.domain_title}
                           </h3>
-                          <p className="text-teal-100 opacity-90">
-                            <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-medium ${getCategoryColor(domain.category)}`}>
+                          <p className="text-teal-100">
+                            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${getCategoryColor(domain.category)}`}>
                               {domain.category}
                             </span>
                           </p>
                         </div>
                       </div>
                       <div
-                        className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                        className={`rounded-full px-4 py-2 text-sm font-bold ${
                           domain.match_percentage >= 90
-                            ? 'bg-green-100 text-green-600'
+                            ? 'bg-white text-emerald-700 ring-2 ring-emerald-400'
                             : domain.match_percentage >= 80
-                              ? 'bg-blue-100 text-blue-600'
+                              ? 'bg-white text-blue-700 ring-2 ring-blue-400'
                               : domain.match_percentage >= 70
-                                ? 'bg-yellow-100 text-yellow-600'
-                                : 'bg-gray-100 text-gray-600'
+                                ? 'bg-white text-amber-700 ring-2 ring-amber-400'
+                                : 'bg-white text-gray-600 ring-2 ring-gray-300'
                         }`}
                       >
                         {domain.match_percentage}% Match
@@ -502,142 +533,184 @@ const DomainResultsPage: React.FC = () => {
 
                   {/* Body */}
                   <div className="p-6">
-                    <div className="grid gap-6 md:grid-cols-2">
-                      <div>
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Domain Overview
-                        </h4>
-                        <p className="mb-4 leading-relaxed text-gray-600">
-                          {domain.description}
-                        </p>
-
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Why This Domain Fits You
-                        </h4>
-                        <p className="mb-4 leading-relaxed text-gray-600">
-                          {domain.why_recommended}
-                        </p>
-
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Your Key Interests
-                        </h4>
-                        <div className="mb-4 flex flex-wrap gap-2">
-                          {domain.key_interests && domain.key_interests.length > 0 ? (
-                            domain.key_interests.map((interest, idx) => (
-                              <span
-                                key={idx}
-                                className="rounded-full bg-teal-100 px-3 py-1 text-sm font-medium text-teal-700"
-                              >
-                                {interest}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-sm text-gray-500 italic">
-                              No specific interests identified for this domain
+                    <div className="grid gap-8 md:grid-cols-2">
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-teal-100 p-1.5">
+                              <svg className="h-4 w-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
                             </span>
-                          )}
+                            Domain Overview
+                          </h4>
+                          <p className="leading-relaxed text-gray-600">
+                            {domain.description}
+                          </p>
                         </div>
 
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Related School Subjects
-                        </h4>
-                        <div className="mb-4 flex flex-wrap gap-2">
-                          {domain.related_subjects && domain.related_subjects.length > 0 ? (
-                            domain.related_subjects.map((subject, idx) => (
-                              <span
-                                key={idx}
-                                className="rounded-full bg-cyan-100 px-3 py-1 text-sm font-medium text-cyan-700"
-                              >
-                                {subject}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-sm text-gray-500 italic">
-                              No specific subjects identified for this domain
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-green-100 p-1.5">
+                              <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
                             </span>
-                          )}
+                            Why This Domain Fits You
+                          </h4>
+                          <p className="leading-relaxed text-gray-600">
+                            {domain.why_recommended}
+                          </p>
+                        </div>
+
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-amber-100 p-1.5">
+                              <svg className="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                              </svg>
+                            </span>
+                            Your Key Interests
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {domain.key_interests && domain.key_interests.length > 0 ? (
+                              domain.key_interests.map((interest, idx) => (
+                                <span
+                                  key={idx}
+                                  className="rounded-full bg-linear-to-r from-teal-100 to-cyan-100 px-3 py-1.5 text-sm font-medium text-teal-700 shadow-sm"
+                                >
+                                  {interest}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-sm text-gray-500 italic">
+                                No specific interests identified for this domain
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-blue-100 p-1.5">
+                              <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                            </span>
+                            Related School Subjects
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {domain.related_subjects && domain.related_subjects.length > 0 ? (
+                              domain.related_subjects.map((subject, idx) => (
+                                <span
+                                  key={idx}
+                                  className="rounded-full bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 shadow-sm"
+                                >
+                                  {subject}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-sm text-gray-500 italic">
+                                No specific subjects identified for this domain
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div>
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Sub-Domains to Explore
-                        </h4>
-                        {domain.sub_domains && domain.sub_domains.length > 0 ? (
-                          <ul className="mb-6 space-y-2">
-                            {domain.sub_domains.map((subDomain, idx) => (
-                              <li key={idx} className="flex items-start space-x-2">
-                                <svg
-                                  className="mt-0.5 h-5 w-5 shrink-0 text-teal-500"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  />
-                                </svg>
-                                <span className="text-gray-600">{subDomain}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="mb-6 text-sm text-gray-500 italic">
-                            No specific sub-domains identified for this domain
-                          </p>
-                        )}
-
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Exploration Activities
-                        </h4>
-                        {domain.exploration_activities && domain.exploration_activities.length > 0 ? (
-                          <ul className="mb-6 space-y-2">
-                            {domain.exploration_activities.map((activity, idx) => (
-                              <li key={idx} className="flex items-start space-x-2">
-                                <svg
-                                  className="mt-0.5 h-5 w-5 shrink-0 text-green-500"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  />
-                                </svg>
-                                <span className="text-gray-600">{activity}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="mb-6 text-sm text-gray-500 italic">
-                            No specific exploration activities identified for this domain
-                          </p>
-                        )}
-
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Potential Career Paths
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {domain.potential_careers && domain.potential_careers.length > 0 ? (
-                            domain.potential_careers.map((career, idx) => (
-                              <span
-                                key={idx}
-                                className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-700"
-                              >
-                                {career}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-sm text-gray-500 italic">
-                              No specific career paths identified for this domain
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-cyan-100 p-1.5">
+                              <svg className="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                              </svg>
                             </span>
+                            Sub-Domains to Explore
+                          </h4>
+                          {domain.sub_domains && domain.sub_domains.length > 0 ? (
+                            <ul className="space-y-2">
+                              {domain.sub_domains.map((subDomain, idx) => (
+                                <li key={idx} className="flex items-start space-x-3 rounded-lg bg-gray-50 p-3">
+                                  <svg
+                                    className="mt-0.5 h-5 w-5 shrink-0 text-teal-500"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                  <span className="text-gray-700">{subDomain}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">
+                              No specific sub-domains identified for this domain
+                            </p>
                           )}
+                        </div>
+
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-emerald-100 p-1.5">
+                              <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                              </svg>
+                            </span>
+                            Exploration Activities
+                          </h4>
+                          {domain.exploration_activities && domain.exploration_activities.length > 0 ? (
+                            <ul className="space-y-3">
+                              {domain.exploration_activities.map((activity, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start space-x-3"
+                                >
+                                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-600">
+                                    {idx + 1}
+                                  </span>
+                                  <span className="text-gray-700">{activity}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">
+                              No specific exploration activities identified for this domain
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-purple-100 p-1.5">
+                              <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                            </span>
+                            Potential Career Paths
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {domain.potential_careers && domain.potential_careers.length > 0 ? (
+                              domain.potential_careers.map((career, idx) => (
+                                <span
+                                  key={idx}
+                                  className="rounded-full bg-linear-to-r from-purple-100 to-pink-100 px-3 py-1.5 text-sm font-medium text-purple-700 shadow-sm"
+                                >
+                                  {career}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-sm text-gray-500 italic">
+                                No specific career paths identified for this domain
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

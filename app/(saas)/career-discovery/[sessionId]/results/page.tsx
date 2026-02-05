@@ -2,21 +2,22 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Heading, Paragraph } from '@/app/_components/Typography';
 import { useToast } from '@/app/_components/Toast';
+import { Button } from '@/components/ui/button';
 import {
   careerDiscoveryApi,
   CareerRecommendation,
+  CareerMessage,
 } from '@/lib/career-discovery-api';
-
-type Role = 'bot' | 'user';
-
-interface Message {
-  message_id: string;
-  type: Role;
-  content: string;
-  timestamp: string;
-}
+import {
+  generateCareerTranscriptPDF,
+  generateCareerResultsPDF,
+  CareerTranscriptData,
+  CareerResultsData,
+} from '@/lib/pdf-utils';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 type TabType = 'results' | 'history';
 
@@ -26,11 +27,14 @@ const CareerResultsPage: React.FC = () => {
   const params = useParams();
   const sessionId = params?.sessionId as string | undefined;
   const { addToast } = useToast();
+  const { personalDetails, educationalDetails } = useProfile();
 
   const [recommendations, setRecommendations] = useState<CareerRecommendation[]>([]);
-  const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
+  const [conversationHistory, setConversationHistory] = useState<CareerMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+  const [isDownloadingTranscript, setIsDownloadingTranscript] = useState(false);
+  const [isDownloadingResults, setIsDownloadingResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('results');
 
@@ -106,6 +110,127 @@ const CareerResultsPage: React.FC = () => {
     }
   }
 
+  async function downloadTranscriptFile() {
+    if (!sessionId) return;
+
+    try {
+      setIsDownloadingTranscript(true);
+      
+      // Use existing conversation history or fetch it
+      let messages = conversationHistory;
+      if (messages.length === 0) {
+        const historyResponse = await careerDiscoveryApi.getMessages(sessionId);
+        messages = historyResponse.messages;
+      }
+      
+      // Get student name from profile
+      const firstName = (personalDetails?.firstName as string) || '';
+      const lastName = (personalDetails?.lastName as string) || '';
+      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Student');
+      
+      // Find session timestamps from messages
+      const sortedMessages = [...messages].sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+      const startedAt = sortedMessages.length > 0 ? sortedMessages[0].timestamp : undefined;
+      const completedAt = sortedMessages.length > 0 ? sortedMessages[sortedMessages.length - 1].timestamp : undefined;
+      
+      const transcriptData: CareerTranscriptData = {
+        session_id: sessionId,
+        student_name: studentName,
+        started_at: startedAt,
+        completed_at: completedAt,
+        total_questions: messages.filter(m => m.type === 'bot').length,
+        messages: messages,
+      };
+      
+      // Generate PDF on the frontend
+      const pdfBlob = generateCareerTranscriptPDF(transcriptData);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Career_Discovery_Transcript_${studentName.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      addToast('Transcript downloaded!', { type: 'success' });
+    } catch (e) {
+      console.error('Failed to download transcript:', e);
+      addToast('Failed to download transcript', { type: 'error' });
+    } finally {
+      setIsDownloadingTranscript(false);
+    }
+  }
+
+  async function downloadResultsFile() {
+    if (!sessionId) return;
+
+    try {
+      setIsDownloadingResults(true);
+      
+      // Get student name from profile
+      const firstName = (personalDetails?.firstName as string) || '';
+      const lastName = (personalDetails?.lastName as string) || '';
+      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Student');
+      
+      // Build location string from profile
+      const buildLocation = () => {
+        const city = (personalDetails?.city as string) || '';
+        const state = (personalDetails?.state as string) || '';
+        const country = (personalDetails?.country as string) || '';
+        const parts = [city, state, country].filter(Boolean);
+        return parts.join(', ') || undefined;
+      };
+      
+      // Find session timestamps from conversation history if available
+      let startedAt: string | undefined;
+      let completedAt: string | undefined;
+      if (conversationHistory.length > 0) {
+        const sortedMessages = [...conversationHistory].sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        startedAt = sortedMessages[0].timestamp;
+        completedAt = sortedMessages[sortedMessages.length - 1].timestamp;
+      }
+
+      const resultsData: CareerResultsData = {
+        studentName,
+        sessionId,
+        startedAt,
+        completedAt,
+        dateOfBirth: (personalDetails?.dob as string) || undefined,
+        academicLevel: (educationalDetails?.academicLevel as string) || undefined,
+        gradeLevel: (educationalDetails?.gradeLevel as string) || undefined,
+        location: buildLocation(),
+        recommendations: recommendations,
+      };
+      
+      // Generate PDF on the frontend
+      const pdfBlob = generateCareerResultsPDF(resultsData);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Career_Discovery_Results_${studentName.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      addToast('Results downloaded successfully!', { type: 'success' });
+    } catch (e) {
+      console.error('Failed to download results:', e);
+      addToast('Failed to download results', { type: 'error' });
+    } finally {
+      setIsDownloadingResults(false);
+    }
+  }
+
   const handleTryAgain = async () => {
     if (!sessionId) {
       router.push('/career-discovery');
@@ -135,14 +260,21 @@ const CareerResultsPage: React.FC = () => {
     return (
       <div className="flex h-full items-center justify-center bg-linear-to-br from-purple-50 to-blue-100">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600"></div>
-          <h2 className="mb-2 text-xl font-semibold text-gray-900">
+          <div className="relative mx-auto mb-6 h-20 w-20">
+            <div className="absolute inset-0 animate-ping rounded-full bg-purple-200 opacity-75"></div>
+            <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600"></div>
+            </div>
+          </div>
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">
             Analyzing Your Career Profile
           </h2>
-          <p className="text-gray-600">
-            Generating personalized career recommendations based on your
-            conversation…
+          <p className="mb-4 text-gray-600">
+            Generating personalized career recommendations...
           </p>
+          <div className="mx-auto w-64 overflow-hidden rounded-full bg-gray-200">
+            <div className="h-2 animate-pulse rounded-full bg-linear-to-r from-purple-500 to-blue-500" style={{ width: '60%' }}></div>
+          </div>
         </div>
       </div>
     );
@@ -174,13 +306,13 @@ const CareerResultsPage: React.FC = () => {
           <div className="space-x-4">
             <button
               onClick={() => router.push(`/career-discovery/${sessionId}/conversations`)}
-              className="rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700"
+              className="cursor-pointer rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700"
             >
               Continue Conversation
             </button>
             <button
               onClick={handleTryAgain}
-              className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50"
+              className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50"
             >
               Try Again
             </button>
@@ -191,41 +323,43 @@ const CareerResultsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full bg-linear-to-br from-purple-50 to-blue-100">
+    <div className="min-h-full bg-linear-to-br from-purple-50 via-white to-blue-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <Heading level={1} className="mb-4 text-4xl font-bold text-gray-900">
-            🎯 Your Career Recommendations
+        <div className="mb-10 text-center">
+          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-purple-100 px-4 py-2 text-sm font-medium text-purple-700">
+            <span className="mr-2">🎯</span> Career Discovery Complete
+          </div>
+          <Heading level={1} className="mb-4 text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
+            Your Career Recommendations
           </Heading>
-          <Paragraph className="mx-auto max-w-3xl text-xl text-gray-600">
-            Based on your latest conversation, here are careers aligned to your
-            interests and strengths.
+          <Paragraph className="mx-auto max-w-2xl text-lg text-gray-600">
+            Based on your conversation, we've identified career paths that align with your interests, skills, and aspirations.
           </Paragraph>
         </div>
 
         {/* Tabs */}
         <div className="mx-auto mb-8 max-w-5xl">
-          <div className="flex border-b border-gray-200">
+          <div className="inline-flex w-full rounded-lg bg-white p-1 shadow-sm">
             <button
               onClick={() => setActiveTab('results')}
-              className={`px-6 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 cursor-pointer rounded-md px-6 py-3 text-sm font-medium transition-all duration-200 ${
                 activeTab === 'results'
-                  ? 'border-b-2 border-purple-600 text-purple-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white shadow-md'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              Career Results
+              <span className="mr-2">📊</span> Career Results
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-6 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 cursor-pointer rounded-md px-6 py-3 text-sm font-medium transition-all duration-200 ${
                 activeTab === 'history'
-                  ? 'border-b-2 border-purple-600 text-purple-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white shadow-md'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              Conversation History
+              <span className="mr-2">💬</span> Conversation History
             </button>
           </div>
         </div>
@@ -233,53 +367,63 @@ const CareerResultsPage: React.FC = () => {
         {/* Tab Content */}
         {activeTab === 'results' ? (
           <>
-            {/* Summary Stats */}
-            <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white p-6 shadow-lg">
-              <div className="grid gap-6 text-center md:grid-cols-3">
-                <div>
-                  <div className="text-3xl font-bold text-purple-600">
-                    {recommendations.length}
-                  </div>
-                  <div className="text-sm text-gray-600">Career Matches</div>
+            {/* Results Summary Header with Download Button */}
+            <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
+              <div className="bg-linear-to-r from-purple-600 to-blue-600 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">Results Summary</h3>
+                  <Button
+                    onClick={downloadResultsFile}
+                    disabled={isDownloadingResults}
+                    variant="secondary"
+                    className="bg-white/20 text-white hover:bg-white/30"
+                  >
+                    {isDownloadingResults ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download PDF
+                      </>
+                    )}
+                  </Button>
                 </div>
-                <div>
-                  <div className="text-3xl font-bold text-blue-600">
-                    {recommendations.length > 0
-                      ? Math.round(
-                          recommendations.reduce(
-                            (sum, rec) => sum + rec.match_percentage,
-                            0
-                          ) / recommendations.length
-                        )
-                      : 0}
-                    %
+              </div>
+              <div className="p-6">
+                <div className="flex justify-center">
+                  <div className="rounded-xl bg-purple-50 px-8 py-4 text-center">
+                    <div className="text-4xl font-bold text-purple-600">
+                      {recommendations.length}
+                    </div>
+                    <div className="mt-1 text-sm font-medium text-purple-700">Career Matches</div>
                   </div>
-                  <div className="text-sm text-gray-600">Average Match</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-green-600">
-                    {
-                      recommendations.filter((rec) => rec.match_percentage >= 80)
-                        .length
-                    }
-                  </div>
-                  <div className="text-sm text-gray-600">High Matches</div>
                 </div>
               </div>
             </div>
 
             {/* Recommendation Cards */}
-            <div className="mx-auto max-w-5xl space-y-6">
+            <div className="mx-auto max-w-4xl space-y-6">
               {recommendations.map((career, index) => (
                 <div
                   key={index}
-                  className="overflow-hidden rounded-lg bg-white shadow-lg"
+                  className="group overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
                 >
                   {/* Header */}
-                  <div className="bg-linear-to-r from-purple-600 to-blue-600 p-6 text-white">
+                  <div className="relative bg-linear-to-r from-purple-600 to-blue-600 p-6 text-white">
+                    {/* Rank Badge */}
+                    <div className="absolute -left-2 top-6 flex items-center">
+                      <div className="rounded-r-full bg-white/20 py-1 pl-4 pr-3 text-sm font-bold backdrop-blur-sm">
+                        #{index + 1}
+                      </div>
+                    </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">
+                      <div className="ml-10 flex items-center space-x-3">
+                        <span className="text-3xl">
                           {career.match_percentage >= 90
                             ? '🌟'
                             : career.match_percentage >= 80
@@ -292,20 +436,25 @@ const CareerResultsPage: React.FC = () => {
                           <h3 className="text-2xl font-bold">
                             {career.career_title}
                           </h3>
-                          <p className="text-purple-100 opacity-90">
-                            {career.salary_range}
+                          <p className="text-purple-100">
+                            <span className="inline-flex items-center">
+                              <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {career.salary_range}
+                            </span>
                           </p>
                         </div>
                       </div>
                       <div
-                        className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                        className={`rounded-full px-4 py-2 text-sm font-bold ${
                           career.match_percentage >= 90
-                            ? 'bg-green-100 text-green-600'
+                            ? 'bg-white text-emerald-700 ring-2 ring-emerald-400'
                             : career.match_percentage >= 80
-                              ? 'bg-blue-100 text-blue-600'
+                              ? 'bg-white text-blue-700 ring-2 ring-blue-400'
                               : career.match_percentage >= 70
-                                ? 'bg-yellow-100 text-yellow-600'
-                                : 'bg-gray-100 text-gray-600'
+                                ? 'bg-white text-amber-700 ring-2 ring-amber-400'
+                                : 'bg-white text-gray-600 ring-2 ring-gray-300'
                         }`}
                       >
                         {career.match_percentage}% Match
@@ -315,88 +464,113 @@ const CareerResultsPage: React.FC = () => {
 
                   {/* Body */}
                   <div className="p-6">
-                    <div className="grid gap-6 md:grid-cols-2">
-                      <div>
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Career Overview
-                        </h4>
-                        <p className="mb-4 leading-relaxed text-gray-600">
-                          {career.description}
-                        </p>
-
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Why This Career Fits You
-                        </h4>
-                        <p className="mb-4 leading-relaxed text-gray-600">
-                          {career.why_recommended}
-                        </p>
-
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          How This Matches Your Interests
-                        </h4>
-                        <ul className="mb-4 space-y-2">
-                          {career.alignment_points?.map((point, idx) => (
-                            <li key={idx} className="flex items-start space-x-2">
-                              <svg
-                                className="mt-0.5 h-5 w-5 shrink-0 text-purple-500"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
+                    <div className="grid gap-8 md:grid-cols-2">
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-purple-100 p-1.5">
+                              <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
-                              <span className="text-gray-600">{point}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Required Skills
-                        </h4>
-                        <div className="mb-6 flex flex-wrap gap-2">
-                          {career.required_skills.map((skill, skillIndex) => (
-                            <span
-                              key={skillIndex}
-                              className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-700"
-                            >
-                              {skill}
                             </span>
-                          ))}
+                            Career Overview
+                          </h4>
+                          <p className="leading-relaxed text-gray-600">
+                            {career.description}
+                          </p>
                         </div>
 
-                        <h4 className="mb-3 text-lg font-semibold text-gray-900">
-                          Next Steps
-                        </h4>
-                        <ul className="space-y-2">
-                          {career.next_steps.map((step, stepIndex) => (
-                            <li
-                              key={stepIndex}
-                              className="flex items-start space-x-2"
-                            >
-                              <svg
-                                className="mt-0.5 h-5 w-5 shrink-0 text-green-500"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-green-100 p-1.5">
+                              <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
-                              <span className="text-gray-600">{step}</span>
-                            </li>
-                          ))}
-                        </ul>
+                            </span>
+                            Why This Career Fits You
+                          </h4>
+                          <p className="leading-relaxed text-gray-600">
+                            {career.why_recommended}
+                          </p>
+                        </div>
+
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-blue-100 p-1.5">
+                              <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </span>
+                            How This Matches Your Interests
+                          </h4>
+                          <ul className="space-y-2">
+                            {career.alignment_points?.map((point, idx) => (
+                              <li key={idx} className="flex items-start space-x-3 rounded-lg bg-gray-50 p-3">
+                                <svg
+                                  className="mt-0.5 h-5 w-5 shrink-0 text-purple-500"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                                <span className="text-gray-700">{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-amber-100 p-1.5">
+                              <svg className="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                              </svg>
+                            </span>
+                            Required Skills
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {career.required_skills.map((skill, skillIndex) => (
+                              <span
+                                key={skillIndex}
+                                className="rounded-full bg-linear-to-r from-purple-100 to-blue-100 px-3 py-1.5 text-sm font-medium text-purple-700 shadow-sm"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-emerald-100 p-1.5">
+                              <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                              </svg>
+                            </span>
+                            Next Steps
+                          </h4>
+                          <ul className="space-y-3">
+                            {career.next_steps.map((step, stepIndex) => (
+                              <li
+                                key={stepIndex}
+                                className="flex items-start space-x-3"
+                              >
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-600">
+                                  {stepIndex + 1}
+                                </span>
+                                <span className="text-gray-700">{step}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -420,49 +594,74 @@ const CareerResultsPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4 rounded-lg bg-white p-6 shadow-lg">
-                <Heading level={3} className="mb-6 text-lg font-semibold text-gray-900">
-                  Full Conversation Transcript
-                </Heading>
-                <div className="space-y-4">
-                  {conversationHistory.map((message) => (
-                    <div
-                      key={message.message_id}
-                      className={`flex ${
-                        message.type === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      <div
-                        className={`max-w-3xl ${
-                          message.type === 'user' ? 'text-right' : 'text-left'
-                        }`}
-                      >
-                        <div className="mb-1 text-xs text-gray-500">
-                          {message.type === 'user' ? 'You' : 'Career Coach'} •{' '}
-                          {new Date(message.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </div>
-                        <div
-                          className={`rounded-lg px-4 py-3 ${
-                            message.type === 'user'
-                              ? 'bg-linear-to-r from-purple-500 to-blue-500 text-white'
-                              : 'border border-gray-200 bg-gray-50 text-gray-900'
-                          }`}
-                        >
-                          <Paragraph
-                            className={
-                              message.type === 'user'
-                                ? 'text-white'
-                                : 'text-gray-900'
-                            }
-                          >
-                            {message.content}
-                          </Paragraph>
+                <div className="mb-6 flex items-center justify-between">
+                  <Heading level={3} className="text-lg font-semibold text-gray-900">
+                    Full Conversation Transcript
+                  </Heading>
+                  <Button
+                    onClick={downloadTranscriptFile}
+                    disabled={isDownloadingTranscript}
+                    className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  >
+                    {isDownloadingTranscript ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        📄 Download Transcript
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <div className="space-y-6">
+                  {(() => {
+                    // Group messages into Q&A pairs
+                    const qaPairs: { questionNumber: number; botQuestion: string; studentResponse: string; timestamp?: string }[] = [];
+                    let questionNumber = 0;
+                    for (let i = 0; i < conversationHistory.length; i++) {
+                      const msg = conversationHistory[i];
+                      if (msg.type === 'bot') {
+                        questionNumber++;
+                        const userResponse = conversationHistory[i + 1];
+                        qaPairs.push({
+                          questionNumber,
+                          botQuestion: msg.content,
+                          studentResponse: userResponse?.type === 'user' ? userResponse.content : '',
+                          timestamp: msg.timestamp,
+                        });
+                        if (userResponse?.type === 'user') i++;
+                      }
+                    }
+                    return qaPairs.map((qa) => (
+                      <div key={qa.questionNumber} className="border-l-4 border-purple-500 bg-gray-50 p-4">
+                        <div className="mb-4">
+                          <div className="mb-2 flex items-center">
+                            <span className="inline-block rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white">
+                              Q{qa.questionNumber}
+                            </span>
+                            {qa.timestamp && (
+                              <span className="ml-auto text-xs text-gray-500">
+                                {new Date(qa.timestamp).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mb-3">
+                            <p className="text-sm font-semibold text-gray-900">Career Coach:</p>
+                            <p className="mt-1 text-gray-700">{qa.botQuestion}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">You:</p>
+                            <p className="mt-1 text-gray-700">{qa.studentResponse}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ));
+                  })()}
                 </div>
               </div>
             )}
@@ -471,18 +670,13 @@ const CareerResultsPage: React.FC = () => {
 
         {/* Actions */}
         <div className="mt-8 space-x-4 text-center">
-          <button
-            onClick={() => router.push('/career-discovery')}
-            className="rounded-lg bg-linear-to-r from-purple-600 to-blue-600 px-6 py-3 font-semibold text-white hover:from-purple-700 hover:to-blue-700"
+          <Button
+            asChild
+            size="lg"
+            className="bg-linear-to-r from-purple-600 to-blue-600 font-semibold hover:from-purple-700 hover:to-blue-700"
           >
-            Discover More Careers
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-50"
-          >
-            📄 Save Results
-          </button>
+            <Link href="/career-discovery">🎯 Discover More Careers</Link>
+          </Button>
         </div>
       </div>
     </div>
