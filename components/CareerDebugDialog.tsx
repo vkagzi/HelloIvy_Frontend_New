@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { domainDiscoveryApi, DebugInfo } from '@/lib/domain-discovery-api';
+import {
+  careerDiscoveryApi,
+  CareerDebugInfo,
+} from '@/lib/career-discovery-api';
 import {
   Dialog,
   DialogContent,
@@ -11,18 +14,18 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TokenUsagePanel } from '@/components/TokenUsagePanel';
 
-interface DomainDebugDialogProps {
+interface CareerDebugDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sessionId: string;
 }
 
-export function DomainDebugDialog({
+export function CareerDebugDialog({
   open,
   onOpenChange,
   sessionId,
-}: DomainDebugDialogProps): React.ReactElement {
-  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
+}: CareerDebugDialogProps): React.ReactElement {
+  const [debugInfo, setDebugInfo] = useState<CareerDebugInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +33,7 @@ export function DomainDebugDialog({
     setIsLoading(true);
     setError(null);
     try {
-      const data = await domainDiscoveryApi.getDebugInfo(sessionId);
+      const data = await careerDiscoveryApi.getDebugInfo(sessionId);
       setDebugInfo(data);
     } catch (err) {
       console.error('Failed to load debug info:', err);
@@ -51,12 +54,12 @@ export function DomainDebugDialog({
       <DialogContent className="max-w-6xl">
         <DialogTitle>🐛 Debug Information</DialogTitle>
         <DialogDescription>
-          Technical details about the domain discovery session
+          Technical details about the career discovery session
         </DialogDescription>
 
         {isLoading && (
           <div className="flex items-center justify-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-500 border-t-transparent"></div>
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-500 border-t-transparent"></div>
           </div>
         )}
 
@@ -73,14 +76,14 @@ export function DomainDebugDialog({
               <TabsTrigger value="token-usage" className="flex-1">
                 Token Usage
               </TabsTrigger>
-              <TabsTrigger value="deepdive-prompt" className="flex-1">
-                Deep Dive Prompt
+              <TabsTrigger value="explorer-prompt" className="flex-1">
+                Career Explorer Prompt
               </TabsTrigger>
               <TabsTrigger value="recommendations-prompt" className="flex-1">
                 Recommendations Prompt
               </TabsTrigger>
-              <TabsTrigger value="user-profile" className="flex-1">
-                User Profile Context
+              <TabsTrigger value="user-context" className="flex-1">
+                User Context
               </TabsTrigger>
             </TabsList>
 
@@ -95,7 +98,7 @@ export function DomainDebugDialog({
                       Provider
                     </p>
                     <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.model_info?.provider ?? 'N/A'}
+                      {debugInfo.model_info.provider}
                     </p>
                   </div>
                   <div>
@@ -117,13 +120,13 @@ export function DomainDebugDialog({
                   <div>
                     <p className="text-sm font-medium text-gray-700">Type</p>
                     <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.model_info?.main_llm?.type ?? 'N/A'}
+                      {debugInfo.model_info.main_llm.type}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">Model</p>
                     <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.model_info?.main_llm?.model ?? 'N/A'}
+                      {debugInfo.model_info.main_llm.model}
                     </p>
                   </div>
                   <div>
@@ -131,7 +134,7 @@ export function DomainDebugDialog({
                       Temperature
                     </p>
                     <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.model_info?.main_llm?.temperature ?? 'N/A'}
+                      {debugInfo.model_info.main_llm.temperature ?? 'N/A'}
                     </p>
                   </div>
                   <div>
@@ -139,7 +142,7 @@ export function DomainDebugDialog({
                       Max Tokens
                     </p>
                     <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.model_info?.main_llm?.max_tokens ?? 'N/A'}
+                      {debugInfo.model_info.main_llm.max_tokens ?? 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -153,14 +156,13 @@ export function DomainDebugDialog({
                   <div>
                     <p className="text-sm font-medium text-gray-700">Type</p>
                     <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.model_info?.recommendations_llm?.type ?? 'N/A'}
+                      {debugInfo.model_info.recommendations_llm.type}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">Model</p>
                     <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.model_info?.recommendations_llm?.model ??
-                        'N/A'}
+                      {debugInfo.model_info.recommendations_llm.model}
                     </p>
                   </div>
                   <div>
@@ -168,7 +170,7 @@ export function DomainDebugDialog({
                       Temperature
                     </p>
                     <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.model_info?.recommendations_llm?.temperature ??
+                      {debugInfo.model_info.recommendations_llm.temperature ??
                         'N/A'}
                     </p>
                   </div>
@@ -177,8 +179,50 @@ export function DomainDebugDialog({
                       Max Tokens
                     </p>
                     <p className="mt-1 text-sm text-gray-900">
-                      {debugInfo.model_info?.recommendations_llm?.max_tokens ??
+                      {debugInfo.model_info.recommendations_llm.max_tokens ??
                         'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-gray-50 p-4">
+                <h3 className="mb-3 text-lg font-semibold text-gray-900">
+                  Session State
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Current Step
+                    </p>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {debugInfo.session_state.current_step}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Total Steps
+                    </p>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {debugInfo.session_state.total_steps}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Profile Questions
+                    </p>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {debugInfo.session_state.profile_completed} /{' '}
+                      {debugInfo.session_state.profile_questions_count}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Explorer Questions
+                    </p>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {debugInfo.session_state.explorer_completed} /{' '}
+                      {debugInfo.session_state.explorer_questions_count}
                     </p>
                   </div>
                 </div>
@@ -189,15 +233,15 @@ export function DomainDebugDialog({
               <TokenUsagePanel tokenUsage={debugInfo.token_usage} />
             </TabsContent>
 
-            <TabsContent value="deepdive-prompt">
+            <TabsContent value="explorer-prompt">
               <div className="rounded-lg bg-gray-50 p-4">
                 <h3 className="mb-3 text-lg font-semibold text-gray-900">
-                  Deep Dive Question Generation Prompt
+                  Explorer Phase Question Generation Prompt
                 </h3>
                 <pre className="max-h-[500px] overflow-y-auto rounded bg-gray-900 p-4 text-xs whitespace-pre-wrap text-green-400">
-                  {debugInfo.system_prompts.deepdive_question_prompt.replace(
-                    '{user_profile_context}',
-                    debugInfo.user_profile_context + debugInfo.riasec_context
+                  {debugInfo.system_prompts.explorer_question_prompt.replace(
+                    '{user_context}',
+                    debugInfo.user_context
                   )}
                 </pre>
               </div>
@@ -214,13 +258,13 @@ export function DomainDebugDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="user-profile">
+            <TabsContent value="user-context">
               <div className="rounded-lg bg-gray-50 p-4">
                 <h3 className="mb-3 text-lg font-semibold text-gray-900">
-                  User Profile Context (As Passed to AI)
+                  User Context (As Passed to AI)
                 </h3>
                 <pre className="max-h-[500px] overflow-y-auto rounded bg-gray-900 p-4 text-xs whitespace-pre-wrap text-green-400">
-                  {debugInfo.user_profile_context}
+                  {debugInfo.user_context}
                 </pre>
               </div>
             </TabsContent>

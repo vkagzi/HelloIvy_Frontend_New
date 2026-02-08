@@ -11,7 +11,7 @@ export interface DomainMessage {
   type: 'bot' | 'user';
   content: string;
   question_type?: 'riasec' | 'deepdive' | 'general';
-  choices?: string[];  // For initial assessment questions
+  choices?: string[]; // For initial assessment questions
   timestamp: string;
 }
 
@@ -44,7 +44,7 @@ export interface SendMessageResponse {
   user_message: string;
   bot_response: string;
   question_type?: 'riasec' | 'deepdive' | 'general';
-  choices?: string[];  // For initial assessment questions
+  choices?: string[]; // For initial assessment questions
   current_step: number;
   total_steps: number;
   // Total number of questions expected for the session
@@ -178,7 +178,10 @@ class DomainDiscoveryAPI {
    * @param isActive - Optional filter for active/inactive sessions
    * @param limit - Optional limit on number of sessions to return
    */
-  async listSessions(isActive?: boolean, limit?: number): Promise<SessionListResponse> {
+  async listSessions(
+    isActive?: boolean,
+    limit?: number
+  ): Promise<SessionListResponse> {
     const params = new URLSearchParams();
     if (isActive !== undefined) {
       params.append('is_active', isActive.toString());
@@ -187,7 +190,9 @@ class DomainDiscoveryAPI {
       params.append('limit', limit.toString());
     }
     const queryString = params.toString();
-    const url = queryString ? `${this.baseUrl}/list/?${queryString}` : `${this.baseUrl}/list/`;
+    const url = queryString
+      ? `${this.baseUrl}/list/?${queryString}`
+      : `${this.baseUrl}/list/`;
     return api<SessionListResponse>(url);
   }
 
@@ -230,15 +235,20 @@ class DomainDiscoveryAPI {
   async generateRecommendations(
     sessionId: string
   ): Promise<RecommendationsResponse> {
-    return api<RecommendationsResponse>(`${this.baseUrl}/${sessionId}/recommendations/generate/`, {
-      method: 'POST',
-    });
+    return api<RecommendationsResponse>(
+      `${this.baseUrl}/${sessionId}/recommendations/generate/`,
+      {
+        method: 'POST',
+      }
+    );
   }
 
   /**
    * Get stored recommendations for a session
    */
-  async getRecommendations(sessionId: string): Promise<RecommendationsResponse> {
+  async getRecommendations(
+    sessionId: string
+  ): Promise<RecommendationsResponse> {
     return api<RecommendationsResponse>(
       `${this.baseUrl}/${sessionId}/recommendations/`
     );
@@ -384,6 +394,27 @@ export interface DebugInfo {
     deepdive_completed: number;
     riasec_questions_count: number;
     deepdive_questions_count: number;
+  };
+  token_usage: {
+    categories?: Record<
+      string,
+      {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+        call_count: number;
+        cache_read_tokens?: number;
+        cache_creation_tokens?: number;
+        reasoning_tokens?: number;
+      }
+    >;
+    total_input_tokens?: number;
+    total_output_tokens?: number;
+    total_tokens?: number;
+    total_llm_calls?: number;
+    total_cache_read_tokens?: number;
+    total_cache_creation_tokens?: number;
+    total_reasoning_tokens?: number;
   };
 }
 

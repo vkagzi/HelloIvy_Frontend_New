@@ -95,7 +95,9 @@ class CareerDiscoveryAPI {
    * Create a new career discovery session
    * Returns the session with the initial bot message
    */
-  async createSession(domainSessionId: string): Promise<CareerDiscoverySession> {
+  async createSession(
+    domainSessionId: string
+  ): Promise<CareerDiscoverySession> {
     return api<CareerDiscoverySession>(`${this.baseUrl}/`, {
       method: 'POST',
       body: {
@@ -157,15 +159,20 @@ class CareerDiscoveryAPI {
   async generateRecommendations(
     sessionId: string
   ): Promise<RecommendationsResponse> {
-    return api<RecommendationsResponse>(`${this.baseUrl}/${sessionId}/recommendations/generate/`, {
-      method: 'POST',
-    });
+    return api<RecommendationsResponse>(
+      `${this.baseUrl}/${sessionId}/recommendations/generate/`,
+      {
+        method: 'POST',
+      }
+    );
   }
 
   /**
    * Get stored recommendations for a session
    */
-  async getRecommendations(sessionId: string): Promise<RecommendationsResponse> {
+  async getRecommendations(
+    sessionId: string
+  ): Promise<RecommendationsResponse> {
     return api<RecommendationsResponse>(
       `${this.baseUrl}/${sessionId}/recommendations/`
     );
@@ -235,6 +242,67 @@ class CareerDiscoveryAPI {
       `${this.baseUrl}/health/`
     );
   }
+
+  /**
+   * Get debug information including system prompts, model info, and user context
+   */
+  async getDebugInfo(sessionId: string): Promise<CareerDebugInfo> {
+    return api<CareerDebugInfo>(`${this.baseUrl}/${sessionId}/debug/`);
+  }
+}
+
+export interface CareerDebugInfo {
+  session_id: string;
+  current_phase: 'profile' | 'explorer';
+  model_info: {
+    provider: string;
+    main_llm: {
+      type: string;
+      model: string;
+      temperature: number | null;
+      max_tokens: number | null;
+    };
+    recommendations_llm: {
+      type: string;
+      model: string;
+      temperature: number | null;
+      max_tokens: number | null;
+    };
+  };
+  system_prompts: {
+    explorer_question_prompt: string;
+    recommendations_prompt: string;
+  };
+  user_context: string;
+  session_state: {
+    current_step: number;
+    total_steps: number;
+    profile_completed: number;
+    explorer_completed: number;
+    profile_questions_count: number;
+    explorer_questions_count: number;
+  };
+  token_usage: {
+    categories?: Record<
+      string,
+      {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+        call_count: number;
+        cache_read_tokens?: number;
+        cache_creation_tokens?: number;
+        reasoning_tokens?: number;
+      }
+    >;
+    total_input_tokens?: number;
+    total_output_tokens?: number;
+    total_tokens?: number;
+    total_llm_calls?: number;
+    total_cache_read_tokens?: number;
+    total_cache_creation_tokens?: number;
+    total_reasoning_tokens?: number;
+  };
 }
 
 // Export singleton instance

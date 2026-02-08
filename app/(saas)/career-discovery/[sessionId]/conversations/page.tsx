@@ -11,9 +11,9 @@ import {
 } from '@/lib/career-discovery-api';
 import { marked } from 'marked';
 import { Button } from '@/components/ui/button';
+import { CareerDebugDialog } from '@/components/CareerDebugDialog';
 
 type Role = 'bot' | 'user';
-type Phase = 'profile' | 'explorer';
 
 interface Message {
   id: string;
@@ -22,22 +22,8 @@ interface Message {
   timestamp: string; // ISO
 }
 
-const PROFILE_QUESTIONS_COUNT = 5;
-const MIN_QUESTIONS_FOR_RECOMMENDATIONS = 3;
-
 /** ================== Transcript Helpers ================== */
-function loadTranscript(sessionId: string): Message[] {
-  try {
-    const raw = localStorage.getItem(`career_conversation_transcript_${sessionId}`);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveTranscript(sessionId: string, messages: Message[]) {
+function saveTranscript(sessionId: string, messages: Message[]): void {
   try {
     localStorage.setItem(
       `career_conversation_transcript_${sessionId}`,
@@ -57,13 +43,12 @@ const CareerConversationPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [questionsCompleted, setQuestionsCompleted] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(20); // Default value
-  const [showExitDialog, setShowExitDialog] = useState(false);
   const [isGeneratingResults, setIsGeneratingResults] = useState(false);
   const [resultsGenerationFailed, setResultsGenerationFailed] = useState(false);
+  const [showDebugDialog, setShowDebugDialog] = useState(false);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [sessionCreatedAt, setSessionCreatedAt] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -74,20 +59,15 @@ const CareerConversationPage: React.FC = () => {
   // STT - MediaRecorder + Backend Whisper
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-
-  const askedCount = useMemo(
-    () => messages.filter((m) => m.type === 'bot').length,
-    [messages]
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
   );
+
   const userAnswerCount = useMemo(
     () => messages.filter((m) => m.type === 'user').length,
     [messages]
   );
-  const canEndConversation = userAnswerCount >= MIN_QUESTIONS_FOR_RECOMMENDATIONS;
   const allQuestionsCompleted = userAnswerCount >= totalQuestions;
-  const phase: Phase =
-    askedCount < PROFILE_QUESTIONS_COUNT ? 'profile' : 'explorer';
 
   // Initialize session on mount
   useEffect(() => {
@@ -97,12 +77,12 @@ const CareerConversationPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  async function initializeSession() {
+  async function initializeSession(): Promise<void> {
     if (!sessionId) {
       router.push('/career-discovery');
       return;
     }
-    
+
     try {
       setIsLoading(true);
 
@@ -111,9 +91,10 @@ const CareerConversationPage: React.FC = () => {
         const historyResponse = await careerDiscoveryApi.getMessages(sessionId);
         if (historyResponse.messages.length > 0) {
           // Restore existing session
-          setCurrentStep(historyResponse.current_step);
-          setTotalQuestions(historyResponse.total_questions || historyResponse.total_steps || 20);
-          
+          setTotalQuestions(
+            historyResponse.total_questions || historyResponse.total_steps || 20
+          );
+
           // Try to get session details for timer
           try {
             const sessionResp = await careerDiscoveryApi.getCurrentSession();
@@ -123,32 +104,44 @@ const CareerConversationPage: React.FC = () => {
               }
               const completed = historyResponse.current_step;
               setQuestionsCompleted(completed);
-              const total = historyResponse.total_questions || historyResponse.total_steps || 20;
+              const total =
+                historyResponse.total_questions ||
+                historyResponse.total_steps ||
+                20;
               setProgressPercentage(Math.round((completed / total) * 100));
             }
           } catch (e) {
-            const error = e as { message?: string };
-            if (error.message?.includes('No active career discovery session found')) {
+            const err = e as { message?: string };
+            if (
+              err.message?.includes('No active career discovery session found')
+            ) {
               setSessionEnded(true);
               setProgressPercentage(100);
               setQuestionsCompleted(totalQuestions);
             }
           }
-          
-          const loadedMessages: Message[] = historyResponse.messages.map((m) => ({
-            id: m.message_id,
-            type: m.type,
-            content: m.content,
-            timestamp: m.timestamp,
-          }));
+
+          const loadedMessages: Message[] = historyResponse.messages.map(
+            (m) => ({
+              id: m.message_id,
+              type: m.type,
+              content: m.content,
+              timestamp: m.timestamp,
+            })
+          );
           setMessages(loadedMessages);
           saveTranscript(sessionId!, loadedMessages);
           setIsLoading(false);
           return;
         }
       } catch (error) {
-        console.log('Could not restore session, redirecting to career page');
-        addToast('Session not found. Please start a new session.', { type: 'error' });
+        console.error(
+          'Could not restore session, redirecting to career page',
+          error
+        );
+        addToast('Session not found. Please start a new session.', {
+          type: 'error',
+        });
         router.push('/career-discovery');
         return;
       }
@@ -190,15 +183,15 @@ const CareerConversationPage: React.FC = () => {
   useEffect(() => {
     if (!sessionCreatedAt) return;
 
-    const updateTimer = () => {
+    const updateTimer = (): void => {
       const createdTime = new Date(sessionCreatedAt).getTime();
       const currentTime = Date.now();
       const elapsedSeconds = Math.floor((currentTime - createdTime) / 1000);
-      
+
       // 30 minutes + 5 seconds grace = 1805 seconds
       const totalSeconds = 30 * 60 + 5;
       const remaining = Math.max(0, totalSeconds - elapsedSeconds);
-      
+
       setTimeRemaining(remaining);
     };
 
@@ -218,7 +211,7 @@ const CareerConversationPage: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  async function handleSend() {
+  async function handleSend(): Promise<void> {
     if (!input.trim() || isLoading || !sessionId) return;
 
     const userMessage = input.trim();
@@ -236,13 +229,10 @@ const CareerConversationPage: React.FC = () => {
 
     try {
       // Send message to backend and get AI response
-      const response: SendMessageResponse = await careerDiscoveryApi.sendMessage(
-        sessionId,
-        userMessage
-      );
+      const response: SendMessageResponse =
+        await careerDiscoveryApi.sendMessage(sessionId, userMessage);
 
       // Update step and progress tracking
-      setCurrentStep(response.current_step);
       const total = response.total_steps || totalQuestions;
       setQuestionsCompleted(response.current_step);
       setProgressPercentage(Math.round((response.current_step / total) * 100));
@@ -281,27 +271,21 @@ const CareerConversationPage: React.FC = () => {
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>): void {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   }
 
-  async function handleEnd() {
-    if (!allQuestionsCompleted) {
-      // Show confirmation dialog
-      setShowExitDialog(true);
-      return;
-    }
-    
-    // All questions completed - generate results
+  async function handleEnd(): Promise<void> {
+    if (!allQuestionsCompleted) return;
     await generateAndShowResults();
   }
 
-  async function generateAndShowResults() {
+  async function generateAndShowResults(): Promise<void> {
     if (!sessionId) return;
-    
+
     setIsGeneratingResults(true);
     setResultsGenerationFailed(false);
 
@@ -309,7 +293,8 @@ const CareerConversationPage: React.FC = () => {
     const generatingMsg: Message = {
       id: `system-${Date.now()}`,
       type: 'bot',
-      content: '🔄 Generating your personalized career recommendations... This may take a moment.',
+      content:
+        '🔄 Generating your personalized career recommendations... This may take a moment.',
       timestamp: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, generatingMsg]);
@@ -319,12 +304,13 @@ const CareerConversationPage: React.FC = () => {
       // End session on server
       try {
         await careerDiscoveryApi.endSession(sessionId);
-      } catch (error) {
-        console.log('Could not end session on server');
+      } catch (err) {
+        console.error('Could not end session on server', err);
       }
 
       // Generate recommendations
-      const result = await careerDiscoveryApi.generateRecommendations(sessionId);
+      const result =
+        await careerDiscoveryApi.generateRecommendations(sessionId);
       if (result.recommendations && result.recommendations.length > 0) {
         // Remove the generating message
         setMessages((prev) => prev.filter((m) => m.id !== generatingMsg.id));
@@ -332,7 +318,8 @@ const CareerConversationPage: React.FC = () => {
         const successMsg: Message = {
           id: `system-${Date.now()}`,
           type: 'bot',
-          content: '✅ Your career recommendations are ready! Click the button below to view them.',
+          content:
+            '✅ Your career recommendations are ready! Click the button below to view them.',
           timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, successMsg]);
@@ -348,7 +335,8 @@ const CareerConversationPage: React.FC = () => {
       const errorMsg: Message = {
         id: `system-${Date.now()}`,
         type: 'bot',
-        content: '❌ There was an issue generating your recommendations. Please try again or contact support.',
+        content:
+          '❌ There was an issue generating your recommendations. Please try again or contact support.',
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -361,29 +349,19 @@ const CareerConversationPage: React.FC = () => {
     }
   }
 
-  async function handleViewResults() {
+  async function handleViewResults(): Promise<void> {
     if (!sessionId) return;
     router.push(`/career-discovery/${sessionId}/results`);
-  }
-
-  function handleConfirmExit() {
-    setShowExitDialog(false);
-    addToast('Exiting without generating results', { type: 'info' });
-    router.push('/career-discovery');
-  }
-
-  function handleCancelExit() {
-    setShowExitDialog(false);
   }
 
   // STT functions - using backend Whisper API
   const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
     setIsTranscribing(true);
-    console.log('🔄 Starting transcription via backend...');
+    console.error('🔄 Starting transcription via backend...');
 
     try {
       const transcription = await careerDiscoveryApi.transcribeAudio(audioBlob);
-      console.log('✅ Transcription result:', transcription);
+      console.error('✅ Transcription result:', transcription);
       return transcription || '';
     } catch (error) {
       console.error('❌ Transcription error:', error);
@@ -394,9 +372,9 @@ const CareerConversationPage: React.FC = () => {
     }
   };
 
-  const startRecording = async () => {
+  const startRecording = async (): Promise<void> => {
     try {
-      console.log('🎤 Starting microphone detection...');
+      console.error('🎤 Starting microphone detection...');
 
       // Check browser support first
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -411,10 +389,10 @@ const CareerConversationPage: React.FC = () => {
         const audioInputs = devices.filter(
           (device) => device.kind === 'audioinput'
         );
-        console.log('🎤 Available audio devices:', audioInputs.length);
+        console.error('🎤 Available audio devices:', audioInputs.length);
 
         audioInputs.forEach((device, index) => {
-          console.log(`Device ${index + 1}:`, {
+          console.error(`Device ${index + 1}:`, {
             deviceId: device.deviceId,
             label: device.label || 'Unknown Microphone',
             groupId: device.groupId,
@@ -426,9 +404,9 @@ const CareerConversationPage: React.FC = () => {
             'No microphone devices found. Please connect a microphone and refresh the page.'
           );
         }
-      } catch (enumError) {
-        console.warn('Could not enumerate devices:', enumError);
-        // Continue anyway, let getUserMedia handle it
+      } catch {
+        // Could not enumerate devices, continue anyway
+        // Let getUserMedia handle it
       }
 
       // Try multiple constraint configurations
@@ -458,20 +436,11 @@ const CareerConversationPage: React.FC = () => {
 
       for (let i = 0; i < constraintOptions.length; i++) {
         try {
-          console.log(
-            `🎤 Trying constraint option ${i + 1}:`,
-            constraintOptions[i]
-          );
           stream = await navigator.mediaDevices.getUserMedia(
             constraintOptions[i]
           );
-          console.log(
-            '✅ Microphone access granted with constraint option',
-            i + 1
-          );
           break;
         } catch (error) {
-          console.warn(`❌ Constraint option ${i + 1} failed:`, error);
           lastError = error;
           continue;
         }
@@ -488,16 +457,6 @@ const CareerConversationPage: React.FC = () => {
         throw new Error('No audio tracks found in the stream');
       }
 
-      console.log('🎵 Audio tracks found:', audioTracks.length);
-      audioTracks.forEach((track, index) => {
-        console.log(`Track ${index + 1}:`, {
-          label: track.label,
-          enabled: track.enabled,
-          muted: track.muted,
-          readyState: track.readyState,
-        });
-      });
-
       // Create MediaRecorder with explicit MIME type support check
       let recorder;
       const supportedTypes = [
@@ -512,37 +471,25 @@ const CareerConversationPage: React.FC = () => {
       for (const type of supportedTypes) {
         if (MediaRecorder.isTypeSupported(type)) {
           selectedType = type;
-          console.log('✅ Using MIME type:', type);
           break;
         }
       }
 
       try {
         recorder = new MediaRecorder(stream, { mimeType: selectedType });
-      } catch (recorderError) {
-        console.warn(
-          'Failed to create MediaRecorder with MIME type, using default:',
-          recorderError
-        );
+      } catch {
+        // Failed to create with MIME type, use default
         recorder = new MediaRecorder(stream);
       }
 
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = (e) => {
-        console.log(
-          '🎵 Audio chunk received:',
-          e.data.size,
-          'bytes',
-          e.data.type
-        );
         if (e.data.size > 0) chunks.push(e.data);
       };
 
       recorder.onstop = async () => {
-        console.log('🛑 Recording stopped, chunks:', chunks.length);
         const audioBlob = new Blob(chunks, { type: selectedType });
-        console.log('📦 Audio blob created:', audioBlob.size, 'bytes');
 
         if (audioBlob.size > 0) {
           const transcription = await transcribeAudio(audioBlob);
@@ -571,7 +518,7 @@ const CareerConversationPage: React.FC = () => {
       setMediaRecorder(recorder);
       setIsRecording(true);
       addToast('🎤 Recording... speak now!', { type: 'info' });
-      console.log('📹 Recording started successfully');
+      console.error('📹 Recording started successfully');
     } catch (error) {
       console.error('❌ Complete recording setup failed:', error);
       const err = error as Error & { name?: string };
@@ -602,7 +549,7 @@ const CareerConversationPage: React.FC = () => {
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = (): void => {
     if (mediaRecorder && isRecording) {
       mediaRecorder.stop();
       setIsRecording(false);
@@ -610,8 +557,12 @@ const CareerConversationPage: React.FC = () => {
     }
   };
 
-  const toggleRecording = () => {
-    isRecording ? stopRecording() : startRecording();
+  const toggleRecording = (): void => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      void startRecording();
+    }
   };
 
   // Convert markdown to HTML
@@ -639,32 +590,66 @@ const CareerConversationPage: React.FC = () => {
                   🚀 Career Discovery Journey
                 </Heading>
                 {sessionCreatedAt && (
-                  <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
-                    timeRemaining <= 60 
-                      ? 'border-red-300 bg-red-50' 
-                      : timeRemaining <= 300 
-                      ? 'border-orange-300 bg-orange-50' 
-                      : 'border-purple-300 bg-purple-50'
-                  }`}>
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <div
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
+                      timeRemaining <= 60
+                        ? 'border-red-300 bg-red-50'
+                        : timeRemaining <= 300
+                          ? 'border-orange-300 bg-orange-50'
+                          : 'border-purple-300 bg-purple-50'
+                    }`}
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
-                    <span className={`text-sm font-semibold ${
-                      timeRemaining <= 60 
-                        ? 'text-red-700' 
-                        : timeRemaining <= 300 
-                        ? 'text-orange-700' 
-                        : 'text-purple-700'
-                    }`}>
+                    <span
+                      className={`text-sm font-semibold ${
+                        timeRemaining <= 60
+                          ? 'text-red-700'
+                          : timeRemaining <= 300
+                            ? 'text-orange-700'
+                            : 'text-purple-700'
+                      }`}
+                    >
                       {formatTimeRemaining(timeRemaining)}
                     </span>
                   </div>
                 )}
+                <button
+                  onClick={() => setShowDebugDialog(true)}
+                  className="group flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-purple-100 hover:shadow-sm"
+                  title="View debugging information"
+                >
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                    />
+                  </svg>
+                  <span>Debug</span>
+                </button>
               </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
                 Question {questionsCompleted}/{totalQuestions}
               </Paragraph>
-              
+
               {/* Progress Bar */}
               <div className="mt-3 w-full">
                 <div className="mb-1 flex justify-between text-xs text-gray-500">
@@ -679,27 +664,22 @@ const CareerConversationPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <button
-              onClick={handleEnd}
-              disabled={!canEndConversation}
-              title={
-                !canEndConversation
-                  ? `Complete all ${totalQuestions} questions to view results`
-                  : 'End conversation and get results'
-              }
-              className={`ml-4 whitespace-nowrap rounded-lg px-4 py-2 text-white ${
-                canEndConversation
-                  ? 'cursor-pointer bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
-                  : 'cursor-not-allowed bg-gray-400 opacity-60'
-              }`}
-            >
-              View Results →
-            </button>
+            {allQuestionsCompleted && (
+              <button
+                onClick={handleEnd}
+                className="ml-4 rounded-lg bg-linear-to-r from-purple-600 to-blue-600 px-4 py-2 whitespace-nowrap text-white hover:from-purple-700 hover:to-blue-700"
+              >
+                View Results →
+              </button>
+            )}
           </div>
         </div>
 
         {/* Messages */}
-        <div ref={messagesContainerRef} className="flex-1 min-h-0 space-y-6 overflow-y-auto px-6 py-4">
+        <div
+          ref={messagesContainerRef}
+          className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-4"
+        >
           {messages.map((m) => (
             <div
               key={m.id}
@@ -716,13 +696,13 @@ const CareerConversationPage: React.FC = () => {
                   } `}
                 >
                   {m.type === 'user' ? (
-                    <Paragraph className="text-white">
-                      {m.content}
-                    </Paragraph>
+                    <Paragraph className="text-white">{m.content}</Paragraph>
                   ) : (
                     <div
-                      className="prose prose-sm max-w-none text-gray-900 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-2 [&_p]:mt-0 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6"
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }}
+                      className="prose prose-sm max-w-none text-gray-900 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mt-0 [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6"
+                      dangerouslySetInnerHTML={{
+                        __html: renderMarkdown(m.content),
+                      }}
                     />
                   )}
                 </div>
@@ -750,26 +730,30 @@ const CareerConversationPage: React.FC = () => {
             </div>
           )}
 
-          {allQuestionsCompleted && !isGeneratingResults && !resultsGenerationFailed && (
-            <div className="flex justify-center">
-              <div className="max-w-3xl">
-                <div className="rounded-lg border-2 border-green-300 bg-green-50 px-6 py-4 text-center shadow-sm">
-                  <p className="mb-4 text-sm font-semibold text-green-900">
-                    🎉 All questions completed!
-                  </p>
-                  <p className="mb-4 text-sm text-green-800">
-                    You've completed all {totalQuestions} questions. Click below to generate your personalized career recommendations.
-                  </p>
-                  <button
-                    onClick={handleViewResults}
-                    className="rounded-lg bg-linear-to-r from-purple-600 to-blue-600 px-6 py-2 text-white hover:from-purple-700 hover:to-blue-700"
-                  >
-                    View Results →
-                  </button>
+          {allQuestionsCompleted &&
+            !isGeneratingResults &&
+            !resultsGenerationFailed && (
+              <div className="flex justify-center">
+                <div className="max-w-3xl">
+                  <div className="rounded-lg border-2 border-green-300 bg-green-50 px-6 py-4 text-center shadow-sm">
+                    <p className="mb-4 text-sm font-semibold text-green-900">
+                      🎉 All questions completed!
+                    </p>
+                    <p className="mb-4 text-sm text-green-800">
+                      You&apos;ve completed all {totalQuestions} questions.
+                      Click below to generate your personalized career
+                      recommendations.
+                    </p>
+                    <button
+                      onClick={handleViewResults}
+                      className="rounded-lg bg-linear-to-r from-purple-600 to-blue-600 px-6 py-2 text-white hover:from-purple-700 hover:to-blue-700"
+                    >
+                      View Results →
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           <div ref={messagesEndRef} />
         </div>
@@ -778,12 +762,11 @@ const CareerConversationPage: React.FC = () => {
         <div className="border-t bg-white px-6 py-4">
           {sessionEnded ? (
             <div className="text-center text-sm text-gray-600">
-              ✅ This session has ended. Click "View Your Results" above to see your career recommendations.
+              ✅ This session has ended. Click &quot;View Your Results&quot;
+              above to see your career recommendations.
             </div>
           ) : isLoading ? (
-            <div className="text-center text-sm text-gray-600">
-              ⏳
-            </div>
+            <div className="text-center text-sm text-gray-600">⏳</div>
           ) : (
             <>
               <div className="flex items-center space-x-4">
@@ -833,28 +816,20 @@ const CareerConversationPage: React.FC = () => {
                   >
                     Send
                   </button>
-                  <button
-                    onClick={handleEnd}
-                    disabled={!canEndConversation}
-                    title={
-                      !canEndConversation
-                        ? `Complete all ${totalQuestions} questions to view results`
-                        : 'End conversation and get results'
-                    }
-                    className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
-                      canEndConversation
-                        ? 'bg-linear-to-r cursor-pointer from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
-                        : 'cursor-not-allowed bg-gray-400 opacity-60'
-                    }`}
-                  >
-                    End →
-                  </button>
+                  {allQuestionsCompleted && (
+                    <button
+                      onClick={handleEnd}
+                      className="rounded-lg bg-linear-to-r from-purple-600 to-blue-600 px-4 py-2 whitespace-nowrap text-white hover:from-purple-700 hover:to-blue-700"
+                    >
+                      End →
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="mt-2 text-xs text-gray-500">
                 Tip: Press <span className="font-semibold">Enter</span> to send,{' '}
-                <span className="font-semibold">Shift+Enter</span> for a new line.{' '}
-                {isRecording && '🎤 Recording...'}{' '}
+                <span className="font-semibold">Shift+Enter</span> for a new
+                line. {isRecording && '🎤 Recording...'}{' '}
                 {isTranscribing && '⏳ Processing speech...'}
               </div>
             </>
@@ -862,38 +837,12 @@ const CareerConversationPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Exit Confirmation Dialog */}
-      {showExitDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Career Discovery Not Complete
-              </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                You've answered {userAnswerCount} out of {totalQuestions} questions. 
-                You need to complete all questions to get your personalized career recommendations.
-              </p>
-              <p className="mt-2 text-sm font-medium text-gray-700">
-                Are you sure you want to exit without getting your results?
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleCancelExit}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
-              >
-                Continue Session
-              </button>
-              <button
-                onClick={handleConfirmExit}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-              >
-                Exit Anyway
-              </button>
-            </div>
-          </div>
-        </div>
+      {sessionId && (
+        <CareerDebugDialog
+          open={showDebugDialog}
+          onOpenChange={setShowDebugDialog}
+          sessionId={sessionId}
+        />
       )}
     </div>
   );
