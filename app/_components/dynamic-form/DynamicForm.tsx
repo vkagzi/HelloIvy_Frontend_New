@@ -1226,6 +1226,24 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       }
     });
 
+    // Clean up top-level conditional fields whose visibility conditions are not met
+    // e.g., clear degreeInterestOther when degreeInterest !== 'Other'
+    fieldDefs.forEach((fieldDef) => {
+      if (fieldDef.visibility?.depends_on) {
+        const { field_id, value } = fieldDef.visibility.depends_on;
+        const parentValue = filtered[field_id];
+        const allowedValues = Array.isArray(value) ? value : [value];
+
+        const isVisible = Array.isArray(parentValue)
+          ? parentValue.some((v) => allowedValues.includes(v as string))
+          : allowedValues.includes(parentValue as string);
+
+        if (!isVisible) {
+          delete filtered[fieldDef.id];
+        }
+      }
+    });
+
     return filtered;
   };
 

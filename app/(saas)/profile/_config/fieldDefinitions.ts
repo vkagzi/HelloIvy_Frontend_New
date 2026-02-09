@@ -1769,7 +1769,14 @@ export const additionalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Please specify your program/degree',
     placeholder: 'Enter your program/degree',
-    required: true,
+    required: false,
+    validationDependsOn: [
+      {
+        fieldId: 'degreeInterest',
+        values: ['Other'],
+        validation: { required: true },
+      },
+    ],
     visibility: {
       depends_on: {
         field_id: 'degreeInterest',
@@ -1818,7 +1825,14 @@ export const additionalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Please specify your domain',
     placeholder: 'Enter your domain',
-    required: true,
+    required: false,
+    validationDependsOn: [
+      {
+        fieldId: 'domainInterest',
+        values: ['Other'],
+        validation: { required: true },
+      },
+    ],
     visibility: {
       depends_on: {
         field_id: 'domainInterest',
