@@ -9,7 +9,6 @@ import { FieldDefinition, Regexvalidations } from '@/app/utils/dynamicForm';
 import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
 import { COUNTRY_CODES } from '@/app/_constants/countryCodes';
 import {
-  CITY_OPTIONS,
   COUNTRY_OPTIONS,
   STATE_OPTIONS,
   STATES_BY_COUNTRY,
@@ -106,6 +105,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     placeholder: 'Select country code',
     required: true,
     options: COUNTRY_CODES,
+    width: 0.3,
   },
   {
     id: 'phoneNumber',
@@ -113,10 +113,11 @@ export const personalFieldDefs: FieldDefinition[] = [
     label: 'Mobile Number',
     placeholder: 'Enter your phone number',
     required: true,
-    validation: { 
+    validation: {
       regex: Regexvalidations.justNumberWithBlank,
       maxLength: 10,
     },
+    width: 2,
   },
   {
     id: 'gender',
@@ -332,8 +333,10 @@ export const personalFieldDefs: FieldDefinition[] = [
     id: 'learningDifficultiesComments',
     type: 'text',
     label: 'Please specify',
-    placeholder: 'Describe your learning difficulty',
+    placeholder:
+      'Please describe your learning difficulty (specify type if selecting Other)',
     required: false,
+    width: 1.5,
     validationDependsOn: [
       {
         fieldId: 'learningDifficulties',
@@ -344,7 +347,14 @@ export const personalFieldDefs: FieldDefinition[] = [
     visibility: {
       depends_on: {
         field_id: 'learningDifficulties',
-        value: ['Other (please specify)'],
+        value: [
+          'Dyslexia',
+          'ADHD',
+          'Autism Spectrum Disorder',
+          'Dyscalculia',
+          'Dysgraphia',
+          'Other (please specify)',
+        ],
       },
     },
   },
@@ -369,8 +379,10 @@ export const personalFieldDefs: FieldDefinition[] = [
     id: 'physicalDisabilitiesComments',
     type: 'text',
     label: 'Please specify',
-    placeholder: 'Describe your physical disability',
+    placeholder:
+      'Please describe your physical disability (specify type if selecting Other)',
     required: false,
+    width: 1.5,
     validationDependsOn: [
       {
         fieldId: 'physicalDisabilities',
@@ -381,7 +393,15 @@ export const personalFieldDefs: FieldDefinition[] = [
     visibility: {
       depends_on: {
         field_id: 'physicalDisabilities',
-        value: ['Other (please specify)'],
+        value: [
+          'Yes, locomotor disability (movement-related)',
+          'Yes, visual impairment (partial or total blindness)',
+          'Yes, hearing impairment (partial or total deafness)',
+          'Yes, speech or language disability',
+          'Yes, multiple disabilities',
+          'Other (please specify)',
+          'Prefer not to say',
+        ],
       },
     },
   },
@@ -400,7 +420,7 @@ export const personalLayout: LayoutBlock[] = [
   {
     type: 'fieldset',
     fields: ['countryCode', 'phoneNumber', 'gender'],
-    columns: 4,
+    columns: 6,
   },
   {
     type: 'seperator',
@@ -411,12 +431,7 @@ export const personalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: [
-      'addressline',
-      'city',
-      'zipcode',
-      'citizenShip',
-    ],
+    fields: ['addressline', 'city', 'zipcode', 'citizenShip'],
     columns: 3,
   },
   {
@@ -428,11 +443,7 @@ export const personalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: [
-      'fathersProfession',
-      'mothersProfession',
-      'annualIncome',
-    ],
+    fields: ['fathersProfession', 'mothersProfession', 'annualIncome'],
     columns: 3,
   },
   {
@@ -453,7 +464,7 @@ export const personalLayout: LayoutBlock[] = [
       min: 0,
       columns: 4,
     },
-    columns: 1
+    columns: 1,
   },
   {
     type: 'fieldset',
@@ -527,19 +538,17 @@ export const educationalFieldDefs: FieldDefinition[] = [
           'Year 4',
           'Year 5',
         ],
-        'Postgraduate': [
-          'Year 1',
-          'Year 2',
-          'Year 3',
-          'Year 4',
-          'Year 5',
-        ],
+        Postgraduate: ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
       },
     },
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['High School (9th–12th grade)', 'College/Undergraduate', 'Postgraduate'],
+        value: [
+          'High School (9th–12th grade)',
+          'College/Undergraduate',
+          'Postgraduate',
+        ],
       },
     },
   },
@@ -556,6 +565,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     label: 'Location (City)',
     placeholder: 'Select city/town',
     required: true,
+    width: 2,
   },
   {
     id: 'yearOfCompletion',
@@ -697,7 +707,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
       fieldId: 'academicLevel',
       map: {
         'College/Undergraduate': UNDERGRADUATE_DEGREE_PROGRAMS,
-        'Postgraduate': POSTGRADUATE_DEGREE_PROGRAMS,
+        Postgraduate: POSTGRADUATE_DEGREE_PROGRAMS,
       },
       default: [
         'Associate',
@@ -912,7 +922,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
       'GMAT',
       'GRE',
       'Executive Assessment',
-      'Others'
+      'Others',
     ],
   },
   {
@@ -1211,7 +1221,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     label: 'Number of Attempts',
     placeholder: 'Enter number of attempts (1-10)',
     required: false,
-    validation: { 
+    validation: {
       regex: Regexvalidations.justNumberWithBlank,
     },
   },
@@ -1249,7 +1259,12 @@ export const educationalLayout: LayoutBlock[] = [
       },
     },
     repeatables: {
-      fields: ['subject', 'subjectOther', 'yourTotalScore', 'highestTotalScore'],
+      fields: [
+        'subject',
+        'subjectOther',
+        'yourTotalScore',
+        'highestTotalScore',
+      ],
       name: 'subjects',
       repeatable: true,
       repeatable_option: {
@@ -1750,6 +1765,19 @@ export const additionalFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
+    id: 'degreeInterestOther',
+    type: 'text',
+    label: 'Please specify your program/degree',
+    placeholder: 'Enter your program/degree',
+    required: true,
+    visibility: {
+      depends_on: {
+        field_id: 'degreeInterest',
+        value: ['Other'],
+      },
+    },
+  },
+  {
     id: 'whyInterest',
     type: 'text',
     label: 'And why ?',
@@ -1786,6 +1814,19 @@ export const additionalFieldDefs: FieldDefinition[] = [
     width: 1,
   },
   {
+    id: 'domainInterestOther',
+    type: 'text',
+    label: 'Please specify your domain',
+    placeholder: 'Enter your domain',
+    required: true,
+    visibility: {
+      depends_on: {
+        field_id: 'domainInterest',
+        value: ['Other'],
+      },
+    },
+  },
+  {
     id: 'domainWhyInterest',
     type: 'text',
     label: 'And why ?',
@@ -1820,12 +1861,34 @@ export const additionalLayout: LayoutBlock[] = [
     columns: 3,
   },
   {
+    type: 'fieldset',
+    fields: ['degreeInterestOther'],
+    columns: 3,
+    visibility: {
+      depends_on: {
+        field_id: 'degreeInterest',
+        value: ['Other'],
+      },
+    },
+  },
+  {
     type: 'seperator',
   },
   {
     type: 'fieldset',
     fields: ['domainInterest', 'domainWhyInterest'],
     columns: 3,
+  },
+  {
+    type: 'fieldset',
+    fields: ['domainInterestOther'],
+    columns: 3,
+    visibility: {
+      depends_on: {
+        field_id: 'domainInterest',
+        value: ['Other'],
+      },
+    },
   },
   {
     type: 'seperator',
@@ -1932,14 +1995,16 @@ export const getExtracurricularTitle = (
 };
 
 // Dynamic layout generator for extra-curricular (depends on academic level)
+
 export const getExtraCurricularLayout = (
-  academicLevel?: string[] | string
+  _academicLevel?: string[] | string
 ): LayoutBlock[] => {
-  const sectionTitle = getExtracurricularTitle(academicLevel);
+  // Parameter kept for API compatibility
   return [
     {
       type: 'heading',
-      content: 'List upto 5 Most Recent Activities in order of important to you',
+      content:
+        'List upto 5 Most Recent Activities in order of important to you',
     },
     {
       type: 'fieldset',

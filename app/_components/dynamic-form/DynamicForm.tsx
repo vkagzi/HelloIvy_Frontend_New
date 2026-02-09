@@ -11,14 +11,18 @@ import { useForm, Controller, UseFormReturn } from 'react-hook-form';
 import { FieldRenderer } from '@/app/_components/dynamic-form/FieldRenderer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { FieldType, LayoutItem } from '@/app/_components/dynamic-form/types/type';
+import {
+  FieldType,
+  LayoutItem,
+} from '@/app/_components/dynamic-form/types/type';
 import CollapsibleSection from '@/app/_components/CollapsibleSection';
 import Component from '@/app/(saas)/profile/educational/edit/_component/Component';
 import { TestScoresBlock } from '@/app/(saas)/profile/educational/edit/_component/TestScores';
-import { getDefaultValue, isFieldVisible } from '@/app/_components/dynamic-form/utils/utils';
+import {
+  getDefaultValue,
+  isFieldVisible,
+} from '@/app/_components/dynamic-form/utils/utils';
 import { Heading, Label } from '@/app/_components/Typography';
-import Image from 'next/image';
-import bin from '@/assets/images/bin.svg';
 
 type DynamicFormProps = {
   fieldDefs: FieldDefinition[];
@@ -152,49 +156,56 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
   // Add test scores validation schema
   const testScoresSchema = z.object({
-    testScores: z.array(
-      z.object({
-        testType: z.string().optional(),
-        testDate: z.string().optional(),
-        totalScore: z.string().optional(),
-        yourScore: z.string().optional(),
-        yourPercentile: z.string().optional(),
-        writingYourScore: z.string().optional(),
-        writingYourPercentile: z.string().optional(),
-        mathYourScore: z.string().optional(),
-        mathYourPercentile: z.string().optional(),
-        criticalReadingYourScore: z.string().optional(),
-        criticalReadingYourPercentile: z.string().optional(),
-        analyticalWritingScore: z.string().optional(),
-        analyticalWritingPercentile: z.string().optional(),
-        verbalReasoningScore: z.string().optional(),
-        verbalReasoningPercentile: z.string().optional(),
-        quantitativeReasoningScore: z.string().optional(),
-        quantitativeReasoningPercentile: z.string().optional(),
-        dataInsightsScore: z.string().optional(),
-        dataInsightsPercentile: z.string().optional(),
-        englishYourScore: z.string().optional(),
-        englishYourPercentile: z.string().optional(),
-        readingYourScore: z.string().optional(),
-        readingYourPercentile: z.string().optional(),
-        scienceYourScore: z.string().optional(),
-        scienceYourPercentile: z.string().optional(),
-        integratedReasoningScore: z.string().optional(),
-        integratedReasoningPercentile: z.string().optional(),
-        retakeExamDate: z.string().optional(),
-        tookCoaching: z.string().optional(),
-        coachingName: z.string().optional(),
-      }).refine((data) => {
-        // If test type is selected, testDate is required
-        if (data.testType && data.testType.length > 0) {
-          return data.testDate && data.testDate.length > 0;
-        }
-        return true;
-      }, {
-        message: 'Test date is required',
-        path: ['testDate'],
-      })
-    ).default([]),
+    testScores: z
+      .array(
+        z
+          .object({
+            testType: z.string().optional(),
+            testDate: z.string().optional(),
+            totalScore: z.string().optional(),
+            yourScore: z.string().optional(),
+            yourPercentile: z.string().optional(),
+            writingYourScore: z.string().optional(),
+            writingYourPercentile: z.string().optional(),
+            mathYourScore: z.string().optional(),
+            mathYourPercentile: z.string().optional(),
+            criticalReadingYourScore: z.string().optional(),
+            criticalReadingYourPercentile: z.string().optional(),
+            analyticalWritingScore: z.string().optional(),
+            analyticalWritingPercentile: z.string().optional(),
+            verbalReasoningScore: z.string().optional(),
+            verbalReasoningPercentile: z.string().optional(),
+            quantitativeReasoningScore: z.string().optional(),
+            quantitativeReasoningPercentile: z.string().optional(),
+            dataInsightsScore: z.string().optional(),
+            dataInsightsPercentile: z.string().optional(),
+            englishYourScore: z.string().optional(),
+            englishYourPercentile: z.string().optional(),
+            readingYourScore: z.string().optional(),
+            readingYourPercentile: z.string().optional(),
+            scienceYourScore: z.string().optional(),
+            scienceYourPercentile: z.string().optional(),
+            integratedReasoningScore: z.string().optional(),
+            integratedReasoningPercentile: z.string().optional(),
+            retakeExamDate: z.string().optional(),
+            tookCoaching: z.string().optional(),
+            coachingName: z.string().optional(),
+          })
+          .refine(
+            (data) => {
+              // If test type is selected, testDate is required
+              if (data.testType && data.testType.length > 0) {
+                return data.testDate && data.testDate.length > 0;
+              }
+              return true;
+            },
+            {
+              message: 'Test date is required',
+              path: ['testDate'],
+            }
+          )
+      )
+      .default([]),
   });
 
   // Merge test scores schema with main schema
@@ -254,10 +265,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     const colsMap: Record<number, string> = {
       1: 'md:grid-cols-1',
       2: 'md:grid-cols-2',
-      3: 'md:grid-cols-3',
-      4: 'md:grid-cols-4',
-      5: 'md:grid-cols-5',
-      6: 'md:grid-cols-6',
+      3: 'md:grid-cols-3 sm:grid-cols-2',
+      4: 'lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2',
+      5: 'lg:grid-cols-5 md:grid-cols-3 sm:grid-cols-2',
+      6: 'lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-2',
     };
     return colsMap[cols] || 'md:grid-cols-3';
   };
@@ -705,10 +716,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           <div className={`grid gap-4 ${getGridColsClass(item.columns ?? 1)}`}>
             {(repeatArr ?? []).map((row, rIdx) => (
               <div key={rIdx} className="flex items-end gap-2">
-                <div className={`grid flex-1 items-end gap-4 ${getGridColsClass(repeatableColumns)}`}>
+                <div
+                  className={`grid flex-1 items-end gap-4 ${getGridColsClass(repeatableColumns)}`}
+                >
                   {item.fields?.map((fid) => {
                     const field = fieldDefs.find((f) => f.id === fid);
-                    if (!field || !isFieldVisible(field, formValues)) return null;
+                    if (!field || !isFieldVisible(field, formValues))
+                      return null;
                     const errorKey = `${item.name}.${rIdx}.${fid}`;
                     const repeatableField: FieldDefinition = {
                       ...field,
@@ -716,7 +730,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                     };
                     const widthClass = getFieldWidthClass(field);
                     return (
-                      <div key={`${item.name}.${rIdx}.${fid}`} className={widthClass}>
+                      <div
+                        key={`${item.name}.${rIdx}.${fid}`}
+                        className={widthClass}
+                      >
                         <Controller
                           name={`${item.name}.${rIdx}.${fid}` as never}
                           control={form.control}
@@ -920,11 +937,14 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           sectionContent.push(renderSeparator(i));
         } else if (innerItem.type === 'fieldset' && innerItem.fields) {
           // Check if this is the testType fieldset - render TestScoresBlock instead
-          if (innerItem.fields.includes('testType') && innerItem.fields.length === 1) {
+          if (
+            innerItem.fields.includes('testType') &&
+            innerItem.fields.length === 1
+          ) {
             // Get test type options from the field definition
             const testTypeField = fieldDefs.find((f) => f.id === 'testType');
             const testTypeOptions = testTypeField?.options ?? [];
-            
+
             sectionContent.push(
               <TestScoresBlock
                 key="test-scores-block"
@@ -942,10 +962,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           }
         } else if (
           (innerItem.type === 'highSchool' ||
-          innerItem.type === 'undergraduate' ||
-          innerItem.type === 'postgraduate' ||
-          innerItem.type === 'tenPlus' ||
-          innerItem.type === 'professional') &&
+            innerItem.type === 'undergraduate' ||
+            innerItem.type === 'postgraduate' ||
+            innerItem.type === 'tenPlus' ||
+            innerItem.type === 'professional') &&
           isFieldVisible(innerItem, formValues)
         ) {
           const subSchema = generateSubSchema(fieldDefs, innerItem).schema;
@@ -1087,12 +1107,14 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   // Add other dependencies if you have more repeatableDependsOn fields
 
   // Helper function to filter out empty rows from repeatable arrays and remove flattened keys
-  const filterEmptyRows = (data: Record<string, unknown>): Record<string, unknown> => {
+  const filterEmptyRows = (
+    data: Record<string, unknown>
+  ): Record<string, unknown> => {
     const filtered: Record<string, unknown> = { ...data };
-    
+
     // Collect all repeatable field names
     const repeatableNames: string[] = [];
-    
+
     // Handle regular repeatable fieldsets
     layout.forEach((item) => {
       if (item.repeatable && item.name) {
@@ -1100,33 +1122,35 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         const arr = filtered[item.name];
         if (Array.isArray(arr)) {
           // Filter out rows where all fields are empty strings
-          filtered[item.name] = arr.filter((row) => {
-            if (typeof row !== 'object' || row === null) return true;
-            const rowObj = row as Record<string, unknown>;
-            // Check if any field in this row has a non-empty value
-            return (item.fields ?? []).some((fieldId) => {
-              const value = rowObj[fieldId];
-              return value !== '' && value !== null && value !== undefined;
-            });
-          }).map((row) => {
-            // Clean up conditionally dependent fields
-            if (typeof row !== 'object' || row === null) return row;
-            const rowObj = { ...row } as Record<string, unknown>;
-            
-            // For subjects: clear subjectOther if subject is not "Other"
-            if ('subject' in rowObj) {
-              if (rowObj.subject !== 'Other') {
-                // Remove subjectOther field completely when subject is not "Other"
-                delete rowObj.subjectOther;
+          filtered[item.name] = arr
+            .filter((row) => {
+              if (typeof row !== 'object' || row === null) return true;
+              const rowObj = row as Record<string, unknown>;
+              // Check if any field in this row has a non-empty value
+              return (item.fields ?? []).some((fieldId) => {
+                const value = rowObj[fieldId];
+                return value !== '' && value !== null && value !== undefined;
+              });
+            })
+            .map((row) => {
+              // Clean up conditionally dependent fields
+              if (typeof row !== 'object' || row === null) return row;
+              const rowObj = { ...row } as Record<string, unknown>;
+
+              // For subjects: clear subjectOther if subject is not "Other"
+              if ('subject' in rowObj) {
+                if (rowObj.subject !== 'Other') {
+                  // Remove subjectOther field completely when subject is not "Other"
+                  delete rowObj.subjectOther;
+                }
               }
-            }
-            
-            return rowObj;
-          });
+
+              return rowObj;
+            });
         }
       }
     });
-    
+
     // Remove flattened keys (e.g., "awards.0.description", "courses.0.name")
     // These are created by flattenDefaultValues for React Hook Form but should not be in the final output
     Object.keys(filtered).forEach((key) => {
@@ -1139,17 +1163,21 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         delete filtered[key];
       }
     });
-    
+
     // Handle nested repeatables in highSchool/undergraduate/postgraduate sections
     // e.g., highSchool[0].subjects[0].subjectOther should be cleared if subject !== 'Other'
     layout.forEach((item) => {
-      if (item.type === 'highSchool' || item.type === 'undergraduate' || item.type === 'postgraduate') {
+      if (
+        item.type === 'highSchool' ||
+        item.type === 'undergraduate' ||
+        item.type === 'postgraduate'
+      ) {
         const sectionData = filtered[item.type as string];
         if (Array.isArray(sectionData)) {
           filtered[item.type as string] = sectionData.map((school) => {
             if (typeof school !== 'object' || school === null) return school;
             const schoolObj = { ...school } as Record<string, unknown>;
-            
+
             // Handle subjects/years array within each school
             if (item.repeatables?.name && schoolObj[item.repeatables.name]) {
               const nestedArray = schoolObj[item.repeatables.name];
@@ -1161,37 +1189,43 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                   // Check if any field in this row has a non-empty value
                   return (item.repeatables?.fields ?? []).some((fieldId) => {
                     const value = rowObj[fieldId];
-                    return value !== '' && value !== null && value !== undefined;
+                    return (
+                      value !== '' && value !== null && value !== undefined
+                    );
                   });
                 });
-                
+
                 // Then, clean up conditional fields
                 schoolObj[item.repeatables.name] = filteredNested.map((row) => {
                   if (typeof row !== 'object' || row === null) return row;
                   const rowObj = { ...row } as Record<string, unknown>;
-                  
+
                   // Clear subjectOther if subject is not "Other" or if it's undefined/empty
                   if ('subject' in rowObj) {
                     if (rowObj.subject !== 'Other') {
                       // Remove subjectOther field completely when subject is not "Other"
                       delete rowObj.subjectOther;
-                    } else if (rowObj.subjectOther === undefined || rowObj.subjectOther === null || rowObj.subjectOther === '') {
+                    } else if (
+                      rowObj.subjectOther === undefined ||
+                      rowObj.subjectOther === null ||
+                      rowObj.subjectOther === ''
+                    ) {
                       // If subject is "Other" but subjectOther is empty, keep it but as empty string
                       // This will trigger validation error which is correct
                     }
                   }
-                  
+
                   return rowObj;
                 });
               }
             }
-            
+
             return schoolObj;
           });
         }
       }
     });
-    
+
     return filtered;
   };
 
@@ -1201,9 +1235,6 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         // Filter out empty rows before validation
         const cleanedValues = filterEmptyRows(values);
         const result = schema.safeParse(cleanedValues);
-        console.log('Form values:', values);
-        console.log('Cleaned values:', cleanedValues);
-        console.log('Validation result:', result);
         if (!result.success) {
           console.error('Form validation errors:', result.error.issues);
           console.error('Detailed validation errors:');
@@ -1212,7 +1243,16 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             console.error('  Path:', err.path.join('.'));
             console.error('  Message:', err.message);
             console.error('  Code:', err.code);
-            console.error('  Received value:', err.path.reduce((obj: any, key) => obj?.[key], cleanedValues));
+            console.error(
+              '  Received value:',
+              err.path.reduce<unknown>(
+                (obj: unknown, key) =>
+                  typeof key === 'string' || typeof key === 'number'
+                    ? (obj as Record<string, unknown>)[key]
+                    : obj,
+                cleanedValues
+              )
+            );
           });
           const fieldErrors: Record<string, string> = {};
           result.error.issues.forEach((err) => {
