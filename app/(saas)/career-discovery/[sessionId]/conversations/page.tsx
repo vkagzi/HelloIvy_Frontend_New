@@ -97,7 +97,7 @@ const CareerConversationPage: React.FC = () => {
 
           // Try to get session details for timer
           try {
-            const sessionResp = await careerDiscoveryApi.getCurrentSession();
+            const sessionResp = await careerDiscoveryApi.getSession(sessionId);
             if (sessionResp) {
               if (sessionResp.created_at) {
                 setSessionCreatedAt(sessionResp.created_at);

@@ -128,7 +128,7 @@ const DomainConversationPage: React.FC = () => {
 
           // Try to get authoritative totals from the session endpoint
           try {
-            const sessionResp = await domainDiscoveryApi.getCurrentSession();
+            const sessionResp = await domainDiscoveryApi.getSession(sessionId);
             if (sessionResp) {
               // Store the session creation time for timer
               if (sessionResp.created_at) {

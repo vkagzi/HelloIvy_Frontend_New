@@ -10,14 +10,7 @@
     "lint:fix": "next lint --fix",
     "format": "prettier --write . --ignore-path .gitignore",
     "format:check": "prettier --check . --ignore-path .gitignore",
-    "prepare": "husky",
     "predeploy": "npm run lint && npm run type-check && npm run build"
-  },
-  "lint-staged": {
-    "*.{js,ts,tsx}": [
-      "prettier --write",
-      "eslint --fix"
-    ]
   },
   "dependencies": {
     "@flaticon/flaticon-uicons": "^3.3.1",

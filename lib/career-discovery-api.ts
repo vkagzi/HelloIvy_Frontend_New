@@ -22,6 +22,7 @@ export interface CareerDiscoverySession {
   total_steps: number;
   current_phase: 'profile' | 'explorer';
   is_active: boolean;
+  is_completed: boolean;
   created_at: string;
   updated_at: string;
   messages: CareerMessage[];
@@ -64,6 +65,7 @@ export interface MessageHistoryResponse {
   total_questions: number;
   current_phase: 'profile' | 'explorer';
   is_active: boolean;
+  is_completed: boolean;
 }
 
 export interface TranscribeResponse {
@@ -77,6 +79,7 @@ export interface SessionListItem {
   total_steps: number;
   current_phase: 'profile' | 'explorer';
   is_active: boolean;
+  is_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -107,10 +110,18 @@ class CareerDiscoveryAPI {
   }
 
   /**
-   * Get the current active session for the user
+   * Get a session by ID
+   */
+  async getSession(sessionId: string): Promise<CareerDiscoverySession> {
+    return api<CareerDiscoverySession>(`${this.baseUrl}/${sessionId}/`);
+  }
+
+  /**
+   * @deprecated Use getSession(sessionId) instead
    */
   async getCurrentSession(): Promise<CareerDiscoverySession> {
-    return api<CareerDiscoverySession>(`${this.baseUrl}/current/`);
+    // Legacy: callers should migrate to getSession(sessionId)
+    throw new Error('getCurrentSession is removed. Use getSession(sessionId) instead.');
   }
 
   /**

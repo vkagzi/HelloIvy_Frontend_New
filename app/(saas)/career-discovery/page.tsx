@@ -46,8 +46,8 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     const checkDomainDiscovery = async () => {
       try {
         setIsCheckingDomain(true);
-        // Fetch only the last completed session (is_active=false, limit=1)
-        const response = await domainDiscoveryApi.listSessions(false, 1);
+        // Fetch only the last completed session (is_completed=true, limit=1)
+        const response = await domainDiscoveryApi.listSessions(true, 1);
         setHasDomainSessions(response.total_count > 0);
         if (response.sessions.length > 0) {
           // Get the most recent completed session
@@ -165,7 +165,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   };
 
   const getSessionStatus = (session: SessionListItem) => {
-    if (session.is_active) {
+    if (!session.is_completed) {
       return {
         label: 'In Progress',
         color: 'bg-yellow-100 text-yellow-800',
@@ -281,7 +281,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            {session.is_active ? (
+                            {!session.is_completed ? (
                               <Button
                                 variant="outline"
                                 size="sm"

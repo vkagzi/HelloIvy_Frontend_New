@@ -153,7 +153,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
   };
 
   const getSessionStatus = (session: SessionListItem) => {
-    if (session.is_active) {
+    if (!session.is_completed) {
       return {
         label: 'In Progress',
         color: 'bg-yellow-100 text-yellow-800',
@@ -236,7 +236,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            {session.is_active ? (
+                            {!session.is_completed ? (
                               <Button
                                 variant="outline"
                                 size="sm"

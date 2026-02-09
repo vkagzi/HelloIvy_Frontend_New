@@ -25,6 +25,7 @@ export interface DomainDiscoverySession {
   deepdive_completed: number;
   current_phase: 'riasec' | 'deepdive';
   is_active: boolean;
+  is_completed: boolean;
   created_at: string;
   updated_at: string;
   messages: DomainMessage[];
@@ -124,6 +125,7 @@ export interface MessageHistoryResponse {
   deepdive_completed: number;
   current_phase: 'riasec' | 'deepdive';
   is_active: boolean;
+  is_completed: boolean;
 }
 
 export interface TranscribeResponse {
@@ -142,6 +144,7 @@ export interface SessionListItem {
   deepdive_completed: number;
   current_phase: 'riasec' | 'deepdive';
   is_active: boolean;
+  is_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -167,24 +170,32 @@ class DomainDiscoveryAPI {
   }
 
   /**
-   * Get the current active session for the user
+   * Get a session by ID
+   */
+  async getSession(sessionId: string): Promise<DomainDiscoverySession> {
+    return api<DomainDiscoverySession>(`${this.baseUrl}/${sessionId}/`);
+  }
+
+  /**
+   * @deprecated Use getSession(sessionId) instead
    */
   async getCurrentSession(): Promise<DomainDiscoverySession> {
-    return api<DomainDiscoverySession>(`${this.baseUrl}/current/`);
+    // Legacy: callers should migrate to getSession(sessionId)
+    throw new Error('getCurrentSession is removed. Use getSession(sessionId) instead.');
   }
 
   /**
    * List all sessions for the user
-   * @param isActive - Optional filter for active/inactive sessions
+   * @param isCompleted - Optional filter for completed/in-progress sessions
    * @param limit - Optional limit on number of sessions to return
    */
   async listSessions(
-    isActive?: boolean,
+    isCompleted?: boolean,
     limit?: number
   ): Promise<SessionListResponse> {
     const params = new URLSearchParams();
-    if (isActive !== undefined) {
-      params.append('is_active', isActive.toString());
+    if (isCompleted !== undefined) {
+      params.append('is_completed', isCompleted.toString());
     }
     if (limit !== undefined) {
       params.append('limit', limit.toString());
