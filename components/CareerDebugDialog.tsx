@@ -239,10 +239,12 @@ export function CareerDebugDialog({
                   Explorer Phase Question Generation Prompt
                 </h3>
                 <pre className="max-h-[500px] overflow-y-auto rounded bg-gray-900 p-4 text-xs whitespace-pre-wrap text-green-400">
-                  {debugInfo.system_prompts.explorer_question_prompt.replace(
-                    '{user_context}',
-                    debugInfo.user_context
-                  )}
+                  {typeof debugInfo.system_prompts.explorer_question_prompt === 'string'
+                    ? debugInfo.system_prompts.explorer_question_prompt.replace(
+                        '{user_context}',
+                        debugInfo.user_context
+                      )
+                    : JSON.stringify(debugInfo.system_prompts.explorer_question_prompt, null, 2)}
                 </pre>
               </div>
             </TabsContent>
