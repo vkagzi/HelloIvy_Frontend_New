@@ -455,7 +455,7 @@ export const personalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: ['language', 'type', 'proficiency', 'comment'],
+    fields: ['language', 'proficiency', 'comment'],
     name: 'languages',
     repeatable: true,
     repeatable_option: {

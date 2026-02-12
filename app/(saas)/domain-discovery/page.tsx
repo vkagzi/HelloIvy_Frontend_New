@@ -228,7 +228,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                               </span>
                             </div>
                             <div className="mt-1 text-sm text-gray-600">
-                              Progress: {session.current_step}/{session.total_steps}{' '}
+                              Progress: {session.current_step}{' '}
                               questions answered
                               {/* {session.current_phase === 'riasec'
                                 ? `Initial: ${session.riasec_completed}/${session.riasec_questions_count ?? 10}`

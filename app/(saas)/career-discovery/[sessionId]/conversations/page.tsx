@@ -647,7 +647,7 @@ const CareerConversationPage: React.FC = () => {
                 </button>
               </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
-                Question {questionsCompleted}/{totalQuestions}
+                Question {questionsCompleted}
               </Paragraph>
 
               {/* Progress Bar */}
@@ -740,7 +740,7 @@ const CareerConversationPage: React.FC = () => {
                       🎉 All questions completed!
                     </p>
                     <p className="mb-4 text-sm text-green-800">
-                      You&apos;ve completed all {totalQuestions} questions.
+                      You&apos;ve completed all questions.
                       Click below to generate your personalized career
                       recommendations.
                     </p>

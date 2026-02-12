@@ -704,7 +704,7 @@ const DomainConversationPage: React.FC = () => {
                 </button>
               </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
-                Question {questionsCompleted}/{totalQuestions}
+                Question {questionsCompleted}
                 {/* <span className="font-medium">
                   {phase === 'riasec' ? `Initial: ${initialCompleted}/${initialQuestionsCount}` : `Deep Dive: ${deepdiveCompleted}/${deepdiveQuestionsCount}`}
                 </span> */}
@@ -731,7 +731,7 @@ const DomainConversationPage: React.FC = () => {
               disabled={!canEndConversation}
               title={
                 !canEndConversation
-                  ? `Complete all ${totalQuestions} questions to view results`
+                  ? 'Complete all questions to view results'
                   : 'End conversation and get results'
               }
               className={`ml-4 whitespace-nowrap rounded-lg px-4 py-2 text-white ${
@@ -826,7 +826,7 @@ const DomainConversationPage: React.FC = () => {
                     🎉 All questions completed!
                   </p>
                   <p className="mb-4 text-sm text-green-800">
-                    You've completed all {totalQuestions} questions. Click below to generate your personalized domain recommendations.
+                    You've completed all questions. Click below to generate your personalized domain recommendations.
                   </p>
                   <button
                     onClick={handleViewResults}
@@ -923,7 +923,7 @@ const DomainConversationPage: React.FC = () => {
                       disabled={!canEndConversation}
                       title={
                         !canEndConversation
-                          ? `Complete all ${totalQuestions} questions to view results`
+                          ? 'Complete all questions to view results'
                           : 'End conversation and get results'
                       }
                       className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
@@ -957,7 +957,7 @@ const DomainConversationPage: React.FC = () => {
                 Domain Discovery Not Complete
               </h3>
               <p className="mt-2 text-sm text-gray-600">
-                You've answered {userAnswerCount} out of {totalQuestions} questions. 
+                You've answered {userAnswerCount} questions so far. 
                 You need to complete all questions to get your personalized domain recommendations.
               </p>
               <p className="mt-2 text-sm font-medium text-gray-700">

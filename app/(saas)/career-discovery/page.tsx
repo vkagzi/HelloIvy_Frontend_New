@@ -268,7 +268,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                               </span>
                             </div>
                             <div className="mt-1 text-sm text-gray-600">
-                              Progress: {session.current_step}/{session.total_steps}{' '}
+                              Progress: {session.current_step}{' '}
                               questions •{' '}
                               {session.current_phase === 'profile'
                                 ? 'Profile Builder'
@@ -343,7 +343,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                   <div className="mb-3 flex items-center justify-between">
                     <span className="font-medium text-gray-700">Progress:</span>
                     <span className="text-gray-600">
-                      {latestDomainSession.current_step}/{latestDomainSession.total_steps} questions
+                      {latestDomainSession.current_step} questions answered
                     </span>
                   </div>
                   
