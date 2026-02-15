@@ -354,7 +354,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                         Your Top Domains:
                       </div>
                       <div className="space-y-2">
-                        {domainRecommendations.slice(0, 3).map((domain, idx) => (
+                        {domainRecommendations.map((domain, idx) => (
                           <div 
                             key={idx}
                             className="flex items-start gap-2 rounded-md bg-green-50 p-2"

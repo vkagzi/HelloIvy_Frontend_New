@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Heading, Paragraph } from '@/app/_components/Typography';
 import { useToast } from '@/app/_components/Toast';
@@ -12,10 +12,12 @@ import {
 import { marked } from 'marked';
 import { Button } from '@/components/ui/button';
 import { DomainDebugDialog } from '@/components/DomainDebugDialog';
+import { useRealtimeVoice } from '@/lib/hooks/useRealtimeVoice';
 
 type Role = 'bot' | 'user';
 type Phase = 'riasec' | 'deepdive';
 type QuestionType = 'riasec' | 'deepdive' | 'general';
+type ConversationMode = 'chat' | 'voice';
 
 interface Message {
   id: string;
@@ -78,10 +80,64 @@ const DomainConversationPage: React.FC = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // STT - MediaRecorder + Backend Whisper
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  // Voice conversation mode
+  const [conversationMode, setConversationMode] = useState<ConversationMode>('chat');
+  const [voiceMessages, setVoiceMessages] = useState<Message[]>([]);
+
+  // Realtime voice hook (manual connect/disconnect)
+  const {
+    isConnected: voiceConnected,
+    isConnecting: voiceConnecting,
+    isRecording: voiceRecording,
+    isSpeaking: voiceSpeaking,
+    transcript: voiceTranscript,
+    connectVoice,
+    disconnectVoice,
+    toggleRecording: toggleVoiceRecording,
+    stopAudio: stopVoiceAudio,
+  } = useRealtimeVoice({
+    sessionId: sessionId || '',
+    onError: (error) => {
+      addToast(`Voice error: ${error}`, { type: 'error' });
+      setConversationMode('chat');
+    },
+  });
+
+  // Sync voice transcript to messages
+  useEffect(() => {
+    if (conversationMode === 'voice' && voiceTranscript.length > 0) {
+      const newMessages: Message[] = voiceTranscript.map((t, idx) => ({
+        id: `voice-${idx}`,
+        type: t.role === 'assistant' ? 'bot' : 'user',
+        content: t.content,
+        question_type: 'deepdive',
+        timestamp: t.timestamp.toISOString(),
+      }));
+      setVoiceMessages(newMessages);
+    }
+  }, [voiceTranscript, conversationMode]);
+
+  /** Activate voice mode: connect WS, seed chat history, open mic */
+  const activateVoiceMode = useCallback(async () => {
+    // Build conversation history from chat messages
+    const chatHistory = messages.map((m) => ({
+      role: (m.type === 'bot' ? 'assistant' : 'user') as 'user' | 'assistant',
+      content: m.content,
+    }));
+
+    // Find last bot message
+    const lastBot = [...messages].reverse().find((m) => m.type === 'bot');
+
+    setConversationMode('voice');
+    await connectVoice(chatHistory, lastBot?.content);
+  }, [messages, connectVoice]);
+
+  /** Deactivate voice mode: tear down WS, return to chat */
+  const deactivateVoiceMode = useCallback(() => {
+    disconnectVoice();
+    setConversationMode('chat');
+    setVoiceMessages([]);
+  }, [disconnectVoice]);
 
   const askedCount = useMemo(
     () => messages.filter((m) => m.type === 'bot').length,
@@ -489,163 +545,6 @@ const DomainConversationPage: React.FC = () => {
     setShowExitDialog(false);
   }
 
-  // STT functions - using backend Whisper API
-  const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
-    setIsTranscribing(true);
-    console.log('🔄 Starting transcription via backend...');
-
-    try {
-      const transcription = await domainDiscoveryApi.transcribeAudio(audioBlob);
-      console.log('✅ Transcription result:', transcription);
-      return transcription || '';
-    } catch (error) {
-      console.error('❌ Transcription error:', error);
-      addToast(`Voice transcription failed: ${error}`, { type: 'error' });
-      return '';
-    } finally {
-      setIsTranscribing(false);
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      console.log('🎤 Starting microphone detection...');
-
-      // Check browser support first
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error(
-          'getUserMedia not supported in this browser. Please use Chrome, Firefox, or Safari.'
-        );
-      }
-
-      // Try multiple constraint configurations
-      const constraintOptions = [
-        { audio: true },
-        {
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        },
-        {
-          audio: {
-            echoCancellation: false,
-            noiseSuppression: false,
-            autoGainControl: false,
-          },
-        },
-      ];
-
-      let stream = null;
-      let lastError = null;
-
-      for (let i = 0; i < constraintOptions.length; i++) {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia(constraintOptions[i]);
-          break;
-        } catch (error) {
-          lastError = error;
-          continue;
-        }
-      }
-
-      if (!stream) {
-        throw lastError || new Error('All microphone access attempts failed');
-      }
-
-      // Create MediaRecorder with explicit MIME type support check
-      let recorder;
-      const supportedTypes = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/mp4',
-        'audio/ogg;codecs=opus',
-        'audio/ogg',
-      ];
-
-      let selectedType = 'audio/webm';
-      for (const type of supportedTypes) {
-        if (MediaRecorder.isTypeSupported(type)) {
-          selectedType = type;
-          break;
-        }
-      }
-
-      try {
-        recorder = new MediaRecorder(stream, { mimeType: selectedType });
-      } catch (recorderError) {
-        recorder = new MediaRecorder(stream);
-      }
-
-      const chunks: Blob[] = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: selectedType });
-
-        if (audioBlob.size > 0) {
-          const transcription = await transcribeAudio(audioBlob);
-          if (transcription) {
-            setInput(transcription);
-            if (transcription.trim()) {
-              addToast('✅ Speech transcribed successfully!', {
-                type: 'success',
-              });
-            }
-          }
-        } else {
-          addToast('❌ No audio recorded', { type: 'error' });
-        }
-
-        stream.getTracks().forEach((t) => t.stop());
-      };
-
-      recorder.onerror = (event: Event) => {
-        const errorEvent = event as ErrorEvent;
-        console.error('MediaRecorder error:', errorEvent.error);
-        addToast(`Recording error: ${errorEvent.error}`, { type: 'error' });
-      };
-
-      recorder.start();
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-      addToast('🎤 Recording... speak now!', { type: 'info' });
-    } catch (error) {
-      console.error('❌ Complete recording setup failed:', error);
-      const err = error as Error & { name?: string };
-
-      if (err.name === 'NotAllowedError') {
-        addToast(
-          '❌ Microphone access denied. Please allow access in your browser.',
-          { type: 'error' }
-        );
-      } else if (err.name === 'NotFoundError') {
-        addToast(
-          '❌ No microphone found. Please connect a microphone and try again.',
-          { type: 'error' }
-        );
-      } else {
-        addToast(`❌ Microphone error: ${err.message}`, { type: 'error' });
-      }
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
-      setIsRecording(false);
-      setMediaRecorder(null);
-    }
-  };
-
-  const toggleRecording = () => {
-    isRecording ? stopRecording() : startRecording();
-  };
-
   // Convert markdown to HTML
   const renderMarkdown = (content: string): string => {
     try {
@@ -691,6 +590,18 @@ const DomainConversationPage: React.FC = () => {
                       {formatTimeRemaining(timeRemaining)}
                     </span>
                   </div>
+                )}
+                {conversationMode === 'voice' && (
+                  <button
+                    onClick={deactivateVoiceMode}
+                    className="group flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition-all hover:border-blue-400 hover:bg-blue-100 hover:shadow-sm"
+                    title="Switch back to text chat"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span>Back to Chat</span>
+                  </button>
                 )}
                 <button
                   onClick={() => setShowDebugDialog(true)}
@@ -747,7 +658,32 @@ const DomainConversationPage: React.FC = () => {
 
         {/* Messages */}
         <div ref={messagesContainerRef} className="flex-1 min-h-0 space-y-6 overflow-y-auto px-6 py-4">
-          {messages.map((m, index) => {
+          {/* Voice mode indicator */}
+          {conversationMode === 'voice' && (
+            <div className="mb-4 rounded-lg border-2 border-blue-300 bg-blue-50 p-4">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                  voiceConnected ? 'bg-green-500' : voiceConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-gray-400'
+                }`}>
+                  <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-blue-900">
+                    {voiceConnected ? '🎙️ Voice Mode Active' : voiceConnecting ? '⏳ Connecting...' : '⏳ Connecting to voice...'}
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    {voiceConnected 
+                      ? 'The AI has your full chat context. Speak naturally to continue the conversation.'
+                      : 'Establishing voice connection with your conversation context...'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(conversationMode === 'voice' ? voiceMessages : messages).map((m, index) => {
             const isLatestBotMessage = m.type === 'bot' && index === messages.length - 1;
             const isInitialQuestion = m.question_type === 'riasec' && m.choices && m.choices.length > 0;
             
@@ -871,77 +807,139 @@ const DomainConversationPage: React.FC = () => {
             
             return (
               <>
-                <div className="flex items-center space-x-4">
-                  <div className="flex-1">
-                    <Textarea
-                      ref={inputRef}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Type your response…"
-                      className="min-h-10! py-2!"
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="flex space-x-2">
-                    {/* STT: Voice recording */}
-                    <Button
-                      variant="icon-outline"
-                      onClick={toggleRecording}
-                      disabled={isLoading || isTranscribing}
-                      className={`px-3 py-2 transition-colors ${
-                        isRecording
-                          ? 'border-red-300 bg-red-100 text-red-700'
-                          : ''
-                      }`}
-                      title={isRecording ? 'Stop recording' : 'Start voice input'}
-                    >
-                      {isRecording ? (
-                        <div className="flex items-center space-x-1">
-                          <div className="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
-                          <span className="text-xs">🎤</span>
-                        </div>
-                      ) : isTranscribing ? (
-                        <div className="flex items-center space-x-1">
-                          <div className="h-3 w-3 animate-spin rounded-full border-2 border-teal-500 border-t-transparent"></div>
-                          <span className="text-xs">⏳</span>
-                        </div>
-                      ) : (
-                        '🎤'
+                {conversationMode === 'voice' ? (
+                  // Voice mode controls
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={toggleVoiceRecording}
+                        disabled={!voiceConnected}
+                        className={`flex h-16 w-16 items-center justify-center rounded-full transition-all ${
+                          voiceRecording
+                            ? 'animate-pulse bg-red-500 shadow-lg shadow-red-500/50'
+                            : voiceConnected
+                            ? 'bg-blue-500 hover:bg-blue-600 hover:shadow-lg'
+                            : 'bg-gray-400 cursor-not-allowed'
+                        }`}
+                        title={voiceRecording ? 'Stop speaking' : 'Start speaking'}
+                      >
+                        <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                      </button>
+                      
+                      {voiceSpeaking && (
+                        <button
+                          onClick={stopVoiceAudio}
+                          className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 hover:bg-orange-600"
+                          title="Stop AI speaking"
+                        >
+                          <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                          </svg>
+                        </button>
                       )}
-                    </Button>
 
-                    <button
-                      onClick={handleSend}
-                      disabled={!input.trim() || isLoading}
-                      className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 disabled:opacity-50"
-                    >
-                      Send
-                    </button>
-                    <button
-                      onClick={handleEnd}
-                      disabled={!canEndConversation}
-                      title={
-                        !canEndConversation
-                          ? 'Complete all questions to view results'
-                          : 'End conversation and get results'
-                      }
-                      className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
-                        canEndConversation
-                          ? 'bg-linear-to-r cursor-pointer from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700'
-                          : 'cursor-not-allowed bg-gray-400 opacity-60'
-                      }`}
-                    >
-                      End →
-                    </button>
+                      <button
+                        onClick={deactivateVoiceMode}
+                        className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                        title="Back to text chat"
+                      >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div className="text-center">
+                      {voiceConnecting ? (
+                        <p className="text-sm text-orange-600">
+                          ⏳ Connecting to voice service...
+                        </p>
+                      ) : voiceRecording ? (
+                        <p className="text-sm font-semibold text-red-600">
+                          🎤 Listening... speak now
+                        </p>
+                      ) : voiceSpeaking ? (
+                        <p className="text-sm font-semibold text-blue-600">
+                          🔊 AI is speaking...
+                        </p>
+                      ) : voiceConnected ? (
+                        <p className="text-sm text-gray-600">
+                          Click the mic to start speaking
+                        </p>
+                      ) : (
+                        <p className="text-sm text-orange-600">
+                          Connecting to voice service...
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="mt-2 text-xs text-gray-500">
-                  Tip: Press <span className="font-semibold">Enter</span> to send,{' '}
-                  <span className="font-semibold">Shift+Enter</span> for a new line.{' '}
-                  {isRecording && '🎤 Recording...'}{' '}
-                  {isTranscribing && '⏳ Processing speech...'}
-                </div>
+                ) : (
+                  // Chat mode controls
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-1">
+                      <Textarea
+                        ref={inputRef}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Type your response…"
+                        className="min-h-10! py-2!"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      {/* Mic button: starts real-time voice mode */}
+                      <Button
+                        variant="icon-outline"
+                        onClick={activateVoiceMode}
+                        disabled={isLoading || voiceConnecting}
+                        className="px-3 py-2 transition-colors"
+                        title="Switch to voice conversation"
+                      >
+                        {voiceConnecting ? (
+                          <div className="flex items-center space-x-1">
+                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-teal-500 border-t-transparent"></div>
+                          </div>
+                        ) : (
+                          '🎤'
+                        )}
+                      </Button>
+
+                      <button
+                        onClick={handleSend}
+                        disabled={!input.trim() || isLoading}
+                        className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Send
+                      </button>
+                      <button
+                        onClick={handleEnd}
+                        disabled={!canEndConversation}
+                        title={
+                          !canEndConversation
+                            ? 'Complete all questions to view results'
+                            : 'End conversation and get results'
+                        }
+                        className={`whitespace-nowrap rounded-lg px-4 py-2 text-white ${
+                          canEndConversation
+                            ? 'bg-linear-to-r cursor-pointer from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700'
+                            : 'cursor-not-allowed bg-gray-400 opacity-60'
+                        }`}
+                      >
+                        End →
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {conversationMode === 'chat' && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    Tip: Press <span className="font-semibold">Enter</span> to send,{' '}
+                    <span className="font-semibold">Shift+Enter</span> for a new line.
+                  </div>
+                )}
               </>
             );
           })()}
