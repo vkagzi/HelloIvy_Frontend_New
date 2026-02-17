@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Heading, Paragraph } from '@/app/_components/Typography';
 import { useToast } from '@/app/_components/Toast';
@@ -15,7 +15,6 @@ import { DomainDebugDialog } from '@/components/DomainDebugDialog';
 import { useRealtimeVoice } from '@/lib/hooks/useRealtimeVoice';
 
 type Role = 'bot' | 'user';
-type Phase = 'riasec' | 'deepdive';
 type QuestionType = 'riasec' | 'deepdive' | 'general';
 type ConversationMode = 'chat' | 'voice';
 
@@ -60,18 +59,9 @@ const DomainConversationPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [questionsCompleted, setQuestionsCompleted] = useState(0);
-  const [totalQuestions, setTotalQuestions] = useState(20);
-  const [serverPhase, setServerPhase] = useState<Phase>('riasec');
-  const [initialCompleted, setInitialCompleted] = useState(0);
-  const [deepdiveCompleted, setDeepdiveCompleted] = useState(0);
-  const [initialQuestionsCount, setInitialQuestionsCount] = useState(10);
-  const [deepdiveQuestionsCount, setDeepdiveQuestionsCount] = useState(10);
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [isGeneratingResults, setIsGeneratingResults] = useState(false);
-  const [resultsGenerationFailed, setResultsGenerationFailed] = useState(false);
   const [showDebugDialog, setShowDebugDialog] = useState(false);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [sessionCreatedAt, setSessionCreatedAt] = useState<string | null>(null);
@@ -139,17 +129,7 @@ const DomainConversationPage: React.FC = () => {
     setVoiceMessages([]);
   }, [disconnectVoice]);
 
-  const askedCount = useMemo(
-    () => messages.filter((m) => m.type === 'bot').length,
-    [messages]
-  );
-  const userAnswerCount = useMemo(
-    () => messages.filter((m) => m.type === 'user').length,
-    [messages]
-  );
-  const allQuestionsCompleted = userAnswerCount >= totalQuestions;
-  const canEndConversation = allQuestionsCompleted;
-  const phase: Phase = serverPhase;
+  const canEndConversation = sessionEnded;
 
   // Initialize session on mount
   useEffect(() => {
@@ -172,14 +152,9 @@ const DomainConversationPage: React.FC = () => {
       try {
         const historyResponse = await domainDiscoveryApi.getMessages(sessionId);
         if (historyResponse.messages.length > 0) {
-          // Restore existing session
-          setCurrentStep(historyResponse.current_step);
-
           // Set counts from message history as a fallback
           const rq = historyResponse.riasec_completed ?? 0;
           const dq = historyResponse.deepdive_completed ?? 0;
-          setInitialCompleted(rq);
-          setDeepdiveCompleted(dq);
           setQuestionsCompleted(rq + dq);
 
           // Try to get authoritative totals from the session endpoint
@@ -190,26 +165,17 @@ const DomainConversationPage: React.FC = () => {
               if (sessionResp.created_at) {
                 setSessionCreatedAt(sessionResp.created_at);
               }
-              
-              // Set individual question counts
-              const initialCount = sessionResp.riasec_questions_count ?? 10;
-              const deepdiveCount = sessionResp.deepdive_questions_count ?? 10;
-              setInitialQuestionsCount(initialCount);
-              setDeepdiveQuestionsCount(deepdiveCount);
-              
-              const total = sessionResp.total_steps ?? (initialCount + deepdiveCount);
-              if (total) setTotalQuestions(total);
 
               const rqCompleted = sessionResp.riasec_completed ?? rq;
               const dqCompleted = sessionResp.deepdive_completed ?? dq;
-              setInitialCompleted(rqCompleted);
-              setDeepdiveCompleted(dqCompleted);
               setQuestionsCompleted(rqCompleted + dqCompleted);
 
-              if (sessionResp.current_phase) setServerPhase(sessionResp.current_phase);
-
-              if (total) {
-                setProgressPercentage(Math.round(((rqCompleted + dqCompleted) / total) * 100));
+              // Check if conversation was already completed
+              if (sessionResp.is_completed) {
+                setSessionEnded(true);
+                setProgressPercentage(100);
+              } else {
+                setProgressPercentage(sessionResp.current_step ? Math.min(sessionResp.current_step * 10, 90) : 0);
               }
             }
           } catch (e) {
@@ -219,7 +185,6 @@ const DomainConversationPage: React.FC = () => {
               // Session has ended - mark it as complete
               setSessionEnded(true);
               setProgressPercentage(100);
-              setQuestionsCompleted(totalQuestions);
               console.log('Session has ended. Showing results view.');
             }
             // Continue with historyResponse fallback values
@@ -333,16 +298,9 @@ const DomainConversationPage: React.FC = () => {
         userMessage
       );
 
-      // Update step and progress tracking
-      setCurrentStep(response.current_step);
+      // Update progress tracking
       setProgressPercentage(response.progress_percentage);
       setQuestionsCompleted(response.questions_completed);
-      setInitialCompleted(response.riasec_completed);
-      setDeepdiveCompleted(response.deepdive_completed);
-      // Update server phase if provided
-      if (response.phase) {
-        setServerPhase(response.phase);
-      }
 
       // Check if conversation is complete
       if (response.is_complete) {
@@ -354,6 +312,9 @@ const DomainConversationPage: React.FC = () => {
           timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, botMsg]);
+        // Mark session as ended so View Results button appears
+        setSessionEnded(true);
+        setProgressPercentage(100);
         return;
       }
 
@@ -404,16 +365,9 @@ const DomainConversationPage: React.FC = () => {
         userMessage
       );
 
-      // Update step and progress tracking
-      setCurrentStep(response.current_step);
+      // Update progress tracking
       setProgressPercentage(response.progress_percentage);
       setQuestionsCompleted(response.questions_completed);
-      setInitialCompleted(response.riasec_completed);
-      setDeepdiveCompleted(response.deepdive_completed);
-      // Update server phase if provided
-      if (response.phase) {
-        setServerPhase(response.phase);
-      }
 
       // Check if conversation is complete
       if (response.is_complete) {
@@ -425,6 +379,9 @@ const DomainConversationPage: React.FC = () => {
           timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, botMsg]);
+        // Mark session as ended so View Results button appears
+        setSessionEnded(true);
+        setProgressPercentage(100);
         return;
       }
 
@@ -458,76 +415,13 @@ const DomainConversationPage: React.FC = () => {
   }
 
   async function handleEnd() {
-    if (!allQuestionsCompleted) {
-      // Show confirmation dialog
-      setShowExitDialog(true);
+    if (sessionEnded) {
+      // Session concluded by backend - go to results
+      await handleViewResults();
       return;
     }
-    
-    // All questions completed - generate results
-    await generateAndShowResults();
-  }
-
-  async function generateAndShowResults() {
-    if (!sessionId) return;
-    
-    setIsGeneratingResults(true);
-    setResultsGenerationFailed(false);
-
-    // Add a notification message in the chat
-    const generatingMsg: Message = {
-      id: `system-${Date.now()}`,
-      type: 'bot',
-      content: '🔄 Generating your personalized domain recommendations... This may take a moment.',
-      timestamp: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, generatingMsg]);
-    addToast('Generating your domain recommendations…', { type: 'success' });
-
-    try {
-      // End session on server
-      try {
-        await domainDiscoveryApi.endSession(sessionId);
-      } catch (error) {
-        console.log('Could not end session on server');
-      }
-
-      // Generate recommendations
-      const result = await domainDiscoveryApi.generateRecommendations(sessionId);
-      if (result.recommendations && result.recommendations.length > 0) {
-        // Remove the generating message
-        setMessages((prev) => prev.filter((m) => m.id !== generatingMsg.id));
-        // Add success message
-        const successMsg: Message = {
-          id: `system-${Date.now()}`,
-          type: 'bot',
-          content: '✅ Your domain recommendations are ready! Click the button below to view them.',
-          timestamp: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, successMsg]);
-        addToast('Your results are ready!', { type: 'success' });
-      } else {
-        throw new Error('No recommendations generated');
-      }
-    } catch (genError) {
-      console.error('Failed to generate recommendations:', genError);
-      // Remove the generating message
-      setMessages((prev) => prev.filter((m) => m.id !== generatingMsg.id));
-      // Add error message
-      const errorMsg: Message = {
-        id: `system-${Date.now()}`,
-        type: 'bot',
-        content: '❌ There was an issue generating your recommendations. Please try again or contact support.',
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-      setResultsGenerationFailed(true);
-      addToast('Failed to generate recommendations. Please try again.', {
-        type: 'error',
-      });
-    } finally {
-      setIsGeneratingResults(false);
-    }
+    // Session still in progress - show exit confirmation
+    setShowExitDialog(true);
   }
 
   async function handleViewResults() {
@@ -616,9 +510,6 @@ const DomainConversationPage: React.FC = () => {
               </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
                 Question {questionsCompleted}
-                {/* <span className="font-medium">
-                  {phase === 'riasec' ? `Initial: ${initialCompleted}/${initialQuestionsCount}` : `Deep Dive: ${deepdiveCompleted}/${deepdiveQuestionsCount}`}
-                </span> */}
               </Paragraph>
               
               {/* Progress Bar */}
@@ -638,7 +529,7 @@ const DomainConversationPage: React.FC = () => {
 
             </div>
             <button
-              onClick={handleEnd}
+              onClick={sessionEnded ? handleViewResults : handleEnd}
               disabled={!canEndConversation}
               title={
                 !canEndConversation
@@ -742,7 +633,7 @@ const DomainConversationPage: React.FC = () => {
             );
           })}
 
-          {isLoading && !allQuestionsCompleted && (
+          {isLoading && !sessionEnded && (
             <div className="flex justify-start">
               <div className="max-w-3xl">
                 <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">
@@ -754,15 +645,15 @@ const DomainConversationPage: React.FC = () => {
             </div>
           )}
 
-          {allQuestionsCompleted && !isGeneratingResults && !resultsGenerationFailed && (
+          {sessionEnded && (
             <div className="flex justify-center">
               <div className="max-w-3xl">
                 <div className="rounded-lg border-2 border-green-300 bg-green-50 px-6 py-4 text-center shadow-sm">
                   <p className="mb-4 text-sm font-semibold text-green-900">
-                    🎉 All questions completed!
+                    🎉 Conversation complete!
                   </p>
                   <p className="mb-4 text-sm text-green-800">
-                    You've completed all questions. Click below to generate your personalized domain recommendations.
+                    Click below to generate your personalized domain recommendations.
                   </p>
                   <button
                     onClick={handleViewResults}
@@ -955,8 +846,8 @@ const DomainConversationPage: React.FC = () => {
                 Domain Discovery Not Complete
               </h3>
               <p className="mt-2 text-sm text-gray-600">
-                You've answered {userAnswerCount} questions so far. 
-                You need to complete all questions to get your personalized domain recommendations.
+                Your conversation is still in progress. 
+                The AI coach will wrap up when it has enough information about your interests.
               </p>
               <p className="mt-2 text-sm font-medium text-gray-700">
                 Are you sure you want to exit without getting your results?
