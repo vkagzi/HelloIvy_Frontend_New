@@ -1254,14 +1254,14 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         const cleanedValues = filterEmptyRows(values);
         const result = schema.safeParse(cleanedValues);
         if (!result.success) {
-          console.error('Form validation errors:', result.error.issues);
-          console.error('Detailed validation errors:');
+          console.log('Form validation errors:', result.error.issues);
+          console.log('Detailed validation errors:');
           result.error.issues.forEach((err, index) => {
-            console.error(`Error ${index + 1}:`);
-            console.error('  Path:', err.path.join('.'));
-            console.error('  Message:', err.message);
-            console.error('  Code:', err.code);
-            console.error(
+            console.log(`Error ${index + 1}:`);
+            console.log('  Path:', err.path.join('.'));
+            console.log('  Message:', err.message);
+            console.log('  Code:', err.code);
+            console.log(
               '  Received value:',
               err.path.reduce<unknown>(
                 (obj: unknown, key) =>
@@ -1278,6 +1278,20 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             fieldErrors[errorKey] = err.message;
           });
           setErrors(fieldErrors);
+
+          // Focus and scroll to the first invalid field
+          const firstErrorKey = Object.keys(fieldErrors)[0];
+          if (firstErrorKey) {
+            // Try direct id match first, then fallback to name attribute
+            const el =
+              document.getElementById(firstErrorKey) ??
+              document.querySelector<HTMLElement>(`[name="${firstErrorKey}"]`);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              el.focus({ preventScroll: true });
+            }
+          }
+
           return;
         }
         setErrors({});
