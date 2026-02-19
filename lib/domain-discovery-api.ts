@@ -26,6 +26,7 @@ export interface DomainDiscoverySession {
   current_phase: 'riasec' | 'deepdive';
   is_active: boolean;
   is_completed: boolean;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   messages: DomainMessage[];
@@ -372,6 +373,25 @@ class DomainDiscoveryAPI {
   async getDebugInfo(sessionId: string): Promise<DebugInfo> {
     return api<DebugInfo>(`${this.baseUrl}/${sessionId}/debug/`);
   }
+
+  /**
+   * Toggle pause/resume for a session timer
+   */
+  async togglePause(sessionId: string): Promise<PauseResponse> {
+    return api<PauseResponse>(`${this.baseUrl}/${sessionId}/pause/`, {
+      method: 'POST',
+    });
+  }
+}
+
+export interface PauseResponse {
+  is_paused: boolean;
+  total_paused_seconds: number;
+  pause_events: Array<{
+    paused_at: string;
+    resumed_at: string | null;
+    duration_seconds: number;
+  }>;
 }
 
 export interface DebugInfo {

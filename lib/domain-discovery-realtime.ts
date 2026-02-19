@@ -277,23 +277,25 @@ export class DomainRealtimeVoiceClient {
 
   /**
    * Handle conversation item created
+   *
+   * NOTE: We intentionally do NOT call onTranscriptUpdate here.
+   * For audio responses the transcript arrives via response.audio_transcript.delta,
+   * and for user speech it arrives via input_audio_transcription.completed.
+   * Calling onTranscriptUpdate here would duplicate seeded history items
+   * because conversation.item.created fires for every item we seed.
    */
-  private handleConversationItem(message: any): void {
-    const item = message.item;
-    if (item && item.content) {
-      for (const content of item.content) {
-        if (content.type === 'text') {
-          this.config.onTranscriptUpdate?.(content.text, item.role);
-        }
-      }
+  private handleConversationItem(message: Record<string, unknown>): void {
+    const item = message.item as Record<string, unknown> | undefined;
+    if (item) {
+      console.log('[Realtime] Conversation item created:', item.role, item.type);
     }
   }
 
   /**
    * Handle audio delta (streaming audio response)
    */
-  private handleAudioDelta(message: any): void {
-    const base64Audio = message.delta;
+  private handleAudioDelta(message: Record<string, unknown>): void {
+    const base64Audio = message.delta as string | undefined;
     if (!base64Audio) return;
 
     try {
@@ -313,8 +315,8 @@ export class DomainRealtimeVoiceClient {
   /**
    * Handle transcript delta
    */
-  private handleTranscriptDelta(message: any, role: 'user' | 'assistant'): void {
-    const delta = message.delta;
+  private handleTranscriptDelta(message: Record<string, unknown>, role: 'user' | 'assistant'): void {
+    const delta = message.delta as string | undefined;
     if (delta) {
       this.config.onTranscriptUpdate?.(delta, role);
     }
@@ -323,8 +325,8 @@ export class DomainRealtimeVoiceClient {
   /**
    * Handle input audio transcription
    */
-  private handleInputTranscription(message: any): void {
-    const transcript = message.transcript;
+  private handleInputTranscription(message: Record<string, unknown>): void {
+    const transcript = message.transcript as string | undefined;
     if (transcript) {
       this.config.onTranscriptUpdate?.(transcript, 'user');
     }

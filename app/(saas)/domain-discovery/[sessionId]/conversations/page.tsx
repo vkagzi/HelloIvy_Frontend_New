@@ -66,13 +66,15 @@ const DomainConversationPage: React.FC = () => {
   const [sessionEnded, setSessionEnded] = useState(false);
   const [sessionCreatedAt, setSessionCreatedAt] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [totalPausedSeconds, setTotalPausedSeconds] = useState(0);
+  const [pauseLoading, setPauseLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Voice conversation mode
   const [conversationMode, setConversationMode] = useState<ConversationMode>('chat');
-  const [voiceMessages, setVoiceMessages] = useState<Message[]>([]);
 
   // Realtime voice hook (manual connect/disconnect)
   const {
@@ -93,17 +95,38 @@ const DomainConversationPage: React.FC = () => {
     },
   });
 
-  // Sync voice transcript to messages
+  // Sync voice transcript to main messages list so they persist
+  const prevVoiceTranscriptLenRef = useRef(0);
   useEffect(() => {
-    if (conversationMode === 'voice' && voiceTranscript.length > 0) {
-      const newMessages: Message[] = voiceTranscript.map((t, idx) => ({
-        id: `voice-${idx}`,
+    if (conversationMode !== 'voice' || voiceTranscript.length === 0) return;
+
+    if (voiceTranscript.length > prevVoiceTranscriptLenRef.current) {
+      // New transcript entries — add corresponding messages
+      const newEntries = voiceTranscript.slice(prevVoiceTranscriptLenRef.current);
+      const newMessages: Message[] = newEntries.map((t, idx) => ({
+        id: `voice-${Date.now()}-${prevVoiceTranscriptLenRef.current + idx}`,
         type: t.role === 'assistant' ? 'bot' : 'user',
         content: t.content,
         question_type: 'deepdive',
         timestamp: t.timestamp.toISOString(),
       }));
-      setVoiceMessages(newMessages);
+      setMessages((prev) => [...prev, ...newMessages]);
+      prevVoiceTranscriptLenRef.current = voiceTranscript.length;
+    } else {
+      // Existing entry content updated (streaming delta) — update the last voice message
+      const lastTranscript = voiceTranscript[voiceTranscript.length - 1];
+      setMessages((prev) => {
+        const expectedType = lastTranscript.role === 'assistant' ? 'bot' : 'user';
+        for (let i = prev.length - 1; i >= 0; i--) {
+          if (prev[i].type === expectedType && prev[i].id.startsWith('voice-')) {
+            if (prev[i].content === lastTranscript.content) return prev;
+            const updated = [...prev];
+            updated[i] = { ...updated[i], content: lastTranscript.content };
+            return updated;
+          }
+        }
+        return prev;
+      });
     }
   }, [voiceTranscript, conversationMode]);
 
@@ -125,8 +148,8 @@ const DomainConversationPage: React.FC = () => {
   /** Deactivate voice mode: tear down WS, return to chat */
   const deactivateVoiceMode = useCallback(() => {
     disconnectVoice();
+    prevVoiceTranscriptLenRef.current = 0;
     setConversationMode('chat');
-    setVoiceMessages([]);
   }, [disconnectVoice]);
 
   const canEndConversation = sessionEnded;
@@ -164,6 +187,13 @@ const DomainConversationPage: React.FC = () => {
               // Store the session creation time for timer
               if (sessionResp.created_at) {
                 setSessionCreatedAt(sessionResp.created_at);
+              }
+
+              // Restore pause state from metadata
+              if (sessionResp.metadata) {
+                const meta = sessionResp.metadata as Record<string, unknown>;
+                if (meta.is_paused) setIsPaused(true);
+                if (typeof meta.total_paused_seconds === 'number') setTotalPausedSeconds(meta.total_paused_seconds);
               }
 
               const rqCompleted = sessionResp.riasec_completed ?? rq;
@@ -248,13 +278,15 @@ const DomainConversationPage: React.FC = () => {
     if (!sessionCreatedAt) return;
 
     const updateTimer = () => {
+      if (isPaused) return; // Don't update while paused
+
       const createdTime = new Date(sessionCreatedAt).getTime();
       const currentTime = Date.now();
       const elapsedSeconds = Math.floor((currentTime - createdTime) / 1000);
       
-      // 30 minutes + 5 seconds grace = 1805 seconds
+      // 30 minutes + 5 seconds grace = 1805 seconds, minus paused time
       const totalSeconds = 30 * 60 + 5;
-      const remaining = Math.max(0, totalSeconds - elapsedSeconds);
+      const remaining = Math.max(0, totalSeconds - elapsedSeconds + totalPausedSeconds);
       
       setTimeRemaining(remaining);
     };
@@ -262,17 +294,34 @@ const DomainConversationPage: React.FC = () => {
     // Update immediately
     updateTimer();
 
-    // Update every second
-    const interval = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(interval);
-  }, [sessionCreatedAt]);
+    // Update every second (skip interval when paused)
+    if (!isPaused) {
+      const interval = setInterval(updateTimer, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [sessionCreatedAt, isPaused, totalPausedSeconds]);
 
   // Format time remaining as MM:SS
   const formatTimeRemaining = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Toggle pause/resume
+  const handleTogglePause = async () => {
+    if (!sessionId || pauseLoading || sessionEnded) return;
+    setPauseLoading(true);
+    try {
+      const resp = await domainDiscoveryApi.togglePause(sessionId);
+      setIsPaused(resp.is_paused);
+      setTotalPausedSeconds(resp.total_paused_seconds);
+    } catch (error) {
+      console.error('Failed to toggle pause:', error);
+      addToast('Failed to pause/resume session.', { type: 'error' });
+    } finally {
+      setPauseLoading(false);
+    }
   };
 
   async function handleSend() {
@@ -465,7 +514,9 @@ const DomainConversationPage: React.FC = () => {
                 </Heading>
                 {sessionCreatedAt && (
                   <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
-                    timeRemaining <= 60 
+                    isPaused
+                      ? 'border-yellow-300 bg-yellow-50'
+                      : timeRemaining <= 60 
                       ? 'border-red-300 bg-red-50' 
                       : timeRemaining <= 300 
                       ? 'border-orange-300 bg-orange-50' 
@@ -475,14 +526,36 @@ const DomainConversationPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span className={`text-sm font-semibold ${
-                      timeRemaining <= 60 
+                      isPaused
+                        ? 'text-yellow-700'
+                        : timeRemaining <= 60 
                         ? 'text-red-700' 
                         : timeRemaining <= 300 
                         ? 'text-orange-700' 
                         : 'text-teal-700'
                     }`}>
-                      {formatTimeRemaining(timeRemaining)}
+                      {isPaused ? 'Paused' : formatTimeRemaining(timeRemaining)}
                     </span>
+                    <button
+                      onClick={handleTogglePause}
+                      disabled={pauseLoading || sessionEnded}
+                      className={`ml-1 rounded p-0.5 transition-colors ${
+                        isPaused
+                          ? 'text-yellow-700 hover:bg-yellow-200'
+                          : 'text-gray-500 hover:bg-gray-200'
+                      } disabled:opacity-50`}
+                      title={isPaused ? 'Resume timer' : 'Pause timer'}
+                    >
+                      {isPaused ? (
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      ) : (
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                        </svg>
+                      )}
+                    </button>
                   </div>
                 )}
                 {conversationMode === 'voice' && (
@@ -549,32 +622,7 @@ const DomainConversationPage: React.FC = () => {
 
         {/* Messages */}
         <div ref={messagesContainerRef} className="flex-1 min-h-0 space-y-6 overflow-y-auto px-6 py-4">
-          {/* Voice mode indicator */}
-          {conversationMode === 'voice' && (
-            <div className="mb-4 rounded-lg border-2 border-blue-300 bg-blue-50 p-4">
-              <div className="flex items-center gap-3">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                  voiceConnected ? 'bg-green-500' : voiceConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-gray-400'
-                }`}>
-                  <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-blue-900">
-                    {voiceConnected ? '🎙️ Voice Mode Active' : voiceConnecting ? '⏳ Connecting...' : '⏳ Connecting to voice...'}
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    {voiceConnected 
-                      ? 'The AI has your full chat context. Speak naturally to continue the conversation.'
-                      : 'Establishing voice connection with your conversation context...'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(conversationMode === 'voice' ? voiceMessages : messages).map((m, index) => {
+          {messages.map((m, index) => {
             const isLatestBotMessage = m.type === 'bot' && index === messages.length - 1;
             const isInitialQuestion = m.question_type === 'riasec' && m.choices && m.choices.length > 0;
             

@@ -32,6 +32,8 @@ export function useRealtimeVoice({ sessionId, onError }: UseRealtimeVoiceOptions
   const processorNodeRef = useRef<ScriptProcessorNode | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const onErrorRef = useRef(onError);
+  const speakingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMutedRef = useRef(false);
 
   // Keep onError ref current without re-creating callbacks
   onErrorRef.current = onError;
@@ -82,6 +84,10 @@ export function useRealtimeVoice({ sessionId, onError }: UseRealtimeVoiceOptions
     processorNodeRef.current = processor;
 
     processor.onaudioprocess = (e) => {
+      // Skip sending audio while the bot is speaking to avoid
+      // accidental interruptions from background noise
+      if (isMutedRef.current) return;
+
       const float32 = e.inputBuffer.getChannelData(0);
       const pcm16 = new Int16Array(float32.length);
       for (let i = 0; i < float32.length; i++) {
@@ -143,8 +149,21 @@ export function useRealtimeVoice({ sessionId, onError }: UseRealtimeVoiceOptions
             });
           },
           onAudioResponse: () => {
+            // Mute mic while the bot is speaking so background noise
+            // or echo doesn't accidentally interrupt the response
+            isMutedRef.current = true;
+
             setIsSpeaking(true);
-            setTimeout(() => setIsSpeaking(false), 100);
+            // Debounce: only set speaking to false after audio chunks
+            // stop arriving for 500ms, preventing rapid flickering
+            if (speakingTimeoutRef.current) {
+              clearTimeout(speakingTimeoutRef.current);
+            }
+            speakingTimeoutRef.current = setTimeout(() => {
+              setIsSpeaking(false);
+              isMutedRef.current = false; // Unmute mic after bot finishes speaking
+              speakingTimeoutRef.current = null;
+            }, 500);
           },
         });
 
@@ -181,12 +200,17 @@ export function useRealtimeVoice({ sessionId, onError }: UseRealtimeVoiceOptions
   /** Disconnect from voice and clean up everything */
   const disconnectVoice = useCallback(() => {
     teardownMic();
+    if (speakingTimeoutRef.current) {
+      clearTimeout(speakingTimeoutRef.current);
+      speakingTimeoutRef.current = null;
+    }
     if (clientRef.current) {
       clientRef.current.commitAudio();
       clientRef.current.disconnect();
       clientRef.current = null;
     }
     setIsConnected(false);
+    setIsSpeaking(false);
     setTranscript([]);
   }, [teardownMic]);
 
@@ -233,6 +257,7 @@ export function useRealtimeVoice({ sessionId, onError }: UseRealtimeVoiceOptions
     if (clientRef.current) {
       clientRef.current.stopAudio();
       setIsSpeaking(false);
+      isMutedRef.current = false; // Unmute mic when user manually stops audio
     }
   }, []);
 

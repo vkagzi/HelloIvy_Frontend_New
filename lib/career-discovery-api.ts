@@ -23,6 +23,7 @@ export interface CareerDiscoverySession {
   current_phase: 'profile' | 'explorer';
   is_active: boolean;
   is_completed: boolean;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   messages: CareerMessage[];
@@ -260,6 +261,25 @@ class CareerDiscoveryAPI {
   async getDebugInfo(sessionId: string): Promise<CareerDebugInfo> {
     return api<CareerDebugInfo>(`${this.baseUrl}/${sessionId}/debug/`);
   }
+
+  /**
+   * Toggle pause/resume for a session timer
+   */
+  async togglePause(sessionId: string): Promise<PauseResponse> {
+    return api<PauseResponse>(`${this.baseUrl}/${sessionId}/pause/`, {
+      method: 'POST',
+    });
+  }
+}
+
+export interface PauseResponse {
+  is_paused: boolean;
+  total_paused_seconds: number;
+  pause_events: Array<{
+    paused_at: string;
+    resumed_at: string | null;
+    duration_seconds: number;
+  }>;
 }
 
 export interface CareerDebugInfo {
