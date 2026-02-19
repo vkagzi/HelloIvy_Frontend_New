@@ -683,6 +683,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     validation: {
       max: 100,
     },
+    defaultValueFrom: 'maximumPossibleGPA',
   },
   {
     id: 'redFlags',
@@ -774,11 +775,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'estimatedRank',
-    type: 'text',
+    type: 'select',
     label: 'Estimated Overall Rank',
-    placeholder: 'Enter estimated overall rank',
+    placeholder: 'Select estimated overall rank',
     required: true,
-    validation: { regex: Regexvalidations.justNumberWithBlank },
+    options: ['Top 5%', 'Top 6-10%', 'Top 11-25%', 'Top 26-50%', 'Bottom 50%'],
   },
   {
     id: 'score',
@@ -1592,7 +1593,7 @@ export const professionalFieldDefs: FieldDefinition[] = [
     id: 'experienceType',
     type: 'select',
     label: 'Experience Type',
-    options: ['Internship', 'Full time', 'Part time'],
+    options: ['Internship', 'Full time', 'Part time', 'Entrepreneurship', 'Freelance'],
     placeholder: 'Select experience type',
     required: true,
   },
@@ -1944,7 +1945,6 @@ export const extraCurricularFieldDefs: FieldDefinition[] = [
       'Academic Competitions',
       'Community Service',
       'Research',
-      'Entrepreneurship',
       'Leadership Programs',
       'Other',
     ],

@@ -220,6 +220,11 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       Object.fromEntries(
         fields.map((fid) => {
           const field = fieldDefs.find((f) => f.id === fid);
+          // If this field should default from another field, use its current value
+          if (field?.defaultValueFrom) {
+            const sourceValue = form.getValues(field.defaultValueFrom as never) as unknown as string;
+            if (sourceValue) return [fid, sourceValue];
+          }
           return [fid, field ? getDefaultValue(field.type as FieldType) : ''];
         })
       )

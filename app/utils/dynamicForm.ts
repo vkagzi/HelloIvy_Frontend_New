@@ -46,6 +46,7 @@ export interface FieldDefinition {
   width?: number;
   stateKey?: string;
   countryKey?: string;
+  defaultValueFrom?: string;
 }
 
 interface DynamicFormResult {
@@ -427,17 +428,38 @@ export const generateSubSchema = (
   
   // Add year range validation for undergraduate/postgraduate sections
   if (layout.type === 'undergraduate' || layout.type === 'postgraduate') {
+    // endYear must be greater than startYear
     layoutObjectSchema = (layoutObjectSchema as ZodObject<any>).refine(
       (data) => {
         const startYear = data.startYear;
         const endYear = data.endYear;
-        
+
         // If either is missing, skip validation (required field will catch it)
         if (!startYear || !endYear) return true;
-        
+
         const start = parseInt(String(startYear), 10);
         const end = parseInt(String(endYear), 10);
-        
+
+        return end > start;
+      },
+      {
+        message: 'End Year must be after Start Year',
+        path: ['endYear'],
+      }
+    );
+
+    // endYear must not be more than 10 years after startYear
+    layoutObjectSchema = (layoutObjectSchema as ZodObject<any>).refine(
+      (data) => {
+        const startYear = data.startYear;
+        const endYear = data.endYear;
+
+        // If either is missing, skip validation (required field will catch it)
+        if (!startYear || !endYear) return true;
+
+        const start = parseInt(String(startYear), 10);
+        const end = parseInt(String(endYear), 10);
+
         // Check if end year is not more than 10 years after start year
         return end <= start + 10;
       },

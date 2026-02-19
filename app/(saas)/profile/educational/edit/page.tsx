@@ -28,7 +28,7 @@ import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 const EducationalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse, refetch } = useProfile();
+  const { rawApiResponse, refetch, personalDetails } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
@@ -39,6 +39,38 @@ const EducationalDetailsForm: React.FC = () => {
 
   const [fieldDefs, setFieldDefs] = useState<FieldDefinition[]>(fieldDefss);
   const prevAcademicLevelRef = useRef<string | undefined>(undefined);
+
+  // Extract birth year from personalDetails.dob to constrain startYear options
+  const birthYear = React.useMemo(() => {
+    const dob = (personalDetails as Record<string, unknown>)?.dob as string | undefined;
+    if (!dob) return null;
+    // DD/MM/YYYY format
+    const ddmmyyyy = dob.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (ddmmyyyy) return parseInt(ddmmyyyy[3], 10);
+    // YYYY-MM-DD (ISO) format
+    const yyyymmdd = dob.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (yyyymmdd) return parseInt(yyyymmdd[1], 10);
+    // Fallback: Date constructor
+    const parsed = new Date(dob);
+    return isNaN(parsed.getTime()) ? null : parsed.getFullYear();
+  }, [personalDetails]);
+
+  // Update startYear options to only include years >= birth year
+  React.useEffect(() => {
+    if (!birthYear) return;
+    setFieldDefs((prev) =>
+      prev.map((field) =>
+        field.id === 'startYear'
+          ? {
+              ...field,
+              options: (field.options ?? []).filter(
+                (y) => parseInt(y, 10) >= birthYear
+              ),
+            }
+          : field
+      )
+    );
+  }, [birthYear]);
 
   const UG_PG_LEVELS = [
     'College/Undergraduate',

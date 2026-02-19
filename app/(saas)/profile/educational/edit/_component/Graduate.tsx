@@ -90,9 +90,53 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
         if (currentValue !== yearIdx + 1) {
           form.setValue(yearFieldPath, yearIdx + 1);
         }
+
+        // Pre-fill fields that have defaultValueFrom
+        (section.repeatables?.fields ?? []).forEach((fid: string) => {
+          const field = fieldDefs.find((f) => f.id === fid);
+          if (field?.defaultValueFrom) {
+            const targetPath = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fid}`;
+            const targetValue = form.getValues(targetPath) as unknown as string;
+            if (!targetValue) {
+              const sourceValue = form.getValues(
+                `${sectionType}.${degreeIdx}.${field.defaultValueFrom}`
+              ) as unknown as string;
+              if (sourceValue) {
+                form.setValue(targetPath, sourceValue);
+              }
+            }
+          }
+        });
       });
     });
-  }, [degrees, form, sectionType, yearsFieldName]);
+  }, [degrees, form, sectionType, yearsFieldName, section.repeatables?.fields, fieldDefs]);
+
+  // Sync year rows when maximumPossibleGPA (or any defaultValueFrom source) changes
+  useEffect(() => {
+    const subscription = form.watch((_value, { name }) => {
+      if (!name) return;
+      // Check if the changed field is a source for defaultValueFrom within this section
+      degrees.forEach((degree, degreeIdx) => {
+        (section.repeatables?.fields ?? []).forEach((fid: string) => {
+          const field = fieldDefs.find((f) => f.id === fid);
+          if (!field?.defaultValueFrom) return;
+          const sourcePath = `${sectionType}.${degreeIdx}.${field.defaultValueFrom}`;
+          if (name !== sourcePath) return;
+          const sourceValue = form.getValues(sourcePath) as string;
+          if (!sourceValue) return;
+          degree.yearRows.forEach((_, yearIdx) => {
+            const targetPath = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fid}`;
+            const currentTarget = form.getValues(targetPath) as string;
+            if (!currentTarget) {
+              form.setValue(targetPath, sourceValue);
+            }
+          });
+        });
+      });
+    });
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [degrees, form, sectionType, yearsFieldName, fieldDefs, section.repeatables?.fields]);
 
   // Add a new degree block
   const handleAddDegree = (): void => {
@@ -133,6 +177,18 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
   // Add a year row to a specific degree
   const handleAddYear = (degreeIdx: number): void => {
+    // Pre-fill fields that have defaultValueFrom with the source value from the same degree
+    const getInitialValue = (fid: string): string => {
+      const field = fieldDefs.find((f) => f.id === fid);
+      if (field?.defaultValueFrom) {
+        const sourceValue = form.getValues(
+          `${sectionType}.${degreeIdx}.${field.defaultValueFrom}`
+        ) as unknown as string;
+        if (sourceValue) return sourceValue;
+      }
+      return '';
+    };
+
     setDegrees((prev) =>
       prev.map((degree, idx) =>
         idx === degreeIdx
@@ -143,7 +199,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                 Object.fromEntries(
                   (section.repeatables?.fields ?? []).map((fid: string) => [
                     fid,
-                    '',
+                    getInitialValue(fid),
                   ])
                 ),
               ],
