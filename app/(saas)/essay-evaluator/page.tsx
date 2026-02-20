@@ -1209,10 +1209,7 @@ const EssayEvaluatorPage: React.FC = () => {
                 />
               </div>
               <div className="mb-4 text-sm text-gray-600">
-                Lorem ipsum dolor sit amet consectetur. Aliquet volutpat eget
-                sed tellus arcu suscipit gravida amet sagittis. Quam rhoncus
-                faucibus sed turpis sit sociis faucibus leo enim. Egestas nec
-                facilisis scelerisque tortor interdum massa sem nibh pellent...
+                Submit your essay for comprehensive evaluation. Our AI-powered system will analyze your writing across multiple dimensions including content quality, structure, grammar, and overall coherence to provide constructive feedback and suggestions...
               </div>
               <button
                 onClick={() => setShowInstructions(false)}

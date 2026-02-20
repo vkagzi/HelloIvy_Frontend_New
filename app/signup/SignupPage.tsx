@@ -520,35 +520,12 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
                 size="sm"
                 className="mt-2 mb-4 border-b border-neutral-300 pb-4"
               >
-                Kadena holo velas kava aave filecoin. Secret ox BitTorrent
-                digibyte helium THETA kadena stacks polygon decred. Kava monero
-                tezos celo terraUSD. Decred litecoin USD PancakeSwap terraUSD
-                golem ankr helium shiba-inu eCash. Ankr decentraland bancor
-                revain revain quant stellar stacks THETA hedera. Neo avalanche
-                kusama eCash polkadot shiba-inu chiliz. Ethereum secret terra
-                celo decentraland. Chainlink secret zcash enj ankr cardano
-                fantom arweave cardano stacks. Filecoin polygon audius TRON
-                zcash serum crypto. Stacks polymath audius THETA serum TRON.
-                Hedera nexo gala WAX waves. Monero tezos digibyte BitTorrent
-                monero celo elrond stellar. Helium solana algorand ox WAX
-                vechain velas bancor. Arweave binance horizen solana aave
-                filecoin terra. Stellar amp audius.
+                By using HelloIvy's services, you agree to comply with all applicable laws and regulations. You affirm that all information provided during signup is accurate and truthful. We collect personal information to personalize your career guidance experience and provide tailored recommendations. Your data is used to track your progress, preferences, and interactions with our platform. You agree not to misuse our services, including but not limited to: harassment, automated access, or attempts to disrupt service availability. HelloIvy reserves the right to modify these terms at any time with notice. Continued use of the service after modifications constitutes acceptance of the new terms.
               </Paragraph>
 
               <Label size="lg">Privacy Policy</Label>
               <Paragraph size="sm" className="mt-2">
-                Litecoin gala polygon polymath chiliz monero gala secret hedera.
-                Binance secret shiba-inu secret tether horizen ICON elrond.
-                Cardano waves filecoin hive ox bitcoin. IOTA ethereum algorand
-                ox EOS WAX crypto chainlink EOS. Ren dogecoin XRP harmony ox
-                flow cardano enj polymath polymath. Serum binance dash enj gala
-                loopring crypto elrond. Ren golem flow holo kadena. Kusama golem
-                ipsum quant ICON kusama. WAX arweave eCash telcoin chiliz
-                celsius new quant. Gala terraUSD horizen ren aave chainlink
-                bitcoin. Bitcoin dai XRP tezos ox kadena celsius helium revain
-                celsius. WAX polygon audius holo ox elrond helium binance
-                bancor. Golem polymath oxfriend decred stacks stellar serum
-                decred. Ren polymath shiba-inu vechain celo stacks. Tether.
+                We are committed to protecting your privacy. The personal information you provide, including name, email, educational background, and career interests, is stored securely and used solely to enhance your experience on HelloIvy. We do not share your information with third parties without your explicit consent, except as required by law. You have the right to access, modify, or delete your personal data at any time through your account settings. We implement industry-standard encryption and security measures to protect your data from unauthorized access. For any privacy concerns or inquiries, please contact our support team. Our privacy practices comply with applicable data protection regulations and are subject to periodic review.
               </Paragraph>
             </div>
             <Controller

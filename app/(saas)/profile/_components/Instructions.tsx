@@ -10,7 +10,7 @@ interface InstructionsProps {
 
 const Instructions: React.FC<InstructionsProps> = ({
   title = 'Instructions',
-  content = `Lorem ipsum dolor sit amet consectetur. Aliquet volutpat eget sed tellus arcu suscipit gravida amet sagittis. Quam rhoncus fa ibus sed turpis sit sociis faucibus leo enim.Egestas nec facilisis scelerisque tortor interdum massa sem nibh pellentesque. Lorem ipsum dolor sit amet consectetur. Aliquet volutpat eget sed tellus arcu suscipit gravida amet sagittis. Quam rhoncus fauc ibus sed turpis sit sociis faucibus leo enim.Egestas nec facilisis scelerisque tortor interdum massa sem nibh pellentesque`,
+  content = `Please provide comprehensive information about your educational background. This includes your degree, field of study, institution details, and academic achievements. Accurate information helps us deliver personalized career guidance and relevant opportunities tailored to your qualifications and goals.`,
   readMoreHref = '#',
   onListen,
 }) => {
