@@ -676,8 +676,8 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'highestTotalScore',
     type: 'text',
-    label: 'Highest Possible Cumulative Score',
-    placeholder: 'Enter highest possible score',
+    label: 'Max Possible Score / GPA / Percentage',
+    placeholder: 'Enter maximum possible score, GPA, or percentage',
     required: true,
     width: 1.5,
     validation: {
@@ -762,15 +762,15 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'overallPercentage',
     type: 'text',
-    label: 'Overall GPA / Percentage',
-    placeholder: 'Enter overall GPA or percentage',
+    label: 'Your Score / GPA / Percentage',
+    placeholder: 'Enter your score, GPA, or percentage',
     required: true,
   },
   {
     id: 'maximumPossibleGPA',
     type: 'text',
-    label: 'Maximum GPA / Percentage',
-    placeholder: 'Enter maximum possible GPA or percentage',
+    label: 'Max Possible Score / GPA / Percentage',
+    placeholder: 'Enter maximum possible score, GPA, or percentage',
     required: true,
   },
   {
@@ -784,8 +784,8 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'score',
     type: 'text',
-    label: 'Score',
-    placeholder: 'Enter score',
+    label: 'Your Score/ GPA/ Percentage',
+    placeholder: 'Enter your score, GPA, or percentage',
     required: true,
   },
   {
