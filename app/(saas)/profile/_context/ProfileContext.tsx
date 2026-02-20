@@ -17,6 +17,9 @@ type ProfileContextType = {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  completionPercentage: number;
+  isProfileComplete: boolean;
+  missingSections: string[];
 };
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -31,6 +34,9 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [extraCurricularDetails, setExtraCurricularDetails] = useState<ProfileData>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [completionPercentage, setCompletionPercentage] = useState<number>(0);
+  const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
+  const [missingSections, setMissingSections] = useState<string[]>([]);
   const hasFetchedRef = useRef(false);
 
   const fetchProfileData = useCallback(async (): Promise<void> => {
@@ -51,6 +57,14 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       // Store the raw API response for edit pages
       setRawApiResponse(data as { profile: Record<string, unknown> });
+
+      // Store completion metadata returned by the API
+      const apiData = data as Record<string, unknown>;
+      if (typeof apiData.completion_percentage === 'number') {
+        setCompletionPercentage(apiData.completion_percentage);
+        setIsProfileComplete(apiData.is_complete === true);
+        setMissingSections(Array.isArray(apiData.missing_sections) ? apiData.missing_sections as string[] : []);
+      }
 
       if (
         data &&
@@ -120,6 +134,9 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         loading,
         error,
         refetch: fetchProfileData,
+        completionPercentage,
+        isProfileComplete,
+        missingSections,
       }}
     >
       {children}

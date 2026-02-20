@@ -13,6 +13,7 @@ import { marked } from 'marked';
 import { Button } from '@/components/ui/button';
 import { DomainDebugDialog } from '@/components/DomainDebugDialog';
 import { useRealtimeVoice } from '@/lib/hooks/useRealtimeVoice';
+import SessionTimer from '@/app/(saas)/_components/SessionTimer';
 
 type Role = 'bot' | 'user';
 type QuestionType = 'riasec' | 'deepdive' | 'general';
@@ -65,7 +66,6 @@ const DomainConversationPage: React.FC = () => {
   const [showDebugDialog, setShowDebugDialog] = useState(false);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [sessionCreatedAt, setSessionCreatedAt] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isPaused, setIsPaused] = useState(false);
   const [totalPausedSeconds, setTotalPausedSeconds] = useState(0);
   const [pauseLoading, setPauseLoading] = useState(false);
@@ -273,41 +273,6 @@ const DomainConversationPage: React.FC = () => {
     }
   }, [messages]);
 
-  // Timer effect - updates every second
-  useEffect(() => {
-    if (!sessionCreatedAt) return;
-
-    const updateTimer = () => {
-      if (isPaused) return; // Don't update while paused
-
-      const createdTime = new Date(sessionCreatedAt).getTime();
-      const currentTime = Date.now();
-      const elapsedSeconds = Math.floor((currentTime - createdTime) / 1000);
-      
-      // 30 minutes + 5 seconds grace = 1805 seconds, minus paused time
-      const totalSeconds = 30 * 60 + 5;
-      const remaining = Math.max(0, totalSeconds - elapsedSeconds + totalPausedSeconds);
-      
-      setTimeRemaining(remaining);
-    };
-
-    // Update immediately
-    updateTimer();
-
-    // Update every second (skip interval when paused)
-    if (!isPaused) {
-      const interval = setInterval(updateTimer, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [sessionCreatedAt, isPaused, totalPausedSeconds]);
-
-  // Format time remaining as MM:SS
-  const formatTimeRemaining = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   // Toggle pause/resume
   const handleTogglePause = async () => {
     if (!sessionId || pauseLoading || sessionEnded) return;
@@ -326,6 +291,10 @@ const DomainConversationPage: React.FC = () => {
 
   async function handleSend() {
     if (!input.trim() || isLoading || !sessionId) return;
+    if (isPaused) {
+      addToast('Cannot send message while session is paused. Please resume first.', { type: 'warning' });
+      return;
+    }
 
     const userMessage = input.trim();
 
@@ -393,6 +362,10 @@ const DomainConversationPage: React.FC = () => {
   // Handle initial assessment option selection
   async function handleOptionSelect(choice: string) {
     if (isLoading || !sessionId) return;
+    if (isPaused) {
+      addToast('Cannot send message while session is paused. Please resume first.', { type: 'warning' });
+      return;
+    }
     
     // Treat it like sending a text message
     const userMessage = choice;
@@ -513,50 +486,15 @@ const DomainConversationPage: React.FC = () => {
                   🧭 Domain Discovery Journey
                 </Heading>
                 {sessionCreatedAt && (
-                  <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
-                    isPaused
-                      ? 'border-yellow-300 bg-yellow-50'
-                      : timeRemaining <= 60 
-                      ? 'border-red-300 bg-red-50' 
-                      : timeRemaining <= 300 
-                      ? 'border-orange-300 bg-orange-50' 
-                      : 'border-teal-300 bg-teal-50'
-                  }`}>
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className={`text-sm font-semibold ${
-                      isPaused
-                        ? 'text-yellow-700'
-                        : timeRemaining <= 60 
-                        ? 'text-red-700' 
-                        : timeRemaining <= 300 
-                        ? 'text-orange-700' 
-                        : 'text-teal-700'
-                    }`}>
-                      {isPaused ? 'Paused' : formatTimeRemaining(timeRemaining)}
-                    </span>
-                    <button
-                      onClick={handleTogglePause}
-                      disabled={pauseLoading || sessionEnded}
-                      className={`ml-1 rounded p-0.5 transition-colors ${
-                        isPaused
-                          ? 'text-yellow-700 hover:bg-yellow-200'
-                          : 'text-gray-500 hover:bg-gray-200'
-                      } disabled:opacity-50`}
-                      title={isPaused ? 'Resume timer' : 'Pause timer'}
-                    >
-                      {isPaused ? (
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      ) : (
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
+                  <SessionTimer
+                    sessionCreatedAt={sessionCreatedAt}
+                    isPaused={isPaused}
+                    totalPausedSeconds={totalPausedSeconds}
+                    pauseLoading={pauseLoading}
+                    sessionEnded={sessionEnded}
+                    onTogglePause={handleTogglePause}
+                    accentColor="teal"
+                  />
                 )}
                 {conversationMode === 'voice' && (
                   <button

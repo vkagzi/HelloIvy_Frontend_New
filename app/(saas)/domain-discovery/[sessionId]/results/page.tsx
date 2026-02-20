@@ -16,6 +16,7 @@ import {
 } from '@/lib/domain-discovery-api';
 import { generateTranscriptPDF, generateDomainResultsPDF, DomainResultsData } from '@/lib/pdf-utils';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import { DomainDebugDialog } from '@/components/DomainDebugDialog';
 
 type Role = 'bot' | 'user';
 
@@ -48,6 +49,7 @@ const DomainResultsPage: React.FC = () => {
   const [isDownloadingResults, setIsDownloadingResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('results');
+  const [showDebugDialog, setShowDebugDialog] = useState(false);
 
   // Load results on mount
   useEffect(() => {
@@ -353,6 +355,18 @@ const DomainResultsPage: React.FC = () => {
           <Paragraph className="mx-auto max-w-2xl text-lg text-gray-600">
             Based on your interests and curiosities, we've identified domains that align with your passions and learning style.
           </Paragraph>
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={() => setShowDebugDialog(true)}
+              className="group flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-purple-100 hover:shadow-sm"
+              title="View debugging information"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              <span>Debug</span>
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -824,6 +838,15 @@ const DomainResultsPage: React.FC = () => {
           </Button> */}
         </div>
       </div>
+
+      {/* Debug Dialog */}
+      {sessionId && (
+        <DomainDebugDialog
+          open={showDebugDialog}
+          onOpenChange={setShowDebugDialog}
+          sessionId={sessionId}
+        />
+      )}
     </div>
   );
 };
