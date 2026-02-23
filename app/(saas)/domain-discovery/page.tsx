@@ -175,7 +175,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
 
   return (
     <div className="h-full overflow-auto bg-white">
-      <div className="mx-auto px-1 py-8">
+      <div className="mx-auto px-1">
         {/* Hero Section */}
         <div className="mb-10 flex flex-col items-center justify-between gap-8 md:flex-row">
           {/* Left Content */}

@@ -128,6 +128,26 @@ export const personalFieldDefs: FieldDefinition[] = [
     options: ['Male', 'Female', 'Other'],
   },
   {
+    id: 'genderOther',
+    type: 'text',
+    label: 'Please specify gender',
+    placeholder: 'Enter your gender',
+    required: false,
+    validationDependsOn: [
+      {
+        fieldId: 'gender',
+        values: ['Other'],
+        validation: { required: true },
+      },
+    ],
+    visibility: {
+      depends_on: {
+        field_id: 'gender',
+        value: ['Other'],
+      },
+    },
+  },
+  {
     id: 'addressline',
     type: 'text',
     label: 'Address Line',
@@ -419,7 +439,7 @@ export const personalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: ['countryCode', 'phoneNumber', 'gender'],
+    fields: ['countryCode', 'phoneNumber', 'gender', 'genderOther'],
     columns: 6,
   },
   {
