@@ -573,6 +573,19 @@ export const educationalFieldDefs: FieldDefinition[] = [
     },
   },
   {
+    id: 'hasCurrentGradeScores',
+    type: 'radio',
+    label: 'Do you have scores for your current grade?',
+    options: ['Yes', 'No'],
+    required: false,
+    visibility: {
+      depends_on: {
+        field_id: 'gradeLevel',
+        value: ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      },
+    },
+  },
+  {
     id: 'schoolName',
     type: 'text',
     label: 'School Name',
@@ -1256,7 +1269,7 @@ export const educationalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: ['academicLevel', 'gradeLevel'],
+    fields: ['academicLevel', 'gradeLevel', 'hasCurrentGradeScores'],
     columns: 3,
   },
   {

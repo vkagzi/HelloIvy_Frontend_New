@@ -390,7 +390,7 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
         
         groupData.forEach((row, rowIdx) => {
           // Get grade information if it exists (for highSchool)
-          const gradeValue = typeof row.grade === 'number' ? row.grade : typeof row.grade === 'string' ? parseInt(row.grade, 10) : null;
+          const gradeValue = typeof row.gradeLevel === 'number' ? row.gradeLevel : typeof row.gradeLevel === 'string' ? parseInt(row.gradeLevel, 10) : null;
           const gradeLabel = gradeValue ? `${getOrdinalSuffix(gradeValue)} Grade` : '';
           
           // For highSchool, show grade as subtitle; for others, show the formatted block type

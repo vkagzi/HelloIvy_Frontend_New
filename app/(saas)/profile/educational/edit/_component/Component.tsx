@@ -30,6 +30,7 @@ const Component: React.FC<ComponentProps> = ({
     : 9;
   // Ensure selectedGrade is always a valid number, default to 9 if NaN
   const selectedGrade = !isNaN(parsedGrade) ? parsedGrade : 9;
+  const hasCurrentGradeScores = form.watch('hasCurrentGradeScores') as string | undefined;
 
   return (
     <div
@@ -58,6 +59,7 @@ const Component: React.FC<ComponentProps> = ({
               form={form}
               errors={errors}
               selectedGrade={selectedGrade}
+              hasCurrentGradeScores={hasCurrentGradeScores}
             />
           )}
           {(section.type === 'undergraduate' ||

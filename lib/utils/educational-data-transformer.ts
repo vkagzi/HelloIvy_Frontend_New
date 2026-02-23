@@ -8,6 +8,13 @@ export function transformEducationalData(
 ): Record<string, unknown> {
   const result = { ...data };
 
+  // Transform highSchool data – ensure each year object has a gradeLevel identifier
+  if (result.highSchool && Array.isArray(result.highSchool)) {
+    result.highSchool = (result.highSchool as Record<string, unknown>[]).map(
+      (yearEntry) => transformHighSchoolYear(yearEntry)
+    );
+  }
+
   // Transform undergraduate data
   if (result.undergraduate && Array.isArray(result.undergraduate)) {
     result.undergraduate = (result.undergraduate as Record<string, unknown>[]).map(
@@ -23,6 +30,38 @@ export function transformEducationalData(
   }
 
   return result;
+}
+
+/**
+ * Transform a single high school year object to ensure it has a gradeLevel identifier
+ */
+function transformHighSchoolYear(yearEntry: Record<string, unknown>): Record<string, unknown> {
+  const transformed = { ...yearEntry };
+
+  // Ensure gradeLevel is a number for reliable mapping
+  if (transformed.gradeLevel !== undefined) {
+    const parsed = typeof transformed.gradeLevel === 'number'
+      ? transformed.gradeLevel
+      : parseInt(String(transformed.gradeLevel), 10);
+    if (!isNaN(parsed)) {
+      transformed.gradeLevel = parsed;
+    }
+  }
+
+  // Remove legacy 'grade' field if present (migrated to gradeLevel)
+  if ('grade' in transformed) {
+    if (transformed.gradeLevel === undefined) {
+      const parsed = typeof transformed.grade === 'number'
+        ? transformed.grade
+        : parseInt(String(transformed.grade), 10);
+      if (!isNaN(parsed)) {
+        transformed.gradeLevel = parsed;
+      }
+    }
+    delete transformed.grade;
+  }
+
+  return transformed;
 }
 
 /**
@@ -55,6 +94,13 @@ export function parseEducationalData(
 ): Record<string, unknown> {
   const result = { ...data };
 
+  // Parse highSchool data
+  if (result.highSchool && Array.isArray(result.highSchool)) {
+    result.highSchool = (result.highSchool as Record<string, unknown>[]).map(
+      (yearEntry) => parseHighSchoolYear(yearEntry)
+    );
+  }
+
   // Parse undergraduate data
   if (result.undergraduate && Array.isArray(result.undergraduate)) {
     result.undergraduate = (result.undergraduate as Record<string, unknown>[]).map(
@@ -70,6 +116,27 @@ export function parseEducationalData(
   }
 
   return result;
+}
+
+/**
+ * Parse a single high school year object from API format
+ * Ensures gradeLevel is preserved for form mapping
+ */
+function parseHighSchoolYear(yearEntry: Record<string, unknown>): Record<string, unknown> {
+  const parsed = { ...yearEntry };
+
+  // Migrate legacy 'grade' field to 'gradeLevel' if needed
+  if (parsed.grade !== undefined && parsed.gradeLevel === undefined) {
+    const g = typeof parsed.grade === 'number'
+      ? parsed.grade
+      : parseInt(String(parsed.grade), 10);
+    if (!isNaN(g)) {
+      parsed.gradeLevel = g;
+    }
+    delete parsed.grade;
+  }
+
+  return parsed;
 }
 
 /**

@@ -1179,7 +1179,34 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       ) {
         const sectionData = filtered[item.type as string];
         if (Array.isArray(sectionData)) {
-          filtered[item.type as string] = sectionData.map((school) => {
+          // --- Grade-aware trimming for highSchool ---
+          // Only keep entries whose grade number is within the expected set
+          // derived from gradeLevel + hasCurrentGradeScores.
+          let trimmedSectionData = sectionData;
+          if (item.type === 'highSchool') {
+            const gradeLevelRaw = filtered['gradeLevel'] as string | undefined;
+            const hasScores = filtered['hasCurrentGradeScores'] as string | undefined;
+            if (gradeLevelRaw && hasScores && ['Yes', 'No'].includes(hasScores)) {
+              const selectedGrade = parseInt(gradeLevelRaw.replace('Grade ', ''), 10);
+              if (!isNaN(selectedGrade)) {
+                const startGrade = hasScores === 'Yes' ? selectedGrade : selectedGrade - 1;
+                const allowedGrades = new Set<number>();
+                for (let g = startGrade; g >= 9; g--) {
+                  allowedGrades.add(g);
+                }
+                // Keep only entries whose gradeLevel is in the allowed set
+                trimmedSectionData = sectionData.filter((entry) => {
+                  if (typeof entry !== 'object' || entry === null) return false;
+                  const entryObj = entry as Record<string, unknown>;
+                  const raw = entryObj.gradeLevel ?? entryObj.grade;
+                  const g = typeof raw === 'number' ? raw : parseInt(String(raw), 10);
+                  return !isNaN(g) && allowedGrades.has(g);
+                });
+              }
+            }
+          }
+
+          filtered[item.type as string] = trimmedSectionData.map((school) => {
             if (typeof school !== 'object' || school === null) return school;
             const schoolObj = { ...school } as Record<string, unknown>;
 
