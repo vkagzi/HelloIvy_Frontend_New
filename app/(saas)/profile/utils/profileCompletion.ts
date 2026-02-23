@@ -76,17 +76,46 @@ const calculatePersonalCompletion = (
 };
 
 /**
+ * Check if a highSchool year entry has meaningful data filled
+ * Each entry should have gradeLevel and at least one key field filled
+ */
+const isHighSchoolYearFilled = (entry: unknown): boolean => {
+  if (typeof entry !== 'object' || entry === null) return false;
+  const obj = entry as Record<string, unknown>;
+
+  // Must have a gradeLevel identifier
+  if (!isFieldFilled(obj.gradeLevel)) return false;
+
+  // Check that at least schoolName or board or a score field is filled
+  const keyFields = ['schoolName', 'board', 'typeOfScore', 'yourTotalScore'];
+  return keyFields.some((field) => isFieldFilled(obj[field]));
+};
+
+/**
+ * Check if an undergraduate/postgraduate entry has meaningful data filled
+ */
+const isDegreeEntryFilled = (entry: unknown): boolean => {
+  if (typeof entry !== 'object' || entry === null) return false;
+  const obj = entry as Record<string, unknown>;
+
+  const keyFields = ['institutionName', 'degree', 'major'];
+  return keyFields.some((field) => isFieldFilled(obj[field]));
+};
+
+/**
  * Calculate completion for educational section
- * Checks 3 main sections:
- * 1. Academic Details
- * 2. Courses & Certifications
- * 3. Awards & Scholarships
+ * Checks up to 5 sections (dynamically based on academic level):
+ * 1. Academic Details (academicLevel selected)
+ * 2. Degree Data (highSchool / undergraduate / postgraduate entries with key fields)
+ * 3. Test Scores (testScores array)
+ * 4. Courses & Certifications
+ * 5. Awards & Scholarships
  */
 const calculateEducationalCompletion = (
   data: ProfileData,
   _fieldDefs: FieldDefinition[]
 ): { filled: number; total: number; percentage: number } => {
-  const total = 3;
+  const total = 5;
   let filled = 0;
 
   // 1. Academic Details - check if academicLevel is filled
@@ -94,12 +123,57 @@ const calculateEducationalCompletion = (
     filled++;
   }
 
-  // 2. Courses & Certifications - check if courses array has data
+  // 2. Degree data - check relevant section based on academic level
+  const academicLevel = data.academicLevel as string | undefined;
+  if (academicLevel === 'High School (9th–12th grade)') {
+    // Check highSchool array for entries with gradeLevel and meaningful data
+    if (
+      Array.isArray(data.highSchool) &&
+      data.highSchool.length > 0 &&
+      data.highSchool.some((entry: unknown) => isHighSchoolYearFilled(entry))
+    ) {
+      filled++;
+    }
+  } else if (academicLevel === 'College/Undergraduate') {
+    if (
+      Array.isArray(data.undergraduate) &&
+      data.undergraduate.length > 0 &&
+      data.undergraduate.some((entry: unknown) => isDegreeEntryFilled(entry))
+    ) {
+      filled++;
+    }
+  } else if (academicLevel === 'Postgraduate') {
+    if (
+      Array.isArray(data.postgraduate) &&
+      data.postgraduate.length > 0 &&
+      data.postgraduate.some((entry: unknown) => isDegreeEntryFilled(entry))
+    ) {
+      filled++;
+    }
+  } else if (academicLevel === 'Working/Completed College') {
+    // tenPlus section
+    if (Array.isArray(data.tenPlus) && data.tenPlus.length > 0) {
+      filled++;
+    }
+  }
+
+  // 3. Test Scores
+  if (Array.isArray(data.testScores) && data.testScores.length > 0) {
+    const hasFilledTest = data.testScores.some((entry: unknown) => {
+      if (typeof entry !== 'object' || entry === null) return false;
+      return isFieldFilled((entry as Record<string, unknown>).testType);
+    });
+    if (hasFilledTest) {
+      filled++;
+    }
+  }
+
+  // 4. Courses & Certifications - check if courses array has data
   if (Array.isArray(data.courses) && data.courses.length > 0) {
     filled++;
   }
 
-  // 3. Awards & Scholarships - check if awards array has data
+  // 5. Awards & Scholarships - check if awards array has data
   if (Array.isArray(data.awards) && data.awards.length > 0) {
     filled++;
   }
