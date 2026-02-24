@@ -6,23 +6,12 @@ import imgDashboardGraphic from '@/assets/images/dashboard-graphic.png';
 import Link from 'next/link';
 import { Heading, Label } from '@/app/_components/Typography';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
-import { calculateProfileCompletion } from '@/app/(saas)/profile/utils/profileCompletion';
 
 export default function Dashboard(): React.ReactElement {
   const {
-    personalDetails,
-    educationalDetails,
-    additionalDetails,
-    extraCurricularDetails,
+    completionPercentage,
     loading,
   } = useProfile();
-
-  const completionPercentage = calculateProfileCompletion({
-    personalDetails,
-    educationalDetails,
-    additionalDetails,
-    extraCurricularDetails,
-  });
 
   const renderCompleteProfile = (): React.ReactElement => {
     /**

@@ -362,17 +362,31 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                   <p className="mt-1 text-sm text-orange-700">
                     You need to complete your profile before starting a domain discovery session.
                     {missingSections.length > 0 && (
-                      <> Missing: {missingSections.map((s, i) => (
-                        <span key={s}>
-                          {i > 0 && ', '}
-                          <Link
-                            href={`/profile/${s === 'personalDetails' ? 'personal' : s}/edit`}
-                            className="font-medium underline underline-offset-2 hover:text-orange-900"
-                          >
-                            {s === 'personalDetails' ? 'Personal Details' : s.charAt(0).toUpperCase() + s.slice(1)}
-                          </Link>
-                        </span>
-                      ))}
+                      <> Missing: {missingSections.map((s, i) => {
+                        const slugMap: Record<string, string> = {
+                          personalDetails: 'personal',
+                          educational: 'educational',
+                          extraCurricular: 'extra-curricular',
+                        };
+                        const labelMap: Record<string, string> = {
+                          personalDetails: 'Personal Details',
+                          educational: 'Educational',
+                          extraCurricular: 'Extra Curricular',
+                        };
+                        const slug = slugMap[s] ?? s;
+                        const label = labelMap[s] ?? s.charAt(0).toUpperCase() + s.slice(1);
+                        return (
+                          <span key={s}>
+                            {i > 0 && ', '}
+                            <Link
+                              href={`/profile/${slug}/edit`}
+                              className="font-medium underline underline-offset-2 hover:text-orange-900"
+                            >
+                              {label}
+                            </Link>
+                          </span>
+                        );
+                      })}
                       .
                     </>)}
                   </p>
