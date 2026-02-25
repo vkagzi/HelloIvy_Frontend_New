@@ -620,7 +620,7 @@ const CareerConversationPage: React.FC = () => {
                 </button>
               </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
-                Question {questionsCompleted}
+                Question {questionsCompleted+1}
               </Paragraph>
 
               {/* Progress Bar */}
