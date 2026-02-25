@@ -248,7 +248,13 @@ export const generateDynamicFormSchema = (
         item.fields.forEach((fid) => {
           const field = fieldDefs.find((f) => f.id === fid);
           if (field) {
-            shape[fid] = getFieldSchema(field);
+            let fieldSchema = getFieldSchema(field);
+            // Fields with visibility conditions may be deleted from form data
+            // when their condition is not met, so mark them optional in the schema
+            if (field.visibility) {
+              fieldSchema = fieldSchema.optional();
+            }
+            shape[fid] = fieldSchema;
           }
         });
       }
