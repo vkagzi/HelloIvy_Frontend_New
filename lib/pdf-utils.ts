@@ -264,6 +264,9 @@ export interface CareerRecommendationData {
   description: string;
   why_recommended: string;
   alignment_points: string[];
+  day_in_life: string;
+  pros_and_cons: { pros: string[]; cons: string[] };
+  work_life_balance: string;
 }
 
 /**
@@ -727,6 +730,79 @@ export function generateCareerResultsPDF(data: CareerResultsData): Blob {
         yPosition += 4;
         doc.setFont('helvetica', 'normal');
         addWrappedText(sanitizeText(career.why_recommended), margin + 5, 9, contentWidth - 10, 4);
+        yPosition += 2;
+      }
+      
+      // Day in the Life section
+      if (career.day_in_life) {
+        yPosition += 2;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('A Day in the Life:', margin + 5, yPosition);
+        yPosition += 4;
+        doc.setFont('helvetica', 'normal');
+        addWrappedText(sanitizeText(career.day_in_life), margin + 5, 9, contentWidth - 10, 4);
+        yPosition += 2;
+      }
+      
+      // Pros and Cons section
+      if (career.pros_and_cons && (career.pros_and_cons.pros?.length > 0 || career.pros_and_cons.cons?.length > 0)) {
+        yPosition += 2;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('Pros & Cons:', margin + 5, yPosition);
+        yPosition += 4;
+        
+        if (career.pros_and_cons.pros?.length > 0) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(9);
+          doc.setTextColor(22, 163, 74); // Green
+          doc.text('Pros:', margin + 5, yPosition);
+          doc.setTextColor(0, 0, 0);
+          yPosition += 4;
+          doc.setFont('helvetica', 'normal');
+          career.pros_and_cons.pros.forEach((pro: string) => {
+            checkPageBreak(4);
+            const proText = sanitizeText(`+ ${pro}`);
+            const proLines = doc.splitTextToSize(proText, contentWidth - 15);
+            proLines.forEach((line: string) => {
+              doc.text(line, margin + 8, yPosition);
+              yPosition += 4;
+            });
+          });
+          yPosition += 2;
+        }
+        
+        if (career.pros_and_cons.cons?.length > 0) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(9);
+          doc.setTextColor(220, 38, 38); // Red
+          doc.text('Cons:', margin + 5, yPosition);
+          doc.setTextColor(0, 0, 0);
+          yPosition += 4;
+          doc.setFont('helvetica', 'normal');
+          career.pros_and_cons.cons.forEach((con: string) => {
+            checkPageBreak(4);
+            const conText = sanitizeText(`- ${con}`);
+            const conLines = doc.splitTextToSize(conText, contentWidth - 15);
+            conLines.forEach((line: string) => {
+              doc.text(line, margin + 8, yPosition);
+              yPosition += 4;
+            });
+          });
+          yPosition += 2;
+        }
+      }
+      
+      // Work-Life Balance section
+      if (career.work_life_balance) {
+        yPosition += 2;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('Work-Life Balance:', margin + 5, yPosition);
+        yPosition += 4;
+        doc.setFont('helvetica', 'normal');
+        addWrappedText(sanitizeText(career.work_life_balance), margin + 5, 9, contentWidth - 10, 4);
         yPosition += 2;
       }
       

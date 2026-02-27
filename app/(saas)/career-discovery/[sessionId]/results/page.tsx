@@ -494,6 +494,86 @@ const CareerResultsPage: React.FC = () => {
                           </p>
                         </div>
 
+                        {/* Day in the Life */}
+                        {career.day_in_life && (
+                          <div>
+                            <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                              <span className="mr-2 rounded-lg bg-indigo-100 p-1.5">
+                                <svg className="h-4 w-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </span>
+                              A Day in the Life
+                            </h4>
+                            <p className="leading-relaxed text-gray-600">
+                              {career.day_in_life}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Pros and Cons */}
+                        {career.pros_and_cons && (career.pros_and_cons.pros?.length > 0 || career.pros_and_cons.cons?.length > 0) && (
+                          <div>
+                            <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                              <span className="mr-2 rounded-lg bg-orange-100 p-1.5">
+                                <svg className="h-4 w-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                                </svg>
+                              </span>
+                              Pros &amp; Cons
+                            </h4>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {career.pros_and_cons.pros?.length > 0 && (
+                                <div className="rounded-lg bg-green-50 p-4">
+                                  <h5 className="mb-2 font-semibold text-green-800">Pros</h5>
+                                  <ul className="space-y-2">
+                                    {career.pros_and_cons.pros.map((pro, idx) => (
+                                      <li key={idx} className="flex items-start space-x-2">
+                                        <svg className="mt-0.5 h-4 w-4 shrink-0 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span className="text-sm text-green-700">{pro}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {career.pros_and_cons.cons?.length > 0 && (
+                                <div className="rounded-lg bg-red-50 p-4">
+                                  <h5 className="mb-2 font-semibold text-red-800">Cons</h5>
+                                  <ul className="space-y-2">
+                                    {career.pros_and_cons.cons.map((con, idx) => (
+                                      <li key={idx} className="flex items-start space-x-2">
+                                        <svg className="mt-0.5 h-4 w-4 shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        <span className="text-sm text-red-700">{con}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Work-Life Balance */}
+                        {career.work_life_balance && (
+                          <div>
+                            <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                              <span className="mr-2 rounded-lg bg-teal-100 p-1.5">
+                                <svg className="h-4 w-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                              </span>
+                              Work-Life Balance
+                            </h4>
+                            <p className="leading-relaxed text-gray-600">
+                              {career.work_life_balance}
+                            </p>
+                          </div>
+                        )}
+
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
                             <span className="mr-2 rounded-lg bg-blue-100 p-1.5">

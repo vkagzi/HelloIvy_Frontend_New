@@ -49,6 +49,9 @@ export interface CareerRecommendation {
   description: string;
   why_recommended: string;
   alignment_points: string[];
+  day_in_life: string;
+  pros_and_cons: { pros: string[]; cons: string[] };
+  work_life_balance: string;
   rank?: number;
 }
 
