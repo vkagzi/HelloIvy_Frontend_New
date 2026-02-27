@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 interface SessionTimerProps {
   sessionCreatedAt: string;
@@ -9,6 +9,8 @@ interface SessionTimerProps {
   pauseLoading: boolean;
   sessionEnded: boolean;
   onTogglePause: () => void;
+  /** Called once when the countdown reaches zero */
+  onTimeExpired?: () => void;
   /** Primary accent colour – defaults to 'purple' */
   accentColor?: 'purple' | 'teal';
 }
@@ -26,9 +28,11 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
   pauseLoading,
   sessionEnded,
   onTogglePause,
+  onTimeExpired,
   accentColor = 'purple',
 }) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const hasExpiredRef = useRef(false);
 
   const updateTimer = useCallback(() => {
     if (isPaused) return;
@@ -45,7 +49,13 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
     );
 
     setTimeRemaining(remaining);
-  }, [isPaused, sessionCreatedAt, totalPausedSeconds]);
+
+    // Fire the expired callback exactly once when remaining hits 0
+    if (remaining === 0 && !hasExpiredRef.current) {
+      hasExpiredRef.current = true;
+      onTimeExpired?.();
+    }
+  }, [isPaused, sessionCreatedAt, totalPausedSeconds, onTimeExpired]);
 
   useEffect(() => {
     if (isPaused) return;

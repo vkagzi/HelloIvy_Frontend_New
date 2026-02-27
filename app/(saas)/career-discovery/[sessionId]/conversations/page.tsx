@@ -55,6 +55,8 @@ const CareerConversationPage: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [totalPausedSeconds, setTotalPausedSeconds] = useState(0);
   const [pauseLoading, setPauseLoading] = useState(false);
+  const [isTimerExpired, setIsTimerExpired] = useState(false);
+  const [debugOverrideTimerBlock, setDebugOverrideTimerBlock] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -205,8 +207,15 @@ const CareerConversationPage: React.FC = () => {
     }
   };
 
+  // Whether input should be blocked due to timer expiry
+  const isInputBlockedByTimer = isTimerExpired && !debugOverrideTimerBlock;
+
   async function handleSend(): Promise<void> {
     if (!input.trim() || isLoading || !sessionId) return;
+    if (isInputBlockedByTimer) {
+      addToast('Time is up! You can no longer send messages.', { type: 'warning' });
+      return;
+    }
     if (isPaused) {
       addToast('Cannot send message while session is paused. Please resume first.', { type: 'warning' });
       return;
@@ -595,6 +604,7 @@ const CareerConversationPage: React.FC = () => {
                     pauseLoading={pauseLoading}
                     sessionEnded={sessionEnded}
                     onTogglePause={handleTogglePause}
+                    onTimeExpired={() => setIsTimerExpired(true)}
                     accentColor="purple"
                   />
                 )}
@@ -738,6 +748,10 @@ const CareerConversationPage: React.FC = () => {
               ✅ This session has ended. Click &quot;View Your Results&quot;
               above to see your career recommendations.
             </div>
+          ) : isInputBlockedByTimer ? (
+            <div className="text-center text-sm text-red-600">
+              ⏰ Time is up! You can no longer send messages.
+            </div>
           ) : isLoading ? (
             <div className="text-center text-sm text-gray-600">⏳</div>
           ) : (
@@ -815,6 +829,9 @@ const CareerConversationPage: React.FC = () => {
           open={showDebugDialog}
           onOpenChange={setShowDebugDialog}
           sessionId={sessionId}
+          isTimerExpired={isTimerExpired}
+          debugOverrideTimerBlock={debugOverrideTimerBlock}
+          onDebugOverrideTimerBlockChange={setDebugOverrideTimerBlock}
         />
       )}
     </div>

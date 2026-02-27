@@ -15,12 +15,18 @@ interface DomainDebugDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sessionId: string;
+  isTimerExpired: boolean;
+  debugOverrideTimerBlock: boolean;
+  onDebugOverrideTimerBlockChange: (value: boolean) => void;
 }
 
 export function DomainDebugDialog({
   open,
   onOpenChange,
   sessionId,
+  isTimerExpired,
+  debugOverrideTimerBlock,
+  onDebugOverrideTimerBlockChange,
 }: DomainDebugDialogProps): React.ReactElement {
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,6 +59,26 @@ export function DomainDebugDialog({
         <DialogDescription>
           Technical details about the domain discovery session
         </DialogDescription>
+
+        {/* Timer override toggle */}
+        <div className="rounded-lg border border-orange-300 bg-orange-50 p-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={debugOverrideTimerBlock}
+              onChange={(e) => onDebugOverrideTimerBlockChange(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 accent-orange-600"
+            />
+            <span className="font-medium text-orange-800">
+              Override timer block (allow messaging after 30 min)
+            </span>
+            {isTimerExpired && (
+              <span className="ml-1 rounded bg-red-200 px-1.5 py-0.5 text-xs font-semibold text-red-800">
+                Timer expired
+              </span>
+            )}
+          </label>
+        </div>
 
         {isLoading && (
           <div className="flex items-center justify-center py-8">

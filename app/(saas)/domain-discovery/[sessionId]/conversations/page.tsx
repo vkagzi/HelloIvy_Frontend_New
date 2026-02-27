@@ -69,6 +69,8 @@ const DomainConversationPage: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [totalPausedSeconds, setTotalPausedSeconds] = useState(0);
   const [pauseLoading, setPauseLoading] = useState(false);
+  const [isTimerExpired, setIsTimerExpired] = useState(false);
+  const [debugOverrideTimerBlock, setDebugOverrideTimerBlock] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -289,8 +291,15 @@ const DomainConversationPage: React.FC = () => {
     }
   };
 
+  // Whether input should be blocked due to timer expiry
+  const isInputBlockedByTimer = isTimerExpired && !debugOverrideTimerBlock;
+
   async function handleSend() {
     if (!input.trim() || isLoading || !sessionId) return;
+    if (isInputBlockedByTimer) {
+      addToast('Time is up! You can no longer send messages.', { type: 'warning' });
+      return;
+    }
     if (isPaused) {
       addToast('Cannot send message while session is paused. Please resume first.', { type: 'warning' });
       return;
@@ -362,6 +371,10 @@ const DomainConversationPage: React.FC = () => {
   // Handle initial assessment option selection
   async function handleOptionSelect(choice: string) {
     if (isLoading || !sessionId) return;
+    if (isInputBlockedByTimer) {
+      addToast('Time is up! You can no longer send messages.', { type: 'warning' });
+      return;
+    }
     if (isPaused) {
       addToast('Cannot send message while session is paused. Please resume first.', { type: 'warning' });
       return;
@@ -493,6 +506,7 @@ const DomainConversationPage: React.FC = () => {
                     pauseLoading={pauseLoading}
                     sessionEnded={sessionEnded}
                     onTogglePause={handleTogglePause}
+                    onTimeExpired={() => setIsTimerExpired(true)}
                     accentColor="teal"
                   />
                 )}
@@ -659,7 +673,11 @@ const DomainConversationPage: React.FC = () => {
         <div className="border-t bg-white px-6 py-4">
           {sessionEnded ? (
             <div className="text-center text-sm text-gray-600">
-              ✅ This session has ended. Click "View Your Results" above to see your domain recommendations.
+              ✅ This session has ended. Click &quot;View Your Results&quot; above to see your domain recommendations.
+            </div>
+          ) : isInputBlockedByTimer ? (
+            <div className="text-center text-sm text-red-600">
+              ⏰ Time is up! You can no longer send messages.
             </div>
           ) : (() => {
             // Show "thinking" message when loading
@@ -863,6 +881,9 @@ const DomainConversationPage: React.FC = () => {
           open={showDebugDialog}
           onOpenChange={setShowDebugDialog}
           sessionId={sessionId}
+          isTimerExpired={isTimerExpired}
+          debugOverrideTimerBlock={debugOverrideTimerBlock}
+          onDebugOverrideTimerBlockChange={setDebugOverrideTimerBlock}
         />
       )}
     </div>
