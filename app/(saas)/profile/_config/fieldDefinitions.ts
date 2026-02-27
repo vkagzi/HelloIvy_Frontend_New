@@ -1895,6 +1895,12 @@ export const additionalFieldDefs: FieldDefinition[] = [
     label: 'Share Information description (Under 300 words)',
     placeholder: 'Enter a brief description in 300 words',
     required: false,
+    visibility: {
+      depends_on: {
+        field_id: 'shareInformation',
+        value: ['Yes'],
+      },
+    },
   },
 ];
 

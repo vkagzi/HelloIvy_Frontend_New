@@ -1111,6 +1111,49 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   }, [form, layout, form.watch('maintainChannel')]);
   // Add other dependencies if you have more repeatableDependsOn fields
 
+  // --- Clear hidden dependent field values in real-time when parent changes ---
+  const prevVisibilityRef = React.useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    // Build current visibility map for all fields with visibility.depends_on
+    const currentVisibility: Record<string, boolean> = {};
+
+    // Check field-level visibility
+    fieldDefs.forEach((fieldDef) => {
+      if (fieldDef.visibility?.depends_on) {
+        currentVisibility[fieldDef.id] = isFieldVisible(fieldDef, formValues);
+      }
+    });
+
+    // Check layout-level visibility (for fields that only have layout-level depends_on)
+    layout.forEach((item) => {
+      if (item.visibility?.depends_on && item.fields) {
+        const layoutVisible = isFieldVisible(item, formValues);
+        item.fields.forEach((fid) => {
+          // Only track if not already tracked at the field level
+          if (!(fid in currentVisibility)) {
+            currentVisibility[fid] = layoutVisible;
+          }
+        });
+      }
+    });
+
+    const prev = prevVisibilityRef.current;
+
+    // On transitions from visible -> hidden, clear the field value
+    Object.entries(currentVisibility).forEach(([fieldId, isVisible]) => {
+      if (prev[fieldId] === true && !isVisible) {
+        const fieldDef = fieldDefs.find((f) => f.id === fieldId);
+        const defaultVal = fieldDef
+          ? getDefaultValue(fieldDef.type as FieldType)
+          : '';
+        form.setValue(fieldId, defaultVal);
+      }
+    });
+
+    prevVisibilityRef.current = currentVisibility;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formValues, fieldDefs, layout, form]);
+
   // Helper function to filter out empty rows from repeatable arrays and remove flattened keys
   const filterEmptyRows = (
     data: Record<string, unknown>
@@ -1272,6 +1315,26 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
         if (!isVisible) {
           delete filtered[fieldDef.id];
+        }
+      }
+    });
+
+    // Clean up fields inside layout blocks whose visibility conditions are not met
+    // This handles cases where visibility is defined at layout level, not field level
+    layout.forEach((item) => {
+      if (item.visibility?.depends_on && item.fields) {
+        const { field_id, value } = item.visibility.depends_on;
+        const parentValue = filtered[field_id];
+        const allowedValues = Array.isArray(value) ? value : [value];
+
+        const isVisible = Array.isArray(parentValue)
+          ? parentValue.some((v) => allowedValues.includes(v as string))
+          : allowedValues.includes(parentValue as string);
+
+        if (!isVisible) {
+          item.fields.forEach((fid) => {
+            delete filtered[fid];
+          });
         }
       }
     });

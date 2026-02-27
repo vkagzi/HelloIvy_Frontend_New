@@ -33,11 +33,6 @@ const PersonalDetailsForm: React.FC = () => {
       // Parse formatted city strings to extract city, state, country
       const parsedData = parseFormLocationData(_data);
 
-      // Clear genderOther when gender is not "Other"
-      if (parsedData.gender !== 'Other') {
-        parsedData.genderOther = '';
-      }
-
       console.log('Submitting personal details:', parsedData); // Debug log
 
       // Show loading toast
