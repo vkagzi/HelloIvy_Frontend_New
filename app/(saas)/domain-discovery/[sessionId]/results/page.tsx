@@ -845,6 +845,9 @@ const DomainResultsPage: React.FC = () => {
           open={showDebugDialog}
           onOpenChange={setShowDebugDialog}
           sessionId={sessionId}
+          isTimerExpired={false}
+          debugOverrideTimerBlock={false}
+          onDebugOverrideTimerBlockChange={() => {}}
         />
       )}
     </div>

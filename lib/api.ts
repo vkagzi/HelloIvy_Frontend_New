@@ -2,6 +2,7 @@
 // lib/api.ts
 
 import { getSession } from 'next-auth/react';
+import { broadcastLogout, dispatchSessionExpired } from '@/lib/auth-broadcast';
 
 type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -117,6 +118,14 @@ const api = async <T = any>(
     if (process.env.NODE_ENV !== 'production') {
       console.error(`API request failed with status ${res.status}:`, errorBody);
     }
+
+    // Session expired or token invalid – notify all tabs
+    if (res.status === 401) {
+      clearAuthCache();
+      broadcastLogout();
+      dispatchSessionExpired();
+    }
+
     //throw full error body for better debugging
     throw new Error(errorBody.error, {
       cause: {

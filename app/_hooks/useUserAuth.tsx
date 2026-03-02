@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { clearAuthCache } from '@/lib/api';
+import { broadcastLogout } from '@/lib/auth-broadcast';
 import type { Session } from 'next-auth';
 
 type UserAuthContextType = {
@@ -30,6 +31,7 @@ export const useUserAuth = (
       : status === 'authenticated';
 
   const logout = (): void => {
+    broadcastLogout();
     clearAuthCache();
     signOut({ callbackUrl: '/login' });
   };

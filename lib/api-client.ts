@@ -1,6 +1,7 @@
 'use client';
 
 import { getSession } from 'next-auth/react';
+import { broadcastLogout, dispatchSessionExpired } from '@/lib/auth-broadcast';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -117,6 +118,13 @@ const api = async <T = any>(
 
     if (process.env.NODE_ENV !== 'production') {
       console.error(`API request failed with status ${res.status}:`, errorBody);
+    }
+
+    // Session expired or token invalid – notify all tabs
+    if (res.status === 401) {
+      clearAuthCache();
+      broadcastLogout();
+      dispatchSessionExpired();
     }
 
     throw new Error(errorBody.error, {

@@ -14,12 +14,26 @@ import { additionalFieldDefs as fieldDefs, additionalLayout as layout } from '@/
 import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const AdditionalFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, refetch } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+  const [pendingData, setPendingData] = React.useState<Record<string, unknown> | null>(null);
+  // Track which action was requested: 'navigate' (Complete Profile) or 'save' (Save)
+  const pendingActionRef = React.useRef<'navigate' | 'save' | null>(null);
+  // Use a ref so DynamicForm's synchronous callbacks can check it immediately
+  const awaitingConfirmRef = React.useRef(false);
+
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
     () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
@@ -27,11 +41,11 @@ const AdditionalFormDetails: React.FC = () => {
   );
   const defaultValues = transformedResponse as Record<string, unknown>;
 
-  const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
+  const submitProfile = async (data: Record<string, unknown>, action: 'navigate' | 'save') => {
     try {
       setIsSubmitting(true);
       // Parse formatted city strings to extract city, state, country
-      const parsedData = parseFormLocationData(_data);
+      const parsedData = parseFormLocationData(data);
 
       // Fetch latest profile data to ensure we have the most recent data
       const latestData = await getProfileData();
@@ -61,6 +75,13 @@ const AdditionalFormDetails: React.FC = () => {
       if (response['message'] === 'Profile updated successfully.') {
         // Refetch profile data to update the context
         await refetch();
+        // Now perform the post-save action
+        if (action === 'navigate') {
+          addToast('Profile completed successfully!', { type: 'success' });
+          router.push('/profile/personal');
+        } else {
+          addToast('Additional details saved successfully!', { type: 'success' });
+        }
       } else {
         addToast('Failed to update profile.', { type: 'error' });
       }
@@ -74,6 +95,32 @@ const AdditionalFormDetails: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  const onSubmit: SubmitHandler<Record<string, unknown>> = (_data) => {
+    // Set ref synchronously so the callbacks that fire right after see it
+    awaitingConfirmRef.current = true;
+    setPendingData(_data);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowConfirmModal(false);
+    awaitingConfirmRef.current = false;
+    const action = pendingActionRef.current ?? 'navigate';
+    if (pendingData) {
+      await submitProfile(pendingData, action);
+      setPendingData(null);
+      pendingActionRef.current = null;
+    }
+  };
+
+  const handleEdit = () => {
+    setShowConfirmModal(false);
+    awaitingConfirmRef.current = false;
+    setPendingData(null);
+    pendingActionRef.current = null;
+  };
+
   // Extract additional details from the nested structure
   let additionalDetails: Record<string, unknown> = {};
 
@@ -112,13 +159,41 @@ const AdditionalFormDetails: React.FC = () => {
         showSaveButton={{ showSave: true, href: '/profile/personal' }}
         isSubmitting={isSubmitting}
         onSaveOnly={() => {
+          // If awaiting modal confirmation, record action and skip
+          if (awaitingConfirmRef.current) {
+            pendingActionRef.current = 'save';
+            return;
+          }
           addToast('Additional details saved successfully!', { type: 'success' });
         }}
         onSaveAndNavigate={() => {
+          // If awaiting modal confirmation, record action and skip
+          if (awaitingConfirmRef.current) {
+            pendingActionRef.current = 'navigate';
+            return;
+          }
           addToast('Profile completed successfully!', { type: 'success' });
           router.push('/profile/personal');
         }}
       />
+
+      {/* Confirmation modal before submitting */}
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Confirm Submission</DialogTitle>
+          <DialogDescription className="mt-3 text-base text-gray-700">
+            For best results, please submit only if all details are filled in, else edit the form!
+          </DialogDescription>
+          <div className="mt-6 flex justify-end gap-3">
+            <Button variant="outline" onClick={handleEdit}>
+              Edit
+            </Button>
+            <Button onClick={handleConfirmSubmit}>
+              Submit
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

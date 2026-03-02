@@ -935,14 +935,6 @@ export const educationalFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
-    id: 'amount',
-    type: 'text',
-    label: 'Amount',
-    placeholder: 'Enter amount',
-    required: false,
-    validation: { regex: Regexvalidations.justNumberWithBlank },
-  },
-  {
     id: 'testType',
     type: 'multi_select',
     label: 'Test Type',
@@ -1424,7 +1416,6 @@ export const educationalLayout: LayoutBlock[] = [
       'levelOfCompetitiveness',
       'numberOfParticipants',
       'year',
-      'amount',
     ],
     name: 'awards',
     repeatable: true,

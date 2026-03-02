@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import React from 'react';
 import Navbar from '@/app/_components/Navbar';
 import AppHead from '@/app/_components/AppHead';
+import SessionGuard from '@/app/_components/SessionGuard';
 import { auth } from '@/auth';
 import { SessionProvider } from 'next-auth/react';
 import { ProfileProvider } from '@/app/(saas)/profile/_context/ProfileContext';
@@ -26,11 +27,13 @@ export default async function RootLayout({
     <div className="flex">
       <SessionProvider session={session}>
         <ProfileProvider>
-          <Navbar />
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <AppHead session={session} />
-            <main className="flex-1 overflow-auto px-15 py-5">{children}</main>
-          </div>
+          <SessionGuard>
+            <Navbar />
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <AppHead session={session} />
+              <main className="flex-1 overflow-auto px-15 py-5">{children}</main>
+            </div>
+          </SessionGuard>
         </ProfileProvider>
       </SessionProvider>
     </div>
