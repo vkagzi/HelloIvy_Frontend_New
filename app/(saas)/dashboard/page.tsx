@@ -10,16 +10,42 @@ import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 export default function Dashboard(): React.ReactElement {
   const {
     completionPercentage,
+    isProfileComplete,
+    profileData,
     loading,
   } = useProfile();
 
+  const profileExists = profileData !== null;
+
+  const { heading, description, linkText, linkHref } = (() => {
+    if (!profileExists) {
+      return {
+        heading: 'Create your profile',
+        description:
+          'Create your profile to proceed with personalized recommendations, domain discovery, and more.',
+        linkText: 'Create',
+        linkHref: '/profile/personal',
+      };
+    }
+    if (!isProfileComplete) {
+      return {
+        heading: 'Add more details to your profile',
+        description:
+          'Your profile is partially complete. Fill in the remaining sections to unlock the best recommendations.',
+        linkText: 'Edit',
+        linkHref: '/profile/personal',
+      };
+    }
+    return {
+      heading: 'View your profile',
+      description:
+        'Your profile is complete! You can proceed to domain discovery and explore personalized recommendations.',
+      linkText: 'View',
+      linkHref: '/profile/personal',
+    };
+  })();
+
   const renderCompleteProfile = (): React.ReactElement => {
-    /**
-     * three column layout
-     * first column: dynamic percentage in gradient text, below that "of your profile is complete"
-     * second column: "Complete your profile" heading with a description and a cta below it "View Profile"
-     * third column: takes remaining space, centered graphic
-     */
     return (
       <div className="flex flex-row items-center justify-center gap-8 p-8">
         <div className="">
@@ -36,14 +62,13 @@ export default function Dashboard(): React.ReactElement {
         </div>
         <div className="">
           <Heading level={3} className="font-extrabold">
-            Complete your profile
+            {heading}
           </Heading>
           <Label size="sm" className="block">
-            Fill in your personal information, academic background, and goals to
-            get personalized recommendations.
+            {description}
           </Label>
-          <Link href="/profile/personal" className="btn-secondary mt-4">
-            View Profile
+          <Link href={linkHref} className="btn-secondary mt-4">
+            {linkText}
           </Link>
         </div>
         <div className="flex w-full justify-center">
