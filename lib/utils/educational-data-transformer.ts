@@ -29,6 +29,13 @@ export function transformEducationalData(
     );
   }
 
+  // Transform tenPlus (Working/Completed College) data
+  if (result.tenPlus && Array.isArray(result.tenPlus)) {
+    result.tenPlus = (result.tenPlus as Record<string, unknown>[]).map(
+      (degree) => transformDegree(degree)
+    );
+  }
+
   return result;
 }
 
@@ -111,6 +118,13 @@ export function parseEducationalData(
   // Parse postgraduate data
   if (result.postgraduate && Array.isArray(result.postgraduate)) {
     result.postgraduate = (result.postgraduate as Record<string, unknown>[]).map(
+      (degree) => parseDegree(degree)
+    );
+  }
+
+  // Parse tenPlus (Working/Completed College) data
+  if (result.tenPlus && Array.isArray(result.tenPlus)) {
+    result.tenPlus = (result.tenPlus as Record<string, unknown>[]).map(
       (degree) => parseDegree(degree)
     );
   }

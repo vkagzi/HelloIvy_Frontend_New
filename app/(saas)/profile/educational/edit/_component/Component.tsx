@@ -6,7 +6,7 @@ import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { UseFormReturn } from 'react-hook-form';
 import { SchoolBlock } from '@/app/(saas)/profile/educational/edit/_component/School';
 import { GraduateBlock } from '@/app/(saas)/profile/educational/edit/_component/Graduate';
-import { TenPlusBlock } from '@/app/(saas)/profile/educational/edit/_component/TenPlus';
+
 import { TestBlock } from '@/app/(saas)/profile/educational/edit/_component/Test';
 import { ProfessionalBlock } from '@/app/(saas)/profile/professional/edit/_component/Professional';
 
@@ -63,22 +63,14 @@ const Component: React.FC<ComponentProps> = ({
             />
           )}
           {(section.type === 'undergraduate' ||
-            section.type === 'postgraduate') && (
+            section.type === 'postgraduate' ||
+            section.type === 'tenPlus') && (
             <GraduateBlock
               section={section}
               sectionType={section.type}
               fieldDefs={fieldDefs}
               form={form}
               errors={errors}
-            />
-          )}
-          {section.type === 'tenPlus' && (
-            <TenPlusBlock
-              section={section}
-              fieldDefs={fieldDefs}
-              form={form}
-              errors={errors}
-              sectionType={section.type}
             />
           )}
           {(section.type === 'SAT' ||

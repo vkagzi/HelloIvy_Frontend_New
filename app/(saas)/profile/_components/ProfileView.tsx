@@ -394,9 +394,14 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
           const gradeLabel = gradeValue ? `${getOrdinalSuffix(gradeValue)} Grade` : '';
           
           // For highSchool, show grade as subtitle; for others, show the formatted block type
+          const degreeHeadingMap: Record<string, string> = {
+            tenPlus: 'Completed College',
+            undergraduate: 'Undergraduate',
+            postgraduate: 'Postgraduate',
+          };
           const headingText = block.type === 'highSchool' 
             ? (gradeLabel || `Entry ${rowIdx + 1}`)
-            : (gradeLabel || `${block.type
+            : (gradeLabel || degreeHeadingMap[block.type] || `${block.type
                 .replace(/([A-Z])/g, ' $1')
                 .replace(/^./, (str) => str.toUpperCase())}`);
           

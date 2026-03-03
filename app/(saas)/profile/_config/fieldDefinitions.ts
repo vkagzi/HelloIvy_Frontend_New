@@ -742,6 +742,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
       map: {
         'College/Undergraduate': UNDERGRADUATE_DEGREE_PROGRAMS,
         Postgraduate: POSTGRADUATE_DEGREE_PROGRAMS,
+        'Working/Completed College': [
+          ...UNDERGRADUATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
+          ...POSTGRADUATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
+          'Other',
+        ],
       },
       default: [
         'Associate',
@@ -821,30 +826,8 @@ export const educationalFieldDefs: FieldDefinition[] = [
     placeholder: 'Enter your score, GPA, or percentage',
     required: true,
   },
-  {
-    id: 'areaOfPractice',
-    type: 'select_autofill',
-    label: 'Area of Practice',
-    options: [
-      'General Management',
-      'Finance & Financial Analytics',
-      'Marketing',
-      'Accounting',
-      'Productions & Operations',
-      'Information Technology',
-      'Human Resources',
-    ],
-    placeholder: 'Enter area of practice',
-    required: true,
-  },
-  {
-    id: 'familiarity',
-    type: 'text',
-    label: 'Familiarity',
-    placeholder: 'Enter familiarity',
-    options: ['Low', 'Medium', 'High'],
-    required: true,
-  },
+
+
   {
     id: 'courseType',
     type: 'select_autofill',
@@ -1364,12 +1347,32 @@ export const educationalLayout: LayoutBlock[] = [
   },
   {
     type: 'tenPlus',
-    fields: ['areaOfPractice', 'familiarity'],
+    fields: [
+      'institutionName',
+      'degree',
+      'major',
+      'startYear',
+      'endYear',
+      'overallPercentage',
+      'maximumPossibleGPA',
+      'estimatedRank',
+      'redFlags',
+    ],
     columns: 3,
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
         value: ['Working/Completed College'],
+      },
+    },
+    repeatables: {
+      fields: ['score', 'highestTotalScore'],
+      name: 'years',
+      repeatable: true,
+      repeatable_option: {
+        add: '+ Add Year',
+        show_default: 1,
+        min: 1,
       },
     },
   },
