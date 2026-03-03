@@ -586,10 +586,10 @@ const CareerConversationPage: React.FC = () => {
     <div className="flex h-[calc(100vh-6rem)] min-h-0 bg-linear-to-br from-purple-50 to-blue-100">
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header */}
-        <div className="border-b bg-white px-6 py-4 shadow-sm">
-          <div className="flex items-center justify-between">
+        <div className="border-b bg-white px-4 py-4 shadow-sm md:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex-1">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <Heading
                   level={2}
                   className="text-xl font-semibold text-gray-900"

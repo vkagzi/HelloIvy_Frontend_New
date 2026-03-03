@@ -228,7 +228,7 @@ export function LocationAutofill({
 
         <Popover.Portal>
           <Popover.Content
-            className={`z-50 min-w-[480px] max-w-[600px] overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg`}
+            className={`z-50 min-w-[min(480px,calc(100vw-2rem))] max-w-[600px] overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg`}
             sideOffset={4}
             align="start"
           >

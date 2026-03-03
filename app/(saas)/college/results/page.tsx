@@ -553,7 +553,7 @@ ENHANCED OUTPUT REQUIREMENTS:
 
         {/* Summary */}
         <div className="mx-auto mb-8 max-w-4xl rounded-lg bg-white p-6 shadow-lg">
-          <div className="grid gap-6 text-center md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-6 text-center md:grid-cols-3 lg:grid-cols-5">
             <div>
               <div className="text-3xl font-bold text-purple-600">
                 {recs.length}

@@ -1401,8 +1401,8 @@ Start with "${studentName}," (first name only).`;
         </div>
 
         {/* Input */}
-        <div className="border-t bg-white px-6 py-4">
-          <div className="flex items-end space-x-4">
+        <div className="border-t bg-white px-4 py-4 md:px-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:space-x-4">
             <div className="flex-1">
               <Textarea
                 ref={textareaRef}

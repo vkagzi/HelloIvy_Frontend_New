@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiIcon } from '@/app/_components/Icons';
@@ -9,35 +9,61 @@ import imgIcon from '@/assets/images/icon.png';
 import Image from 'next/image';
 import { Label } from '@/app/_components/Typography';
 import { sidebarNavItems } from '@/app/_constants/navItems';
+import { useNavbar } from '@/app/_contexts/NavbarContext';
 
 const Navbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const pathname = usePathname();
+  const { isDrawerOpen, closeDrawer } = useNavbar();
 
-  return (
-    <nav
-      className={`relative flex flex-col bg-white transition-all duration-200 ${collapsed ? 'w-14' : 'w-50 border-r border-neutral-200'
-        }  min-h-screen px-2`}
-    >
+  // Close drawer on route change
+  useEffect(() => {
+    closeDrawer();
+  }, [pathname, closeDrawer]);
+
+  // Close drawer on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && isDrawerOpen) {
+        closeDrawer();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isDrawerOpen, closeDrawer]);
+
+  const sidebarContent = (
+    <>
       <div className="flex h-12 items-center justify-between pb-3">
         <Link href="/dashboard">
           <Image
             src={collapsed ? imgIcon : imgLogoApp}
             alt="HelloIvy Logo"
-            className={`h-6 w-auto transition-all duration-200`}
+            className="h-6 w-auto transition-all duration-200"
           />
         </Link>
+        {/* Collapse toggle only on desktop sidebar */}
         <button
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="overflow-clip rounded-full bg-neutral-100 p-1 leading-none transition hover:bg-neutral-300"
+          className="hidden overflow-clip rounded-full bg-neutral-100 p-1 leading-none transition hover:bg-neutral-300 lg:block"
           onClick={() => setCollapsed((v) => !v)}
         >
           <FiIcon
             name={
-              collapsed ? 'angle-double-small-right' : 'angle-double-small-left'
+              collapsed
+                ? 'angle-double-small-right'
+                : 'angle-double-small-left'
             }
             className="block h-4 w-4"
           />
+        </button>
+        {/* Close button only in mobile/tablet drawer */}
+        <button
+          aria-label="Close menu"
+          className="overflow-clip rounded-full bg-neutral-100 p-1 leading-none transition hover:bg-neutral-300 lg:hidden"
+          onClick={closeDrawer}
+        >
+          <FiIcon name="cross-small" className="block h-4 w-4" />
         </button>
       </div>
       <ul className="mt-2 flex-1">
@@ -47,10 +73,11 @@ const Navbar: React.FC = () => {
             <li key={item.href} className="h-10">
               <Link
                 href={item.href}
-                className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all ${active
+                className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all ${
+                  active
                     ? 'bg-action-gradient-800 font-semibold text-white'
                     : 'hover:bg-purple-50'
-                  } ${collapsed ? 'w-11' : ''}`}
+                } ${collapsed ? 'lg:w-11' : ''}`}
               >
                 <FiIcon
                   name={item.icon}
@@ -61,20 +88,48 @@ const Navbar: React.FC = () => {
                   }
                 />
 
-                {!collapsed && (
-                  <Label
-                    size="sm"
-                    className={`overflow-clip text-nowrap text-ellipsis`}
-                  >
-                    {item.label}
-                  </Label>
-                )}
+                {/* Always show label in drawer; respect collapsed state on desktop */}
+                <Label
+                  size="sm"
+                  className={`overflow-clip text-nowrap text-ellipsis ${collapsed ? 'lg:hidden' : ''}`}
+                >
+                  {item.label}
+                </Label>
               </Link>
             </li>
           );
         })}
       </ul>
-    </nav>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar — hidden below lg */}
+      <nav
+        className={`relative hidden min-h-screen flex-col bg-white px-2 transition-all duration-200 lg:flex ${
+          collapsed ? 'w-14' : 'w-50 border-r border-neutral-200'
+        }`}
+      >
+        {sidebarContent}
+      </nav>
+
+      {/* Mobile/Tablet overlay drawer — visible below lg when open */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={closeDrawer}
+            aria-hidden="true"
+          />
+          {/* Drawer panel */}
+          <nav className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white px-2 shadow-xl">
+            {sidebarContent}
+          </nav>
+        </div>
+      )}
+    </>
   );
 };
 

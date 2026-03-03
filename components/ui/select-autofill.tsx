@@ -218,7 +218,7 @@ export function SelectAutofill({
         <Popover.Portal>
           <Popover.Content
             className={cn(
-              'z-50 min-w-[480px] max-w-[600px] overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg',
+              'z-50 min-w-[min(480px,calc(100vw-2rem))] max-w-[600px] overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg',
               'data-[state=open]:animate-in data-[state=closed]:animate-out',
               'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
               'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',

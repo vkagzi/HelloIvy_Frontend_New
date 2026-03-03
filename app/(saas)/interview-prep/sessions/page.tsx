@@ -137,7 +137,7 @@ const SessionsPage: React.FC = () => {
                     router.push(`/interview-prep/session/${session.id}`)
                   }
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div className="flex items-start space-x-4">
                       <div className="text-3xl">
                         {getInterviewTypeIcon(session.interview_type)}
@@ -177,7 +177,7 @@ const SessionsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex space-x-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();

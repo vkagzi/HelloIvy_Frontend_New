@@ -14,6 +14,7 @@ import {
 } from '@/app/_components/DropdownMenu';
 import type { Session } from 'next-auth';
 import { navItems } from '@/app/_constants/navItems';
+import { useNavbar } from '@/app/_contexts/NavbarContext';
 
 type AppHeadProps = {
   session: Session | null;
@@ -21,6 +22,7 @@ type AppHeadProps = {
 
 const AppHead: React.FC<AppHeadProps> = ({ session }) => {
   const userAuth = useUserAuth(session);
+  const { openDrawer } = useNavbar();
 
   const pathname = usePathname();
   const currentNavItem = navItems.find((item) => pathname === item.href);
@@ -66,7 +68,15 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
     <>
       {pathname == '/app' && <div className="dashboard-bg"></div>}
       <header className="flex h-12 items-center justify-between border-b border-neutral-200 px-4">
-        <div className="flex items-center">
+        <div className="flex items-center gap-3">
+          {/* Hamburger menu — visible below lg */}
+          <button
+            aria-label="Open menu"
+            className="rounded-md p-1 transition hover:bg-neutral-100 lg:hidden"
+            onClick={openDrawer}
+          >
+            <FiIcon name="menu-burger" className="block h-5 w-5 text-neutral-700" />
+          </button>
           <Heading level={3} className="font-extrabold">
             {heading}
           </Heading>

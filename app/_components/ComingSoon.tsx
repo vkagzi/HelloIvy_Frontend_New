@@ -19,7 +19,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
+    <div className="flex min-h-full items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
       <div className="w-full max-w-3xl">
         {/* Main Card */}
         <div className="relative overflow-hidden rounded-3xl bg-white p-8 shadow-2xl md:p-12">

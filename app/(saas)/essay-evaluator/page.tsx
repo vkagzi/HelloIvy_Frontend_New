@@ -1371,7 +1371,7 @@ const EssayEvaluatorPage: React.FC = () => {
                 </div>
 
                 {/* College Information */}
-                <div className="mb-8 grid gap-6 md:grid-cols-3">
+                <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   <div>
                     <label className="mb-2 block text-sm font-medium text-gray-900">
                       College <span className="text-red-500">*</span>
@@ -1562,7 +1562,7 @@ const EssayEvaluatorPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
             {essays.length === 0 ? (
               <div className="py-12 text-center">
                 <Paragraph className="text-gray-500">
@@ -1633,7 +1633,7 @@ const EssayEvaluatorPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Left Panel - Essay Editor */}
           <div className="space-y-6">
             {/* Essay Content Editor */}
@@ -2111,7 +2111,7 @@ const EssayEvaluatorPage: React.FC = () => {
 
             {/* Grammar Check Summary - Compact Version */}
             {showSuggestions && grammarErrors.length > 0 && (
-              <div className="fixed top-20 right-4 left-4 z-50 rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-lg lg:right-auto lg:left-[50%] lg:w-[calc(50%-3rem)]">
+              <div className="fixed top-20 right-4 left-4 z-50 rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-lg md:right-auto md:left-[50%] md:w-[calc(50%-3rem)]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="mr-3 h-3 w-3 rounded-full bg-blue-500"></div>

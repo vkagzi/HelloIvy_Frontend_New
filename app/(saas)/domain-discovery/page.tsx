@@ -195,8 +195,8 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
           </div>
 
           {/* Right - Brain Animation */}
-          <div className="shrink-0">
-            <BrainWithoutBGLottie loop={true} className="h-[200px] w-[345px]" />
+          <div className="w-full shrink-0 md:w-auto">
+            <BrainWithoutBGLottie loop={true} className="h-[200px] w-full max-w-[345px]" />
           </div>
         </div>
 
