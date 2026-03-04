@@ -692,14 +692,6 @@ export const educationalFieldDefs: FieldDefinition[] = [
     },
   },
   {
-    id: 'typeOfScore',
-    type: 'select',
-    label: 'Type of Score',
-    placeholder: 'Select type of score',
-    options: ['Percentage', 'GPA', 'CGPA'],
-    required: true,
-  },
-  {
     id: 'yourTotalScore',
     type: 'text',
     label: 'Total/Cumulative Score',
@@ -1255,7 +1247,6 @@ export const educationalLayout: LayoutBlock[] = [
       'yearOfCompletion',
       'board',
       'boardOther',
-      'typeOfScore',
       'yourTotalScore',
       'highestTotalScore',
       'redFlags',

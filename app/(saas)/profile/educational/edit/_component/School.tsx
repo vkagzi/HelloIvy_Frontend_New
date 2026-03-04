@@ -10,7 +10,7 @@ import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
 import { isFieldVisible } from '@/app/_components/dynamic-form/utils/utils';
 
-/** Returns the list of grades to display in descending order */
+/** Returns the list of grades to display in descending order (always 2 grades) */
 const computeGradesToShow = (
   selectedGrade: number,
   hasCurrentGradeScores: string | undefined
@@ -18,12 +18,12 @@ const computeGradesToShow = (
   if (!hasCurrentGradeScores || !['Yes', 'No'].includes(hasCurrentGradeScores)) {
     return [];
   }
+  // If the student has current grade scores: show current grade and previous grade
+  // e.g. Grade 10 + Yes => [10, 9]
+  // If not: show previous two grades
+  // e.g. Grade 10 + No  => [9, 8]
   const startGrade = hasCurrentGradeScores === 'Yes' ? selectedGrade : selectedGrade - 1;
-  const grades: number[] = [];
-  for (let g = startGrade; g >= 9; g--) {
-    grades.push(g);
-  }
-  return grades;
+  return [startGrade, startGrade - 1];
 };
 
 interface SchoolBlockProps {
@@ -86,12 +86,14 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           String((entry as Record<string, unknown>).gradeLevel),
           10
         );
+        // Only snapshot data for grades that are currently allowed
         if (!isNaN(g) && currentGradeSet.has(g)) {
           gradeDataRef.current[g] = { ...(entry as Record<string, unknown>) };
         }
       }
     });
-    // Remove stale entries for grades no longer displayed
+    // Remove ALL stale entries — any grade not in the allowed set is deleted
+    // so that old data never leaks back when grades are reused
     Object.keys(gradeDataRef.current).forEach((key) => {
       const gradeNum = parseInt(key, 10);
       if (!currentGradeSet.has(gradeNum)) {
@@ -123,12 +125,26 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
   // Sync subject rows map and form grade values whenever gradesToShow changes
   useEffect(() => {
+    const allowedGradeSet = new Set(gradesToShow);
+
+    // Eagerly clear gradeDataRef entries for grades that are no longer shown.
+    // This prevents stale data from being restored if the user switches back.
+    Object.keys(gradeDataRef.current).forEach((key) => {
+      const gradeNum = parseInt(key, 10);
+      if (!allowedGradeSet.has(gradeNum)) {
+        delete gradeDataRef.current[gradeNum];
+      }
+    });
+
     setSubjectRowsByGrade((prev) => {
-      const next = { ...prev };
+      const next: Record<number, SubjectRows> = {};
+      // Only keep subject rows for grades that are currently allowed
       gradesToShow.forEach((grade) => {
-        // Only create fresh rows for grades that have NO saved data in gradeDataRef.
-        // If a grade already has data (from gradeDataRef), keep existing subject rows.
-        if (!next[grade] || !gradeDataRef.current[grade]) {
+        // Reuse existing rows if grade still in the set AND has saved data
+        if (prev[grade] && gradeDataRef.current[grade]) {
+          next[grade] = prev[grade];
+        } else {
+          // Create fresh rows for new/unknown grades
           next[grade] = Array.from({ length: minSubjects }, () => ({
             _id: nanoid(),
             ...Object.fromEntries(
@@ -137,6 +153,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           }));
         }
       });
+      // All entries for grades NOT in gradesToShow are dropped (not copied to next)
       return next;
     });
 
@@ -387,6 +404,16 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                   const subjectValue = form.watch(`${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.subject`) as string | undefined;
                   const showSubjectOther = subjectValue === 'Other';
 
+                  // Collect subjects already selected in OTHER rows (exclude 'Other' since multiple custom subjects are allowed)
+                  const alreadySelectedSubjects = subjectRows.reduce<string[]>((acc, _, otherIdx) => {
+                    if (otherIdx === rowIdx) return acc;
+                    const otherSubject = form.getValues(`${section.type}.${schoolIdx}.${section.repeatables?.name}.${otherIdx}.subject`) as string | undefined;
+                    if (otherSubject && otherSubject !== 'Other' && otherSubject.trim() !== '') {
+                      acc.push(otherSubject);
+                    }
+                    return acc;
+                  }, []);
+
                   return (
                   <tr key={(row._id as string) ?? rowIdx} className="border-b border-neutral-200">
                     {visibleFields.map((fieldId: string) => {
@@ -403,11 +430,21 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                       }
                       
                       const controllerName = `${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.${fieldDef.id}`;
-                      const repeatableField: FieldDefinition = {
-                        ...fieldDef,
-                        id: controllerName,
-                        label: '', // Remove label in table cells
-                      };
+                      // For subject field, filter out subjects already selected in other rows
+                      const filteredFieldDef: FieldDefinition = fieldId === 'subject' && fieldDef.options
+                        ? {
+                            ...fieldDef,
+                            id: controllerName,
+                            label: '',
+                            options: fieldDef.options.filter(
+                              (opt) => !alreadySelectedSubjects.includes(opt)
+                            ),
+                          }
+                        : {
+                            ...fieldDef,
+                            id: controllerName,
+                            label: '', // Remove label in table cells
+                          };
                       return (
                         <td key={controllerName} className="px-4 py-3">
                           <Controller
@@ -416,7 +453,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                             defaultValue={form.getValues(controllerName) ?? ''}
                             render={() => (
                               <FieldRenderer
-                                field={repeatableField}
+                                field={filteredFieldDef}
                                 form={form}
                                 error={errors[controllerName]}
                                 inputHeightClass="py-2"

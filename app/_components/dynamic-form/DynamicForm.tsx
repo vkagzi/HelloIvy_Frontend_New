@@ -1233,10 +1233,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               const selectedGrade = parseInt(gradeLevelRaw.replace('Grade ', ''), 10);
               if (!isNaN(selectedGrade)) {
                 const startGrade = hasScores === 'Yes' ? selectedGrade : selectedGrade - 1;
-                const allowedGrades = new Set<number>();
-                for (let g = startGrade; g >= 9; g--) {
-                  allowedGrades.add(g);
-                }
+                // Only allow 2 grades: startGrade and startGrade - 1
+                const allowedGrades = new Set<number>([startGrade, startGrade - 1]);
                 // Keep only entries whose gradeLevel is in the allowed set
                 trimmedSectionData = sectionData.filter((entry) => {
                   if (typeof entry !== 'object' || entry === null) return false;
