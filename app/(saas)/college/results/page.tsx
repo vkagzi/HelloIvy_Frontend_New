@@ -208,7 +208,7 @@ const CollegeResultsPage: React.FC = () => {
     }
 
     if (educational.estimatedRank) {
-      lines.push(`• Class Rank: ${educational.estimatedRank}`);
+      lines.push(`• Overall Class Rank: ${educational.estimatedRank}`);
     }
 
     // Standardized Test Scores (Critical for admissions)

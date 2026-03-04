@@ -772,8 +772,8 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'Start Year',
     placeholder: 'Select start year',
-    options: Array.from({ length: 31 }, (_, i) => {
-      const year = new Date().getFullYear() - 20 + i;
+    options: Array.from({ length: 51 }, (_, i) => {
+      const year = new Date().getFullYear() - 40 + i;
       return year.toString();
     }),
     required: true,
@@ -783,8 +783,8 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'End Year',
     placeholder: 'Select end year',
-    options: Array.from({ length: 31 }, (_, i) => {
-      const year = new Date().getFullYear() - 20 + i;
+    options: Array.from({ length: 51 }, (_, i) => {
+      const year = new Date().getFullYear() - 40 + i;
       return year.toString();
     }),
     required: true,

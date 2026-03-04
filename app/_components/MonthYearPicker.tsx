@@ -68,7 +68,7 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({
   if (!open) return null;
 
   const currentYear = new Date().getFullYear();
-  const yearRange = Array.from({ length: 31 }, (_, i) => currentYear - 20 + i);
+  const yearRange = Array.from({ length: 51 }, (_, i) => currentYear - 40 + i);
 
   const handleSelect = (monthIdx: number): void => {
     setSelectedMonth(monthIdx);
