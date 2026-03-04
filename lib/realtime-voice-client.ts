@@ -16,8 +16,19 @@ export interface RealtimeVoiceClientConfig {
   onConnected?: () => void;
   onDisconnected?: () => void;
   onError?: (error: string) => void;
-  onTranscriptUpdate?: (transcript: string, role: 'user' | 'assistant') => void;
+  /**
+   * Called with each transcript delta.
+   * @param isNewTurn - true when this delta belongs to a NEW response/turn
+   *   (i.e. a different item_id than the previous assistant delta, or a
+   *   completed user transcription). The consumer should start a fresh
+   *   transcript entry instead of appending to the previous one.
+   */
+  onTranscriptUpdate?: (transcript: string, role: 'user' | 'assistant', isNewTurn: boolean) => void;
   onAudioResponse?: (audio: ArrayBuffer) => void;
+  /** Fired once when the bot starts speaking (first audio chunk enters playback) */
+  onPlaybackStarted?: () => void;
+  /** Fired when the entire audio queue has drained and playback is idle */
+  onPlaybackFinished?: () => void;
 }
 
 export class RealtimeVoiceClient {
@@ -30,6 +41,9 @@ export class RealtimeVoiceClient {
   private _disconnecting = false;
   private label: string;
   private _responseDoneResolver: (() => void) | null = null;
+  private _goodbyeInProgress = false;
+  /** Tracks the current assistant item_id to detect response boundaries */
+  private _currentAssistantItemId: string | null = null;
 
   constructor(config: RealtimeVoiceClientConfig) {
     this.config = config;
@@ -72,7 +86,10 @@ export class RealtimeVoiceClient {
           this.config.onDisconnected?.();
         };
 
-        this.audioContext = new AudioContext({ sampleRate: 24000 });
+        // Use the system's native sample rate for playback — the Web Audio
+        // API will automatically upsample from 24 kHz PCM to the hardware
+        // rate, producing smoother output than forcing 24 kHz.
+        this.audioContext = new AudioContext();
       } catch (error) {
         console.error(`[${this.label}] Failed to connect:`, error);
         reject(error);
@@ -187,41 +204,73 @@ export class RealtimeVoiceClient {
 
   /**
    * Send a farewell prompt and return a Promise that resolves once the AI
-   * has finished its response (i.e. the goodbye audio has been fully streamed).
-   * Falls back after a timeout so the caller never hangs.
+   * has finished its response AND the goodbye audio has finished playing.
+   * Interrupts any in-flight response first. Falls back after a timeout.
    */
-  sendGoodbye(timeoutMs = 10000): Promise<void> {
+  sendGoodbye(timeoutMs = 15000): Promise<void> {
+    console.log(`[${this.label}] sendGoodbye called (ws open: ${this.ws?.readyState === WebSocket.OPEN})`);
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.log(`[${this.label}] sendGoodbye — WS not open, resolving immediately`);
       return Promise.resolve();
     }
 
+    this._goodbyeInProgress = true;
+
+    // 1. Cancel any in-flight response and stop current playback
+    console.log(`[${this.label}] sendGoodbye — sending response.cancel`);
+    this.ws.send(JSON.stringify({ type: 'response.cancel' }));
+    this.stopAudio();
+
     return new Promise<void>((resolve) => {
       const timer = setTimeout(() => {
+        console.log(`[${this.label}] Goodbye timed out – disconnecting anyway`);
         this._responseDoneResolver = null;
+        this._goodbyeInProgress = false;
         resolve();
       }, timeoutMs);
 
+      // 2. When OpenAI finishes the goodbye response, wait for audio playback
       this._responseDoneResolver = () => {
-        clearTimeout(timer);
-        resolve();
+        const checkPlayback = () => {
+          if (!this.isPlaying && this.audioQueue.length === 0) {
+            clearTimeout(timer);
+            this._goodbyeInProgress = false;
+            // Small grace period so the last chunk finishes in the speaker
+            setTimeout(resolve, 300);
+          } else {
+            setTimeout(checkPlayback, 200);
+          }
+        };
+        checkPlayback();
       };
 
-      this.ws!.send(
-        JSON.stringify({
-          type: 'conversation.item.create',
-          item: {
-            type: 'message',
-            role: 'user',
-            content: [
-              {
-                type: 'input_text',
-                text: '[System: The user has decided to end the voice session. Please say a brief, warm goodbye — for example "I see you want to end the session. Have a good day!" Keep it to one short sentence.]',
-              },
-            ],
-          },
-        }),
-      );
-      this.triggerResponse();
+      // 3. Small delay to let the cancel round-trip complete, then send goodbye
+      setTimeout(() => {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+          console.log(`[${this.label}] sendGoodbye — WS closed during delay, resolving`);
+          clearTimeout(timer);
+          this._goodbyeInProgress = false;
+          resolve();
+          return;
+        }
+        console.log(`[${this.label}] sendGoodbye — sending goodbye conversation item + response.create`);
+        this.ws.send(
+          JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'message',
+              role: 'user',
+              content: [
+                {
+                  type: 'input_text',
+                  text: '[System: The user has decided to end the voice session. Please say a brief, warm goodbye — for example "I see you want to end the session. Have a good day!" Keep it to one short sentence.]',
+                },
+              ],
+            },
+          }),
+        );
+        this.triggerResponse();
+      }, 300);
     });
   }
 
@@ -232,8 +281,12 @@ export class RealtimeVoiceClient {
       this.currentSource.stop();
       this.currentSource = null;
     }
+    const wasPlaying = this.isPlaying || this.audioQueue.length > 0;
     this.audioQueue = [];
     this.isPlaying = false;
+    if (wasPlaying) {
+      this.config.onPlaybackFinished?.();
+    }
   }
 
   getConnectionStatus(): boolean {
@@ -280,17 +333,22 @@ export class RealtimeVoiceClient {
           this.handleInputTranscription(message);
           break;
 
-        case 'response.done':
-          console.log(`[${this.label}] Response completed`);
-          if (this._responseDoneResolver) {
+        case 'response.done': {
+          const status = (message.response as Record<string, unknown>)?.status;
+          console.log(`[${this.label}] Response completed (status: ${status})`);
+          // Only resolve the goodbye promise on a fully completed response,
+          // not on a cancelled one (response.cancel triggers response.done
+          // with status "cancelled").
+          if (this._responseDoneResolver && status !== 'cancelled') {
             this._responseDoneResolver();
             this._responseDoneResolver = null;
           }
           break;
+        }
 
         case 'error':
-          if (this._disconnecting) {
-            console.log(`[${this.label}] Suppressed error during disconnect:`, message.error);
+          if (this._disconnecting || this._goodbyeInProgress) {
+            console.log(`[${this.label}] Suppressed error during disconnect/goodbye:`, message.error);
             break;
           }
           console.error(`[${this.label}] Server error:`, message.error);
@@ -329,12 +387,23 @@ export class RealtimeVoiceClient {
 
   private handleTranscriptDelta(message: Record<string, unknown>, role: 'user' | 'assistant'): void {
     const delta = message.delta as string | undefined;
-    if (delta) this.config.onTranscriptUpdate?.(delta, role);
+    if (!delta) return;
+
+    const itemId = message.item_id as string | undefined;
+    let isNewTurn = false;
+    if (itemId && itemId !== this._currentAssistantItemId) {
+      // A new response item started — signal a turn boundary so the
+      // consumer creates a fresh transcript entry instead of appending.
+      isNewTurn = true;
+      this._currentAssistantItemId = itemId;
+    }
+    this.config.onTranscriptUpdate?.(delta, role, isNewTurn);
   }
 
   private handleInputTranscription(message: Record<string, unknown>): void {
     const transcript = message.transcript as string | undefined;
-    if (transcript) this.config.onTranscriptUpdate?.(transcript, 'user');
+    // User transcriptions are always complete (not deltas), so always a new turn.
+    if (transcript) this.config.onTranscriptUpdate?.(transcript, 'user', true);
   }
 
   private async queueAudioForPlayback(audioData: ArrayBuffer): Promise<void> {
@@ -350,11 +419,20 @@ export class RealtimeVoiceClient {
 
   private playNextAudio(): void {
     if (!this.audioContext || this.audioQueue.length === 0) {
+      const wasPlaying = this.isPlaying;
       this.isPlaying = false;
+      if (wasPlaying) {
+        this.config.onPlaybackFinished?.();
+      }
       return;
     }
 
-    this.isPlaying = true;
+    if (!this.isPlaying) {
+      // Transitioning from idle → playing: notify listener
+      this.isPlaying = true;
+      this.config.onPlaybackStarted?.();
+    }
+
     const audioBuffer = this.audioQueue.shift()!;
 
     const source = this.audioContext.createBufferSource();

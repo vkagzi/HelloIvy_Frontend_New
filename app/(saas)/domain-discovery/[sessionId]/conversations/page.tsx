@@ -84,6 +84,7 @@ const DomainConversationPage: React.FC = () => {
     isConnecting: voiceConnecting,
     isRecording: voiceRecording,
     isSpeaking: voiceSpeaking,
+    isDisconnecting: voiceDisconnecting,
     transcript: voiceTranscript,
     connectVoice,
     disconnectVoice,
@@ -134,8 +135,12 @@ const DomainConversationPage: React.FC = () => {
     }
   }, [voiceTranscript, conversationMode]);
 
+  // Track when voice conversation has fully ended (after disconnect completes)
+  const [isVoiceEnded, setIsVoiceEnded] = useState(false);
+
   /** Activate voice mode: connect WS, seed chat history, open mic */
   const activateVoiceMode = useCallback(async () => {
+    setIsVoiceEnded(false);
     // Build conversation history from chat messages
     const chatHistory = messages.map((m) => ({
       role: (m.type === 'bot' ? 'assistant' : 'user') as 'user' | 'assistant',
@@ -149,11 +154,18 @@ const DomainConversationPage: React.FC = () => {
     await connectVoice(chatHistory, lastBot?.content);
   }, [messages, connectVoice]);
 
-  /** Deactivate voice mode: tear down WS, return to chat */
-  const deactivateVoiceMode = useCallback(() => {
-    disconnectVoice();
+  /** Deactivate voice mode: tear down WS, show ended state, then return to chat */
+  const deactivateVoiceMode = useCallback(async () => {
+    console.log('[DomainDiscovery] deactivateVoiceMode called');
+    await disconnectVoice();
+    console.log('[DomainDiscovery] disconnectVoice completed');
     prevVoiceTranscriptLenRef.current = 0;
-    setConversationMode('chat');
+    setIsVoiceEnded(true);
+    // Show "Conversation ended" briefly before switching back to chat
+    setTimeout(() => {
+      setIsVoiceEnded(false);
+      setConversationMode('chat');
+    }, 2000);
   }, [disconnectVoice]);
 
   const canEndConversation = sessionEnded;
@@ -708,59 +720,96 @@ const DomainConversationPage: React.FC = () => {
                   // Voice mode controls
                   <div className="flex flex-col items-center space-y-4">
                     <div className="flex items-center space-x-4">
+                      {/* Main mic button with state-driven animations */}
                       <button
-                        onClick={toggleVoiceRecording}
-                        disabled={!voiceConnected}
+                        onClick={
+                          voiceDisconnecting || isVoiceEnded
+                            ? undefined
+                            : voiceRecording
+                            ? deactivateVoiceMode
+                            : toggleVoiceRecording
+                        }
+                        disabled={!voiceConnected || voiceDisconnecting || isVoiceEnded}
                         className={`flex h-16 w-16 items-center justify-center rounded-full transition-all ${
-                          voiceRecording
-                            ? 'animate-pulse bg-red-500 shadow-lg shadow-red-500/50'
+                          isVoiceEnded
+                            ? 'mic-ended bg-gray-400'
+                            : voiceDisconnecting
+                            ? 'mic-ending bg-amber-500'
+                            : voiceSpeaking
+                            ? 'mic-bot-speaking bg-indigo-500 shadow-lg shadow-indigo-500/40'
+                            : voiceRecording
+                            ? 'mic-speak-now bg-emerald-500 shadow-lg shadow-emerald-500/40'
                             : voiceConnected
                             ? 'bg-blue-500 hover:bg-blue-600 hover:shadow-lg'
                             : 'bg-gray-400 cursor-not-allowed'
                         }`}
-                        title={voiceRecording ? 'Stop speaking' : 'Start speaking'}
+                        title={
+                          isVoiceEnded
+                            ? 'Conversation ended'
+                            : voiceDisconnecting
+                            ? 'Ending conversation...'
+                            : voiceRecording
+                            ? 'End voice session'
+                            : 'Start speaking'
+                        }
                       >
-                        <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                        </svg>
+                        {isVoiceEnded ? (
+                          /* Checkmark icon for ended state */
+                          <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : voiceDisconnecting ? (
+                          /* Spinning loader for ending state */
+                          <svg className="h-8 w-8 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : voiceSpeaking ? (
+                          /* Speaker/sound icon for bot speaking */
+                          <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6.5 8H4a1 1 0 00-1 1v6a1 1 0 001 1h2.5l4.5 4V4L6.5 8z" />
+                          </svg>
+                        ) : (
+                          /* Default mic icon */
+                          <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                          </svg>
+                        )}
                       </button>
                       
-                      {voiceSpeaking && (
+                      {!voiceDisconnecting && !isVoiceEnded && (
                         <button
-                          onClick={stopVoiceAudio}
-                          className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 hover:bg-orange-600"
-                          title="Stop AI speaking"
+                          onClick={deactivateVoiceMode}
+                          className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                          title="Back to text chat"
                         >
-                          <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                           </svg>
                         </button>
                       )}
-
-                      <button
-                        onClick={deactivateVoiceMode}
-                        className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50"
-                        title="Back to text chat"
-                      >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                      </button>
                     </div>
                     
                     <div className="text-center">
-                      {voiceConnecting ? (
-                        <p className="text-sm text-orange-600">
-                          ⏳ Connecting to voice service...
+                      {isVoiceEnded ? (
+                        <p className="text-sm font-semibold text-gray-500">
+                          Conversation ended
                         </p>
-                      ) : voiceRecording ? (
-                        <p className="text-sm font-semibold text-red-600">
-                          🎤 Listening... speak now
+                      ) : voiceDisconnecting ? (
+                        <p className="text-sm font-semibold text-amber-600">
+                          Ending conversation...
+                        </p>
+                      ) : voiceConnecting ? (
+                        <p className="text-sm text-orange-600">
+                          Connecting to voice service...
                         </p>
                       ) : voiceSpeaking ? (
-                        <p className="text-sm font-semibold text-blue-600">
-                          🔊 AI is speaking...
+                        <p className="text-sm font-semibold text-indigo-600">
+                          Bot is speaking
+                        </p>
+                      ) : voiceRecording ? (
+                        <p className="text-sm font-semibold text-emerald-600">
+                          Speak now
                         </p>
                       ) : voiceConnected ? (
                         <p className="text-sm text-gray-600">

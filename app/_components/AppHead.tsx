@@ -50,20 +50,6 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
     }
   };
 
-  // Debug logging to track user data
-  useEffect(() => {
-    console.log('User auth data:', userAuth.userDetails);
-    console.log(
-      'Calculated initials:',
-      getUserInitials(userAuth.userDetails.name)
-    );
-  }, [userAuth.userDetails]);
-
-  function signOut(): void {
-    userAuth.logout();
-    window.location.href = '/';
-  }
-
   return (
     <>
       {pathname == '/app' && <div className="dashboard-bg"></div>}

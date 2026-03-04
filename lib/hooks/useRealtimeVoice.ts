@@ -28,6 +28,7 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
   const [isConnecting, setIsConnecting] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [transcript, setTranscript] = useState<RealtimeVoiceMessage[]>([]);
 
   const clientRef = useRef<RealtimeVoiceClient | null>(null);
@@ -53,7 +54,7 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
 
   const openMic = useCallback(async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { sampleRate: 24000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      audio: { sampleRate: 24000, channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
     audioStreamRef.current = stream;
 
@@ -89,6 +90,10 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
       if (clientRef.current || isConnecting) return;
       setIsConnecting(true);
 
+      // Clear any stale transcript from a previous voice session so the
+      // sync effect doesn't re-add old entries to the messages list.
+      setTranscript([]);
+
       try {
         const client = new RealtimeVoiceClient({
           sessionId,
@@ -103,29 +108,52 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
             setIsRecording(false);
           },
           onError: (error) => {
-            console.error('Realtime voice error:', error);
+            console.error('[Voice] Realtime voice error:', error);
+            // Full cleanup: tear down mic + disconnect WS so nothing is left dangling
+            teardownMic();
+            if (clientRef.current) {
+              clientRef.current.disconnect();
+              clientRef.current = null;
+            }
             onErrorRef.current?.(error);
             setIsConnected(false);
             setIsConnecting(false);
           },
-          onTranscriptUpdate: (text, role) => {
+          onTranscriptUpdate: (text, role, isNewTurn) => {
             setTranscript((prev) => {
               const last = prev[prev.length - 1];
-              if (last && last.role === role) {
+              // Append to the existing entry ONLY when it's the same role AND
+              // we're still within the same response turn. A new turn (new
+              // item_id from the API) forces a new entry even if the role
+              // hasn't changed — this prevents two consecutive assistant
+              // responses from merging into one bubble.
+              if (last && last.role === role && !isNewTurn) {
                 return [...prev.slice(0, -1), { ...last, content: last.content + text }];
               }
               return [...prev, { role, content: text, timestamp: new Date() }];
             });
           },
           onAudioResponse: () => {
+            // Each audio delta still triggers this callback, but muting and
+            // isSpeaking are now controlled by playback start/finish below.
+          },
+          onPlaybackStarted: () => {
+            // Bot audio is now playing through the speaker — mute the mic
+            // so user speech doesn't get picked up and sent to the API.
             isMutedRef.current = true;
             setIsSpeaking(true);
-            if (speakingTimeoutRef.current) clearTimeout(speakingTimeoutRef.current);
-            speakingTimeoutRef.current = setTimeout(() => {
-              setIsSpeaking(false);
-              isMutedRef.current = false;
+            // Clear any pending user audio in the API buffer so stale
+            // speech captured before the bot started talking isn't processed.
+            clientRef.current?.clearAudioBuffer();
+            if (speakingTimeoutRef.current) {
+              clearTimeout(speakingTimeoutRef.current);
               speakingTimeoutRef.current = null;
-            }, 500);
+            }
+          },
+          onPlaybackFinished: () => {
+            // All queued audio has finished playing — unmute the mic.
+            setIsSpeaking(false);
+            isMutedRef.current = false;
           },
         });
 
@@ -146,21 +174,39 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
         clientRef.current = null;
       }
     },
-    [sessionId, feature, label, isConnecting, openMic],
+    [sessionId, feature, label, isConnecting, openMic, teardownMic],
   );
 
   const disconnectVoice = useCallback(async () => {
+    console.log('[Voice] disconnectVoice called');
+    setIsDisconnecting(true);
     teardownMic();
     if (speakingTimeoutRef.current) { clearTimeout(speakingTimeoutRef.current); speakingTimeoutRef.current = null; }
     if (clientRef.current) {
+      console.log('[Voice] Client exists — clearing buffer and sending goodbye');
       clientRef.current.clearAudioBuffer();
-      // Ask the AI to say goodbye and wait for it to finish speaking
-      await clientRef.current.sendGoodbye();
+      try {
+        // Ask the AI to say goodbye and wait for it to finish speaking
+        // (sendGoodbye waits for both response.done + audio playback)
+        await clientRef.current.sendGoodbye();
+        console.log('[Voice] sendGoodbye completed');
+      } catch (err) {
+        console.error('[Voice] sendGoodbye failed:', err);
+      }
+      // Now safe to tear down the connection and audio pipeline
       clientRef.current.disconnect();
       clientRef.current = null;
+      console.log('[Voice] Client disconnected and cleared');
+    } else {
+      console.log('[Voice] No client to disconnect — already cleaned up');
     }
     setIsConnected(false);
     setIsSpeaking(false);
+    setIsRecording(false);
+    setIsDisconnecting(false);
+    // Clear transcript so stale entries aren't re-synced if voice mode
+    // is re-activated later.
+    setTranscript([]);
   }, [teardownMic]);
 
   const startRecording = useCallback(async () => {
@@ -188,7 +234,7 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
   }, []);
 
   return {
-    isConnected, isConnecting, isRecording, isSpeaking, transcript,
+    isConnected, isConnecting, isRecording, isSpeaking, isDisconnecting, transcript,
     connectVoice, disconnectVoice, startRecording, stopRecording, toggleRecording, sendText, stopAudio,
   };
 }
