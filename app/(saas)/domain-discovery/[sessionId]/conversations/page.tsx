@@ -91,6 +91,8 @@ const DomainConversationPage: React.FC = () => {
     stopAudio: stopVoiceAudio,
   } = useRealtimeVoice({
     sessionId: sessionId || '',
+    feature: 'domain-discovery',
+    label: 'DomainDiscovery',
     onError: (error) => {
       addToast(`Voice error: ${error}`, { type: 'error' });
       setConversationMode('chat');

@@ -115,7 +115,7 @@ interface RealtimeState {
 }
 
 const REALTIME_MODEL = 'gpt-4o-realtime-preview-2024-12-17'; // change if needed
-const REALTIME_VOICE = 'verse';
+const REALTIME_VOICE = 'cedar';
 
 // Event names seen on the OpenAI Realtime data channel commonly include:
 // - response.output_text.delta (partial text)

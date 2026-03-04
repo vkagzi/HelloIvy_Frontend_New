@@ -67,7 +67,7 @@ export async function GET() {
 
   const body = {
     model: 'gpt-4o-realtime-preview-2024-12-17',
-    voice: 'verse',
+    voice: 'cedar',
     modalities: ['audio'],
     instructions:
       'You are a warm, conversational essay coach for students aged 10-22. Engage in natural back-and-forth conversation to help them brainstorm essay ideas. Be personalized, encouraging, and ask follow-up questions that help uncover meaningful stories and insights.',
