@@ -106,7 +106,9 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
               </DropdownMenuItem>
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem>FAQs</DropdownMenuItem>
-              <DropdownMenuItem>Legal</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/legal">Legal</Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="text-red-600 focus:text-red-600">
                 <Link href="/logout">Log Out</Link>

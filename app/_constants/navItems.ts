@@ -35,6 +35,7 @@ export const navItems: NavItem[] = [
   { label: 'Application', icon: 'form', href: '/application' },
   { label: 'Starred', icon: 'star', href: '/starred' },
   { label: 'Personal Details', icon: 'user', href: '/profile/personal/edit' },
+  { label: 'Legal', icon: 'document', href: '/legal' },
 ];
 
 // Subset of nav items shown in the sidebar
