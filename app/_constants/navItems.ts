@@ -35,6 +35,7 @@ export const navItems: NavItem[] = [
   { label: 'Application', icon: 'form', href: '/application' },
   { label: 'Starred', icon: 'star', href: '/starred' },
   { label: 'Personal Details', icon: 'user', href: '/profile/personal/edit' },
+  { label: 'Settings', icon: 'settings', href: '/settings' },
   { label: 'Legal', icon: 'document', href: '/legal' },
 ];
 

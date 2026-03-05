@@ -104,7 +104,9 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
               <DropdownMenuItem asChild>
                 <Link href="/profile/personal/edit">My Profile</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings">Settings</Link>
+              </DropdownMenuItem>
               <DropdownMenuItem>FAQs</DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/legal">Legal</Link>

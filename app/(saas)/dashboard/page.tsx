@@ -1,11 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import imgDashboardGraphic from '@/assets/images/dashboard-graphic.png';
 import Link from 'next/link';
 import { Heading, Label } from '@/app/_components/Typography';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import api from '@/lib/api-client';
+
+type VoicePersona = 'professional' | 'friendly' | 'academic';
+
+const PERSONA_META: Record<VoicePersona, { label: string; gradient: string; initials: string }> = {
+  professional: { label: 'Professional', gradient: 'from-slate-600 to-slate-800', initials: 'PR' },
+  friendly: { label: 'Friendly', gradient: 'from-amber-400 to-orange-500', initials: 'FR' },
+  academic: { label: 'Academic', gradient: 'from-indigo-500 to-purple-600', initials: 'AC' },
+};
 
 export default function Dashboard(): React.ReactElement {
   const {
@@ -14,6 +23,18 @@ export default function Dashboard(): React.ReactElement {
     profileData,
     loading,
   } = useProfile();
+
+  const [currentPersona, setCurrentPersona] = useState<VoicePersona>('professional');
+
+  useEffect(() => {
+    api<{ settings: { voice_persona?: VoicePersona } }>('/api/accounts/settings/')
+      .then((data) => {
+        if (data.settings?.voice_persona) {
+          setCurrentPersona(data.settings.voice_persona);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const profileExists = profileData !== null;
 
@@ -82,5 +103,37 @@ export default function Dashboard(): React.ReactElement {
     );
   };
 
-  return <>{renderCompleteProfile()}</>;
+  return (
+    <>
+      {renderCompleteProfile()}
+
+      {/* Voice Persona quick-link */}
+      <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white px-6 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br ${PERSONA_META[currentPersona].gradient} text-xs font-bold tracking-wider text-white shadow ring-2 ring-white`}
+            >
+              {PERSONA_META[currentPersona].initials}
+            </div>
+            <div>
+              <Label size="md" className="font-semibold text-neutral-900">
+                Voice Persona
+              </Label>
+              <br/>
+              <Label size="sm" className="text-neutral-500">
+                Currently set to <span className="font-medium text-neutral-700">{PERSONA_META[currentPersona].label}</span>
+              </Label>
+            </div>
+          </div>
+          <Link
+            href="/settings"
+            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700"
+          >
+            Change Persona
+          </Link>
+        </div>
+      </div>
+    </>
+  );
 }
