@@ -580,7 +580,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                       '🎤'
                     )}
                   </button>
-                  {/* <button
+                  <button
                     onClick={() => setTtsEnabled(!ttsEnabled)}
                     className={`rounded-lg border px-3 py-2 transition-colors ${
                       ttsEnabled
@@ -590,7 +590,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                     title={ttsEnabled ? 'Disable auto-read' : 'Enable auto-read'}
                   >
                     {isSpeaking ? '🔊' : ttsEnabled ? '🔈' : '🔇'}
-                  </button> */}
+                  </button> 
                   <button
                     onClick={handleSend}
                     disabled={!input.trim() || isLoading}
