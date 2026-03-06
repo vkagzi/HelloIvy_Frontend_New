@@ -173,5 +173,28 @@ export const clearAuthCache = (): void => {
   pendingSessionRequest = null;
 };
 
+export const generateSpeech = async (text: string, voice = 'nova', speed = 1.0): Promise<Blob> => {
+  let token: string | undefined;
+  if (typeof window !== 'undefined') {
+    token = (await getAuthToken()) || undefined;
+  }
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  const res = await fetch(`${baseUrl}/api/tts/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ text, voice, speed }),
+  });
+
+  if (!res.ok) {
+    throw new Error('TTS request failed');
+  }
+
+  return res.blob();
+};
+
 export default api;
 export { getToken, setToken, removeToken };
