@@ -564,7 +564,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                   <button
                     onClick={handleMicToggle}
                     disabled={isLoading}
-                    className={`rounded-lg border px-3 py-2 transition-colors ${
+                    className={`cursor-pointer rounded-lg border px-3 py-2 transition-colors ${
                       isListening
                         ? 'border-red-300 bg-red-50 text-red-600 hover:bg-red-100'
                         : 'border-gray-300 hover:bg-gray-50'
@@ -582,7 +582,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                   </button>
                   <button
                     onClick={() => setTtsEnabled(!ttsEnabled)}
-                    className={`rounded-lg border px-3 py-2 transition-colors ${
+                    className={`cursor-pointer rounded-lg border px-3 py-2 transition-colors ${
                       ttsEnabled
                         ? 'border-blue-300 bg-blue-50 text-blue-600 hover:bg-blue-100'
                         : 'border-gray-300 hover:bg-gray-50'
@@ -594,7 +594,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                   <button
                     onClick={handleSend}
                     disabled={!input.trim() || isLoading}
-                    className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 disabled:opacity-50"
+                    className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 disabled:opacity-50"
                   >
                     Send
                   </button>

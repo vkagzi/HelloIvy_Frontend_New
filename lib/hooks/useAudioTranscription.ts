@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { generateSpeech } from '@/lib/api';
+import { generateSpeechStream } from '@/lib/api';
 
 interface UseAudioTranscriptionOptions {
   onError?: (error: string) => void;
@@ -40,12 +40,19 @@ function getSpeechRecognitionCtor(): SpeechRecognitionCtor | undefined {
   return win.SpeechRecognition ?? win.webkitSpeechRecognition;
 }
 
+/** Check if the browser can stream MP3 via MediaSource. */
+function canStreamMp3(): boolean {
+  if (typeof MediaSource === 'undefined') return false;
+  return MediaSource.isTypeSupported('audio/mpeg');
+}
+
 export function useAudioTranscription({ onError }: UseAudioTranscriptionOptions = {}) {
   // ─── TTS state ─────────────────────────────────────────────
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const currentAudioUrlRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
 
@@ -54,8 +61,8 @@ export function useAudioTranscription({ onError }: UseAudioTranscriptionOptions 
   const [liveTranscript, setLiveTranscript] = useState('');
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
-  // ─── TTS: speak text ──────────────────────────────────────
-  const stopSpeaking = useCallback(() => {
+  // ─── TTS helpers ──────────────────────────────────────────
+  const cleanupAudio = useCallback(() => {
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
@@ -67,46 +74,104 @@ export function useAudioTranscription({ onError }: UseAudioTranscriptionOptions 
     setIsSpeaking(false);
   }, []);
 
+  const stopSpeaking = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    cleanupAudio();
+  }, [cleanupAudio]);
+
+  // ─── TTS: speak text (streaming) ─────────────────────────
   const speakText = useCallback(
     async (text: string): Promise<void> => {
       if (!text.trim()) return;
       stopSpeaking();
       setIsSpeaking(true);
 
-      try {
-        const audioBlob = await generateSpeech(text.slice(0, 4096));
-        const audioUrl = URL.createObjectURL(audioBlob);
-        currentAudioUrlRef.current = audioUrl;
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
 
-        const audio = new Audio(audioUrl);
+      try {
+        const response = await generateSpeechStream(
+          text.slice(0, 4096),
+          undefined,
+          undefined,
+          abortController.signal,
+        );
+
+        if (!response.body) throw new Error('No response body');
+
+        const audio = new Audio();
         currentAudioRef.current = audio;
 
-        audio.onended = () => {
-          setIsSpeaking(false);
-          currentAudioRef.current = null;
-          if (currentAudioUrlRef.current) {
-            URL.revokeObjectURL(currentAudioUrlRef.current);
-            currentAudioUrlRef.current = null;
-          }
-        };
+        const onFinish = () => cleanupAudio();
+        audio.addEventListener('ended', onFinish);
+        audio.addEventListener('error', onFinish);
 
-        audio.onerror = () => {
-          setIsSpeaking(false);
-          currentAudioRef.current = null;
-          if (currentAudioUrlRef.current) {
-            URL.revokeObjectURL(currentAudioUrlRef.current);
-            currentAudioUrlRef.current = null;
-          }
-        };
+        if (canStreamMp3()) {
+          // ── MediaSource path: start playback as first chunk arrives ──
+          const mediaSource = new MediaSource();
+          const url = URL.createObjectURL(mediaSource);
+          currentAudioUrlRef.current = url;
+          audio.src = url;
 
-        await audio.play();
+          // Wait for the MediaSource to be ready
+          await new Promise<void>((resolve) => {
+            mediaSource.addEventListener('sourceopen', () => resolve(), { once: true });
+          });
+
+          const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+          const reader = response.body.getReader();
+          let started = false;
+
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            // Append chunk and wait until the buffer has processed it
+            await new Promise<void>((resolve, reject) => {
+              sourceBuffer.addEventListener('updateend', () => resolve(), { once: true });
+              sourceBuffer.addEventListener('error', () => reject(new Error('SourceBuffer error')), { once: true });
+              sourceBuffer.appendBuffer(value);
+            });
+
+            // Start playback as soon as the very first chunk is buffered
+            if (!started) {
+              started = true;
+              await audio.play();
+            }
+          }
+
+          // Signal that no more data will arrive
+          if (mediaSource.readyState === 'open') {
+            mediaSource.endOfStream();
+          }
+        } else {
+          // ── Fallback: buffer entire response then play ──
+          const reader = response.body.getReader();
+          const chunks: BlobPart[] = [];
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+          const blob = new Blob(chunks, { type: 'audio/mpeg' });
+          const url = URL.createObjectURL(blob);
+          currentAudioUrlRef.current = url;
+          audio.src = url;
+          await audio.play();
+        }
       } catch (err) {
+        if (abortController.signal.aborted) return;
         console.error('TTS error:', err);
         setIsSpeaking(false);
         onErrorRef.current?.('Failed to play audio');
       }
     },
-    [stopSpeaking],
+    [stopSpeaking, cleanupAudio],
   );
 
   // ─── STT: start / stop listening ─────────────────────────
@@ -177,6 +242,9 @@ export function useAudioTranscription({ onError }: UseAudioTranscriptionOptions 
   // ─── Cleanup on unmount ───────────────────────────────────
   useEffect(() => {
     return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }

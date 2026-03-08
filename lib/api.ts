@@ -196,5 +196,39 @@ export const generateSpeech = async (text: string, voice = 'nova', speed = 1.0):
   return res.blob();
 };
 
+/**
+ * Stream TTS audio from the backend.  Returns the raw fetch Response whose
+ * `.body` is a ReadableStream of audio/mpeg chunks, allowing the caller to
+ * begin playback before the full response has arrived.
+ */
+export const generateSpeechStream = async (
+  text: string,
+  voice = 'nova',
+  speed = 1.0,
+  signal?: AbortSignal,
+): Promise<Response> => {
+  let token: string | undefined;
+  if (typeof window !== 'undefined') {
+    token = (await getAuthToken()) || undefined;
+  }
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  const res = await fetch(`${baseUrl}/api/tts/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ text, voice, speed }),
+    signal,
+  });
+
+  if (!res.ok) {
+    throw new Error('TTS stream request failed');
+  }
+
+  return res;
+};
+
 export default api;
 export { getToken, setToken, removeToken };
