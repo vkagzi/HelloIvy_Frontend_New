@@ -44,7 +44,7 @@ export default function Dashboard(): React.ReactElement {
         heading: 'Create your profile',
         description:
           'Create your profile to proceed with personalized recommendations, domain discovery, and more.',
-        linkText: 'Create',
+        linkText: 'Create your profile',
         linkHref: '/profile/personal',
       };
     }
@@ -53,7 +53,7 @@ export default function Dashboard(): React.ReactElement {
         heading: 'View/Edit your profile',
         description:
           'Your profile is partially complete. Fill in the remaining sections to unlock the best recommendations.',
-        linkText: 'View/Edit',
+        linkText: 'View/Edit your profile',
         linkHref: '/profile/personal',
       };
     }
@@ -61,7 +61,7 @@ export default function Dashboard(): React.ReactElement {
       heading: 'View/Edit your profile',
       description:
         'Your profile is complete! You can proceed to domain discovery and explore personalized recommendations.',
-      linkText: 'View/Edit',
+      linkText: 'View/Edit your profile',
       linkHref: '/profile/personal',
     };
   })();
@@ -82,10 +82,10 @@ export default function Dashboard(): React.ReactElement {
           </Label>
         </div>
         <div className="text-center lg:text-left">
-          <Heading level={3} className="font-extrabold">
+          {/* <Heading level={3} className="font-extrabold">
             {heading}
-          </Heading>
-          <Label size="sm" className="block">
+          </Heading> */}
+          <Label size="md" className="block">
             {description}
           </Label>
           <Link href={linkHref} className="btn-secondary mt-4 inline-block">

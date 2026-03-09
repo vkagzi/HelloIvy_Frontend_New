@@ -55,20 +55,29 @@ const EducationalDetailsForm: React.FC = () => {
     return isNaN(parsed.getTime()) ? null : parsed.getFullYear();
   }, [personalDetails]);
 
-  // Update startYear and endYear options to only include years >= birth year
+  // Update startYear to only include years >= (birth year + 3), endYear >= (birth year + 10)
   React.useEffect(() => {
     if (!birthYear) return;
     setFieldDefs((prev) =>
-      prev.map((field) =>
-        field.id === 'startYear' || field.id === 'endYear'
-          ? {
-              ...field,
-              options: (field.options ?? []).filter(
-                (y) => parseInt(y, 10) >= (birthYear + 10)
-              ),
-            }
-          : field
-      )
+      prev.map((field) => {
+        if (field.id === 'startYear') {
+          return {
+            ...field,
+            options: (field.options ?? []).filter(
+              (y) => parseInt(y, 10) >= birthYear + 3
+            ),
+          };
+        }
+        if (field.id === 'endYear') {
+          return {
+            ...field,
+            options: (field.options ?? []).filter(
+              (y) => parseInt(y, 10) >= birthYear + 10
+            ),
+          };
+        }
+        return field;
+      })
     );
   }, [birthYear]);
 
