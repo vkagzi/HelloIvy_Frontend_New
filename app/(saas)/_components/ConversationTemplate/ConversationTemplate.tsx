@@ -1,13 +1,18 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { Heading, Paragraph } from '@/app/_components/Typography';
 import { useToast } from '@/app/_components/Toast';
+import { FiIcon } from '@/app/_components/Icons';
 import { Textarea } from '@/components/ui/textarea';
+import imgIcon from '@/assets/images/icon.png';
 import { marked } from 'marked';
 
 import { useAudioTranscription } from '@/lib/hooks/useAudioTranscription';
+import AudioWaveform from './AudioWaveform';
+import VoiceActivityBars from './VoiceActivityBars';
 import SessionTimer from '@/app/(saas)/_components/SessionTimer';
 import type {
   ConversationConfig,
@@ -91,10 +96,13 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     setLiveTranscript,
     startListening,
     stopListening,
+    audioLevel,
   } = useAudioTranscription({
     onError: (error) => addToast(error, { type: 'error' }),
   });
   const preInputRef = useRef('');
+  const liveTranscriptRef = useRef(liveTranscript);
+  liveTranscriptRef.current = liveTranscript;
 
   // Auto-speak new bot messages when TTS is enabled
   const lastSpokenMsgIdRef = useRef<string | null>(null);
@@ -117,24 +125,38 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     if (!ttsEnabled) stopSpeaking();
   }, [ttsEnabled, stopSpeaking]);
 
-  // Sync live STT transcript into the input box
-  useEffect(() => {
-    if (isListening) {
+  // Accept: commit the live transcript to input and stop recording
+  const handleAcceptTranscript = useCallback(async () => {
+    // stopListening commits the audio buffer and returns the final
+    // transcript directly (avoids React state-update timing issues).
+    const finalTranscript = await stopListening();
+    // Use whichever is available: the committed final transcript, or
+    // the latest live transcript we saw before stopping.
+    const transcript = finalTranscript || liveTranscriptRef.current;
+    if (transcript) {
       const prefix = preInputRef.current;
-      const separator = prefix && liveTranscript ? ' ' : '';
-      setInput(prefix + separator + liveTranscript);
+      const separator = prefix && transcript ? ' ' : '';
+      setInput(prefix + separator + transcript);
     }
-  }, [liveTranscript, isListening]);
+  }, [stopListening]);
 
-  const handleMicToggle = useCallback(() => {
+  // Reject: discard audio buffer and stop recording
+  const handleRejectTranscript = useCallback(async () => {
+    await stopListening();
+    setInput(preInputRef.current);
+    setLiveTranscript('');
+  }, [stopListening, setLiveTranscript]);
+
+  const handleMicToggle = useCallback(async () => {
     if (isListening) {
-      stopListening();
+      // Toggling mic while recording = accept
+      await handleAcceptTranscript();
     } else {
       preInputRef.current = input;
       setLiveTranscript('');
       startListening();
     }
-  }, [isListening, input, startListening, stopListening, setLiveTranscript]);
+  }, [isListening, input, startListening, setLiveTranscript, handleAcceptTranscript]);
 
   const canEnd = callbacks.canEndConversation({
     sessionEnded,
@@ -417,6 +439,21 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                   />
                 )}
                 <button
+                  onClick={() => setTtsEnabled(!ttsEnabled)}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all ${
+                    ttsEnabled
+                      ? 'border-blue-300 bg-blue-50 text-blue-600 hover:bg-blue-100'
+                      : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                  title={ttsEnabled ? 'Disable auto-read' : 'Enable auto-read'}
+                >
+                  <FiIcon
+                    name={isSpeaking ? 'volume' : ttsEnabled ? 'volume-down' : 'mute'}
+                    className="h-3.5 w-3.5"
+                  />
+                  <span>{isSpeaking ? 'Speaking' : ttsEnabled ? 'Voice On' : 'Voice Off'}</span>
+                </button>
+                <button
                   onClick={() => setShowDebugDialog(true)}
                   className="group flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-purple-100 hover:shadow-sm"
                   title="View debugging information"
@@ -467,9 +504,15 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
             return (
               <div
                 key={m.id}
-                className={`flex ${m.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${m.type === 'user' ? 'justify-end' : 'items-start gap-3'}`}
               >
-                <div className={`${m.type === 'user' ? 'text-right' : 'w-full text-left'}`}>
+                {/* Bot avatar */}
+                {m.type === 'bot' && (
+                  <div className=" flex h-10 w-10 shrink-0 items-center justify-center">
+                    <Image src={imgIcon} alt="HelloIvy" className="object-contain h-full w-full" />
+                  </div>
+                )}
+                <div className={`${m.type === 'user' ? 'text-right' : 'min-w-0 flex-1 text-left'}`}>
                   <div
                     className={`rounded-lg px-4 py-3 ${
                       m.type === 'user'
@@ -533,7 +576,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
         </div>
 
         {/* Input Area */}
-        <div className="border-t bg-white px-6 py-4">
+        <div className="border-t border-neutral-200 bg-white px-6 py-4">
           {sessionEnded ? (
             <div className="text-center text-sm text-gray-600">
               ✅ This session has ended. Click &quot;View Results&quot; above to see your recommendations.
@@ -548,76 +591,99 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
             <div className="text-center text-sm text-gray-600">⏳</div>
           ) : (
             <>
-              <div className="flex items-center space-x-4">
-                <div className="flex-1">
+              {/* Input bar */}
+              {isListening ? (
+                /* ── Recording state: light pill with waveform + ✕ / ✓ ── */
+                <div className="flex items-center gap-2 rounded-2xl border border-gray-300 bg-white px-3 py-2 shadow-sm">
+                  {/* Mic indicator (pulsing dot) */}
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center">
+                    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+                  </span>
+
+                  {/* Waveform */}
+                  <div className="h-8 flex-1">
+                    <AudioWaveform
+                      level={audioLevel}
+                      active
+                      color="rgba(107, 114, 128, 0.7)"
+                      trackColor="rgba(209, 213, 219, 0.45)"
+                    />
+                  </div>
+
+                  {/* Reject — discard audio buffer */}
+                  <button
+                    onClick={handleRejectTranscript}
+                    type="button"
+                    className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-red-100 hover:text-red-500"
+                    title="Discard recording"
+                  >
+                    <i className="fi fi-rr-cross-small flex h-4 w-4 items-center justify-center text-[16px] leading-none" />
+                  </button>
+
+                  {/* Accept — commit transcript to input */}
+                  <button
+                    onClick={handleAcceptTranscript}
+                    type="button"
+                    className={`inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-linear-to-r ${theme.ctaFrom} ${theme.ctaTo} text-white transition-all hover:opacity-90`}
+                    title="Accept transcription"
+                  >
+                    <i className="fi fi-rr-check flex h-4 w-4 items-center justify-center text-[16px] leading-none" />
+                  </button>
+                </div>
+              ) : (
+                /* ── Default state: normal text input bar ── */
+                <div className="flex items-center gap-2 rounded-2xl border border-gray-300 bg-white px-3 py-1.5 shadow-sm transition-all">
                   <Textarea
+                    id='user-message'
                     ref={inputRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={isListening ? 'Listening…' : 'Type your response…'}
-                    className="min-h-10! py-2!"
+                    placeholder='Type your response…'
+                    className="min-h-9! max-h-32 flex-1 resize-none border-0! bg-transparent! py-1.5! text-gray-900 shadow-none! outline-none! ring-0! placeholder:text-gray-400 focus:ring-0! focus-visible:ring-0!"
                     disabled={isLoading}
                   />
-                </div>
-                <div className="flex space-x-2">
+
+                  {/* Mic button */}
                   <button
                     onClick={handleMicToggle}
                     disabled={isLoading}
-                    className={`cursor-pointer rounded-lg border px-3 py-2 transition-colors ${
-                      isListening
-                        ? 'border-red-300 bg-red-50 text-red-600 hover:bg-red-100'
-                        : 'border-gray-300 hover:bg-gray-50'
-                    }`}
-                    title={isListening ? 'Stop listening' : 'Start voice input'}
+                    type="button"
+                    className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
+                    title="Start voice input"
                   >
-                    {isListening ? (
-                      <span className="flex items-center gap-1">
-                        <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                        🎤
-                      </span>
-                    ) : (
-                      '🎤'
-                    )}
+                    <FiIcon name="microphone" className="h-4 w-4" />
                   </button>
-                  <button
-                    onClick={() => setTtsEnabled(!ttsEnabled)}
-                    className={`cursor-pointer rounded-lg border px-3 py-2 transition-colors ${
-                      ttsEnabled
-                        ? 'border-blue-300 bg-blue-50 text-blue-600 hover:bg-blue-100'
-                        : 'border-gray-300 hover:bg-gray-50'
-                    }`}
-                    title={ttsEnabled ? 'Disable auto-read' : 'Enable auto-read'}
-                  >
-                    {isSpeaking ? '🔊' : ttsEnabled ? '🔈' : '🔇'}
-                  </button> 
+
+                  {/* Submit button */}
                   <button
                     onClick={handleSend}
                     disabled={!input.trim() || isLoading}
-                    className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 disabled:opacity-50"
+                    type="button"
+                    className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-linear-to-r ${theme.ctaFrom} ${theme.ctaTo} text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40`}
+                    title="Send message"
                   >
-                    Send
+                    <FiIcon name="arrow-up" className="h-4 w-4" />
                   </button>
-                  {canEnd && (
-                    <button
-                      onClick={handleEnd}
-                      className={`cursor-pointer whitespace-nowrap rounded-lg bg-linear-to-r ${theme.ctaFrom} ${theme.ctaTo} px-4 py-2 text-white hover:${theme.ctaHoverFrom} hover:${theme.ctaHoverTo}`}
-                    >
-                      End →
-                    </button>
-                  )}
                 </div>
-              </div>
-              <div className="mt-2 text-xs text-gray-500">
-                {isListening ? (
-                  <span className="text-red-500">
-                    🎤 Listening… Click mic or send to stop.
-                  </span>
-                ) : (
-                  <>
-                    Tip: Press <span className="font-semibold">Enter</span> to send,{' '}
-                    <span className="font-semibold">Shift+Enter</span> for a new line.
-                  </>
+              )}
+
+              {/* Footer row: status hint + End button */}
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-xs text-gray-400">
+                  {isListening ? (
+                    <span className="text-red-400">Recording… tap ✓ to accept or ✕ to discard.</span>
+                  ) : (
+                    <>Press <span className="font-semibold text-gray-600">Enter</span> to send, <span className="font-semibold text-gray-600">Shift+Enter</span> for new line.</>
+                  )}
+                </p>
+                {canEnd && (
+                  <button
+                    onClick={handleEnd}
+                    className={`cursor-pointer whitespace-nowrap rounded-lg bg-linear-to-r ${theme.ctaFrom} ${theme.ctaTo} px-4 py-1.5 text-sm text-white hover:${theme.ctaHoverFrom} hover:${theme.ctaHoverTo}`}
+                  >
+                    End →
+                  </button>
                 )}
               </div>
             </>

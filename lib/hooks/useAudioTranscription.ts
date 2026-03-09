@@ -2,42 +2,10 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { generateSpeechStream } from '@/lib/api';
+import { RealtimeTranscriptionClient } from '@/lib/realtime-transcription-client';
 
 interface UseAudioTranscriptionOptions {
   onError?: (error: string) => void;
-}
-
-/** Minimal interface matching the browser SpeechRecognition API surface we use. */
-interface SpeechRecognitionLike {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start: () => void;
-  stop: () => void;
-  onstart: (() => void) | null;
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  onend: (() => void) | null;
-}
-
-interface SpeechRecognitionResultItem {
-  isFinal: boolean;
-  0: { transcript: string };
-}
-
-interface SpeechRecognitionEventLike {
-  results: {
-    length: number;
-    [index: number]: SpeechRecognitionResultItem;
-  };
-}
-
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-
-function getSpeechRecognitionCtor(): SpeechRecognitionCtor | undefined {
-  if (typeof window === 'undefined') return undefined;
-  const win = window as unknown as Record<string, SpeechRecognitionCtor | undefined>;
-  return win.SpeechRecognition ?? win.webkitSpeechRecognition;
 }
 
 /** Check if the browser can stream MP3 via MediaSource. */
@@ -59,7 +27,8 @@ export function useAudioTranscription({ onError }: UseAudioTranscriptionOptions 
   // ─── STT state ─────────────────────────────────────────────
   const [isListening, setIsListening] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState('');
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const transcriptionClientRef = useRef<RealtimeTranscriptionClient | null>(null);
 
   // ─── TTS helpers ──────────────────────────────────────────
   const cleanupAudio = useCallback(() => {
@@ -175,68 +144,56 @@ export function useAudioTranscription({ onError }: UseAudioTranscriptionOptions 
   );
 
   // ─── STT: start / stop listening ─────────────────────────
-  const startListening = useCallback(() => {
-    const Ctor = getSpeechRecognitionCtor();
-    if (!Ctor) {
-      onErrorRef.current?.('Speech recognition is not supported in this browser');
-      return;
-    }
-
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-
-    const recognition = new Ctor();
-    recognitionRef.current = recognition;
-    setLiveTranscript('');
-
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onstart = () => {
-      setIsListening(true);
-    };
-
-    recognition.onresult = (event: SpeechRecognitionEventLike) => {
-      let final = '';
-      let interim = '';
-      for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          final += result[0].transcript;
-        } else {
-          interim += result[0].transcript;
-        }
-      }
-      setLiveTranscript(final + interim);
-    };
-
-    recognition.onerror = (event: { error: string }) => {
-      if (event.error !== 'no-speech' && event.error !== 'aborted') {
-        console.error('Speech recognition error:', event.error);
-        onErrorRef.current?.(`Mic error: ${event.error}`);
-      }
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      recognitionRef.current = null;
-    };
-
-    try {
-      recognition.start();
-    } catch {
-      onErrorRef.current?.('Failed to start microphone');
-    }
-  }, []);
-
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
+  const stopListening = useCallback(async (): Promise<string> => {
+    const client = transcriptionClientRef.current;
+    let finalTranscript = '';
+    if (client) {
+      transcriptionClientRef.current = null;
+      finalTranscript = await client.commitAndDisconnect();
     }
     setIsListening(false);
+    setAudioLevel(0);
+    return finalTranscript;
+  }, []);
+
+  const startListening = useCallback(async () => {
+    // Hard-disconnect any previous session (no commit)
+    if (transcriptionClientRef.current) {
+      transcriptionClientRef.current.disconnect();
+      transcriptionClientRef.current = null;
+    }
+    setLiveTranscript('');
+    setAudioLevel(0);
+
+    const client = new RealtimeTranscriptionClient({
+      onOpen: () => {
+        setIsListening(true);
+      },
+      onClose: () => {
+        setIsListening(false);
+        setAudioLevel(0);
+        transcriptionClientRef.current = null;
+      },
+      onTranscript: (transcript) => {
+        setLiveTranscript(transcript);
+      },
+      onAudioLevel: (level) => {
+        setAudioLevel(level);
+      },
+      onError: (error) => {
+        console.error('Realtime transcription error:', error);
+        onErrorRef.current?.(`Mic error: ${error}`);
+      },
+    });
+
+    transcriptionClientRef.current = client;
+
+    try {
+      await client.connect();
+    } catch {
+      transcriptionClientRef.current = null;
+      setIsListening(false);
+    }
   }, []);
 
   // ─── Cleanup on unmount ───────────────────────────────────
@@ -245,8 +202,8 @@ export function useAudioTranscription({ onError }: UseAudioTranscriptionOptions 
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
+      if (transcriptionClientRef.current) {
+        transcriptionClientRef.current.disconnect();
       }
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
@@ -270,5 +227,6 @@ export function useAudioTranscription({ onError }: UseAudioTranscriptionOptions 
     setLiveTranscript,
     startListening,
     stopListening,
+    audioLevel,
   };
 }
