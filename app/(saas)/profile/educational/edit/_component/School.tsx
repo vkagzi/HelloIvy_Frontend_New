@@ -393,6 +393,9 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                         className="px-4 py-3 text-left text-label-md font-semibold text-neutral-900"
                       >
                         {fieldDef.label}
+                        {fieldDef.required && (
+                          <span className="ml-1 text-orange-500">*</span>
+                        )}
                       </th>
                     );
                   })}

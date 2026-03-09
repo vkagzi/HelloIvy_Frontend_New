@@ -845,7 +845,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Link to Course',
     placeholder: 'Enter course link',
-    required: true,
+    required: false,
   },
   {
     id: 'awards',
