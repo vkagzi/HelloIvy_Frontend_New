@@ -26,10 +26,11 @@ export default function Dashboard(): React.ReactElement {
   const [currentPersona, setCurrentPersona] = useState<VoicePersona>('male');
 
   useEffect(() => {
-    api<{ settings: { voice_persona?: VoicePersona } }>('/api/accounts/settings/')
+    api<{ settings: { voice_persona?: string } }>('/api/accounts/settings/')
       .then((data) => {
-        if (data.settings?.voice_persona) {
-          setCurrentPersona(data.settings.voice_persona);
+        const persona = data.settings?.voice_persona;
+        if (persona && persona in PERSONA_META) {
+          setCurrentPersona(persona as VoicePersona);
         }
       })
       .catch(() => {});

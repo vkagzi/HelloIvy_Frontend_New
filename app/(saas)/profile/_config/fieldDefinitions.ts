@@ -889,7 +889,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     label: 'Level of Competitiveness',
     placeholder: 'Enter level of competitiveness',
     required: true,
-    options: ['School', 'College', 'District', 'State', 'National'],
+    options: ['School', 'College', 'District', 'State', 'National', 'Global'],
   },
   {
     id: 'numberOfParticipants',
@@ -2007,7 +2007,7 @@ export const extraCurricularFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Description',
     placeholder: 'Enter description',
-    required: false,
+    required: true,
   },
 ];
 
