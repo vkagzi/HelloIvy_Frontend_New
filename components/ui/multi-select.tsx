@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
 interface MultiSelectProps {
+  id?: string;
   value: string[];
   onChange: (value: string[]) => void;
   error?: string;
@@ -20,6 +21,7 @@ interface MultiSelectProps {
 }
 
 export function MultiSelect({
+  id,
   value = [],
   onChange,
   error,
@@ -99,6 +101,7 @@ export function MultiSelect({
       <Popover.Root open={isOpen} onOpenChange={handleOpenChange}>
         <Popover.Trigger asChild disabled={disabled}>
           <button
+            id={id}
             type="button"
             className={cn(
               'flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-left text-sm shadow-sm transition-colors',

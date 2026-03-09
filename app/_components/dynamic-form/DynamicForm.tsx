@@ -1255,18 +1255,28 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             if (item.repeatables?.name && schoolObj[item.repeatables.name]) {
               const nestedArray = schoolObj[item.repeatables.name];
               if (Array.isArray(nestedArray)) {
-                // First, filter out empty rows
-                const filteredNested = nestedArray.filter((row) => {
-                  if (typeof row !== 'object' || row === null) return true;
-                  const rowObj = row as Record<string, unknown>;
-                  // Check if any field in this row has a non-empty value
-                  return (item.repeatables?.fields ?? []).some((fieldId) => {
-                    const value = rowObj[fieldId];
-                    return (
-                      value !== '' && value !== null && value !== undefined
-                    );
+                const minRows = item.repeatables?.repeatable_option?.min;
+
+                // Only filter out empty rows when doing so won't drop
+                // below the minimum. Otherwise keep them in-place so
+                // validation errors map to the correct row indices.
+                let filteredNested: unknown[];
+                if (minRows !== undefined && nestedArray.length <= minRows) {
+                  // At or below minimum — keep every row as-is
+                  filteredNested = nestedArray;
+                } else {
+                  // Above minimum — safe to strip fully-empty rows
+                  filteredNested = nestedArray.filter((row) => {
+                    if (typeof row !== 'object' || row === null) return true;
+                    const rowObj = row as Record<string, unknown>;
+                    return (item.repeatables?.fields ?? []).some((fieldId) => {
+                      const value = rowObj[fieldId];
+                      return (
+                        value !== '' && value !== null && value !== undefined
+                      );
+                    });
                   });
-                });
+                }
 
                 // Then, clean up conditional fields
                 schoolObj[item.repeatables.name] = filteredNested.map((row) => {
@@ -1376,9 +1386,17 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           const firstErrorKey = Object.keys(fieldErrors)[0];
           if (firstErrorKey) {
             // Try direct id match first, then fallback to name attribute
-            const el =
+            let el =
               document.getElementById(firstErrorKey) ??
               document.querySelector<HTMLElement>(`[name="${firstErrorKey}"]`);
+
+            // Fallback: for array-level errors (e.g. "highSchool.0.subjects"),
+            // try to find any element whose id starts with the error key
+            if (!el) {
+              const escapedKey = CSS.escape(firstErrorKey);
+              el = document.querySelector<HTMLElement>(`[id^="${escapedKey}."]`);
+            }
+
             if (el) {
               el.scrollIntoView({ behavior: 'smooth', block: 'center' });
               el.focus({ preventScroll: true });

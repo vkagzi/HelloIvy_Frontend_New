@@ -144,6 +144,7 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
     }
     case 'text_select':
     case 'select_autofill':
+    case 'location_autofill':
     case 'month_year': {
       let base = z.string();
       if (field.required) base = base.min(1, `${field.label} is required`);

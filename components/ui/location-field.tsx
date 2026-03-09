@@ -8,6 +8,7 @@ import {
 } from '@/lib/api/locations';
 
 interface LocationFieldProps {
+  id?: string;
   type: 'country' | 'city';
   value: string;
   onChange: (value: string) => void;
@@ -25,6 +26,7 @@ interface LocationFieldProps {
  * For city type, returns formatted "City, State, Country" strings
  */
 export function LocationField({
+  id,
   type,
   value,
   onChange,
@@ -117,6 +119,7 @@ export function LocationField({
 
   return (
     <SelectAutofill
+      id={id}
       label={label}
       options={options}
       required={required}

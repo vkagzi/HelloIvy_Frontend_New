@@ -250,7 +250,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             );
           case 'radio':
             return (
-              <div className="grid gap-2">
+              <div id={field.id} className="grid gap-2">
                 <Label
                   className="text-sm font-medium text-neutral-900"
                 >
@@ -431,6 +431,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             console.log('Options:', field);
             return (
               <MultiSelect
+                id={field.id}
                 label={field.label}
                 options={resolvedOptions}
                 required={field.required}
@@ -455,6 +456,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
               
               return (
                 <LocationField
+                  id={field.id}
                   type={locationType}
                   label={field.label}
                   required={field.required}
@@ -474,6 +476,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             
             return (
               <SelectAutofill
+                id={field.id}
                 label={field.label}
                 options={resolvedOptions}
                 required={field.required}

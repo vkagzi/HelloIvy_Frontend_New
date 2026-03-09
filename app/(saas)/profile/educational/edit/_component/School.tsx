@@ -484,6 +484,12 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
               );
             })()}
           </div>
+          {/* Show array-level subjects error (e.g. "At least 3 subjects required") */}
+          {errors[`${sectionType}.${schoolIdx}.${section.repeatables?.name ?? 'subjects'}`] && (
+            <p className="mt-1 text-sm text-red-500">
+              {errors[`${sectionType}.${schoolIdx}.${section.repeatables?.name ?? 'subjects'}`]}
+            </p>
+          )}
           <button
             type="button"
             className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"
