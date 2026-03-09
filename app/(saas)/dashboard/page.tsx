@@ -8,12 +8,11 @@ import { Heading, Label } from '@/app/_components/Typography';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import api from '@/lib/api-client';
 
-type VoicePersona = 'professional' | 'friendly' | 'academic';
+type VoicePersona = 'male' | 'female';
 
 const PERSONA_META: Record<VoicePersona, { label: string; gradient: string; initials: string }> = {
-  professional: { label: 'Professional', gradient: 'from-slate-600 to-slate-800', initials: 'PR' },
-  friendly: { label: 'Friendly', gradient: 'from-amber-400 to-orange-500', initials: 'FR' },
-  academic: { label: 'Academic', gradient: 'from-indigo-500 to-purple-600', initials: 'AC' },
+  male: { label: 'Male', gradient: 'from-blue-500 to-indigo-600', initials: 'M' },
+  female: { label: 'Female', gradient: 'from-pink-500 to-rose-600', initials: 'F' },
 };
 
 export default function Dashboard(): React.ReactElement {
@@ -24,7 +23,7 @@ export default function Dashboard(): React.ReactElement {
     loading,
   } = useProfile();
 
-  const [currentPersona, setCurrentPersona] = useState<VoicePersona>('professional');
+  const [currentPersona, setCurrentPersona] = useState<VoicePersona>('male');
 
   useEffect(() => {
     api<{ settings: { voice_persona?: VoicePersona } }>('/api/accounts/settings/')
@@ -50,18 +49,18 @@ export default function Dashboard(): React.ReactElement {
     }
     if (!isProfileComplete) {
       return {
-        heading: 'Add more details to your profile',
+        heading: 'View/Edit your profile',
         description:
           'Your profile is partially complete. Fill in the remaining sections to unlock the best recommendations.',
-        linkText: 'Edit',
+        linkText: 'View/Edit',
         linkHref: '/profile/personal',
       };
     }
     return {
-      heading: 'View your profile',
+      heading: 'View/Edit your profile',
       description:
         'Your profile is complete! You can proceed to domain discovery and explore personalized recommendations.',
-      linkText: 'View',
+      linkText: 'View/Edit',
       linkHref: '/profile/personal',
     };
   })();
@@ -107,7 +106,7 @@ export default function Dashboard(): React.ReactElement {
     <>
       {renderCompleteProfile()}
 
-      {/* Voice Persona quick-link */}
+      {/* Select Your Counsellor Voice quick-link */}
       <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white px-6 py-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -118,7 +117,7 @@ export default function Dashboard(): React.ReactElement {
             </div>
             <div>
               <Label size="md" className="font-semibold text-neutral-900">
-                Voice Persona
+                Select Your Counsellor Voice
               </Label>
               <br/>
               <Label size="sm" className="text-neutral-500">
@@ -130,7 +129,7 @@ export default function Dashboard(): React.ReactElement {
             href="/settings"
             className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700"
           >
-            Change Persona
+            Change Voice
           </Link>
         </div>
       </div>

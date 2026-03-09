@@ -361,6 +361,9 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           <Label size="lg" className="font-semibold text-neutral-900">
             {gradeLabel} Subject Details
           </Label>
+          <p className=" text-label-sm text-neutral-600">
+            *All grades are required.
+          </p>
           <div className="mt-5 overflow-x-auto">
             {(() => {
               // Check if any subject in this school has 'Other' selected
