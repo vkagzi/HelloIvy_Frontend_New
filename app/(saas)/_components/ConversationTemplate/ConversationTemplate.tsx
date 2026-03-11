@@ -11,6 +11,7 @@ import imgIcon from '@/assets/images/icon.png';
 import { marked } from 'marked';
 
 import { useAudioTranscription } from '@/lib/hooks/useAudioTranscription';
+import { useRealtimeVoice } from '@/lib/hooks/useRealtimeVoice';
 import AudioWaveform from './AudioWaveform';
 import VoiceActivityBars from './VoiceActivityBars';
 import SessionTimer from '@/app/(saas)/_components/SessionTimer';
@@ -83,6 +84,83 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Realtime voice mode
+  const [conversationMode, setConversationMode] = useState<'chat' | 'voice'>('chat');
+  const [isVoiceEnded, setIsVoiceEnded] = useState(false);
+  const prevVoiceTranscriptLenRef = useRef(0);
+
+  const {
+    isConnected: voiceConnected,
+    isConnecting: voiceConnecting,
+    isRecording: voiceRecording,
+    isSpeaking: voiceSpeaking,
+    isDisconnecting: voiceDisconnecting,
+    transcript: voiceTranscript,
+    connectVoice,
+    disconnectVoice,
+    toggleRecording: toggleVoiceRecording,
+  } = useRealtimeVoice({
+    sessionId: sessionId || '',
+    feature: featureId,
+    label: featureLabel,
+    onError: (error) => {
+      addToast(`Voice error: ${error}`, { type: 'error' });
+      setConversationMode('chat');
+    },
+  });
+
+  // Sync voice transcript to main messages list (streaming deltas included)
+  useEffect(() => {
+    if (conversationMode !== 'voice' || voiceTranscript.length === 0) return;
+    if (voiceTranscript.length > prevVoiceTranscriptLenRef.current) {
+      const newEntries = voiceTranscript.slice(prevVoiceTranscriptLenRef.current);
+      const newMessages: ConversationMessage[] = newEntries.map((t, idx) => ({
+        id: `voice-${Date.now()}-${prevVoiceTranscriptLenRef.current + idx}`,
+        type: t.role === 'assistant' ? 'bot' : 'user',
+        content: t.content,
+        timestamp: t.timestamp.toISOString(),
+      }));
+      setMessages((prev) => [...prev, ...newMessages]);
+      prevVoiceTranscriptLenRef.current = voiceTranscript.length;
+    } else {
+      // Streaming delta: update last matching voice message
+      const lastTranscript = voiceTranscript[voiceTranscript.length - 1];
+      setMessages((prev) => {
+        const expectedType = lastTranscript.role === 'assistant' ? 'bot' : 'user';
+        for (let i = prev.length - 1; i >= 0; i--) {
+          if (prev[i].type === expectedType && prev[i].id.startsWith('voice-')) {
+            if (prev[i].content === lastTranscript.content) return prev;
+            const updated = [...prev];
+            updated[i] = { ...updated[i], content: lastTranscript.content };
+            return updated;
+          }
+        }
+        return prev;
+      });
+    }
+  }, [voiceTranscript, conversationMode]);
+
+  const activateVoiceMode = useCallback(async () => {
+    setIsVoiceEnded(false);
+    const chatHistory = messages.map((m) => ({
+      role: (m.type === 'bot' ? 'assistant' : 'user') as 'user' | 'assistant',
+      content: m.content,
+    }));
+    const lastBot = [...messages].reverse().find((m) => m.type === 'bot');
+    setConversationMode('voice');
+    await connectVoice(chatHistory, lastBot?.content);
+  }, [messages, connectVoice]);
+
+  const deactivateVoiceMode = useCallback(async () => {
+    await disconnectVoice();
+    prevVoiceTranscriptLenRef.current = 0;
+    setIsVoiceEnded(true);
+    setTimeout(() => {
+      setIsVoiceEnded(false);
+      setConversationMode('chat');
+    }, 2000);
+  }, [disconnectVoice]);
 
   // Audio transcription (TTS + STT)
   const {
@@ -453,6 +531,34 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                   />
                   <span>{isSpeaking ? 'Speaking' : ttsEnabled ? 'Voice On' : 'Voice Off'}</span>
                 </button>
+                {conversationMode === 'voice' ? (
+                  <button
+                    onClick={deactivateVoiceMode}
+                    className="flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition-all hover:border-blue-400 hover:bg-blue-100 hover:shadow-sm"
+                    title="Switch back to text chat"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span>Back to Chat</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={activateVoiceMode}
+                    disabled={voiceConnecting || sessionEnded}
+                    className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-all hover:border-emerald-400 hover:bg-emerald-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Try realtime voice conversation"
+                  >
+                    {voiceConnecting ? (
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                    ) : (
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    )}
+                    <span>{voiceConnecting ? 'Connecting…' : 'Try Voice'}</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setShowDebugDialog(true)}
                   className="group flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-purple-100 hover:shadow-sm"
@@ -580,6 +686,95 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
           {sessionEnded ? (
             <div className="text-center text-sm text-gray-600">
               ✅ This session has ended. Click &quot;View Results&quot; above to see your recommendations.
+            </div>
+          ) : conversationMode === 'voice' ? (
+            /* ── Realtime voice controls ── */
+            <div className="flex flex-col items-center space-y-4">
+              <div className="flex items-center space-x-4">
+                {/* Main voice status button */}
+                <button
+                  onClick={
+                    voiceDisconnecting || isVoiceEnded
+                      ? undefined
+                      : voiceRecording
+                      ? deactivateVoiceMode
+                      : toggleVoiceRecording
+                  }
+                  disabled={!voiceConnected || voiceDisconnecting || isVoiceEnded}
+                  className={`flex h-16 w-16 items-center justify-center rounded-full transition-all ${
+                    isVoiceEnded
+                      ? 'bg-gray-400'
+                      : voiceDisconnecting
+                      ? 'bg-amber-500'
+                      : voiceSpeaking
+                      ? 'bg-indigo-500 shadow-lg shadow-indigo-500/40'
+                      : voiceRecording
+                      ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40'
+                      : voiceConnected
+                      ? 'bg-blue-500 hover:bg-blue-600 hover:shadow-lg'
+                      : 'cursor-not-allowed bg-gray-400'
+                  }`}
+                  title={
+                    isVoiceEnded
+                      ? 'Conversation ended'
+                      : voiceDisconnecting
+                      ? 'Ending conversation...'
+                      : voiceRecording
+                      ? 'End voice session'
+                      : 'Start speaking'
+                  }
+                >
+                  {isVoiceEnded ? (
+                    <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : voiceDisconnecting ? (
+                    <svg className="h-8 w-8 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : voiceSpeaking ? (
+                    <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6.5 8H4a1 1 0 00-1 1v6a1 1 0 001 1h2.5l4.5 4V4L6.5 8z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  )}
+                </button>
+
+                {/* Back to chat button */}
+                {!voiceDisconnecting && !isVoiceEnded && (
+                  <button
+                    onClick={deactivateVoiceMode}
+                    className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                    title="Back to text chat"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              <div className="text-center text-sm">
+                {isVoiceEnded ? (
+                  <span className="font-semibold text-gray-500">Conversation ended</span>
+                ) : voiceDisconnecting ? (
+                  <span className="font-semibold text-amber-600">Ending conversation…</span>
+                ) : voiceConnecting ? (
+                  <span className="text-orange-600">Connecting to voice service…</span>
+                ) : voiceSpeaking ? (
+                  <span className="font-semibold text-indigo-600">Bot is speaking</span>
+                ) : voiceRecording ? (
+                  <span className="font-semibold text-emerald-600">Speak now</span>
+                ) : voiceConnected ? (
+                  <span className="text-gray-600">Click the mic to start speaking</span>
+                ) : (
+                  <span className="text-orange-600">Connecting to voice service…</span>
+                )}
+              </div>
             </div>
           ) : isInputBlockedByTimer ? (
             <div className="text-center text-sm text-red-600">
