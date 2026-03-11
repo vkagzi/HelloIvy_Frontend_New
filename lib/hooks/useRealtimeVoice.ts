@@ -6,7 +6,7 @@
  * start a voice session on-demand.
  */
 import { useState, useRef, useCallback } from 'react';
-import { RealtimeVoiceClient } from '@/lib/realtime-voice-client';
+import { RealtimeVoiceClient, type RealtimeTokenUsage } from '@/lib/realtime-voice-client';
 
 interface UseRealtimeVoiceOptions {
   sessionId: string;
@@ -30,6 +30,7 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [transcript, setTranscript] = useState<RealtimeVoiceMessage[]>([]);
+  const [realtimeTokenUsage, setRealtimeTokenUsage] = useState<RealtimeTokenUsage | null>(null);
 
   const clientRef = useRef<RealtimeVoiceClient | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -155,6 +156,9 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
             setIsSpeaking(false);
             isMutedRef.current = false;
           },
+          onTokenUsage: (usage) => {
+            setRealtimeTokenUsage(usage);
+          },
         });
 
         clientRef.current = client;
@@ -234,7 +238,7 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
   }, []);
 
   return {
-    isConnected, isConnecting, isRecording, isSpeaking, isDisconnecting, transcript,
+    isConnected, isConnecting, isRecording, isSpeaking, isDisconnecting, transcript, realtimeTokenUsage,
     connectVoice, disconnectVoice, startRecording, stopRecording, toggleRecording, sendText, stopAudio,
   };
 }

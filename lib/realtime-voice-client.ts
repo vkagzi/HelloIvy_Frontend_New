@@ -5,6 +5,18 @@
  * realtime voice over a backend WebSocket proxy.
  */
 
+export interface RealtimeTokenUsage {
+  total_tokens: number;
+  input_tokens: number;
+  output_tokens: number;
+  input_text_tokens: number;
+  input_audio_tokens: number;
+  output_text_tokens: number;
+  output_audio_tokens: number;
+  input_cached_tokens: number;
+  response_count: number;
+}
+
 export interface RealtimeVoiceClientConfig {
   /** Session identifier sent as a query param */
   sessionId: string;
@@ -29,6 +41,8 @@ export interface RealtimeVoiceClientConfig {
   onPlaybackStarted?: () => void;
   /** Fired when the entire audio queue has drained and playback is idle */
   onPlaybackFinished?: () => void;
+  /** Fired when a response completes with updated cumulative token usage */
+  onTokenUsage?: (usage: RealtimeTokenUsage) => void;
 }
 
 export class RealtimeVoiceClient {
@@ -44,6 +58,18 @@ export class RealtimeVoiceClient {
   private _goodbyeInProgress = false;
   /** Tracks the current assistant item_id to detect response boundaries */
   private _currentAssistantItemId: string | null = null;
+  /** Accumulated token usage across all responses */
+  private _tokenUsage: RealtimeTokenUsage = {
+    total_tokens: 0,
+    input_tokens: 0,
+    output_tokens: 0,
+    input_text_tokens: 0,
+    input_audio_tokens: 0,
+    output_text_tokens: 0,
+    output_audio_tokens: 0,
+    input_cached_tokens: 0,
+    response_count: 0,
+  };
 
   constructor(config: RealtimeVoiceClientConfig) {
     this.config = config;
@@ -334,8 +360,13 @@ export class RealtimeVoiceClient {
           break;
 
         case 'response.done': {
-          const status = (message.response as Record<string, unknown>)?.status;
+          const resp = message.response as Record<string, unknown> | undefined;
+          const status = resp?.status;
           console.log(`[${this.label}] Response completed (status: ${status})`);
+          // Extract and accumulate token usage
+          if (resp?.usage && status !== 'cancelled') {
+            this.accumulateTokenUsage(resp.usage as Record<string, unknown>);
+          }
           // Only resolve the goodbye promise on a fully completed response,
           // not on a cancelled one (response.cancel triggers response.done
           // with status "cancelled").
@@ -363,6 +394,24 @@ export class RealtimeVoiceClient {
     } catch (error) {
       console.error(`[${this.label}] Error parsing message:`, error);
     }
+  }
+
+  private accumulateTokenUsage(usage: Record<string, unknown>): void {
+    const inputDetails = usage.input_token_details as Record<string, unknown> | undefined;
+    const outputDetails = usage.output_token_details as Record<string, unknown> | undefined;
+
+    this._tokenUsage.total_tokens += (usage.total_tokens as number) || 0;
+    this._tokenUsage.input_tokens += (usage.input_tokens as number) || 0;
+    this._tokenUsage.output_tokens += (usage.output_tokens as number) || 0;
+    this._tokenUsage.input_text_tokens += (inputDetails?.text_tokens as number) || 0;
+    this._tokenUsage.input_audio_tokens += (inputDetails?.audio_tokens as number) || 0;
+    this._tokenUsage.input_cached_tokens += (inputDetails?.cached_tokens as number) || 0;
+    this._tokenUsage.output_text_tokens += (outputDetails?.text_tokens as number) || 0;
+    this._tokenUsage.output_audio_tokens += (outputDetails?.audio_tokens as number) || 0;
+    this._tokenUsage.response_count += 1;
+
+    console.log(`[${this.label}] Token usage accumulated (response #${this._tokenUsage.response_count}):`, { ...this._tokenUsage });
+    this.config.onTokenUsage?.({ ...this._tokenUsage });
   }
 
   private handleConversationItem(message: Record<string, unknown>): void {

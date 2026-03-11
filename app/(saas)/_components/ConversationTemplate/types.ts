@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import type { RealtimeTokenUsage } from '@/lib/realtime-voice-client';
 
 export type Role = 'bot' | 'user';
 export type ConversationMode = 'chat' | 'voice';
@@ -146,6 +147,7 @@ export interface ConversationSlots {
     isTimerExpired: boolean;
     debugOverrideTimerBlock: boolean;
     onDebugOverrideTimerBlockChange: (value: boolean) => void;
+    realtimeTokenUsage?: RealtimeTokenUsage | null;
   }) => ReactNode;
 
   /** Exit confirmation dialog (optional, e.g. domain discovery warns you) */

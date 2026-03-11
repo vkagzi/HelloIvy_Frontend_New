@@ -97,6 +97,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     isSpeaking: voiceSpeaking,
     isDisconnecting: voiceDisconnecting,
     transcript: voiceTranscript,
+    realtimeTokenUsage,
     connectVoice,
     disconnectVoice,
     toggleRecording: toggleVoiceRecording,
@@ -902,6 +903,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
           isTimerExpired,
           debugOverrideTimerBlock,
           onDebugOverrideTimerBlockChange: setDebugOverrideTimerBlock,
+          realtimeTokenUsage,
         })}
     </div>
   );

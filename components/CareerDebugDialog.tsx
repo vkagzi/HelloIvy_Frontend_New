@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TokenUsagePanel } from '@/components/TokenUsagePanel';
+import { RealtimeTokenUsagePanel } from '@/components/RealtimeTokenUsagePanel';
+import type { RealtimeTokenUsage } from '@/lib/realtime-voice-client';
 
 interface CareerDebugDialogProps {
   open: boolean;
@@ -21,6 +23,7 @@ interface CareerDebugDialogProps {
   isTimerExpired: boolean;
   debugOverrideTimerBlock: boolean;
   onDebugOverrideTimerBlockChange: (value: boolean) => void;
+  realtimeTokenUsage?: RealtimeTokenUsage | null;
 }
 
 export function CareerDebugDialog({
@@ -30,6 +33,7 @@ export function CareerDebugDialog({
   isTimerExpired,
   debugOverrideTimerBlock,
   onDebugOverrideTimerBlockChange,
+  realtimeTokenUsage,
 }: CareerDebugDialogProps): React.ReactElement {
   const [debugInfo, setDebugInfo] = useState<CareerDebugInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -101,6 +105,9 @@ export function CareerDebugDialog({
               </TabsTrigger>
               <TabsTrigger value="token-usage" className="flex-1">
                 Token Usage
+              </TabsTrigger>
+              <TabsTrigger value="realtime-usage" className="flex-1">
+                Realtime Voice
               </TabsTrigger>
               <TabsTrigger value="explorer-prompt" className="flex-1">
                 Career Explorer Prompt
@@ -257,6 +264,13 @@ export function CareerDebugDialog({
 
             <TabsContent value="token-usage">
               <TokenUsagePanel tokenUsage={debugInfo.token_usage} />
+            </TabsContent>
+
+            <TabsContent value="realtime-usage">
+              <RealtimeTokenUsagePanel
+                tokenUsage={realtimeTokenUsage}
+                savedTokenUsage={debugInfo.token_usage?.categories?.realtime_voice}
+              />
             </TabsContent>
 
             <TabsContent value="explorer-prompt">

@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TokenUsagePanel } from '@/components/TokenUsagePanel';
+import { RealtimeTokenUsagePanel } from '@/components/RealtimeTokenUsagePanel';
+import type { RealtimeTokenUsage } from '@/lib/realtime-voice-client';
 
 interface DomainDebugDialogProps {
   open: boolean;
@@ -18,6 +20,7 @@ interface DomainDebugDialogProps {
   isTimerExpired: boolean;
   debugOverrideTimerBlock: boolean;
   onDebugOverrideTimerBlockChange: (value: boolean) => void;
+  realtimeTokenUsage?: RealtimeTokenUsage | null;
 }
 
 export function DomainDebugDialog({
@@ -27,6 +30,7 @@ export function DomainDebugDialog({
   isTimerExpired,
   debugOverrideTimerBlock,
   onDebugOverrideTimerBlockChange,
+  realtimeTokenUsage,
 }: DomainDebugDialogProps): React.ReactElement {
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -98,6 +102,9 @@ export function DomainDebugDialog({
               </TabsTrigger>
               <TabsTrigger value="token-usage" className="flex-1">
                 Token Usage
+              </TabsTrigger>
+              <TabsTrigger value="realtime-usage" className="flex-1">
+                Realtime Voice
               </TabsTrigger>
               <TabsTrigger value="deepdive-prompt" className="flex-1">
                 Deep Dive Prompt
@@ -213,6 +220,13 @@ export function DomainDebugDialog({
 
             <TabsContent value="token-usage">
               <TokenUsagePanel tokenUsage={debugInfo.token_usage} />
+            </TabsContent>
+
+            <TabsContent value="realtime-usage">
+              <RealtimeTokenUsagePanel
+                tokenUsage={realtimeTokenUsage}
+                savedTokenUsage={debugInfo.token_usage?.categories?.realtime_voice}
+              />
             </TabsContent>
 
             <TabsContent value="deepdive-prompt">
