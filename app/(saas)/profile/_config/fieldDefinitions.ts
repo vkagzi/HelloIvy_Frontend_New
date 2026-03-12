@@ -905,7 +905,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
       const year = new Date().getFullYear() - 5 + i;
       return year.toString();
     }),
-    label: 'Year',
+    label: 'Year of Completion',
     placeholder: 'Enter year',
     required: true,
   },
@@ -1379,9 +1379,9 @@ export const educationalLayout: LayoutBlock[] = [
     type: 'fieldset',
     fields: [
       'courseType',
-      'courseLink',
-      'awards',
       'description',
+      'year',
+      'awards',
       'duration',
       'location',
     ],
