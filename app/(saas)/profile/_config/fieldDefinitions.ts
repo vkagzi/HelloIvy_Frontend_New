@@ -1611,7 +1611,7 @@ export const professionalFieldDefs: FieldDefinition[] = [
     id: 'experienceType',
     type: 'select',
     label: 'Experience Type',
-    options: ['Internship', 'Full time', 'Part time', 'Entrepreneurship', 'Freelance'],
+    options: ['Internship', 'Full time', 'Part time', 'Entrepreneurship', 'Family Business', 'Freelance'],
     placeholder: 'Select experience type',
     required: true,
   },
