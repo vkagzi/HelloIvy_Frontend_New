@@ -14,6 +14,8 @@ interface UseRealtimeVoiceOptions {
   feature: string;
   /** Label for console logs (default: 'Realtime') */
   label?: string;
+  /** OpenAI Realtime voice name (e.g. 'cedar', 'marin') */
+  voice?: string;
   onError?: (error: string) => void;
 }
 
@@ -23,7 +25,7 @@ export interface RealtimeVoiceMessage {
   timestamp: Date;
 }
 
-export function useRealtimeVoice({ sessionId, feature, label, onError }: UseRealtimeVoiceOptions) {
+export function useRealtimeVoice({ sessionId, feature, label, voice, onError }: UseRealtimeVoiceOptions) {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -100,6 +102,7 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
           sessionId,
           feature,
           label,
+          voice,
           onConnected: () => {
             setIsConnected(true);
             setIsConnecting(false);
@@ -178,7 +181,7 @@ export function useRealtimeVoice({ sessionId, feature, label, onError }: UseReal
         clientRef.current = null;
       }
     },
-    [sessionId, feature, label, isConnecting, openMic, teardownMic],
+    [sessionId, feature, label, voice, isConnecting, openMic, teardownMic],
   );
 
   const disconnectVoice = useCallback(async () => {

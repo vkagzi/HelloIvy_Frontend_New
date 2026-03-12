@@ -24,6 +24,8 @@ export interface RealtimeVoiceClientConfig {
   feature: string;
   /** Human-readable label used for console logs */
   label?: string;
+  /** OpenAI Realtime voice name (e.g. 'cedar', 'marin') */
+  voice?: string;
 
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -82,11 +84,16 @@ export class RealtimeVoiceClient {
     return new Promise((resolve, reject) => {
       try {
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+        const params = new URLSearchParams({
+          feature: this.config.feature,
+          session_id: this.config.sessionId,
+        });
+        if (this.config.voice) params.set('voice', this.config.voice);
         const wsUrl =
           apiBaseUrl
             .replace('https://', 'wss://')
             .replace('http://', 'ws://') +
-          `/ws/voice/realtime/?feature=${this.config.feature}&session_id=${this.config.sessionId}`;
+          `/ws/voice/realtime/?${params.toString()}`;
 
         console.log(`[${this.label}] Connecting to:`, wsUrl);
         this.ws = new WebSocket(wsUrl);

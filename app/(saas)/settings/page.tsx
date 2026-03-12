@@ -42,88 +42,68 @@ const PERSONAS: PersonaOption[] = [
 
 const WAVE_DELAYS = [0, 250, 100, 350, 150];
 
+const VOICE_MAP: Record<VoicePersona, string> = { male: 'cedar', female: 'marin' };
+
+/** Pre-generated audio samples served from /public/audio/ */
+const VOICE_SAMPLE_URLS: Record<VoicePersona, string> = {
+  male: '/audio/voice-sample-cedar.mp3',
+  female: '/audio/voice-sample-marin.mp3',
+};
+
 export default function SettingsPage(): React.ReactElement {
   const [selected, setSelected] = useState<VoicePersona>('male');
   const [saved, setSaved] = useState<VoicePersona>('male');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [playingPersona, setPlayingPersona] = useState<VoicePersona | null>(null);
-  const [audioSupported, setAudioSupported] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      setAudioSupported(true);
-    }
-  }, []);
-
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
     };
   }, []);
 
   const stopSample = useCallback((): void => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      return;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
     }
-
-    window.speechSynthesis.cancel();
-    utteranceRef.current = null;
     setPlayingPersona(null);
   }, []);
 
   const handlePlaySample = useCallback(
     (persona: VoicePersona): void => {
-      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-        return;
-      }
-
+      // Toggle off if already playing this persona
       if (playingPersona === persona) {
         stopSample();
         return;
       }
 
-      const selectedPersona = PERSONAS.find((item) => item.id === persona);
-      if (!selectedPersona) {
-        return;
-      }
+      // Stop any existing playback first
+      stopSample();
 
-      window.speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(
-        selectedPersona.sampleText
-      );
-      utterance.rate = 1;
-      utterance.pitch = persona === 'female' ? 1.15 : 0.9;
-
-      const availableVoices = window.speechSynthesis.getVoices();
-      const normalizedPersona = persona.toLowerCase();
-      const matchedVoice = availableVoices.find((voice) => {
-        const voiceName = voice.name.toLowerCase();
-        return voiceName.includes(normalizedPersona);
-      });
-
-      if (matchedVoice) {
-        utterance.voice = matchedVoice;
-      }
-
-      utterance.onend = () => {
-        utteranceRef.current = null;
-        setPlayingPersona(null);
-      };
-
-      utterance.onerror = () => {
-        utteranceRef.current = null;
-        setPlayingPersona(null);
-      };
-
-      utteranceRef.current = utterance;
       setSelected(persona);
+
+      const audio = new Audio(VOICE_SAMPLE_URLS[persona]);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        audioRef.current = null;
+        setPlayingPersona(null);
+      };
+
+      audio.onerror = () => {
+        audioRef.current = null;
+        setPlayingPersona(null);
+      };
+
       setPlayingPersona(persona);
-      window.speechSynthesis.speak(utterance);
+      audio.play();
     },
     [playingPersona, stopSample]
   );
@@ -262,9 +242,8 @@ export default function SettingsPage(): React.ReactElement {
                       event.stopPropagation();
                       handlePlaySample(persona.id);
                     }}
-                    disabled={!audioSupported}
                     aria-label={isPlaying ? 'Stop voice sample' : 'Play voice sample'}
-                    className={`mt-1 flex h-10 w-10 items-center justify-center rounded-full shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+                    className={`mt-1 flex h-10 w-10 items-center justify-center rounded-full shadow-md transition-all ${
                       isPlaying
                         ? `bg-linear-to-br ${persona.gradient} text-white`
                         : 'border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'
@@ -303,12 +282,6 @@ export default function SettingsPage(): React.ReactElement {
               );
             })}
           </div>
-        )}
-
-        {!audioSupported && (
-          <Paragraph size="xs" className="mt-3 text-neutral-500">
-            Voice preview is not supported in this browser.
-          </Paragraph>
         )}
       </div>
 

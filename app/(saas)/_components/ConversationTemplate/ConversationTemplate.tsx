@@ -12,6 +12,7 @@ import { marked } from 'marked';
 
 import { useAudioTranscription } from '@/lib/hooks/useAudioTranscription';
 import { useRealtimeVoice } from '@/lib/hooks/useRealtimeVoice';
+import apiClient from '@/lib/api-client';
 import AudioWaveform from './AudioWaveform';
 import VoiceActivityBars from './VoiceActivityBars';
 import SessionTimer from '@/app/(saas)/_components/SessionTimer';
@@ -90,6 +91,18 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
   const [isVoiceEnded, setIsVoiceEnded] = useState(false);
   const prevVoiceTranscriptLenRef = useRef(0);
 
+  // Map voice_persona preference to OpenAI Realtime voice name
+  const VOICE_MAP: Record<string, string> = { male: 'cedar', female: 'marin' };
+  const [realtimeVoiceName, setRealtimeVoiceName] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    apiClient<{ settings: { voice_persona?: string } }>('/api/accounts/settings/')
+      .then((data) => {
+        const persona = data.settings?.voice_persona || 'male';
+        setRealtimeVoiceName(VOICE_MAP[persona] || 'cedar');
+      })
+      .catch(() => setRealtimeVoiceName('cedar'));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const {
     isConnected: voiceConnected,
     isConnecting: voiceConnecting,
@@ -105,6 +118,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     sessionId: sessionId || '',
     feature: featureId,
     label: featureLabel,
+    voice: realtimeVoiceName,
     onError: (error) => {
       addToast(`Voice error: ${error}`, { type: 'error' });
       setConversationMode('chat');
