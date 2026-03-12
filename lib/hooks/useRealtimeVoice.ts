@@ -6,7 +6,7 @@
  * start a voice session on-demand.
  */
 import { useState, useRef, useCallback } from 'react';
-import { RealtimeVoiceClient, type RealtimeTokenUsage } from '@/lib/realtime-voice-client';
+import { RealtimeVoiceClient, type RealtimeTokenUsage, type SessionProgress } from '@/lib/realtime-voice-client';
 
 interface UseRealtimeVoiceOptions {
   sessionId: string;
@@ -17,6 +17,8 @@ interface UseRealtimeVoiceOptions {
   /** OpenAI Realtime voice name (e.g. 'cedar', 'marin') */
   voice?: string;
   onError?: (error: string) => void;
+  /** Called when the backend sends updated session progress */
+  onSessionProgress?: (progress: SessionProgress) => void;
 }
 
 export interface RealtimeVoiceMessage {
@@ -25,7 +27,7 @@ export interface RealtimeVoiceMessage {
   timestamp: Date;
 }
 
-export function useRealtimeVoice({ sessionId, feature, label, voice, onError }: UseRealtimeVoiceOptions) {
+export function useRealtimeVoice({ sessionId, feature, label, voice, onError, onSessionProgress }: UseRealtimeVoiceOptions) {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -33,6 +35,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError }: 
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [transcript, setTranscript] = useState<RealtimeVoiceMessage[]>([]);
   const [realtimeTokenUsage, setRealtimeTokenUsage] = useState<RealtimeTokenUsage | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
 
   const clientRef = useRef<RealtimeVoiceClient | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -42,8 +45,10 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError }: 
   const onErrorRef = useRef(onError);
   const speakingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMutedRef = useRef(false);
+  const onSessionProgressRef = useRef(onSessionProgress);
 
   onErrorRef.current = onError;
+  onSessionProgressRef.current = onSessionProgress;
 
   // ─── helpers ──────────────────────────────────────────────
 
@@ -53,6 +58,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError }: 
     if (audioContextRef.current) { audioContextRef.current.close(); audioContextRef.current = null; }
     if (audioStreamRef.current) { audioStreamRef.current.getTracks().forEach((t) => t.stop()); audioStreamRef.current = null; }
     setIsRecording(false);
+    setAudioLevel(0);
   }, []);
 
   const openMic = useCallback(async () => {
@@ -71,8 +77,12 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError }: 
     processorNodeRef.current = processor;
 
     processor.onaudioprocess = (e) => {
-      if (isMutedRef.current) return;
+      if (isMutedRef.current) { setAudioLevel(0); return; }
       const float32 = e.inputBuffer.getChannelData(0);
+      // Compute RMS audio level for waveform visualisation
+      let sum = 0;
+      for (let i = 0; i < float32.length; i++) sum += float32[i] * float32[i];
+      setAudioLevel(Math.sqrt(sum / float32.length));
       const pcm16 = new Int16Array(float32.length);
       for (let i = 0; i < float32.length; i++) {
         const s = Math.max(-1, Math.min(1, float32[i]));
@@ -126,14 +136,29 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError }: 
           onTranscriptUpdate: (text, role, isNewTurn) => {
             setTranscript((prev) => {
               const last = prev[prev.length - 1];
-              // Append to the existing entry ONLY when it's the same role AND
-              // we're still within the same response turn. A new turn (new
-              // item_id from the API) forces a new entry even if the role
-              // hasn't changed — this prevents two consecutive assistant
-              // responses from merging into one bubble.
-              if (last && last.role === role && !isNewTurn) {
+
+              // Assistant streaming delta — append to the current entry
+              if (last && last.role === 'assistant' && role === 'assistant' && !isNewTurn) {
                 return [...prev.slice(0, -1), { ...last, content: last.content + text }];
               }
+
+              // User transcription completing a placeholder that was created
+              // by conversation.item.created (isNewTurn=false for user means
+              // "replace the most recent user entry").  The placeholder may
+              // no longer be the last entry because assistant deltas can
+              // arrive in between, so walk backwards to find it.
+              if (role === 'user' && !isNewTurn) {
+                for (let i = prev.length - 1; i >= 0; i--) {
+                  if (prev[i].role === 'user') {
+                    const updated = [...prev];
+                    updated[i] = { ...updated[i], content: text };
+                    return updated;
+                  }
+                }
+                // Fallback: no placeholder found, create a new entry
+              }
+
+              // New turn — create a new transcript entry
               return [...prev, { role, content: text, timestamp: new Date() }];
             });
           },
@@ -161,6 +186,9 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError }: 
           },
           onTokenUsage: (usage) => {
             setRealtimeTokenUsage(usage);
+          },
+          onSessionProgress: (progress) => {
+            onSessionProgressRef.current?.(progress);
           },
         });
 
@@ -241,7 +269,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError }: 
   }, []);
 
   return {
-    isConnected, isConnecting, isRecording, isSpeaking, isDisconnecting, transcript, realtimeTokenUsage,
+    isConnected, isConnecting, isRecording, isSpeaking, isDisconnecting, transcript, realtimeTokenUsage, audioLevel,
     connectVoice, disconnectVoice, startRecording, stopRecording, toggleRecording, sendText, stopAudio,
   };
 }

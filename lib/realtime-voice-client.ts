@@ -17,6 +17,14 @@ export interface RealtimeTokenUsage {
   response_count: number;
 }
 
+export interface SessionProgress {
+  current_step: number;
+  total_steps: number;
+  questions_completed: number;
+  progress_percentage: number;
+  is_completed: boolean;
+}
+
 export interface RealtimeVoiceClientConfig {
   /** Session identifier sent as a query param */
   sessionId: string;
@@ -45,6 +53,8 @@ export interface RealtimeVoiceClientConfig {
   onPlaybackFinished?: () => void;
   /** Fired when a response completes with updated cumulative token usage */
   onTokenUsage?: (usage: RealtimeTokenUsage) => void;
+  /** Fired when the backend sends updated session progress (step count, completion) */
+  onSessionProgress?: (progress: SessionProgress) => void;
 }
 
 export class RealtimeVoiceClient {
@@ -60,6 +70,14 @@ export class RealtimeVoiceClient {
   private _goodbyeInProgress = false;
   /** Tracks the current assistant item_id to detect response boundaries */
   private _currentAssistantItemId: string | null = null;
+  /** Tracks pending user speech items awaiting transcription (VAD can split one utterance into multiple items) */
+  private _pendingUserItemIds: Set<string> = new Set();
+  /** Ordered list of user speech item IDs for concatenation */
+  private _userItemOrder: string[] = [];
+  /** Received transcription parts keyed by item_id */
+  private _userTranscriptParts: Map<string, string> = new Map();
+  /** Whether a user placeholder is active in the transcript */
+  private _userPlaceholderActive = false;
   /** Accumulated token usage across all responses */
   private _tokenUsage: RealtimeTokenUsage = {
     total_tokens: 0,
@@ -350,6 +368,11 @@ export class RealtimeVoiceClient {
           console.log(`[${this.label}] ✅ Session updated:`, message);
           break;
 
+        case 'session.progress':
+          console.log(`[${this.label}] 📊 Session progress:`, message);
+          this.config.onSessionProgress?.(message as unknown as SessionProgress);
+          break;
+
         case 'conversation.item.created':
           this.handleConversationItem(message);
           break;
@@ -425,6 +448,29 @@ export class RealtimeVoiceClient {
     const item = message.item as Record<string, unknown> | undefined;
     if (item) {
       console.log(`[${this.label}] Conversation item created:`, item.role, item.type);
+      // When server VAD creates a user speech item, place a placeholder in
+      // the transcript so it appears before the assistant response.  If VAD
+      // splits one utterance into multiple items (consecutive user items
+      // with no assistant response in between), they are merged into a
+      // single placeholder that gets updated as transcriptions arrive.
+      if (item.role === 'user' && item.type === 'message') {
+        const content = item.content as Array<Record<string, unknown>> | undefined;
+        const hasText = content?.some((c) => c.type === 'input_text' && c.text);
+        if (!hasText) {
+          const itemId = item.id as string;
+          if (!this._userPlaceholderActive) {
+            // New user turn — clear any leftover state from previous turns
+            // whose transcription completions may have been missed.
+            this._pendingUserItemIds.clear();
+            this._userItemOrder = [];
+            this._userTranscriptParts.clear();
+            this._userPlaceholderActive = true;
+            this.config.onTranscriptUpdate?.('\u2026', 'user', true);
+          }
+          this._pendingUserItemIds.add(itemId);
+          this._userItemOrder.push(itemId);
+        }
+      }
     }
   }
 
@@ -452,14 +498,40 @@ export class RealtimeVoiceClient {
       // consumer creates a fresh transcript entry instead of appending.
       isNewTurn = true;
       this._currentAssistantItemId = itemId;
+      // New assistant response: future user speech should start a new bubble
+      this._userPlaceholderActive = false;
     }
     this.config.onTranscriptUpdate?.(delta, role, isNewTurn);
   }
 
   private handleInputTranscription(message: Record<string, unknown>): void {
     const transcript = message.transcript as string | undefined;
-    // User transcriptions are always complete (not deltas), so always a new turn.
-    if (transcript) this.config.onTranscriptUpdate?.(transcript, 'user', true);
+    const itemId = message.item_id as string | undefined;
+    if (!transcript) return;
+
+    // Check if this transcription belongs to a tracked (placeholder'd) group
+    if (itemId && this._pendingUserItemIds.has(itemId)) {
+      this._userTranscriptParts.set(itemId, transcript);
+      this._pendingUserItemIds.delete(itemId);
+
+      // Concatenate all received parts in the order items were created
+      const fullText = this._userItemOrder
+        .map((id) => this._userTranscriptParts.get(id))
+        .filter(Boolean)
+        .join(' ');
+
+      // Replace the single placeholder with the merged text so far
+      this.config.onTranscriptUpdate?.(fullText, 'user', false);
+
+      // When all pending transcriptions have arrived, clean up
+      if (this._pendingUserItemIds.size === 0) {
+        this._userTranscriptParts.clear();
+        this._userItemOrder = [];
+      }
+    } else {
+      // No placeholder — create a brand-new user entry.
+      this.config.onTranscriptUpdate?.(transcript, 'user', true);
+    }
   }
 
   private async queueAudioForPlayback(audioData: ArrayBuffer): Promise<void> {

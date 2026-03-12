@@ -40,6 +40,7 @@ const domainApi: ConversationConfig['api'] = {
         timestamp: m.timestamp,
         question_type: m.question_type,
         choices: m.choices,
+        medium: m.medium,
       })),
       riasec_completed: r.riasec_completed,
       deepdive_completed: r.deepdive_completed,
@@ -105,6 +106,7 @@ const domainConversationConfig: ConversationConfig = {
         type: m.type,
         content: m.content,
         timestamp: m.timestamp,
+        medium: (m.medium as 'text' | 'voice') || 'text',
         extra: {
           question_type: m.question_type,
           choices: m.choices,
@@ -128,6 +130,7 @@ const domainConversationConfig: ConversationConfig = {
           type: 'bot',
           content: r.bot_response,
           timestamp: new Date().toISOString(),
+          medium: 'text' as const,
           extra: {
             question_type: r.question_type,
             choices: r.choices,

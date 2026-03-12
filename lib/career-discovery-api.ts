@@ -12,6 +12,7 @@ export interface CareerMessage {
   content: string;
   step_number: number;
   phase: 'profile' | 'explorer';
+  medium?: 'text' | 'voice';
   timestamp: string;
 }
 

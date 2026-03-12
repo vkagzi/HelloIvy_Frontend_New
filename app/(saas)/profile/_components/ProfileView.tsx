@@ -24,6 +24,18 @@ import { FieldDefinition } from '@/app/utils/dynamicForm';
 
 type DefaultValues = Record<string, unknown>;
 
+// Test type layout block types used for standardized test scores
+const TEST_TYPE_LAYOUT_TYPES = [
+  'SAT',
+  'TOEFL',
+  'IELTS',
+  'GRE',
+  'GMAT',
+  'ACT',
+  'Executive Assessment',
+  'Others',
+];
+
 const getSectionFromPath = (pathname: string): string => {
   const parts = pathname.split('/');
   return parts[parts.length - 1] || 'personal';
@@ -313,6 +325,56 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
   const blocks: React.ReactNode[] = [];
   let collapsibleTitle = '';
 
+  // Build a map of test type → fields from layout for rendering test scores in view mode
+  const testTypeFieldsMap = React.useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const item of layout) {
+      if (TEST_TYPE_LAYOUT_TYPES.includes(item.type) && item.fields) {
+        map[item.type] = item.fields;
+      }
+    }
+    return map;
+  }, [layout]);
+
+  // Render test scores from the testScores array
+  const renderTestScores = (): JSX.Element | null => {
+    const testScores = defaultValues['testScores'];
+    if (!Array.isArray(testScores) || testScores.length === 0) {
+      return (
+        <Paragraph size="xs" className="px-2 text-neutral-400 italic">
+          No test scores added.
+        </Paragraph>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-4">
+        {(testScores as Record<string, unknown>[]).map((score, scoreIdx) => {
+          const testType = score.testType as string | undefined;
+          if (!testType) return null;
+          const scoreFields = testTypeFieldsMap[testType] ?? [];
+          // Filter out 'title' type fields for display
+          const displayFields = scoreFields.filter((fid) => {
+            const def = fieldDefs.find((f) => f.id === fid);
+            return def && def.type !== 'title';
+          });
+
+          return (
+            <div
+              key={scoreIdx}
+              className="rounded-md border border-neutral-200 px-3 py-3"
+            >
+              <Paragraph size="sm" className="mb-2 font-semibold text-blue-600">
+                {testType}
+              </Paragraph>
+              {renderFields(fieldDefs, displayFields, score)}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   layout.forEach((block, idx) => {
     if (block.type === 'collapsible_section_start' && block.content) {
       collapsibleTitle = block.content;
@@ -351,6 +413,18 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
       return;
     }
     if (block.type === 'fieldset' && block.fields) {
+      // Handle test scores section: render testScores array instead of a flat field
+      if (
+        block.fields.includes('testType') &&
+        block.fields.length === 1
+      ) {
+        blocks.push(
+          <div key={`test-scores-view-${idx}`}>
+            {renderTestScores()}
+          </div>
+        );
+        return;
+      }
       if (block.repeatable && block.name) {
         blocks.push(
           <div key={`repeatable-${block.name}-${idx}`} className="">
@@ -376,6 +450,11 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
       typeof block.type === 'string' &&
       block.type !== 'fieldset'
     ) {
+      // Skip individual test type blocks – handled by renderTestScores()
+      if (TEST_TYPE_LAYOUT_TYPES.includes(block.type)) {
+        return;
+      }
+
       let visible = true;
       if (block.visibility?.depends_on) {
         const { field_id, value } = block.visibility.depends_on;

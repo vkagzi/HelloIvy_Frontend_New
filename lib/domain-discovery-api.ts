@@ -12,6 +12,7 @@ export interface DomainMessage {
   content: string;
   question_type?: 'riasec' | 'deepdive' | 'general';
   choices?: string[]; // For initial assessment questions
+  medium?: 'text' | 'voice';
   timestamp: string;
 }
 

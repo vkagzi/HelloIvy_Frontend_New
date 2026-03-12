@@ -1,14 +1,17 @@
 import { ReactNode } from 'react';
 import type { RealtimeTokenUsage } from '@/lib/realtime-voice-client';
 
-export type Role = 'bot' | 'user';
+export type Role = 'bot' | 'user' | 'system';
 export type ConversationMode = 'chat' | 'voice';
+export type MessageMedium = 'text' | 'voice';
 
 export interface ConversationMessage {
   id: string;
   type: Role;
   content: string;
   timestamp: string; // ISO
+  /** How the message was delivered: 'text' (typed) or 'voice' (realtime voice) */
+  medium?: MessageMedium;
   /** Module-specific extra data (e.g. question_type, choices for domain) */
   extra?: Record<string, unknown>;
 }

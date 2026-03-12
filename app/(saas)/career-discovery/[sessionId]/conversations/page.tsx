@@ -38,6 +38,7 @@ const careerApi: ConversationConfig['api'] = {
         type: m.type,
         content: m.content,
         timestamp: m.timestamp,
+        medium: m.medium,
       })),
       current_step: r.current_step,
       total_steps: r.total_steps,
@@ -98,6 +99,7 @@ const CareerConversationPage: React.FC = () => {
             type: m.type,
             content: m.content,
             timestamp: m.timestamp,
+            medium: (m.medium as 'text' | 'voice') || 'text',
           }));
 
           return {
@@ -121,6 +123,7 @@ const CareerConversationPage: React.FC = () => {
               type: 'bot',
               content: r.bot_response,
               timestamp: new Date().toISOString(),
+              medium: 'text' as const,
             },
             questionsCompleted: r.current_step,
             progressPercentage: Math.round((r.current_step / total) * 100),
