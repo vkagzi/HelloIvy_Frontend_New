@@ -147,6 +147,52 @@ const EducationalDetailsForm: React.FC = () => {
       // Transform educational data to proper structure with year identifiers
       const transformedData = transformEducationalData(parsedData);
 
+      // Build a clean educational object with only relevant keys.
+      // Only the academic section matching the current academicLevel is included;
+      // stale sections from a previous academicLevel selection are dropped.
+      const academicLevel = transformedData.academicLevel as string | undefined;
+      const sectionKey: Record<string, string> = {
+        'High School (9th–12th grade)': 'highSchool',
+        'College/Undergraduate': 'undergraduate',
+        Postgraduate: 'postgraduate',
+        'Working/Completed College': 'tenPlus',
+      };
+      const relevantSection = academicLevel ? sectionKey[academicLevel] : undefined;
+
+      const cleanEducational: Record<string, unknown> = {
+        academicLevel,
+      };
+
+      // High-school-only fields
+      if (academicLevel === 'High School (9th–12th grade)') {
+        if (transformedData.gradeLevel !== undefined) {
+          cleanEducational.gradeLevel = transformedData.gradeLevel;
+        }
+        if (transformedData.hasCurrentGradeScores !== undefined) {
+          cleanEducational.hasCurrentGradeScores = transformedData.hasCurrentGradeScores;
+        }
+      }
+
+      // Build the section object: academic entries + courses/awards/testScores
+      if (relevantSection) {
+        const arrayKey = relevantSection === 'highSchool' ? 'grades' : 'degrees';
+        const sectionObj: Record<string, unknown> = {};
+
+        if (transformedData[relevantSection] !== undefined) {
+          sectionObj[arrayKey] = transformedData[relevantSection];
+        }
+
+        // Nest courses, awards, and test scores inside the section
+        const sharedKeys = ['courses', 'awards', 'testScores'];
+        sharedKeys.forEach((key) => {
+          if (transformedData[key] !== undefined) {
+            sectionObj[key] = transformedData[key];
+          }
+        });
+
+        cleanEducational[relevantSection] = sectionObj;
+      }
+
       // Fetch latest profile data to ensure we have the most recent data
       const latestData = await getProfileData();
       const existingProfile =
@@ -164,7 +210,7 @@ const EducationalDetailsForm: React.FC = () => {
         method: 'POST',
         body: {
           profile: {
-            educational: transformedData,
+            educational: cleanEducational,
             personalDetails: personalDetails,
             professional: professional,
             additional: additional,
@@ -210,6 +256,24 @@ const EducationalDetailsForm: React.FC = () => {
           string,
           unknown
         >;
+      }
+    }
+  }
+
+  // Un-nest shared data from section object for form compatibility
+  const sectionEntries = ['highSchool', 'undergraduate', 'postgraduate', 'tenPlus'] as const;
+  for (const key of sectionEntries) {
+    const sectionData = educationalDetails[key];
+    if (sectionData && typeof sectionData === 'object' && !Array.isArray(sectionData)) {
+      const section = sectionData as Record<string, unknown>;
+      const arrayKey = key === 'highSchool' ? 'grades' : 'degrees';
+      if (section[arrayKey]) {
+        educationalDetails[key] = section[arrayKey];
+      }
+      for (const sharedKey of ['courses', 'awards', 'testScores']) {
+        if (section[sharedKey] !== undefined) {
+          educationalDetails[sharedKey] = section[sharedKey];
+        }
       }
     }
   }

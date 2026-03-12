@@ -41,10 +41,31 @@ const getDisplayValue = (value: unknown, fieldId?: string): string => {
 };
 
 const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues }> = ({
-  defaultValues,
+  defaultValues: _rawDefaultValues,
 }) => {
   const pathname = usePathname();
   const section = getSectionFromPath(pathname ?? '');
+
+  // Un-nest educational section: courses/awards/testScores may be inside the
+  // active section object (e.g., highSchool.courses). Lift them to the top
+  // level so the rendering code works unchanged.
+  const defaultValues = React.useMemo(() => {
+    if (section !== 'educational') return _rawDefaultValues;
+    const vals = { ..._rawDefaultValues };
+    const sectionKeys = ['highSchool', 'undergraduate', 'postgraduate', 'tenPlus'] as const;
+    for (const key of sectionKeys) {
+      const sectionData = vals[key];
+      if (sectionData && typeof sectionData === 'object' && !Array.isArray(sectionData)) {
+        const sec = sectionData as Record<string, unknown>;
+        const arrayKey = key === 'highSchool' ? 'grades' : 'degrees';
+        if (sec[arrayKey]) vals[key] = sec[arrayKey];
+        for (const sk of ['courses', 'awards', 'testScores']) {
+          if (sec[sk] !== undefined) vals[sk] = sec[sk];
+        }
+      }
+    }
+    return vals;
+  }, [_rawDefaultValues, section]);
 
   // Dynamically generate layout for extra-curricular
   let config = sectionConfigs[section] ?? sectionConfigs['personal'];

@@ -1212,14 +1212,23 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       }
     });
 
-    // Handle nested repeatables in highSchool/undergraduate/postgraduate sections
+    // Handle nested repeatables in highSchool/undergraduate/postgraduate/tenPlus sections
     // e.g., highSchool[0].subjects[0].subjectOther should be cleared if subject !== 'Other'
+    // Also remove data for sections that are not currently visible (e.g., highSchool data
+    // when academicLevel is 'College/Undergraduate').
     layout.forEach((item) => {
       if (
         item.type === 'highSchool' ||
         item.type === 'undergraduate' ||
-        item.type === 'postgraduate'
+        item.type === 'postgraduate' ||
+        item.type === 'tenPlus'
       ) {
+        // If the section is not visible, remove its data entirely
+        if (!isFieldVisible(item, filtered)) {
+          delete filtered[item.type as string];
+          return;
+        }
+
         const sectionData = filtered[item.type as string];
         if (Array.isArray(sectionData)) {
           // --- Grade-aware trimming for highSchool ---

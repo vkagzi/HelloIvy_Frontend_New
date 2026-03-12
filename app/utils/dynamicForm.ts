@@ -173,6 +173,7 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
     case 'multi_select': {
       let base = z.array(z.string());
       if (field.required) base = base.min(1, `${field.label} is required`);
+      else return base.optional();
       return base;
     }
     default:
@@ -243,7 +244,9 @@ export const generateDynamicFormSchema = (
             `At most ${item.repeatable_option.max} ${item.name} allowed`
           );
         }
-        shape[item.name] = arrSchema;
+        shape[item.name] = item.repeatable_option?.min === 0
+          ? arrSchema.optional()
+          : arrSchema;
       } else {
         // Non-repeatable fieldset: add each field individually
         item.fields.forEach((fid) => {
