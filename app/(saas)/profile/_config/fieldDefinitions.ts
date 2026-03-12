@@ -852,7 +852,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Awards/Certifications (if any)',
     placeholder: 'Enter awards or certifications',
-    required: true,
+    required: false,
   },
   {
     id: 'description',
