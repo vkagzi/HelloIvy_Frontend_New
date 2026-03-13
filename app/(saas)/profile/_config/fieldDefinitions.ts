@@ -1750,7 +1750,6 @@ export const additionalFieldDefs: FieldDefinition[] = [
     label: 'What program/ degree are you interested in ?',
     placeholder: 'Select program/degree',
     options: [
-      'Not sure',
       'Bachelor of Arts (BA)',
       'Bachelor of Science (BS)',
       'Bachelor of Business Administration (BBA)',
@@ -1773,6 +1772,7 @@ export const additionalFieldDefs: FieldDefinition[] = [
       'Professional Certificate',
       'Diploma Program',
       'Other',
+      'None',
     ],
     required: true,
   },
