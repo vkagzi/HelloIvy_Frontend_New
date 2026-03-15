@@ -522,6 +522,18 @@ export const schoolTestTypeOptions = [
   'Others',
 ];
 
+const CURRENT_YEAR = new Date().getFullYear();
+
+const END_YEAR_MAP: Record<string, string[]> = {};
+
+for (let i = 0; i < 40; i++) {
+  const start = CURRENT_YEAR - i;
+
+  END_YEAR_MAP[start.toString()] = Array.from({ length: 8 }, (_, j) =>
+    (start + j).toString()
+  );
+}
+
 export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'academicLevel',
@@ -772,21 +784,26 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'Start Year',
     placeholder: 'Select start year',
-    options: Array.from({ length: 51 }, (_, i) => {
-      const year = new Date().getFullYear() - 40 + i;
-      return year.toString();
+
+    options: Array.from({ length: 27 }, (_, i) => {
+      const currentYear = new Date().getFullYear();
+      return (currentYear - i).toString();
     }),
+
     required: true,
   },
+
   {
     id: 'endYear',
     type: 'select_autofill',
     label: 'End Year',
     placeholder: 'Select end year',
-    options: Array.from({ length: 51 }, (_, i) => {
-      const year = new Date().getFullYear() - 40 + i;
-      return year.toString();
+
+    options: Array.from({ length: 35 }, (_, i) => {
+      const currentYear = new Date().getFullYear();
+      return (currentYear - 26 + i).toString();
     }),
+
     required: true,
   },
   {
@@ -818,7 +835,6 @@ export const educationalFieldDefs: FieldDefinition[] = [
     placeholder: 'Enter your score, GPA, or percentage',
     required: true,
   },
-
 
   {
     id: 'courseType',
@@ -1604,7 +1620,14 @@ export const professionalFieldDefs: FieldDefinition[] = [
     id: 'experienceType',
     type: 'select',
     label: 'Experience Type',
-    options: ['Internship', 'Full time', 'Part time', 'Entrepreneurship', 'Family Business', 'Freelance'],
+    options: [
+      'Internship',
+      'Full time',
+      'Part time',
+      'Entrepreneurship',
+      'Family Business',
+      'Freelance',
+    ],
     placeholder: 'Select experience type',
     required: true,
   },
@@ -1796,6 +1819,7 @@ export const additionalFieldDefs: FieldDefinition[] = [
       },
     },
   },
+
   {
     id: 'whyInterest',
     type: 'text',
@@ -1804,13 +1828,13 @@ export const additionalFieldDefs: FieldDefinition[] = [
     required: false,
     width: 2,
   },
+
   {
     id: 'domainInterest',
     type: 'select_autofill',
     label: 'What domain are you interested in ?',
     placeholder: 'Select domain',
     options: [
-      'Not sure',
       'Technology & IT',
       'Business & Management',
       'Healthcare & Medicine',
@@ -1828,6 +1852,7 @@ export const additionalFieldDefs: FieldDefinition[] = [
       'Real Estate',
       'Government & Public Service',
       'Other',
+      'None',
     ],
     required: true,
     width: 1,
