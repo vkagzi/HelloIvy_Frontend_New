@@ -56,8 +56,8 @@ export default function CommunicationModeModal({
                 />
               </svg>
             </div>
-            <span className="text-base font-semibold text-gray-900">
-              Continue with Text
+            <span className="text-base font-bold text-gray-900">
+              Text
             </span>
             <span className="text-center text-xs text-gray-500">
               Type your responses
@@ -84,8 +84,8 @@ export default function CommunicationModeModal({
                 />
               </svg>
             </div>
-            <span className="text-base font-semibold text-gray-900">
-              Continue with Voice
+            <span className="text-base font-bold text-gray-900">
+              Voice
             </span>
             <span className="text-center text-xs text-gray-500">
               Speak your responses
