@@ -5,6 +5,7 @@ import { Heading, Paragraph } from '@/app/_components/Typography';
 import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
 import { sessionManagementApi } from '@/lib/api-services';
+import apiClient from '@/lib/api-client';
 import {
   ragConversationApi,
   shouldUseRAGSystem,
@@ -115,7 +116,7 @@ interface RealtimeState {
 }
 
 const REALTIME_MODEL = 'gpt-4o-realtime-preview-2024-12-17'; // change if needed
-const REALTIME_VOICE = 'cedar';
+const VOICE_MAP: Record<string, string> = { male: 'cedar', female: 'marin' };
 
 // Event names seen on the OpenAI Realtime data channel commonly include:
 // - response.output_text.delta (partial text)
@@ -162,12 +163,23 @@ const RAGEnhancedConversationPage: React.FC = () => {
     connected: false,
   });
   const [voiceReady, setVoiceReady] = useState(false);
+  const [realtimeVoice, setRealtimeVoice] = useState('cedar');
   const transcriptBufferRef = useRef<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Fetch voice preference from user settings
+  useEffect(() => {
+    apiClient<{ settings: { voice_persona?: string } }>('/api/accounts/settings/')
+      .then((data) => {
+        const persona = data.settings?.voice_persona || 'male';
+        setRealtimeVoice(VOICE_MAP[persona] || 'cedar');
+      })
+      .catch(() => setRealtimeVoice('cedar'));
+  }, []);
   useEffect(() => {
     if (isConversationComplete) return;
     const int = setInterval(() => setTimer((t) => (t <= 1 ? 0 : t - 1)), 1000);
@@ -404,7 +416,7 @@ const RAGEnhancedConversationPage: React.FC = () => {
     if (rt.connected) return; // already on
     try {
       // 1) Ask server to mint an ephemeral key & session config
-      const tokenRes = await fetch('/api/realtime/session');
+      const tokenRes = await fetch(`/api/realtime/session?voice=${realtimeVoice}`);
       if (!tokenRes.ok) throw new Error(await tokenRes.text());
       const tokenJson = await tokenRes.json();
       const EPHEMERAL_KEY: string = tokenJson?.client_secret?.value;
@@ -521,7 +533,7 @@ const RAGEnhancedConversationPage: React.FC = () => {
       type: 'response.create',
       response: {
         modalities: ['audio'],
-        audio: { voice: REALTIME_VOICE },
+        audio: { voice: realtimeVoice },
         // Keep the model from improvising: ask it to read the text verbatim.
         instructions: `Read aloud the following exactly (no extra words): ${JSON.stringify(text)}`,
       },

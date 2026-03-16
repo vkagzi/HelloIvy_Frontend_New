@@ -1,15 +1,20 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+
+const ALLOWED_VOICES = new Set(['cedar', 'marin']);
 
 // GET endpoint for creating realtime session
-export async function GET() {
+export async function GET(req: NextRequest) {
   const apiKey = process.env.OPENAI_API_KEY; // server-only secret
   if (!apiKey) {
     return new NextResponse('Missing OPENAI_API_KEY', { status: 500 });
   }
 
+  const voiceParam = req.nextUrl.searchParams.get('voice');
+  const voice = voiceParam && ALLOWED_VOICES.has(voiceParam) ? voiceParam : 'cedar';
+
   const body = {
     model: 'gpt-4o-realtime-preview-2024-12-17',
-    voice: 'cedar',
+    voice,
     modalities: ['audio'],
     instructions:
       'You are a warm, conversational essay coach for students aged 10-22. Engage in natural back-and-forth conversation to help them brainstorm essay ideas. Be personalized, encouraging, and ask follow-up questions that help uncover meaningful stories and insights.',
