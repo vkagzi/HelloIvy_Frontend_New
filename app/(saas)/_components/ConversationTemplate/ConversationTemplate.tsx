@@ -7,7 +7,8 @@ import { Heading, Paragraph } from '@/app/_components/Typography';
 import { useToast } from '@/app/_components/Toast';
 import { FiIcon } from '@/app/_components/Icons';
 import { Textarea } from '@/components/ui/textarea';
-import imgIcon from '@/assets/images/icon.png';
+// import imgIcon from '@/assets/images/icon.png';
+import imgIcon from '@/assets/images/iconGIF.gif';
 import { marked } from 'marked';
 
 // import { useAudioTranscription } from '@/lib/hooks/useAudioTranscription';
