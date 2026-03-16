@@ -95,7 +95,7 @@ const seniorSecondarySubjects = [
   'Theatre / Drama',
   'Visual Arts',
   'Wellness & Mindfulness',
-  'Yoga'
+  'Yoga',
 ];
 
 export const UNDERGRADUATE_DEGREE_PROGRAMS = [
@@ -749,6 +749,22 @@ export const educationalFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
+    id: 'level',
+    type: 'select',
+    label: 'Level',
+    placeholder: 'Select level',
+    options: [
+      'Higher',
+      'Standard',
+      'Advanced',
+      'AP',
+      'Honors',
+      'A Level',
+      'AS Level',
+    ],
+    required: false,
+  },
+  {
     id: 'subjectOther',
     type: 'text',
     label: 'Other Subject Name',
@@ -1335,6 +1351,7 @@ export const educationalLayout: LayoutBlock[] = [
     repeatables: {
       fields: [
         'subject',
+        'level',
         'subjectOther',
         'yourTotalScore',
         'highestTotalScore',
