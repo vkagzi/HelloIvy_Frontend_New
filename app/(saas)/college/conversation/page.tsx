@@ -1156,7 +1156,7 @@ ${convo}
                     </svg>
                   </div>
                   <span className="text-sm text-gray-500">
-                    College AI is thinking…
+                    Ivy is thinking…
                   </span>
                 </div>
                 <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">

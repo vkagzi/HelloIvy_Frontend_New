@@ -644,7 +644,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
               <div className="max-w-3xl">
                 <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">
                   <span className="text-sm text-gray-500">
-                    {slots?.loadingText ?? 'AI is thinking…'}
+                    {slots?.loadingText ?? 'Ivy is thinking…'}
                   </span>
                 </div>
               </div>

@@ -181,7 +181,7 @@ const CareerConversationPage: React.FC = () => {
         },
       },
       slots: {
-        loadingText: 'Career AI is thinking…',
+        loadingText: 'Ivy is thinking…',
 
         renderCompletionBanner: ({ onViewResults }) => {
           if (isGeneratingResults) {

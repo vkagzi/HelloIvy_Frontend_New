@@ -153,7 +153,7 @@ const domainConversationConfig: ConversationConfig = {
     },
   },
   slots: {
-    loadingText: 'Domain AI is thinking…',
+    loadingText: 'Ivy is thinking…',
 
     renderBotMessageExtra: ({ message, isLatest, isLoading, onOptionSelect }) => {
       const qType = message.extra?.question_type;
