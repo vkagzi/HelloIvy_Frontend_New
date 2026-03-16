@@ -8,10 +8,9 @@ import {
   SessionListItem as DomainSessionListItem,
   DomainRecommendation 
 } from '@/lib/domain-discovery-api';
-import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { Checkbox } from '@/app/_components/Checkbox';
 import { BrainWithoutBGLottie } from '@/app/_components/LottieAnimation';
-import { Heading, Label, Paragraph } from '@/app/_components/Typography';
+import { Heading } from '@/app/_components/Typography';
 import { Button } from '@/app/_components/Button';
 import { FiIcon } from '@/app/_components/Icons';
 import {
@@ -34,10 +33,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   const [latestDomainSession, setLatestDomainSession] = useState<DomainSessionListItem | null>(null);
   const [domainRecommendations, setDomainRecommendations] = useState<DomainRecommendation[]>([]);
   const [isCheckingDomain, setIsCheckingDomain] = useState(true);
-  const { speakText, isSpeaking } = useOpenAITTS();
   const hasFetchedRef = useRef(false);
-
-  const instructions = `This module helps you discover your ideal career path through personalized, AI-powered analysis based on your unique profile and experiences. We analyze your existing profile data and guide you through 20 thoughtful questions about your preferences. You'll receive personalized career recommendations with detailed insights, salary ranges, and specific next steps. The process takes about 30-40 minutes and is completely personalized to your background.`;
 
   useEffect(() => {
     if (hasFetchedRef.current) return;
@@ -88,10 +84,6 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     checkDomainDiscovery();
     loadSessions();
   }, []);
-
-  const handleListen = () => {
-    speakText(instructions);
-  };
 
   const handleStartCareerDiscovery = async () => {
     if (!hasReadInstructions) {
@@ -383,23 +375,12 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
 
         {/* Instructions Box */}
         <div className="mb-6 rounded-lg border border-orange-200 p-6">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4">
             <h2 className="text-lg font-semibold">
               {sessions.length > 0
                 ? 'Start a New Session'
                 : 'Go Through Instructions Before We Start The Module'}
             </h2>
-            <Button
-              onClick={handleListen}
-              variant="outline"
-              size="sm"
-              className="rounded-md border border-orange-500 bg-orange-50 text-orange-500 hover:bg-orange-100"
-            >
-              <FiIcon name="volume" className="h-4 w-4" />
-              <Label size="md" className="text-orange-500">
-                Listen
-              </Label>
-            </Button>
           </div>
 
           <ol className="space-y-3 text-gray-700">

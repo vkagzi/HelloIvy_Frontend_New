@@ -4,11 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { domainDiscoveryApi, SessionListItem } from '@/lib/domain-discovery-api';
-import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import { Checkbox } from '@/app/_components/Checkbox';
 import { BrainWithoutBGLottie } from '@/app/_components/LottieAnimation';
-import { Heading, Label, Paragraph } from '@/app/_components/Typography';
+import { Heading } from '@/app/_components/Typography';
 import { Button } from '@/app/_components/Button';
 import { FiIcon } from '@/app/_components/Icons';
 import {
@@ -37,10 +36,9 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [hasReadInstructions, setHasReadInstructions] = useState(false);
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
-  const { speakText, isSpeaking } = useOpenAITTS();
   const { isProfileComplete, completionPercentage, missingSections, loading: profileLoading } = useProfile();
 
-  const instructions = `This module helps you discover your ideal academic and interest domains through personalized, AI-powered analysis based on your unique curiosities and passions. We analyze your existing profile data and guide you through 20 thoughtful questions about your interests. You'll receive personalized domain recommendations with related subjects, exploration activities, and potential career paths. The process takes about 30-40 minutes and is completely personalized to your background.`;
+
 
   useEffect(() => {
     let isCancelled = false;
@@ -91,10 +89,6 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
       isCancelled = true;
     };
   }, []);
-
-  const handleListen = () => {
-    speakText(instructions);
-  };
 
   const handleStartDomainDiscovery = async () => {
     if (!hasReadInstructions) {
@@ -283,23 +277,12 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
 
         {/* Instructions Box */}
         <div className="mb-6 rounded-lg border border-teal-200 p-6">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4">
             <h2 className="text-lg font-semibold">
               {sessions.length > 0
                 ? 'Start a New Session'
                 : 'Go Through Instructions Before We Start The Module'}
             </h2>
-            <Button
-              onClick={handleListen}
-              variant="outline"
-              size="sm"
-              className="rounded-md border border-teal-500 bg-teal-50 text-teal-500 hover:bg-teal-100"
-            >
-              <FiIcon name="volume" className="h-4 w-4" />
-              <Label size="md" className="text-teal-500">
-                Listen
-              </Label>
-            </Button>
           </div>
 
           <ol className="space-y-3 text-gray-700">
