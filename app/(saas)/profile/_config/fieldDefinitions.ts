@@ -1979,41 +1979,26 @@ export const additionalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: ['degreeInterest', 'whyInterest'],
+    fields: ['degreeInterest', 'degreeInterestOther'],
     columns: 3,
   },
   {
     type: 'fieldset',
-    fields: ['degreeInterestOther'],
+    fields: ['whyInterest'],
     columns: 3,
-    visibility: {
-      depends_on: {
-        field_id: 'degreeInterest',
-        value: ['Other'],
-      },
-    },
   },
   {
     type: 'seperator',
   },
   {
     type: 'fieldset',
-    fields: ['domainInterest', 'domainWhyInterest'],
+    fields: ['domainInterest', 'domainInterestOther'],
     columns: 3,
   },
   {
     type: 'fieldset',
-    fields: ['domainInterestOther'],
+    fields: ['domainWhyInterest'],
     columns: 3,
-    visibility: {
-      depends_on: {
-        field_id: 'domainInterest',
-        value: ['Other'],
-      },
-    },
-  },
-  {
-    type: 'seperator',
   },
   {
     type: 'fieldset',
