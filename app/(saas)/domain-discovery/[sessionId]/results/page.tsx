@@ -14,7 +14,9 @@ import {
   TranscriptData,
   TranscriptMessage,
 } from '@/lib/domain-discovery-api';
-import { generateTranscriptPDF, generateDomainResultsPDF, DomainResultsData } from '@/lib/pdf-utils';
+import { generateTranscriptPDF } from '@/lib/pdf-utils';
+import { downloadPDF } from '@/lib/pdf-from-component';
+import DomainResultsPDF from '@/components/pdf/DomainResultsPDF';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import { DomainDebugDialog } from '@/components/DomainDebugDialog';
 
@@ -148,83 +150,23 @@ const DomainResultsPage: React.FC = () => {
   }
 
   async function downloadResultsFile() {
-    if (!sessionId) return;
-
     try {
       setIsDownloadingResults(true);
-      
-      // Fetch transcript data if not already loaded to get timestamps
-      let transcriptData = transcript;
-      if (!transcriptData) {
-        try {
-          transcriptData = await domainDiscoveryApi.getTranscript(sessionId);
-        } catch {
-          // Transcript fetch failed, will use fallback values
-        }
-      }
-      
-      // Get student name from profile or transcript
+
       const firstName = (personalDetails?.firstName as string) || '';
       const lastName = (personalDetails?.lastName as string) || '';
-      let studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName);
-      if (!studentName) {
-        if (transcriptData?.student_name) {
-          studentName = transcriptData.student_name;
-        } else {
-          // Try to get from results summary
-          try {
-            const results = await domainDiscoveryApi.getResultsSummary(sessionId);
-            studentName = results.student_name || 'Student';
-          } catch {
-            studentName = 'Student';
-          }
-        }
-      }
-      
-      // Build location string from profile
-      const buildLocation = () => {
-        const city = (personalDetails?.city as string) || '';
-        const state = (personalDetails?.state as string) || '';
-        const country = (personalDetails?.country as string) || '';
-        const parts = [city, state, country].filter(Boolean);
-        return parts.join(', ') || undefined;
-      };
+      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Student');
 
-      const resultsData: DomainResultsData = {
-        studentName,
-        sessionId,
-        startedAt: transcriptData?.started_at,
-        completedAt: transcriptData?.completed_at || new Date().toISOString(),
-        dateOfBirth: (personalDetails?.dob as string) || undefined,
-        academicLevel: (educationalDetails?.academicLevel as string) || undefined,
-        gradeLevel: (educationalDetails?.gradeLevel as string) || undefined,
-        location: buildLocation(),
-        interestScores: interestScores || {
-          realistic: 0,
-          investigative: 0,
-          artistic: 0,
-          social: 0,
-          enterprising: 0,
-          conventional: 0,
-        },
-        interests,
-        strengths,
-        recommendations,
-      };
-      
-      // Generate PDF on the frontend
-      const pdfBlob = generateDomainResultsPDF(resultsData);
-      
-      // Create download link
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Domain_Discovery_Results_${studentName.replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
+      await downloadPDF(
+        <DomainResultsPDF
+          recommendations={recommendations}
+          interests={interests}
+          strengths={strengths}
+          studentName={studentName}
+        />,
+        `Domain_Discovery_Results_${studentName.replace(/\s+/g, '_')}`,
+      );
+
       addToast('Results downloaded successfully!', { type: 'success' });
     } catch (e) {
       console.error('Failed to download results:', e);
@@ -275,12 +217,12 @@ const DomainResultsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-linear-to-br from-teal-50 to-cyan-100">
+      <div className="flex h-full items-center justify-center bg-linear-to-br from-[#ebf2ff] to-[#e8fafa]">
         <div className="text-center">
           <div className="relative mx-auto mb-6 h-20 w-20">
-            <div className="absolute inset-0 animate-ping rounded-full bg-teal-200 opacity-75"></div>
+            <div className="absolute inset-0 animate-ping rounded-full bg-[#c2d6ff] opacity-75"></div>
             <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-teal-200 border-t-teal-600"></div>
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#c2d6ff] border-t-[#3377ff]"></div>
             </div>
           </div>
           <h2 className="mb-2 text-2xl font-bold text-gray-900">
@@ -290,7 +232,7 @@ const DomainResultsPage: React.FC = () => {
             Generating personalized domain recommendations...
           </p>
           <div className="mx-auto w-64 overflow-hidden rounded-full bg-gray-200">
-            <div className="h-2 animate-pulse rounded-full bg-linear-to-r from-teal-500 to-cyan-500" style={{ width: '60%' }}></div>
+            <div className="h-2 animate-pulse rounded-full bg-linear-to-r from-[#3377ff] to-[#14cecf]" style={{ width: '60%' }}></div>
           </div>
         </div>
       </div>
@@ -299,7 +241,7 @@ const DomainResultsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center bg-linear-to-br from-teal-50 to-cyan-100">
+      <div className="flex h-full items-center justify-center bg-linear-to-br from-[#ebf2ff] to-[#e8fafa]">
         <div className="mx-auto max-w-md text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 p-3">
             <svg
@@ -323,7 +265,7 @@ const DomainResultsPage: React.FC = () => {
           <div className="space-x-4">
             <Button
               asChild
-              className="bg-teal-600 hover:bg-teal-700"
+              className="bg-[#3377ff] hover:bg-[#2860d9]"
             >
               <Link href={`/domain-discovery/${sessionId}/conversations`}>
                 Continue Conversation
@@ -342,11 +284,11 @@ const DomainResultsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full bg-linear-to-br from-teal-50 via-white to-cyan-50">
+    <div className="min-h-full bg-linear-to-br from-[#ebf2ff] via-white to-[#e8fafa]">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-10 text-center">
-          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-teal-100 px-4 py-2 text-sm font-medium text-teal-700">
+          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-[#d6e4ff] px-4 py-2 text-sm font-medium text-[#3377ff]">
             <span className="mr-2">🧭</span> Domain Discovery Complete
           </div>
           <Heading level={1} className="mb-4 text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
@@ -376,7 +318,7 @@ const DomainResultsPage: React.FC = () => {
               onClick={() => setActiveTab('results')}
               className={`flex-1 cursor-pointer rounded-md px-6 py-3 text-sm font-medium transition-all duration-200 ${
                 activeTab === 'results'
-                  ? 'bg-linear-to-r from-teal-600 to-cyan-600 text-white shadow-md'
+                  ? 'bg-linear-to-r from-[#3377ff] to-[#14cecf] text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
@@ -386,7 +328,7 @@ const DomainResultsPage: React.FC = () => {
               onClick={() => setActiveTab('history')}
               className={`flex-1 cursor-pointer rounded-md px-6 py-3 text-sm font-medium transition-all duration-200 ${
                 activeTab === 'history'
-                  ? 'bg-linear-to-r from-teal-600 to-cyan-600 text-white shadow-md'
+                  ? 'bg-linear-to-r from-[#3377ff] to-[#14cecf] text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
@@ -404,7 +346,7 @@ const DomainResultsPage: React.FC = () => {
             {/* Interests & Strengths */}
             {(interests.length > 0 || strengths.length > 0) && (
               <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
-                <div className="bg-linear-to-r from-teal-600 to-cyan-600 px-6 py-4">
+                <div className="bg-linear-to-r from-[#3377ff] to-[#14cecf] px-6 py-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-white">Results Summary</h3>
                     <Button
@@ -432,10 +374,10 @@ const DomainResultsPage: React.FC = () => {
                 <div className="p-6">
                   <div className="grid gap-6 md:grid-cols-2">
                     {interests.length > 0 && (
-                      <div className="rounded-xl bg-teal-50 p-4">
+                      <div className="rounded-xl bg-[#ebf2ff] p-4">
                         <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
-                          <span className="mr-2 rounded-lg bg-teal-100 p-1.5">
-                            <svg className="h-4 w-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <span className="mr-2 rounded-lg bg-[#d6e4ff] p-1.5">
+                            <svg className="h-4 w-4 text-[#3377ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                             </svg>
                           </span>
@@ -445,7 +387,7 @@ const DomainResultsPage: React.FC = () => {
                           {interests.map((interest, idx) => (
                             <span
                               key={idx}
-                              className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-teal-700 shadow-sm"
+                              className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-[#3377ff] shadow-sm"
                             >
                               {interest}
                             </span>
@@ -454,10 +396,10 @@ const DomainResultsPage: React.FC = () => {
                       </div>
                     )}
                     {strengths.length > 0 && (
-                      <div className="rounded-xl bg-cyan-50 p-4">
+                      <div className="rounded-xl bg-[#e8fafa] p-4">
                         <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
-                          <span className="mr-2 rounded-lg bg-cyan-100 p-1.5">
-                            <svg className="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
+                            <svg className="h-4 w-4 text-[#14cecf]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                           </span>
@@ -467,7 +409,7 @@ const DomainResultsPage: React.FC = () => {
                           {strengths.map((strength, idx) => (
                             <span
                               key={idx}
-                              className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-cyan-700 shadow-sm"
+                              className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-[#0fa5a5] shadow-sm"
                             >
                               {strength}
                             </span>
@@ -483,11 +425,11 @@ const DomainResultsPage: React.FC = () => {
             {/* Summary Stats */}
             <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-2xl bg-white p-6 shadow-xl">
               <div className="flex justify-center">
-                <div className="rounded-xl bg-teal-50 px-8 py-4 text-center">
-                  <div className="text-4xl font-bold text-teal-600">
+                <div className="rounded-xl bg-[#ebf2ff] px-8 py-4 text-center">
+                  <div className="text-4xl font-bold text-[#3377ff]">
                     {recommendations.length}
                   </div>
-                  <div className="mt-1 text-sm font-medium text-teal-700">Domain Matches</div>
+                  <div className="mt-1 text-sm font-medium text-[#3377ff]">Domain Matches</div>
                 </div>
               </div>
             </div>
@@ -500,7 +442,7 @@ const DomainResultsPage: React.FC = () => {
                   className="group overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
                 >
                   {/* Header */}
-                  <div className="relative bg-linear-to-r from-teal-600 to-cyan-600 p-6 text-white">
+                  <div className="relative bg-linear-to-r from-[#3377ff] to-[#14cecf] p-6 text-white">
                     {/* Rank Badge */}
                     <div className="absolute -left-2 top-6 flex items-center">
                       <div className="rounded-r-full bg-white/20 py-1 pl-4 pr-3 text-sm font-bold backdrop-blur-sm">
@@ -522,7 +464,7 @@ const DomainResultsPage: React.FC = () => {
                           <h3 className="text-2xl font-bold">
                             {domain.domain_title}
                           </h3>
-                          <p className="text-teal-100">
+                          <p className="text-[#d6e4ff]">
                             <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${getCategoryColor(domain.category)}`}>
                               {domain.category}
                             </span>
@@ -551,8 +493,8 @@ const DomainResultsPage: React.FC = () => {
                       <div className="space-y-6">
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-teal-100 p-1.5">
-                              <svg className="h-4 w-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="mr-2 rounded-lg bg-[#d6e4ff] p-1.5">
+                              <svg className="h-4 w-4 text-[#3377ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </span>
@@ -565,8 +507,8 @@ const DomainResultsPage: React.FC = () => {
 
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-green-100 p-1.5">
-                              <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
+                              <svg className="h-4 w-4 text-[#14cecf]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </span>
@@ -591,7 +533,7 @@ const DomainResultsPage: React.FC = () => {
                               domain.key_interests.map((interest, idx) => (
                                 <span
                                   key={idx}
-                                  className="rounded-full bg-linear-to-r from-teal-100 to-cyan-100 px-3 py-1.5 text-sm font-medium text-teal-700 shadow-sm"
+                                  className="rounded-full bg-linear-to-r from-[#d6e4ff] to-[#d0f5f5] px-3 py-1.5 text-sm font-medium text-[#3377ff] shadow-sm"
                                 >
                                   {interest}
                                 </span>
@@ -611,7 +553,7 @@ const DomainResultsPage: React.FC = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                               </svg>
                             </span>
-                            Related School Subjects
+                            Related Subjects
                           </h4>
                           <div className="flex flex-wrap gap-2">
                             {domain.related_subjects && domain.related_subjects.length > 0 ? (
@@ -635,8 +577,8 @@ const DomainResultsPage: React.FC = () => {
                       <div className="space-y-6">
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-cyan-100 p-1.5">
-                              <svg className="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
+                              <svg className="h-4 w-4 text-[#14cecf]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                               </svg>
                             </span>
@@ -647,7 +589,7 @@ const DomainResultsPage: React.FC = () => {
                               {domain.sub_domains.map((subDomain, idx) => (
                                 <li key={idx} className="flex items-start space-x-3 rounded-lg bg-gray-50 p-3">
                                   <svg
-                                    className="mt-0.5 h-5 w-5 shrink-0 text-teal-500"
+                                    className="mt-0.5 h-5 w-5 shrink-0 text-[#14cecf]"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -672,8 +614,8 @@ const DomainResultsPage: React.FC = () => {
 
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-emerald-100 p-1.5">
-                              <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="mr-2 rounded-lg bg-[#d6e4ff] p-1.5">
+                              <svg className="h-4 w-4 text-[#40c795]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                               </svg>
                             </span>
@@ -686,7 +628,7 @@ const DomainResultsPage: React.FC = () => {
                                   key={idx}
                                   className="flex items-start space-x-3"
                                 >
-                                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-600">
+                                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d6e4ff] text-xs font-bold text-[#40c795]">
                                     {idx + 1}
                                   </span>
                                   <span className="text-gray-700">{activity}</span>
@@ -702,8 +644,8 @@ const DomainResultsPage: React.FC = () => {
 
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-purple-100 p-1.5">
-                              <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="mr-2 rounded-lg bg-[#e9d5ff] p-1.5">
+                              <svg className="h-4 w-4 text-[#7f12f3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                               </svg>
                             </span>
@@ -714,7 +656,7 @@ const DomainResultsPage: React.FC = () => {
                               domain.potential_careers.map((career, idx) => (
                                 <span
                                   key={idx}
-                                  className="rounded-full bg-linear-to-r from-purple-100 to-pink-100 px-3 py-1.5 text-sm font-medium text-purple-700 shadow-sm"
+                                  className="rounded-full bg-linear-to-r from-[#e9d5ff] to-[#fce7f3] px-3 py-1.5 text-sm font-medium text-[#7f12f3] shadow-sm"
                                 >
                                   {career}
                                 </span>
@@ -738,7 +680,7 @@ const DomainResultsPage: React.FC = () => {
           <div className="mx-auto max-w-4xl">
             {isLoadingHistory ? (
               <div className="flex items-center justify-center py-12">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-teal-600 border-t-transparent"></div>
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3377ff] border-t-transparent"></div>
                 <span className="ml-3 text-gray-600">
                   Loading conversation history...
                 </span>
@@ -752,7 +694,7 @@ const DomainResultsPage: React.FC = () => {
                   <Button
                     onClick={downloadTranscriptFile}
                     disabled={isDownloadingTranscript}
-                    className="bg-linear-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                    className="bg-linear-to-r from-[#3377ff] to-[#14cecf] hover:from-[#2860d9] hover:to-[#0fa5a5]"
                   >
                     {isDownloadingTranscript ? (
                       <>
@@ -768,10 +710,10 @@ const DomainResultsPage: React.FC = () => {
                 </div>
                 <div className="space-y-6">
                   {transcript.messages.map((message) => (
-                    <div key={message.question_number} className="border-l-4 border-teal-500 bg-gray-50 p-4">
+                    <div key={message.question_number} className="border-l-4 border-[#3377ff] bg-gray-50 p-4">
                       <div className="mb-4">
                         <div className="mb-2 flex items-center">
-                          <span className="inline-block rounded-full bg-teal-600 px-3 py-1 text-xs font-semibold text-white">
+                          <span className="inline-block rounded-full bg-[#3377ff] px-3 py-1 text-xs font-semibold text-white">
                             Q{message.question_number}
                           </span>
                           {message.timestamp && (
@@ -816,7 +758,7 @@ const DomainResultsPage: React.FC = () => {
           <Button
             asChild
             size="lg"
-            className="bg-linear-to-r from-purple-600 to-blue-600 font-semibold hover:from-purple-700 hover:to-blue-700"
+            className="bg-linear-to-r from-[#7f12f3] to-[#1a86f1] font-semibold hover:from-[#6a0fd0] hover:to-[#1570d0]"
           >
             <Link href="/career-discovery">🚀 Start Career Discovery</Link>
           </Button>

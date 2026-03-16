@@ -145,7 +145,7 @@ export function generateTranscriptPDF(transcript: TranscriptData): Blob {
         yPosition += 5;
       }
       
-      doc.setFillColor(16, 185, 129); // Teal color
+      doc.setFillColor(51, 119, 255); // Brand Blue #3377ff
       doc.rect(margin, yPosition, contentWidth, 10, 'F');
       
       doc.setFont('helvetica', 'bold');
@@ -264,6 +264,7 @@ export interface CareerRecommendationData {
   description: string;
   why_recommended: string;
   alignment_points: string[];
+  related_subjects: string[];
   day_in_life: string;
   pros_and_cons: { pros: string[]; cons: string[] };
   work_life_balance: string;
@@ -386,7 +387,7 @@ export function generateCareerTranscriptPDF(transcript: CareerTranscriptData): B
       }
       
       // Phase header with purple color for career discovery
-      doc.setFillColor(147, 51, 234); // Purple color
+      doc.setFillColor(127, 18, 243); // Logo Purple #7f12f3
       doc.rect(margin, yPosition, contentWidth, 10, 'F');
       
       doc.setFont('helvetica', 'bold');
@@ -602,7 +603,7 @@ export function generateCareerResultsPDF(data: CareerResultsData): Blob {
     checkPageBreak(30);
 
     // Summary header
-    doc.setFillColor(147, 51, 234); // Purple color
+    doc.setFillColor(127, 18, 243); // Logo Purple #7f12f3
     doc.rect(margin, yPosition, contentWidth, 10, 'F');
     
     doc.setFont('helvetica', 'bold');
@@ -630,7 +631,7 @@ export function generateCareerResultsPDF(data: CareerResultsData): Blob {
       const cardStartY = yPosition;
       
       // Career rank and title on colored header
-      doc.setFillColor(147, 51, 234); // Purple header
+      doc.setFillColor(127, 18, 243); // Logo Purple #7f12f3
       doc.rect(margin, cardStartY, contentWidth, 12, 'F');
       
       doc.setFont('helvetica', 'bold');
@@ -678,7 +679,7 @@ export function generateCareerResultsPDF(data: CareerResultsData): Blob {
       const contentStartY = yPosition;
       
       // Career card background - will be drawn after calculating actual height
-      doc.setFillColor(250, 250, 252); // Light neutral background
+      doc.setFillColor(235, 242, 255); // Brand light background #ebf2ff
       
       // Salary range
       doc.setFont('helvetica', 'normal');
@@ -1054,7 +1055,7 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
     checkPageBreak(40);
     
     // Section header
-    doc.setFillColor(6, 182, 212); // Cyan color
+    doc.setFillColor(51, 119, 255); // Brand Blue #3377ff
     doc.rect(margin, yPosition, contentWidth, 10, 'F');
     
     doc.setFont('helvetica', 'bold');
@@ -1100,7 +1101,7 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
     checkPageBreak(20);
     
     // Section header
-    doc.setFillColor(139, 92, 246); // Purple color
+    doc.setFillColor(20, 206, 207); // Brand Teal #14cecf
     doc.rect(margin, yPosition, contentWidth, 10, 'F');
     
     doc.setFont('helvetica', 'bold');
@@ -1147,11 +1148,11 @@ export function generateDomainResultsPDF(data: DomainResultsData): Blob {
       }
       
       // Domain card background
-      doc.setFillColor(240, 253, 250); // Teal-50 background
+      doc.setFillColor(235, 242, 255); // Brand blue-50 #ebf2ff
       doc.rect(margin, yPosition, contentWidth, estimatedHeight, 'F');
       
       // Domain header with colored strip
-      doc.setFillColor(6, 182, 212); // Cyan/teal color
+      doc.setFillColor(51, 119, 255); // Brand Blue #3377ff
       doc.rect(margin, yPosition, contentWidth, 12, 'F');
       
       // Domain rank and title

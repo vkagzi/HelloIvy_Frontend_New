@@ -13,10 +13,10 @@ import {
 } from '@/lib/career-discovery-api';
 import {
   generateCareerTranscriptPDF,
-  generateCareerResultsPDF,
   CareerTranscriptData,
-  CareerResultsData,
 } from '@/lib/pdf-utils';
+import { downloadPDF } from '@/lib/pdf-from-component';
+import CareerResultsPDF from '@/components/pdf/CareerResultsPDF';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 type TabType = 'results' | 'history';
@@ -167,61 +167,18 @@ const CareerResultsPage: React.FC = () => {
   }
 
   async function downloadResultsFile() {
-    if (!sessionId) return;
-
     try {
       setIsDownloadingResults(true);
-      
-      // Get student name from profile
+
       const firstName = (personalDetails?.firstName as string) || '';
       const lastName = (personalDetails?.lastName as string) || '';
       const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Student');
-      
-      // Build location string from profile
-      const buildLocation = () => {
-        const city = (personalDetails?.city as string) || '';
-        const state = (personalDetails?.state as string) || '';
-        const country = (personalDetails?.country as string) || '';
-        const parts = [city, state, country].filter(Boolean);
-        return parts.join(', ') || undefined;
-      };
-      
-      // Find session timestamps from conversation history if available
-      let startedAt: string | undefined;
-      let completedAt: string | undefined;
-      if (conversationHistory.length > 0) {
-        const sortedMessages = [...conversationHistory].sort((a, b) => 
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
-        startedAt = sortedMessages[0].timestamp;
-        completedAt = sortedMessages[sortedMessages.length - 1].timestamp;
-      }
 
-      const resultsData: CareerResultsData = {
-        studentName,
-        sessionId,
-        startedAt,
-        completedAt,
-        dateOfBirth: (personalDetails?.dob as string) || undefined,
-        academicLevel: (educationalDetails?.academicLevel as string) || undefined,
-        gradeLevel: (educationalDetails?.gradeLevel as string) || undefined,
-        location: buildLocation(),
-        recommendations: recommendations,
-      };
-      
-      // Generate PDF on the frontend
-      const pdfBlob = generateCareerResultsPDF(resultsData);
-      
-      // Create download link
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Career_Discovery_Results_${studentName.replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
+      await downloadPDF(
+        <CareerResultsPDF recommendations={recommendations} studentName={studentName} />,
+        `Career_Discovery_Results_${studentName.replace(/\s+/g, '_')}`,
+      );
+
       addToast('Results downloaded successfully!', { type: 'success' });
     } catch (e) {
       console.error('Failed to download results:', e);
@@ -258,12 +215,12 @@ const CareerResultsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-linear-to-br from-purple-50 to-blue-100">
+      <div className="flex h-full items-center justify-center bg-linear-to-br from-[#f3e8ff] to-[#ebf2ff]">
         <div className="text-center">
           <div className="relative mx-auto mb-6 h-20 w-20">
-            <div className="absolute inset-0 animate-ping rounded-full bg-purple-200 opacity-75"></div>
+            <div className="absolute inset-0 animate-ping rounded-full bg-[#d8b4fe] opacity-75"></div>
             <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600"></div>
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#d8b4fe] border-t-[#7f12f3]"></div>
             </div>
           </div>
           <h2 className="mb-2 text-2xl font-bold text-gray-900">
@@ -273,7 +230,7 @@ const CareerResultsPage: React.FC = () => {
             Generating personalized career recommendations...
           </p>
           <div className="mx-auto w-64 overflow-hidden rounded-full bg-gray-200">
-            <div className="h-2 animate-pulse rounded-full bg-linear-to-r from-purple-500 to-blue-500" style={{ width: '60%' }}></div>
+            <div className="h-2 animate-pulse rounded-full bg-linear-to-r from-[#7f12f3] to-[#1a86f1]" style={{ width: '60%' }}></div>
           </div>
         </div>
       </div>
@@ -282,7 +239,7 @@ const CareerResultsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center bg-linear-to-br from-purple-50 to-blue-100">
+      <div className="flex h-full items-center justify-center bg-linear-to-br from-[#f3e8ff] to-[#ebf2ff]">
         <div className="mx-auto max-w-md text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 p-3">
             <svg
@@ -306,7 +263,7 @@ const CareerResultsPage: React.FC = () => {
           <div className="space-x-4">
             <button
               onClick={() => router.push(`/career-discovery/${sessionId}/conversations`)}
-              className="cursor-pointer rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700"
+              className="cursor-pointer rounded-lg bg-[#7f12f3] px-4 py-2 text-white hover:bg-[#6a0fd0]"
             >
               Continue Conversation
             </button>
@@ -323,11 +280,11 @@ const CareerResultsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full bg-linear-to-br from-purple-50 via-white to-blue-50">
+    <div className="min-h-full bg-linear-to-br from-[#f3e8ff] via-white to-[#ebf2ff]">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-10 text-center">
-          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-purple-100 px-4 py-2 text-sm font-medium text-purple-700">
+          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-[#e9d5ff] px-4 py-2 text-sm font-medium text-[#7f12f3]">
             <span className="mr-2">🎯</span> Career Discovery Complete
           </div>
           <Heading level={1} className="mb-4 text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
@@ -345,7 +302,7 @@ const CareerResultsPage: React.FC = () => {
               onClick={() => setActiveTab('results')}
               className={`flex-1 cursor-pointer rounded-md px-6 py-3 text-sm font-medium transition-all duration-200 ${
                 activeTab === 'results'
-                  ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white shadow-md'
+                  ? 'bg-linear-to-r from-[#7f12f3] to-[#1a86f1] text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
@@ -355,7 +312,7 @@ const CareerResultsPage: React.FC = () => {
               onClick={() => setActiveTab('history')}
               className={`flex-1 cursor-pointer rounded-md px-6 py-3 text-sm font-medium transition-all duration-200 ${
                 activeTab === 'history'
-                  ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white shadow-md'
+                  ? 'bg-linear-to-r from-[#7f12f3] to-[#1a86f1] text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
@@ -369,7 +326,7 @@ const CareerResultsPage: React.FC = () => {
           <>
             {/* Results Summary Header with Download Button */}
             <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
-              <div className="bg-linear-to-r from-purple-600 to-blue-600 px-6 py-4">
+              <div className="bg-linear-to-r from-[#7f12f3] to-[#1a86f1] px-6 py-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white">Results Summary</h3>
                   <Button
@@ -396,11 +353,11 @@ const CareerResultsPage: React.FC = () => {
               </div>
               <div className="p-6">
                 <div className="flex justify-center">
-                  <div className="rounded-xl bg-purple-50 px-8 py-4 text-center">
-                    <div className="text-4xl font-bold text-purple-600">
+                  <div className="rounded-xl bg-[#f3e8ff] px-8 py-4 text-center">
+                    <div className="text-4xl font-bold text-[#7f12f3]">
                       {recommendations.length}
                     </div>
-                    <div className="mt-1 text-sm font-medium text-purple-700">Career Matches</div>
+                    <div className="mt-1 text-sm font-medium text-[#7f12f3]">Career Matches</div>
                   </div>
                 </div>
               </div>
@@ -414,7 +371,7 @@ const CareerResultsPage: React.FC = () => {
                   className="group overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
                 >
                   {/* Header */}
-                  <div className="relative bg-linear-to-r from-purple-600 to-blue-600 p-6 text-white">
+                  <div className="relative bg-linear-to-r from-[#7f12f3] to-[#1a86f1] p-6 text-white">
                     {/* Rank Badge */}
                     <div className="absolute -left-2 top-6 flex items-center">
                       <div className="rounded-r-full bg-white/20 py-1 pl-4 pr-3 text-sm font-bold backdrop-blur-sm">
@@ -436,7 +393,7 @@ const CareerResultsPage: React.FC = () => {
                           <h3 className="text-2xl font-bold">
                             {career.career_title}
                           </h3>
-                          <p className="text-purple-100">
+                          <p className="text-[#e9d5ff]">
                             <span className="inline-flex items-center">
                               <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -468,8 +425,8 @@ const CareerResultsPage: React.FC = () => {
                       <div className="space-y-6">
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-purple-100 p-1.5">
-                              <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="mr-2 rounded-lg bg-[#e9d5ff] p-1.5">
+                              <svg className="h-4 w-4 text-[#7f12f3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </span>
@@ -482,8 +439,8 @@ const CareerResultsPage: React.FC = () => {
 
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-green-100 p-1.5">
-                              <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
+                              <svg className="h-4 w-4 text-[#40c795]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </span>
@@ -498,8 +455,8 @@ const CareerResultsPage: React.FC = () => {
                         {career.day_in_life && (
                           <div>
                             <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                              <span className="mr-2 rounded-lg bg-indigo-100 p-1.5">
-                                <svg className="h-4 w-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <span className="mr-2 rounded-lg bg-[#dbeafe] p-1.5">
+                                <svg className="h-4 w-4 text-[#3739fd]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                               </span>
@@ -510,6 +467,109 @@ const CareerResultsPage: React.FC = () => {
                             </p>
                           </div>
                         )}
+
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-[#dbeafe] p-1.5">
+                              <svg className="h-4 w-4 text-[#1a86f1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </span>
+                            How This Matches Your Interests
+                          </h4>
+                          <ul className="space-y-2">
+                            {career.alignment_points?.map((point, idx) => (
+                              <li key={idx} className="flex items-start space-x-3 rounded-lg bg-gray-50 p-3">
+                                <svg
+                                  className="mt-0.5 h-5 w-5 shrink-0 text-[#7f12f3]"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                                <span className="text-gray-700">{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                      </div>
+
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-amber-100 p-1.5">
+                              <svg className="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                              </svg>
+                            </span>
+                            Required Skills
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {career.required_skills.map((skill, skillIndex) => (
+                              <span
+                                key={skillIndex}
+                                className="rounded-full bg-linear-to-r from-[#e9d5ff] to-[#dbeafe] px-3 py-1.5 text-sm font-medium text-[#7f12f3] shadow-sm"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Related Subjects */}
+                        {career.related_subjects?.length > 0 && (
+                          <div>
+                            <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                              <span className="mr-2 rounded-lg bg-[#dbeafe] p-1.5">
+                                <svg className="h-4 w-4 text-[#1a86f1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                              </span>
+                              Related Subjects
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {career.related_subjects.map((subject, subjIndex) => (
+                                <span
+                                  key={subjIndex}
+                                  className="rounded-full bg-linear-to-r from-[#dbeafe] to-[#e9d5ff] px-3 py-1.5 text-sm font-medium text-[#1a86f1] shadow-sm"
+                                >
+                                  {subject}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                            <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
+                              <svg className="h-4 w-4 text-[#40c795]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                              </svg>
+                            </span>
+                            Next Steps
+                          </h4>
+                          <ul className="space-y-3">
+                            {career.next_steps.map((step, stepIndex) => (
+                              <li
+                                key={stepIndex}
+                                className="flex items-start space-x-3"
+                              >
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d0f5f5] text-xs font-bold text-[#40c795]">
+                                  {stepIndex + 1}
+                                </span>
+                                <span className="text-gray-700">{step}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
 
                         {/* Pros and Cons */}
                         {career.pros_and_cons && (career.pros_and_cons.pros?.length > 0 || career.pros_and_cons.cons?.length > 0) && (
@@ -522,7 +582,7 @@ const CareerResultsPage: React.FC = () => {
                               </span>
                               Pros &amp; Cons
                             </h4>
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 grid-cols-1">
                               {career.pros_and_cons.pros?.length > 0 && (
                                 <div className="rounded-lg bg-green-50 p-4">
                                   <h5 className="mb-2 font-semibold text-green-800">Pros</h5>
@@ -561,8 +621,8 @@ const CareerResultsPage: React.FC = () => {
                         {career.work_life_balance && (
                           <div>
                             <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                              <span className="mr-2 rounded-lg bg-teal-100 p-1.5">
-                                <svg className="h-4 w-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
+                                <svg className="h-4 w-4 text-[#14cecf]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                 </svg>
                               </span>
@@ -574,83 +634,6 @@ const CareerResultsPage: React.FC = () => {
                           </div>
                         )}
 
-                        <div>
-                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-blue-100 p-1.5">
-                              <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                            </span>
-                            How This Matches Your Interests
-                          </h4>
-                          <ul className="space-y-2">
-                            {career.alignment_points?.map((point, idx) => (
-                              <li key={idx} className="flex items-start space-x-3 rounded-lg bg-gray-50 p-3">
-                                <svg
-                                  className="mt-0.5 h-5 w-5 shrink-0 text-purple-500"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  />
-                                </svg>
-                                <span className="text-gray-700">{point}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-
-                      <div className="space-y-6">
-                        <div>
-                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-amber-100 p-1.5">
-                              <svg className="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                              </svg>
-                            </span>
-                            Required Skills
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {career.required_skills.map((skill, skillIndex) => (
-                              <span
-                                key={skillIndex}
-                                className="rounded-full bg-linear-to-r from-purple-100 to-blue-100 px-3 py-1.5 text-sm font-medium text-purple-700 shadow-sm"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-emerald-100 p-1.5">
-                              <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                              </svg>
-                            </span>
-                            Next Steps
-                          </h4>
-                          <ul className="space-y-3">
-                            {career.next_steps.map((step, stepIndex) => (
-                              <li
-                                key={stepIndex}
-                                className="flex items-start space-x-3"
-                              >
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-600">
-                                  {stepIndex + 1}
-                                </span>
-                                <span className="text-gray-700">{step}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -663,7 +646,7 @@ const CareerResultsPage: React.FC = () => {
           <div className="mx-auto max-w-4xl">
             {isLoadingHistory ? (
               <div className="flex items-center justify-center py-12">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-600 border-t-transparent"></div>
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#7f12f3] border-t-transparent"></div>
                 <span className="ml-3 text-gray-600">
                   Loading conversation history...
                 </span>
@@ -681,7 +664,7 @@ const CareerResultsPage: React.FC = () => {
                   <Button
                     onClick={downloadTranscriptFile}
                     disabled={isDownloadingTranscript}
-                    className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    className="bg-linear-to-r from-[#7f12f3] to-[#1a86f1] hover:from-[#6a0fd0] hover:to-[#1570d0]"
                   >
                     {isDownloadingTranscript ? (
                       <>
@@ -715,10 +698,10 @@ const CareerResultsPage: React.FC = () => {
                       }
                     }
                     return qaPairs.map((qa) => (
-                      <div key={qa.questionNumber} className="border-l-4 border-purple-500 bg-gray-50 p-4">
+                      <div key={qa.questionNumber} className="border-l-4 border-[#7f12f3] bg-gray-50 p-4">
                         <div className="mb-4">
                           <div className="mb-2 flex items-center">
-                            <span className="inline-block rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white">
+                            <span className="inline-block rounded-full bg-[#7f12f3] px-3 py-1 text-xs font-semibold text-white">
                               Q{qa.questionNumber}
                             </span>
                             {qa.timestamp && (
@@ -753,7 +736,7 @@ const CareerResultsPage: React.FC = () => {
           <Button
             asChild
             size="lg"
-            className="bg-linear-to-r from-purple-600 to-blue-600 font-semibold hover:from-purple-700 hover:to-blue-700"
+            className="bg-linear-to-r from-[#7f12f3] to-[#1a86f1] font-semibold hover:from-[#6a0fd0] hover:to-[#1570d0]"
           >
             <Link href="/career-discovery">🎯 Discover More Careers</Link>
           </Button>
