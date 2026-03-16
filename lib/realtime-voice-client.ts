@@ -67,7 +67,7 @@ export class RealtimeVoiceClient {
   private _disconnecting = false;
   private label: string;
   private _responseDoneResolver: (() => void) | null = null;
-  private _goodbyeInProgress = false;
+  private _switchInProgress = false;
   /** Tracks the current assistant item_id to detect response boundaries */
   private _currentAssistantItemId: string | null = null;
   /** Tracks pending user speech items awaiting transcription (VAD can split one utterance into multiple items) */
@@ -254,38 +254,39 @@ export class RealtimeVoiceClient {
   }
 
   /**
-   * Send a farewell prompt and return a Promise that resolves once the AI
-   * has finished its response AND the goodbye audio has finished playing.
+   * Notify the AI that the user is switching from voice to text mode.
+   * Returns a Promise that resolves once the AI has finished its
+   * transition acknowledgement AND the audio has finished playing.
    * Interrupts any in-flight response first. Falls back after a timeout.
    */
-  sendGoodbye(timeoutMs = 15000): Promise<void> {
-    console.log(`[${this.label}] sendGoodbye called (ws open: ${this.ws?.readyState === WebSocket.OPEN})`);
+  sendSwitchToText(timeoutMs = 15000): Promise<void> {
+    console.log(`[${this.label}] sendSwitchToText called (ws open: ${this.ws?.readyState === WebSocket.OPEN})`);
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.log(`[${this.label}] sendGoodbye — WS not open, resolving immediately`);
+      console.log(`[${this.label}] sendSwitchToText — WS not open, resolving immediately`);
       return Promise.resolve();
     }
 
-    this._goodbyeInProgress = true;
+    this._switchInProgress = true;
 
     // 1. Cancel any in-flight response and stop current playback
-    console.log(`[${this.label}] sendGoodbye — sending response.cancel`);
+    console.log(`[${this.label}] sendSwitchToText — sending response.cancel`);
     this.ws.send(JSON.stringify({ type: 'response.cancel' }));
     this.stopAudio();
 
     return new Promise<void>((resolve) => {
       const timer = setTimeout(() => {
-        console.log(`[${this.label}] Goodbye timed out – disconnecting anyway`);
+        console.log(`[${this.label}] Switch-to-text timed out – disconnecting voice anyway`);
         this._responseDoneResolver = null;
-        this._goodbyeInProgress = false;
+        this._switchInProgress = false;
         resolve();
       }, timeoutMs);
 
-      // 2. When OpenAI finishes the goodbye response, wait for audio playback
+      // 2. When OpenAI finishes the transition response, wait for audio playback
       this._responseDoneResolver = () => {
         const checkPlayback = () => {
           if (!this.isPlaying && this.audioQueue.length === 0) {
             clearTimeout(timer);
-            this._goodbyeInProgress = false;
+            this._switchInProgress = false;
             // Small grace period so the last chunk finishes in the speaker
             setTimeout(resolve, 300);
           } else {
@@ -295,16 +296,16 @@ export class RealtimeVoiceClient {
         checkPlayback();
       };
 
-      // 3. Small delay to let the cancel round-trip complete, then send goodbye
+      // 3. Small delay to let the cancel round-trip complete, then send switch message
       setTimeout(() => {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-          console.log(`[${this.label}] sendGoodbye — WS closed during delay, resolving`);
+          console.log(`[${this.label}] sendSwitchToText — WS closed during delay, resolving`);
           clearTimeout(timer);
-          this._goodbyeInProgress = false;
+          this._switchInProgress = false;
           resolve();
           return;
         }
-        console.log(`[${this.label}] sendGoodbye — sending goodbye conversation item + response.create`);
+        console.log(`[${this.label}] sendSwitchToText — sending switch-to-text conversation item + response.create`);
         this.ws.send(
           JSON.stringify({
             type: 'conversation.item.create',
@@ -314,7 +315,7 @@ export class RealtimeVoiceClient {
               content: [
                 {
                   type: 'input_text',
-                  text: '[System: The user has decided to end the voice session. Please say a brief, warm goodbye — for example "I see you want to end the session. Have a good day!" Keep it to one short sentence.]',
+                  text: '[System: The user is switching from voice to text mode. The session will continue in text. Please briefly acknowledge the switch — for example "Sure, let\'s continue over text!" Keep it to one short sentence. Do NOT say goodbye or end the session.]',
                 },
               ],
             },
@@ -397,9 +398,9 @@ export class RealtimeVoiceClient {
           if (resp?.usage && status !== 'cancelled') {
             this.accumulateTokenUsage(resp.usage as Record<string, unknown>);
           }
-          // Only resolve the goodbye promise on a fully completed response,
-          // not on a cancelled one (response.cancel triggers response.done
-          // with status "cancelled").
+          // Only resolve the switch-to-text promise on a fully completed
+          // response, not on a cancelled one (response.cancel triggers
+          // response.done with status "cancelled").
           if (this._responseDoneResolver && status !== 'cancelled') {
             this._responseDoneResolver();
             this._responseDoneResolver = null;
@@ -408,8 +409,8 @@ export class RealtimeVoiceClient {
         }
 
         case 'error':
-          if (this._disconnecting || this._goodbyeInProgress) {
-            console.log(`[${this.label}] Suppressed error during disconnect/goodbye:`, message.error);
+          if (this._disconnecting || this._switchInProgress) {
+            console.log(`[${this.label}] Suppressed error during disconnect/switch:`, message.error);
             break;
           }
           console.error(`[${this.label}] Server error:`, message.error);

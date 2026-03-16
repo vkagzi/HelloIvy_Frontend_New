@@ -218,15 +218,15 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
     teardownMic();
     if (speakingTimeoutRef.current) { clearTimeout(speakingTimeoutRef.current); speakingTimeoutRef.current = null; }
     if (clientRef.current) {
-      console.log('[Voice] Client exists — clearing buffer and sending goodbye');
+      console.log('[Voice] Client exists — clearing buffer and switching to text');
       clientRef.current.clearAudioBuffer();
       try {
-        // Ask the AI to say goodbye and wait for it to finish speaking
-        // (sendGoodbye waits for both response.done + audio playback)
-        await clientRef.current.sendGoodbye();
-        console.log('[Voice] sendGoodbye completed');
+        // Ask the AI to acknowledge the switch to text and wait for it to finish
+        // (sendSwitchToText waits for both response.done + audio playback)
+        await clientRef.current.sendSwitchToText();
+        console.log('[Voice] sendSwitchToText completed');
       } catch (err) {
-        console.error('[Voice] sendGoodbye failed:', err);
+        console.error('[Voice] sendSwitchToText failed:', err);
       }
       // Now safe to tear down the connection and audio pipeline
       clientRef.current.disconnect();

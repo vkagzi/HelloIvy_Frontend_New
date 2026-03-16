@@ -6,6 +6,8 @@ import logoApp from '@/assets/images/logo-app.png';
 import api from '@/lib/api-client';
 import { Heading, Label, Paragraph } from '@/app/_components/Typography';
 import { IvyWithoutBGLottie } from '@/app/_components/LottieAnimation';
+import { useToast } from '@/app/_components/Toast';
+import Button from '@/app/_components/Button';
 
 type VoicePersona = 'male' | 'female';
 
@@ -57,6 +59,7 @@ export default function SettingsPage(): React.ReactElement {
   const [saving, setSaving] = useState(false);
   const [playingPersona, setPlayingPersona] = useState<VoicePersona | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { addToast } = useToast();
 
   // Cleanup on unmount
   useEffect(() => {
@@ -129,10 +132,13 @@ export default function SettingsPage(): React.ReactElement {
         body: { voice_persona: selected },
       });
       setSaved(selected);
+      addToast('Voice preference saved successfully!', { type: 'success' });
+    } catch {
+      addToast('Failed to save voice preference. Please try again.', { type: 'error' });
     } finally {
       setSaving(false);
     }
-  }, [selected]);
+  }, [selected, addToast]);
 
   const dirty = selected !== saved;
 
@@ -287,22 +293,22 @@ export default function SettingsPage(): React.ReactElement {
 
       {/* Actions */}
       <div className="mt-6 flex justify-end gap-3">
-        <button
-          type="button"
+        <Button
+          variant='outline'
           disabled={!dirty}
           onClick={() => setSelected(saved)}
           className="rounded-lg border border-neutral-300 px-5 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           disabled={!dirty || saving}
           onClick={handleSave}
           className="rounded-lg bg-teal-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {saving ? 'Saving…' : 'Save Changes'}
-        </button>
+        </Button>
       </div>
     </div>
   );
