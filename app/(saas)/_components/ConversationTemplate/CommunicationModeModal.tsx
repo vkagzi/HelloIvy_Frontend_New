@@ -29,7 +29,7 @@ export default function CommunicationModeModal({
     >
       <DialogContent className="max-w-md">
         <DialogTitle className="text-center">
-          How would you like to continue?
+          How do you wish to interact with Ivy?
         </DialogTitle>
         <DialogDescription className="text-center">
           Choose your preferred way to interact with the AI coach.
