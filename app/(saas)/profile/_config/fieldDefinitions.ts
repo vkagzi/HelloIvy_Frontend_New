@@ -2054,7 +2054,7 @@ export const extraCurricularFieldDefs: FieldDefinition[] = [
       'Academic Competitions',
       'Community Service',
       'Research',
-      'Leadership Programs',
+      'Leadership',
       'Other',
     ],
     required: true,
