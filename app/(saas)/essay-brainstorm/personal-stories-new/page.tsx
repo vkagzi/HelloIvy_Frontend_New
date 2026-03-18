@@ -247,16 +247,19 @@ const PersonalStoriesPage: React.FC = () => {
     setIsTranscribing(true);
     try {
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.wav');
+      formData.append('file', audioBlob, 'recording.wav');
+      formData.append('model', 'whisper-1');
+      formData.append('response_format', 'json');
 
-      const response = await fetch('/api/transcribe', {
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY || ''}` },
         body: formData,
       });
 
       if (response.ok) {
         const data = await response.json();
-        const transcription = data.transcription || '';
+        const transcription = data.text || '';
 
         setCurrentStory((prev) => ({
           ...prev,

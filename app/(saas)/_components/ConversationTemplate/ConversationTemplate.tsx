@@ -116,7 +116,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     isDisconnecting: voiceDisconnecting,
     transcript: voiceTranscript,
     realtimeTokenUsage,
-    audioLevel: voiceAudioLevel,
+    audioLevelRef: voiceAudioLevelRef,
     connectVoice,
     disconnectVoice,
     toggleRecording: toggleVoiceRecording,
@@ -692,7 +692,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                   {/* Waveform */}
                   <div className="h-8 flex-1">
                     <AudioWaveform
-                      level={voiceAudioLevel}
+                      levelRef={voiceAudioLevelRef}
                       active={voiceRecording}
                       color={voiceSpeaking ? 'rgba(99, 102, 241, 0.7)' : 'rgba(16, 185, 129, 0.7)'}
                       trackColor="rgba(209, 213, 219, 0.45)"
@@ -712,14 +712,14 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                     )}
                   </span>
 
-                  {/* Stop voice — mic-off button */}
+                  {/* Stop voice — disconnect button */}
                   <button
                     onClick={handleMicToggle}
                     type="button"
                     className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-red-100 text-red-500 transition-colors hover:bg-red-200"
-                    title="Stop voice"
+                    title="Disconnect voice"
                   >
-                    <FiIcon name="microphone" className="h-4 w-4" />
+                    <FiIcon name="phone-slash" className="h-4 w-4" />
                   </button>
                 </div>
               ) : (

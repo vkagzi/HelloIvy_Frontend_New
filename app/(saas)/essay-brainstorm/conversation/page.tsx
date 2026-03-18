@@ -1116,19 +1116,22 @@ Start with "${studentName}," (first name only).`;
     }
   };
 
-  // ---------- voice (Whisper fallback only) ----------
+  // ---------- voice (Whisper direct) ----------
   const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
     setIsTranscribing(true);
     try {
-      // Use our API endpoint which handles Whisper as fallback
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'audio.webm');
-      const response = await fetch('/api/transcribe', {
+      formData.append('file', audioBlob, 'audio.webm');
+      formData.append('model', 'whisper-1');
+      formData.append('response_format', 'json');
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
         body: formData,
       });
+      if (!response.ok) throw new Error(`Whisper error ${response.status}`);
       const result = await response.json();
-      return result.transcription || '';
+      return result.text || '';
     } catch (error) {
       addToast('Voice transcription failed', { type: 'error' });
       return '';

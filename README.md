@@ -99,7 +99,7 @@ openssl rand -base64 32
 
 | Variable                       | Example              | Description                                                                                           |
 |--------------------------------|----------------------|-------------------------------------------------------------------------------------------------------|
-| `OPENAI_API_KEY`               | `sk-...`             | **Server-only.** Used by the `/api/realtime/session` and `/api/transcribe` routes.                   |
+| `OPENAI_API_KEY`               | `sk-...`             | **Server-only.** Available for backend API routes.                                                    |
 | `NEXT_PUBLIC_OPENAI_API_KEY`   | `sk-...`             | **Client-exposed.** Used by TTS hooks and several conversation pages. Keep consistent with the above. |
 
 > **Security note:** `NEXT_PUBLIC_OPENAI_API_KEY` is embedded in the browser bundle. Prefer routing all OpenAI calls through server-side API routes when possible using `OPENAI_API_KEY` instead.

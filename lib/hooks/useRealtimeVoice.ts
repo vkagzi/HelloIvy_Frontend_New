@@ -35,7 +35,6 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [transcript, setTranscript] = useState<RealtimeVoiceMessage[]>([]);
   const [realtimeTokenUsage, setRealtimeTokenUsage] = useState<RealtimeTokenUsage | null>(null);
-  const [audioLevel, setAudioLevel] = useState(0);
 
   const clientRef = useRef<RealtimeVoiceClient | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -47,19 +46,33 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
   const isMutedRef = useRef(false);
   const onSessionProgressRef = useRef(onSessionProgress);
   const audioLevelRef = useRef(0);
-  const rafIdRef = useRef<number | null>(null);
+  const isConnectingRef = useRef(false);
+  // Batched transcript: accumulate updates in a ref, flush via rAF to avoid
+  // exceeding React's nested-update limit during rapid streaming deltas.
+  const transcriptRef = useRef<RealtimeVoiceMessage[]>([]);
+  const transcriptRafRef = useRef<number | null>(null);
 
   onErrorRef.current = onError;
   onSessionProgressRef.current = onSessionProgress;
 
-  // Flush the latest audio level to React state at ~60 fps
-  const scheduleAudioLevelFlush = useCallback(() => {
-    if (rafIdRef.current !== null) return;
-    rafIdRef.current = requestAnimationFrame(() => {
-      rafIdRef.current = null;
-      setAudioLevel(audioLevelRef.current);
+
+
+  // Flush batched transcript updates to React state (coalesces rapid deltas)
+  const scheduleTranscriptFlush = useCallback(() => {
+    if (transcriptRafRef.current !== null) return;
+    transcriptRafRef.current = requestAnimationFrame(() => {
+      transcriptRafRef.current = null;
+      setTranscript([...transcriptRef.current]);
     });
   }, []);
+
+  const updateTranscriptRef = useCallback(
+    (updater: (prev: RealtimeVoiceMessage[]) => RealtimeVoiceMessage[]) => {
+      transcriptRef.current = updater(transcriptRef.current);
+      scheduleTranscriptFlush();
+    },
+    [scheduleTranscriptFlush],
+  );
 
   // ─── helpers ──────────────────────────────────────────────
 
@@ -68,10 +81,9 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
     if (sourceNodeRef.current) { sourceNodeRef.current.disconnect(); sourceNodeRef.current = null; }
     if (audioContextRef.current) { audioContextRef.current.close(); audioContextRef.current = null; }
     if (audioStreamRef.current) { audioStreamRef.current.getTracks().forEach((t) => t.stop()); audioStreamRef.current = null; }
-    if (rafIdRef.current !== null) { cancelAnimationFrame(rafIdRef.current); rafIdRef.current = null; }
+    if (transcriptRafRef.current !== null) { cancelAnimationFrame(transcriptRafRef.current); transcriptRafRef.current = null; }
     setIsRecording(false);
     audioLevelRef.current = 0;
-    setAudioLevel(0);
   }, []);
 
   const openMic = useCallback(async () => {
@@ -92,9 +104,8 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
     workletNodeRef.current = worklet;
 
     worklet.port.onmessage = (e: MessageEvent<{ pcm16: ArrayBuffer; rms: number }>) => {
-      if (isMutedRef.current) { audioLevelRef.current = 0; scheduleAudioLevelFlush(); return; }
+      if (isMutedRef.current) { audioLevelRef.current = 0; return; }
       audioLevelRef.current = e.data.rms;
-      scheduleAudioLevelFlush();
       clientRef.current?.sendAudio(e.data.pcm16);
     };
 
@@ -109,11 +120,13 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
 
   const connectVoice = useCallback(
     async (chatHistory: { role: 'user' | 'assistant'; content: string }[], lastBotMessage?: string) => {
-      if (clientRef.current || isConnecting) return;
+      if (clientRef.current || isConnectingRef.current) return;
+      isConnectingRef.current = true;
       setIsConnecting(true);
 
       // Clear any stale transcript from a previous voice session so the
       // sync effect doesn't re-add old entries to the messages list.
+      transcriptRef.current = [];
       setTranscript([]);
 
       try {
@@ -123,6 +136,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
           label,
           voice,
           onConnected: () => {
+            isConnectingRef.current = false;
             setIsConnected(true);
             setIsConnecting(false);
           },
@@ -139,11 +153,12 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
               clientRef.current = null;
             }
             onErrorRef.current?.(error);
+            isConnectingRef.current = false;
             setIsConnected(false);
             setIsConnecting(false);
           },
           onTranscriptUpdate: (text, role, isNewTurn) => {
-            setTranscript((prev) => {
+            updateTranscriptRef((prev) => {
               const last = prev[prev.length - 1];
 
               // Assistant streaming delta — append to the current entry
@@ -214,11 +229,12 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
       } catch (err) {
         console.error('Failed to connect voice:', err);
         onErrorRef.current?.('Failed to connect to voice service');
+        isConnectingRef.current = false;
         setIsConnecting(false);
         clientRef.current = null;
       }
     },
-    [sessionId, feature, label, voice, isConnecting, openMic, teardownMic],
+    [sessionId, feature, label, voice, openMic, teardownMic, updateTranscriptRef],
   );
 
   const disconnectVoice = useCallback(async () => {
@@ -250,6 +266,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
     setIsDisconnecting(false);
     // Clear transcript so stale entries aren't re-synced if voice mode
     // is re-activated later.
+    transcriptRef.current = [];
     setTranscript([]);
   }, [teardownMic]);
 
@@ -278,7 +295,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
   }, []);
 
   return {
-    isConnected, isConnecting, isRecording, isSpeaking, isDisconnecting, transcript, realtimeTokenUsage, audioLevel,
+    isConnected, isConnecting, isRecording, isSpeaking, isDisconnecting, transcript, realtimeTokenUsage, audioLevelRef,
     connectVoice, disconnectVoice, startRecording, stopRecording, toggleRecording, sendText, stopAudio,
   };
 }

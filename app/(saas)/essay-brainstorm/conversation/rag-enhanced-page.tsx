@@ -101,7 +101,7 @@ async function polishRAGText(
 
 // ===================== Realtime (WebRTC) =====================
 // Life cycle:
-// 1) Client calls our /api/realtime/session to mint an ephemeral token
+// 1) We create an ephemeral session directly via OpenAI Realtime API
 // 2) We create RTCPeerConnection, add microphone track
 // 3) We POST the local SDP offer to OpenAI Realtime with the ephemeral token
 // 4) We set remote SDP answer; audio from model comes back as a track
@@ -415,8 +415,26 @@ const RAGEnhancedConversationPage: React.FC = () => {
   async function startVoiceSession() {
     if (rt.connected) return; // already on
     try {
-      // 1) Ask server to mint an ephemeral key & session config
-      const tokenRes = await fetch(`/api/realtime/session?voice=${realtimeVoice}`);
+      // 1) Create an ephemeral session directly via OpenAI Realtime API
+      const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+      if (!apiKey) throw new Error('Missing OpenAI API key');
+      const sessionBody = {
+        model: REALTIME_MODEL,
+        voice: realtimeVoice,
+        modalities: ['audio'],
+        instructions:
+          'You are a warm, conversational essay coach for students aged 10-22. Engage in natural back-and-forth conversation to help them brainstorm essay ideas. Be personalized, encouraging, and ask follow-up questions that help uncover meaningful stories and insights.',
+        turn_detection: { type: 'server_vad', threshold: 0.5, prefix_padding_ms: 300, silence_duration_ms: 500 },
+      };
+      const tokenRes = await fetch('https://api.openai.com/v1/realtime/sessions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'realtime=v1',
+        },
+        body: JSON.stringify(sessionBody),
+      });
       if (!tokenRes.ok) throw new Error(await tokenRes.text());
       const tokenJson = await tokenRes.json();
       const EPHEMERAL_KEY: string = tokenJson?.client_secret?.value;

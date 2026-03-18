@@ -3,8 +3,10 @@
 import React, { useRef, useEffect } from 'react';
 
 interface AudioWaveformProps {
-  /** Normalised audio level 0 → 1 */
-  level: number;
+  /** Normalised audio level 0 → 1 (static or infrequently-updated) */
+  level?: number;
+  /** Ref to a live audio-level value updated at high frequency (avoids re-renders) */
+  levelRef?: React.RefObject<number>;
   /** Whether actively listening */
   active: boolean;
   /** Filled bar color */
@@ -28,6 +30,7 @@ const SAMPLE_INTERVAL_MS = 60; // push a new bar every ~60ms
  */
 export default function AudioWaveform({
   level,
+  levelRef: externalLevelRef,
   active,
   color = 'rgba(107, 114, 128, 0.85)',
   trackColor = 'rgba(209, 213, 219, 0.5)',
@@ -39,11 +42,13 @@ export default function AudioWaveform({
   const historyRef = useRef<number[]>([]);
   const lastSampleTimeRef = useRef(0);
 
-  const levelRef = useRef(level);
+  const internalLevelRef = useRef(level ?? 0);
   const activeRef = useRef(active);
   const colorRef = useRef(color);
   const trackColorRef = useRef(trackColor);
-  levelRef.current = level;
+  // Prefer external ref (high-frequency, no re-render), fall back to prop-backed ref
+  const levelRefToUse = externalLevelRef ?? internalLevelRef;
+  if (!externalLevelRef) internalLevelRef.current = level ?? 0;
   activeRef.current = active;
   colorRef.current = color;
   trackColorRef.current = trackColor;
@@ -86,7 +91,7 @@ export default function AudioWaveform({
       // Sample new audio level into history
       const now = Date.now();
       if (activeRef.current && now - lastSampleTimeRef.current >= SAMPLE_INTERVAL_MS) {
-        const raw = levelRef.current;
+        const raw = levelRefToUse.current;
         const amplified = Math.min(1, Math.pow(raw * 8, 0.6));
         historyRef.current.push(Math.max(0, amplified));
         lastSampleTimeRef.current = now;
