@@ -237,21 +237,23 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
     [sessionId, feature, label, voice, openMic, teardownMic, updateTranscriptRef],
   );
 
-  const disconnectVoice = useCallback(async () => {
-    console.log('[Voice] disconnectVoice called');
+  const disconnectVoice = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    console.log(`[Voice] disconnectVoice called (silent=${silent})`);
     setIsDisconnecting(true);
     teardownMic();
     if (speakingTimeoutRef.current) { clearTimeout(speakingTimeoutRef.current); speakingTimeoutRef.current = null; }
     if (clientRef.current) {
-      console.log('[Voice] Client exists — clearing buffer and switching to text');
       clientRef.current.clearAudioBuffer();
-      try {
-        // Ask the AI to acknowledge the switch to text and wait for it to finish
-        // (sendSwitchToText waits for both response.done + audio playback)
-        await clientRef.current.sendSwitchToText();
-        console.log('[Voice] sendSwitchToText completed');
-      } catch (err) {
-        console.error('[Voice] sendSwitchToText failed:', err);
+      if (!silent) {
+        try {
+          // Ask the AI to acknowledge the switch to text and wait for it to finish
+          // (sendSwitchToText waits for both response.done + audio playback)
+          await clientRef.current.sendSwitchToText();
+          console.log('[Voice] sendSwitchToText completed');
+        } catch (err) {
+          console.error('[Voice] sendSwitchToText failed:', err);
+        }
       }
       // Now safe to tear down the connection and audio pipeline
       clientRef.current.disconnect();

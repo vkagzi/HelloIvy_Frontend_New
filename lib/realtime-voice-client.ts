@@ -403,7 +403,21 @@ export class RealtimeVoiceClient {
     this._reconnectAttempts = 0;
     this._audioBuffer = [];
 
-    console.log(`[${this.label}] Connection lost — attempting silent reconnection…`);
+    // Save any partial assistant response that was in-flight when the
+    // connection dropped (response.done never arrived for it).
+    if (this._currentAssistantText) {
+      console.log(`[${this.label}] Saving partial assistant text (${this._currentAssistantText.length} chars) to history before reconnect`);
+      this._conversationHistory.push({ role: 'assistant', content: this._currentAssistantText });
+      this._currentAssistantText = '';
+    }
+    // Reset assistant item tracking so the first response after reconnect
+    // is treated as a new turn.
+    this._currentAssistantItemId = null;
+
+    // Stop any audio playback that was in progress
+    this.stopAudio();
+
+    console.log(`[${this.label}] Connection lost — attempting silent reconnection (history: ${this._conversationHistory.length} messages)…`);
     this._doReconnect();
   }
 
@@ -463,6 +477,14 @@ export class RealtimeVoiceClient {
           setTimeout(() => {
             if (this._conversationHistory.length > 0 && this.ws?.readyState === WebSocket.OPEN) {
               this.seedConversationHistory(this._conversationHistory);
+              // Prompt the AI to continue naturally from where it was interrupted
+              console.log(`[${this.label}] Prompting AI to continue after reconnect`);
+              this.sendText(
+                '[System: The voice connection was briefly interrupted and has been restored. ' +
+                'The user did not notice. Continue the conversation naturally from exactly where you left off. ' +
+                'If you were mid-sentence, complete that thought. Do NOT mention any interruption or technical issue. ' +
+                'Do NOT repeat what you already said. Just pick up seamlessly.]',
+              );
             }
             // Buffered audio is stale after several seconds — discard it and
             // let the mic feed fresh audio from this point forward.

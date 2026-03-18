@@ -172,6 +172,13 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     });
   }, [voiceTranscript, conversationMode]);
 
+  // ── Auto-disconnect voice when session ends ─────────────────
+  useEffect(() => {
+    if (sessionEnded && (voiceConnected || voiceConnecting)) {
+      disconnectVoice({ silent: true });
+    }
+  }, [sessionEnded, voiceConnected, voiceConnecting, disconnectVoice]);
+
   const activateVoiceMode = useCallback(async () => {
     setIsVoiceEnded(false);
     voiceSessionRef.current += 1;
@@ -231,13 +238,24 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
   // });
 
   // Mic toggle now activates/deactivates realtime voice
+  // If the session is paused, auto-unpause before activating voice.
   const handleMicToggle = useCallback(async () => {
     if (voiceConnected || voiceConnecting) {
       await deactivateVoiceMode();
     } else {
+      if (isPaused && sessionId) {
+        try {
+          const resp = await api.togglePause(sessionId);
+          setIsPaused(resp.is_paused);
+          setTotalPausedSeconds(resp.total_paused_seconds);
+        } catch {
+          addToast('Failed to resume session.', { type: 'error' });
+          return;
+        }
+      }
       await activateVoiceMode();
     }
-  }, [voiceConnected, voiceConnecting, activateVoiceMode, deactivateVoiceMode]);
+  }, [voiceConnected, voiceConnecting, activateVoiceMode, deactivateVoiceMode, isPaused, sessionId, api, addToast]);
 
   const canEnd = callbacks.canEndConversation({
     sessionEnded,
@@ -341,9 +359,21 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     if (!sessionId || pauseLoading || sessionEnded) return;
     setPauseLoading(true);
     try {
+      // If currently active (about to pause), silently disconnect voice
+      // (no "switching to text" AI message — just tear down)
+      if (!isPaused && (voiceConnected || voiceConnecting)) {
+        await disconnectVoice({ silent: true });
+        setConversationMode('chat');
+      }
+
       const resp = await api.togglePause(sessionId);
       setIsPaused(resp.is_paused);
       setTotalPausedSeconds(resp.total_paused_seconds);
+
+      // If resuming, show mode selection modal so user can pick voice or text
+      if (!resp.is_paused) {
+        setShowModeModal(true);
+      }
     } catch (error) {
       console.error('Failed to toggle pause:', error);
       addToast('Failed to pause/resume session.', { type: 'error' });
@@ -786,8 +816,32 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
       {/* Communication Mode Selection Modal */}
       <CommunicationModeModal
         open={showModeModal}
-        onSelectText={() => setShowModeModal(false)}
-        onSelectVoice={() => {
+        isPaused={isPaused}
+        onSelectText={async () => {
+          // If paused, resume the session when user picks text
+          if (isPaused && sessionId) {
+            try {
+              const resp = await api.togglePause(sessionId);
+              setIsPaused(resp.is_paused);
+              setTotalPausedSeconds(resp.total_paused_seconds);
+            } catch {
+              addToast('Failed to resume session.', { type: 'error' });
+            }
+          }
+          setShowModeModal(false);
+        }}
+        onSelectVoice={async () => {
+          // If paused, resume the session when user picks voice
+          if (isPaused && sessionId) {
+            try {
+              const resp = await api.togglePause(sessionId);
+              setIsPaused(resp.is_paused);
+              setTotalPausedSeconds(resp.total_paused_seconds);
+            } catch {
+              addToast('Failed to resume session.', { type: 'error' });
+              return;
+            }
+          }
           setShowModeModal(false);
           // small delay so the modal closes first
           setTimeout(() => activateVoiceMode(), 300);

@@ -11,12 +11,14 @@ import { FiIcon } from '@/app/_components/Icons';
 
 interface CommunicationModeModalProps {
   open: boolean;
+  isPaused?: boolean;
   onSelectText: () => void;
   onSelectVoice: () => void;
 }
 
 export default function CommunicationModeModal({
   open,
+  isPaused,
   onSelectText,
   onSelectVoice,
 }: CommunicationModeModalProps): React.ReactElement {
@@ -34,6 +36,12 @@ export default function CommunicationModeModal({
         <DialogDescription className="text-center">
           Choose your preferred way to interact with the AI coach.
         </DialogDescription>
+
+        {isPaused && (
+          <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-700">
+            Your session is currently paused. Selecting either option will resume.
+          </div>
+        )}
 
         <div className="mt-6 flex flex-col gap-4 sm:flex-row">
           {/* Text option */}
