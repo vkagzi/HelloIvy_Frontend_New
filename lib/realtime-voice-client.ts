@@ -68,6 +68,8 @@ export class RealtimeVoiceClient {
   private label: string;
   private _responseDoneResolver: (() => void) | null = null;
   private _switchInProgress = false;
+  /** Interval ID for periodic keepalive pings to the Django backend */
+  private _pingInterval: ReturnType<typeof setInterval> | null = null;
   /** Tracks the current assistant item_id to detect response boundaries */
   private _currentAssistantItemId: string | null = null;
   /** Tracks pending user speech items awaiting transcription (VAD can split one utterance into multiple items) */
@@ -134,8 +136,12 @@ export class RealtimeVoiceClient {
 
         this.ws.onclose = () => {
           console.log(`[${this.label}] Disconnected`);
+          this.stopPingInterval();
           this.config.onDisconnected?.();
         };
+
+        // Start periodic keepalive pings to prevent silent connection drops
+        this.startPingInterval();
 
         // Use the system's native sample rate for playback — the Web Audio
         // API will automatically upsample from 24 kHz PCM to the hardware
@@ -150,6 +156,7 @@ export class RealtimeVoiceClient {
 
   disconnect(): void {
     this._disconnecting = true;
+    this.stopPingInterval();
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -345,6 +352,24 @@ export class RealtimeVoiceClient {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
   }
 
+  // ───────────────────── Keepalive ───────────────────────────────
+
+  private startPingInterval(): void {
+    this.stopPingInterval();
+    this._pingInterval = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 25_000);
+  }
+
+  private stopPingInterval(): void {
+    if (this._pingInterval) {
+      clearInterval(this._pingInterval);
+      this._pingInterval = null;
+    }
+  }
+
   // ───────────────────── Private helpers ────────────────────────
 
   private triggerResponse(): void {
@@ -367,6 +392,10 @@ export class RealtimeVoiceClient {
         case 'session.created':
         case 'session.updated':
           console.log(`[${this.label}] ✅ Session updated:`, message);
+          break;
+
+        case 'pong':
+          // Keepalive response from backend — nothing to do
           break;
 
         case 'session.progress':

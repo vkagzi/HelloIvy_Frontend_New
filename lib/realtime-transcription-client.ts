@@ -13,7 +13,7 @@ export class RealtimeTranscriptionClient {
   private ws: WebSocket | null = null;
   private audioContext: AudioContext | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
-  private processorNode: ScriptProcessorNode | null = null;
+  private workletNode: AudioWorkletNode | null = null;
   private audioStream: MediaStream | null = null;
   private config: RealtimeTranscriptionClientConfig;
   private committedTranscript = '';
@@ -141,39 +141,28 @@ export class RealtimeTranscriptionClient {
     const ctx = new AudioContext({ sampleRate: 24000 });
     this.audioContext = ctx;
 
+    await ctx.audioWorklet.addModule('/audio/pcm-processor.js');
+
     const source = ctx.createMediaStreamSource(stream);
     this.sourceNode = source;
 
-    const processor = ctx.createScriptProcessor(4096, 1, 1);
-    this.processorNode = processor;
+    const worklet = new AudioWorkletNode(ctx, 'pcm-processor');
+    this.workletNode = worklet;
 
-    processor.onaudioprocess = (e) => {
-      const float32 = e.inputBuffer.getChannelData(0);
+    worklet.port.onmessage = (e: MessageEvent<{ pcm16: ArrayBuffer; rms: number }>) => {
+      this.config.onAudioLevel?.(e.data.rms);
 
-      // Compute RMS audio level for the visualisation
-      let sum = 0;
-      for (let i = 0; i < float32.length; i++) {
-        sum += float32[i] * float32[i];
-      }
-      this.config.onAudioLevel?.(Math.sqrt(sum / float32.length));
-
-      // Convert to PCM16 and send to server
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-      const pcm16 = new Int16Array(float32.length);
-      for (let i = 0; i < float32.length; i++) {
-        const s = Math.max(-1, Math.min(1, float32[i]));
-        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-      }
-      const base64 = this.arrayBufferToBase64(pcm16.buffer as ArrayBuffer);
+      const base64 = this.arrayBufferToBase64(e.data.pcm16);
       this.ws.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: base64 }));
     };
 
-    source.connect(processor);
-    processor.connect(ctx.destination);
+    source.connect(worklet);
+    worklet.connect(ctx.destination);
   }
 
   private teardownMic(): void {
-    if (this.processorNode) { this.processorNode.disconnect(); this.processorNode = null; }
+    if (this.workletNode) { this.workletNode.disconnect(); this.workletNode = null; }
     if (this.sourceNode) { this.sourceNode.disconnect(); this.sourceNode = null; }
     if (this.audioContext) { this.audioContext.close(); this.audioContext = null; }
     if (this.audioStream) { this.audioStream.getTracks().forEach((t) => t.stop()); this.audioStream = null; }

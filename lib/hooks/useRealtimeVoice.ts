@@ -40,24 +40,37 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
   const clientRef = useRef<RealtimeVoiceClient | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const processorNodeRef = useRef<ScriptProcessorNode | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const onErrorRef = useRef(onError);
   const speakingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMutedRef = useRef(false);
   const onSessionProgressRef = useRef(onSessionProgress);
+  const audioLevelRef = useRef(0);
+  const rafIdRef = useRef<number | null>(null);
 
   onErrorRef.current = onError;
   onSessionProgressRef.current = onSessionProgress;
 
+  // Flush the latest audio level to React state at ~60 fps
+  const scheduleAudioLevelFlush = useCallback(() => {
+    if (rafIdRef.current !== null) return;
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      setAudioLevel(audioLevelRef.current);
+    });
+  }, []);
+
   // ─── helpers ──────────────────────────────────────────────
 
   const teardownMic = useCallback(() => {
-    if (processorNodeRef.current) { processorNodeRef.current.disconnect(); processorNodeRef.current = null; }
+    if (workletNodeRef.current) { workletNodeRef.current.disconnect(); workletNodeRef.current = null; }
     if (sourceNodeRef.current) { sourceNodeRef.current.disconnect(); sourceNodeRef.current = null; }
     if (audioContextRef.current) { audioContextRef.current.close(); audioContextRef.current = null; }
     if (audioStreamRef.current) { audioStreamRef.current.getTracks().forEach((t) => t.stop()); audioStreamRef.current = null; }
+    if (rafIdRef.current !== null) { cancelAnimationFrame(rafIdRef.current); rafIdRef.current = null; }
     setIsRecording(false);
+    audioLevelRef.current = 0;
     setAudioLevel(0);
   }, []);
 
@@ -70,29 +83,25 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
     const ctx = new AudioContext({ sampleRate: 24000 });
     audioContextRef.current = ctx;
 
+    await ctx.audioWorklet.addModule('/audio/pcm-processor.js');
+
     const source = ctx.createMediaStreamSource(stream);
     sourceNodeRef.current = source;
 
-    const processor = ctx.createScriptProcessor(4096, 1, 1);
-    processorNodeRef.current = processor;
+    const worklet = new AudioWorkletNode(ctx, 'pcm-processor');
+    workletNodeRef.current = worklet;
 
-    processor.onaudioprocess = (e) => {
-      if (isMutedRef.current) { setAudioLevel(0); return; }
-      const float32 = e.inputBuffer.getChannelData(0);
-      // Compute RMS audio level for waveform visualisation
-      let sum = 0;
-      for (let i = 0; i < float32.length; i++) sum += float32[i] * float32[i];
-      setAudioLevel(Math.sqrt(sum / float32.length));
-      const pcm16 = new Int16Array(float32.length);
-      for (let i = 0; i < float32.length; i++) {
-        const s = Math.max(-1, Math.min(1, float32[i]));
-        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-      }
-      clientRef.current?.sendAudio(pcm16.buffer as ArrayBuffer);
+    worklet.port.onmessage = (e: MessageEvent<{ pcm16: ArrayBuffer; rms: number }>) => {
+      if (isMutedRef.current) { audioLevelRef.current = 0; scheduleAudioLevelFlush(); return; }
+      audioLevelRef.current = e.data.rms;
+      scheduleAudioLevelFlush();
+      clientRef.current?.sendAudio(e.data.pcm16);
     };
 
-    source.connect(processor);
-    processor.connect(ctx.destination);
+    source.connect(worklet);
+    // AudioWorkletNode doesn't need to connect to destination for capture,
+    // but some browsers require a connected graph to keep processing alive.
+    worklet.connect(ctx.destination);
     setIsRecording(true);
   }, []);
 
