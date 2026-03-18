@@ -80,6 +80,17 @@ export class RealtimeVoiceClient {
   private _userTranscriptParts: Map<string, string> = new Map();
   /** Whether a user placeholder is active in the transcript */
   private _userPlaceholderActive = false;
+  /** Silent reconnection state */
+  private _reconnecting = false;
+  private _reconnectAttempts = 0;
+  private _maxReconnectAttempts = 3;
+  private _reconnectBaseDelay = 1000;
+  /** Audio data buffered while reconnecting */
+  private _audioBuffer: ArrayBuffer[] = [];
+  /** Accumulated conversation history for re-seeding after reconnection */
+  private _conversationHistory: { role: 'user' | 'assistant'; content: string }[] = [];
+  /** Accumulated assistant transcript text for the current response */
+  private _currentAssistantText = '';
   /** Accumulated token usage across all responses */
   private _tokenUsage: RealtimeTokenUsage = {
     total_tokens: 0,
@@ -92,6 +103,15 @@ export class RealtimeVoiceClient {
     input_cached_tokens: 0,
     response_count: 0,
   };
+
+  /** Timestamp of initial connection for uptime tracking */
+  private _connectedAt: number | null = null;
+  /** Timestamp of last received pong for diagnosing keepalive gaps */
+  private _lastPongAt: number | null = null;
+  /** Timestamp of last sent ping */
+  private _lastPingSentAt: number | null = null;
+  /** Count of messages received (to gauge session activity at disconnect) */
+  private _messageCount = 0;
 
   constructor(config: RealtimeVoiceClientConfig) {
     this.config = config;
@@ -119,7 +139,9 @@ export class RealtimeVoiceClient {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          console.log(`[${this.label}] Connected`);
+          this._connectedAt = Date.now();
+          this._messageCount = 0;
+          console.log(`[${this.label}] Connected at ${new Date().toISOString()}`);
           this.config.onConnected?.();
           resolve();
         };
@@ -134,10 +156,24 @@ export class RealtimeVoiceClient {
           reject(error);
         };
 
-        this.ws.onclose = () => {
-          console.log(`[${this.label}] Disconnected`);
+        this.ws.onclose = (event: CloseEvent) => {
+          const uptime = this._connectedAt ? ((Date.now() - this._connectedAt) / 1000).toFixed(1) : '?';
+          const sincePong = this._lastPongAt ? ((Date.now() - this._lastPongAt) / 1000).toFixed(1) : 'never';
+          const sincePing = this._lastPingSentAt ? ((Date.now() - this._lastPingSentAt) / 1000).toFixed(1) : 'never';
+          console.warn(
+            `[${this.label}] WebSocket closed | code=${event.code} reason="${event.reason}" clean=${event.wasClean}` +
+            ` | uptime=${uptime}s msgs=${this._messageCount} responses=${this._tokenUsage.response_count}` +
+            ` | tokens=${this._tokenUsage.total_tokens} (in=${this._tokenUsage.input_tokens} out=${this._tokenUsage.output_tokens})` +
+            ` | lastPingSent=${sincePing}s ago lastPong=${sincePong}s ago` +
+            ` | disconnecting=${this._disconnecting} switching=${this._switchInProgress}`,
+          );
           this.stopPingInterval();
-          this.config.onDisconnected?.();
+          if (!this._disconnecting) {
+            // Unexpected disconnect — attempt silent reconnection
+            this._attemptReconnect();
+          } else {
+            this.config.onDisconnected?.();
+          }
         };
 
         // Start periodic keepalive pings to prevent silent connection drops
@@ -176,8 +212,12 @@ export class RealtimeVoiceClient {
   // ───────────────────────── Audio I/O ──────────────────────────
 
   sendAudio(audioData: ArrayBuffer): void {
+    if (this._reconnecting) {
+      // Silently buffer audio during reconnection
+      this._audioBuffer.push(audioData);
+      return;
+    }
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn(`[${this.label}] WebSocket not connected`);
       return;
     }
     const base64Audio = this.arrayBufferToBase64(audioData);
@@ -237,6 +277,8 @@ export class RealtimeVoiceClient {
       );
     }
     console.log(`[${this.label}] Seeded ${messages.length} conversation history items`);
+    // Store seeded messages for potential re-seeding after reconnection
+    this._conversationHistory = [...messages];
   }
 
   promptContinuation(lastBotMessage: string): void {
@@ -349,7 +391,104 @@ export class RealtimeVoiceClient {
   }
 
   getConnectionStatus(): boolean {
-    return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+    return (this.ws !== null && this.ws.readyState === WebSocket.OPEN) || this._reconnecting;
+  }
+
+  // ───────────────────── Silent reconnection ────────────────────
+
+  private _attemptReconnect(): void {
+    if (this._reconnecting || this._disconnecting) return;
+
+    this._reconnecting = true;
+    this._reconnectAttempts = 0;
+    this._audioBuffer = [];
+
+    console.log(`[${this.label}] Connection lost — attempting silent reconnection…`);
+    this._doReconnect();
+  }
+
+  private _doReconnect(): void {
+    if (this._disconnecting) {
+      this._reconnecting = false;
+      this._audioBuffer = [];
+      return;
+    }
+
+    this._reconnectAttempts++;
+    if (this._reconnectAttempts > this._maxReconnectAttempts) {
+      console.error(`[${this.label}] Reconnection failed after ${this._maxReconnectAttempts} attempts`);
+      this._reconnecting = false;
+      this._audioBuffer = [];
+      this.config.onError?.('Connection lost');
+      this.config.onDisconnected?.();
+      return;
+    }
+
+    const delay = this._reconnectBaseDelay * Math.pow(2, this._reconnectAttempts - 1);
+    console.log(`[${this.label}] Reconnect attempt ${this._reconnectAttempts}/${this._maxReconnectAttempts} in ${delay}ms`);
+
+    setTimeout(() => {
+      if (this._disconnecting) {
+        this._reconnecting = false;
+        this._audioBuffer = [];
+        return;
+      }
+
+      try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+        const params = new URLSearchParams({
+          feature: this.config.feature,
+          session_id: this.config.sessionId,
+        });
+        if (this.config.voice) params.set('voice', this.config.voice);
+        const wsUrl =
+          apiBaseUrl
+            .replace('https://', 'wss://')
+            .replace('http://', 'ws://') +
+          `/ws/voice/realtime/?${params.toString()}`;
+
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          console.log(`[${this.label}] Reconnected successfully at ${new Date().toISOString()}`);
+          this.ws = ws;
+          this._reconnecting = false;
+          this._reconnectAttempts = 0;
+          this._connectedAt = Date.now();
+          this._messageCount = 0;
+
+          this.startPingInterval();
+
+          // Wait for session.created, then re-seed conversation context
+          setTimeout(() => {
+            if (this._conversationHistory.length > 0 && this.ws?.readyState === WebSocket.OPEN) {
+              this.seedConversationHistory(this._conversationHistory);
+            }
+            // Buffered audio is stale after several seconds — discard it and
+            // let the mic feed fresh audio from this point forward.
+            this._audioBuffer = [];
+          }, 500);
+        };
+
+        ws.onmessage = (event) => this.handleMessage(event.data);
+
+        ws.onerror = () => {
+          console.warn(`[${this.label}] Reconnect attempt ${this._reconnectAttempts} failed`);
+          // Attempt next reconnect
+          this._doReconnect();
+        };
+
+        ws.onclose = (event: CloseEvent) => {
+          console.warn(`[${this.label}] Reconnected WS closed | code=${event.code} reason="${event.reason}" clean=${event.wasClean}`);
+          this.stopPingInterval();
+          if (!this._disconnecting && !this._reconnecting) {
+            this._attemptReconnect();
+          }
+        };
+      } catch {
+        this._doReconnect();
+      }
+    }, delay);
   }
 
   // ───────────────────── Keepalive ───────────────────────────────
@@ -358,7 +497,10 @@ export class RealtimeVoiceClient {
     this.stopPingInterval();
     this._pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this._lastPingSentAt = Date.now();
         this.ws.send(JSON.stringify({ type: 'ping' }));
+      } else {
+        console.warn(`[${this.label}] Ping skipped — ws.readyState=${this.ws?.readyState ?? 'null'}`);
       }
     }, 25_000);
   }
@@ -384,6 +526,8 @@ export class RealtimeVoiceClient {
 
       console.log(`[${this.label}] Received message:`, type, message);
 
+      this._messageCount++;
+
       switch (type) {
         case 'connection.ready':
           console.log(`[${this.label}] ✅ Connection ready:`, message.message);
@@ -395,7 +539,7 @@ export class RealtimeVoiceClient {
           break;
 
         case 'pong':
-          // Keepalive response from backend — nothing to do
+          this._lastPongAt = Date.now();
           break;
 
         case 'session.progress':
@@ -427,6 +571,11 @@ export class RealtimeVoiceClient {
           if (resp?.usage && status !== 'cancelled') {
             this.accumulateTokenUsage(resp.usage as Record<string, unknown>);
           }
+          // Save completed assistant response to conversation history
+          if (this._currentAssistantText && status !== 'cancelled') {
+            this._conversationHistory.push({ role: 'assistant', content: this._currentAssistantText });
+            this._currentAssistantText = '';
+          }
           // Only resolve the switch-to-text promise on a fully completed
           // response, not on a cancelled one (response.cancel triggers
           // response.done with status "cancelled").
@@ -438,8 +587,8 @@ export class RealtimeVoiceClient {
         }
 
         case 'error':
-          if (this._disconnecting || this._switchInProgress) {
-            console.log(`[${this.label}] Suppressed error during disconnect/switch:`, message.error);
+          if (this._disconnecting || this._switchInProgress || this._reconnecting) {
+            console.log(`[${this.label}] Suppressed error during disconnect/switch/reconnect:`, message.error);
             break;
           }
           console.error(`[${this.label}] Server error:`, message.error);
@@ -530,7 +679,11 @@ export class RealtimeVoiceClient {
       this._currentAssistantItemId = itemId;
       // New assistant response: future user speech should start a new bubble
       this._userPlaceholderActive = false;
+      // Reset accumulated assistant text for this new response
+      this._currentAssistantText = '';
     }
+    // Accumulate assistant text for conversation history tracking
+    this._currentAssistantText += delta;
     this.config.onTranscriptUpdate?.(delta, role, isNewTurn);
   }
 
@@ -555,12 +708,15 @@ export class RealtimeVoiceClient {
 
       // When all pending transcriptions have arrived, clean up
       if (this._pendingUserItemIds.size === 0) {
+        // Save completed user message to conversation history
+        this._conversationHistory.push({ role: 'user', content: fullText });
         this._userTranscriptParts.clear();
         this._userItemOrder = [];
       }
     } else {
       // No placeholder — create a brand-new user entry.
       this.config.onTranscriptUpdate?.(transcript, 'user', true);
+      this._conversationHistory.push({ role: 'user', content: transcript });
     }
   }
 
