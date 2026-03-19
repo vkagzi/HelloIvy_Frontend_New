@@ -145,8 +145,8 @@ export const POSTGRADUATE_DEGREE_PROGRAMS = [
   'Other',
 ];
 
-const currentYear = new Date().getFullYear();
-console.log('START YEAR OPTIONS:', currentYear - 1960 + 1);
+// const currentYear = new Date().getFullYear();
+// console.log('START YEAR OPTIONS:', currentYear - 1960 + 1);
 
 // =============================================================================
 // LAYOUT BLOCK TYPE
@@ -866,32 +866,13 @@ export const educationalFieldDefs: FieldDefinition[] = [
 
   {
     id: 'startYear',
-    type: 'select',
+    type: 'select_autofill',
     label: 'Start Year',
     placeholder: 'Select start year',
-
-    // options: Array.from({ length: currentYear - 1960 + 1 }, (_, i) =>
-    //   (currentYear - i).toString()
-    // ),
-
-    optionsDependsOn: {
-      fieldId: 'academicLevel',
-      map: {
-        'College/Undergraduate': Array.from(
-          { length: new Date().getFullYear() - 1960 + 1 },
-          (_, i) => (1960 + i).toString()
-        ),
-        Postgraduate: Array.from(
-          { length: new Date().getFullYear() - 1960 + 1 },
-          (_, i) => (1960 + i).toString()
-        ),
-        'Working/Completed College': Array.from(
-          { length: new Date().getFullYear() - 1960 + 1 },
-          (_, i) => (1960 + i).toString()
-        ),
-      },
-    },
-
+    options: Array.from(
+      { length: new Date().getFullYear() - 1960 + 1 },
+      (_, i) => (1960 + i).toString()
+    ),
     required: true,
   },
 
