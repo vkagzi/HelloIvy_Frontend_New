@@ -66,23 +66,23 @@ function LoginForm(): React.ReactElement {
       <div className="flex w-full items-center justify-center md:w-3/5">
         <div className="w-full max-w-md px-6 py-12 md:px-12">
           {/* Logo */}
-          <div className="mb-10 flex">
+          <div className="mb-4 flex">
             <Image
               src={imgLogo}
               alt="Hello Ivy Logo"
-              className="h-7 w-auto"
+              className="h-10 w-auto"
               priority
             />
           </div>
-          <Heading level={1} className="mb-2 font-extrabold">
+          <Heading level={1} className="mb-8 font-extrabold">
             Log In to Get Started
           </Heading>
-          <Paragraph className="mb-16" size="sm">
+          {/* <Paragraph className="mb-8" size="sm">
             Log in to access your essay tools, brainstorm ideas, and get
             started.
-          </Paragraph>
+          </Paragraph> */}
           <form
-            className="mb-8 flex flex-col gap-8"
+            className="mb-6 flex flex-col gap-8"
             onSubmit={handleSubmit(onSubmit)}
             noValidate
             autoComplete="off"
@@ -126,10 +126,9 @@ function LoginForm(): React.ReactElement {
               </div>
             </div>
           </form>
-          <div className="flex gap-1">
-            Haven&lsquo;t signed up yet?{' '}
-            <ButtonLink href="/signup" label="Sign Up" />
-          </div>
+          <Paragraph size="sm" className="flex gap-1">
+             Haven&lsquo;t signed up yet?{' '} <ButtonLink href="/signup" label="Sign Up" />
+          </Paragraph>
         </div>
       </div>
     </div>
@@ -138,7 +137,13 @@ function LoginForm(): React.ReactElement {
 
 export default function Login(): React.ReactElement {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          Loading...
+        </div>
+      }
+    >
       <LoginForm />
     </Suspense>
   );

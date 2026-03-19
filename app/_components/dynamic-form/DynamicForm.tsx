@@ -204,6 +204,37 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               path: ['testDate'],
             }
           )
+
+          .refine(
+            (data) => {
+              if (!data.testDate) return true;
+
+              const selectedDate = new Date(data.testDate);
+              const today = new Date();
+
+              // remove time part
+              today.setHours(0, 0, 0, 0);
+
+              return selectedDate < today;
+            },
+            {
+              message: 'Test date cannot be in the future',
+              path: ['testDate'],
+            }
+          )
+
+          .refine(
+            (data) => {
+              if (!data.testDate) return true;
+
+              // if date is filled → score must be filled
+              return data.totalScore && data.totalScore.length > 0;
+            },
+            {
+              message: 'Total score is required when test date is selected',
+              path: ['totalScore'],
+            }
+          )
       )
       .default([]),
   });
@@ -222,7 +253,9 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           const field = fieldDefs.find((f) => f.id === fid);
           // If this field should default from another field, use its current value
           if (field?.defaultValueFrom) {
-            const sourceValue = form.getValues(field.defaultValueFrom as never) as unknown as string;
+            const sourceValue = form.getValues(
+              field.defaultValueFrom as never
+            ) as unknown as string;
             if (sourceValue) return [fid, sourceValue];
           }
           return [fid, field ? getDefaultValue(field.type as FieldType) : ''];
@@ -1237,19 +1270,33 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           let trimmedSectionData = sectionData;
           if (item.type === 'highSchool') {
             const gradeLevelRaw = filtered['gradeLevel'] as string | undefined;
-            const hasScores = filtered['hasCurrentGradeScores'] as string | undefined;
-            if (gradeLevelRaw && hasScores && ['Yes', 'No'].includes(hasScores)) {
-              const selectedGrade = parseInt(gradeLevelRaw.replace('Grade ', ''), 10);
+            const hasScores = filtered['hasCurrentGradeScores'] as
+              | string
+              | undefined;
+            if (
+              gradeLevelRaw &&
+              hasScores &&
+              ['Yes', 'No'].includes(hasScores)
+            ) {
+              const selectedGrade = parseInt(
+                gradeLevelRaw.replace('Grade ', ''),
+                10
+              );
               if (!isNaN(selectedGrade)) {
-                const startGrade = hasScores === 'Yes' ? selectedGrade : selectedGrade - 1;
+                const startGrade =
+                  hasScores === 'Yes' ? selectedGrade : selectedGrade - 1;
                 // Only allow 2 grades: startGrade and startGrade - 1
-                const allowedGrades = new Set<number>([startGrade, startGrade - 1]);
+                const allowedGrades = new Set<number>([
+                  startGrade,
+                  startGrade - 1,
+                ]);
                 // Keep only entries whose gradeLevel is in the allowed set
                 trimmedSectionData = sectionData.filter((entry) => {
                   if (typeof entry !== 'object' || entry === null) return false;
                   const entryObj = entry as Record<string, unknown>;
                   const raw = entryObj.gradeLevel ?? entryObj.grade;
-                  const g = typeof raw === 'number' ? raw : parseInt(String(raw), 10);
+                  const g =
+                    typeof raw === 'number' ? raw : parseInt(String(raw), 10);
                   return !isNaN(g) && allowedGrades.has(g);
                 });
               }
@@ -1403,7 +1450,9 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             // try to find any element whose id starts with the error key
             if (!el) {
               const escapedKey = CSS.escape(firstErrorKey);
-              el = document.querySelector<HTMLElement>(`[id^="${escapedKey}."]`);
+              el = document.querySelector<HTMLElement>(
+                `[id^="${escapedKey}."]`
+              );
             }
 
             if (el) {

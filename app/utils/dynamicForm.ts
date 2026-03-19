@@ -67,7 +67,10 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
         base = base.min(1, `${field.label} is required`);
       }
       if (field.validation?.maxLength)
-        base = base.max(field.validation.maxLength, `${field.label} must be at most ${field.validation.maxLength} characters`);
+        base = base.max(
+          field.validation.maxLength,
+          `${field.label} must be at most ${field.validation.maxLength} characters`
+        );
       if (field.validation?.regex)
         base = base.regex(
           new RegExp(field.validation.regex),
@@ -93,7 +96,8 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
     }
     case 'number': {
       let base: ZodType<string> = z.string();
-      if (field.required) base = z.string().min(1, `${field.label} is required`);
+      if (field.required)
+        base = z.string().min(1, `${field.label} is required`);
       if (field.validation?.min !== undefined)
         base = base.refine(
           (val) => !isNaN(Number(val)) && Number(val) >= field.validation!.min!,
@@ -108,7 +112,8 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
     }
     case 'date': {
       let base: ZodType<string> = z.string();
-      if (field.required) base = z.string().min(1, `${field.label} is required`);
+      if (field.required)
+        base = z.string().min(1, `${field.label} is required`);
       if (field.validation?.format === 'date')
         base = base.refine(
           (val) => !isNaN(Date.parse(val)),
@@ -152,12 +157,14 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
     }
     case 'checkbox': {
       // Allow both boolean and string values (forms often send checkbox as string)
-      const checkboxBase = z.union([z.boolean(), z.string()]).transform((val) => {
-        if (typeof val === 'string') {
-          return val === 'true' || val === 'on' || val === '1';
-        }
-        return Boolean(val);
-      });
+      const checkboxBase = z
+        .union([z.boolean(), z.string()])
+        .transform((val) => {
+          if (typeof val === 'string') {
+            return val === 'true' || val === 'on' || val === '1';
+          }
+          return Boolean(val);
+        });
       if (field.required)
         return checkboxBase.refine(
           (val) => val === true,
@@ -244,9 +251,8 @@ export const generateDynamicFormSchema = (
             `At most ${item.repeatable_option.max} ${item.name} allowed`
           );
         }
-        shape[item.name] = item.repeatable_option?.min === 0
-          ? arrSchema.optional()
-          : arrSchema;
+        shape[item.name] =
+          item.repeatable_option?.min === 0 ? arrSchema.optional() : arrSchema;
       } else {
         // Non-repeatable fieldset: add each field individually
         item.fields.forEach((fid) => {
@@ -386,7 +392,8 @@ export const generateSubSchema = (
     });
 
     // Add conditional validation for fields inside repeatables
-    let objSchema: ZodType<{ [x: string]: unknown }> = z.object(repeatableShape);
+    let objSchema: ZodType<{ [x: string]: unknown }> =
+      z.object(repeatableShape);
     layout.repeatables.fields.forEach((fid) => {
       const field = fieldDefs.find((f) => f.id === fid);
       if (field?.validationDependsOn) {
@@ -432,54 +439,88 @@ export const generateSubSchema = (
     }
     shape[layout.repeatables.name] = arrSchema;
   }
-  
+
   // Create the object schema for the layout type
   let layoutObjectSchema: ZodType<{ [x: string]: unknown }> = z.object(shape);
-  
+
   // Add year range validation for undergraduate/postgraduate sections
   if (layout.type === 'undergraduate' || layout.type === 'postgraduate') {
-    // endYear must be greater than startYear
     layoutObjectSchema = (layoutObjectSchema as ZodObject<any>).refine(
       (data) => {
         const startYear = data.startYear;
         const endYear = data.endYear;
 
-        // If either is missing, skip validation (required field will catch it)
         if (!startYear || !endYear) return true;
 
         const start = parseInt(String(startYear), 10);
         const end = parseInt(String(endYear), 10);
+
+        const currentYear = new Date().getFullYear();
+        const level = layout.type;
+
+        // STUDENTS
+        if (
+          level === 'College/Undergraduate'
+        ) {
+          return end >= currentYear && end > start;
+        }
+
+        // COMPLETED
+        if (level === 'Postgraduate' || level === 'Working/Completed College') {
+          return end <= currentYear && end > start;
+        }
 
         return end > start;
       },
       {
-        message: 'End Year must be after Start Year',
+        message: 'Invalid End Year based on your academic status',
         path: ['endYear'],
       }
     );
+    // endYear must be greater than startYear
+    // layoutObjectSchema = (layoutObjectSchema as ZodObject<any>).refine(
+    //   (data) => {
+    //     const startYear = data.startYear;
+    //     const endYear = data.endYear;
+
+    //     // If either is missing, skip validation (required field will catch it)
+    //     if (!startYear || !endYear) return true;
+
+    //     const start = parseInt(String(startYear), 10);
+    //     const end = parseInt(String(endYear), 10);
+
+    //     return end > start;
+    //   },
+    //   {
+    //     message: 'End Year must be after Start Year',
+    //     path: ['endYear'],
+    //   }
+    // );
 
     // endYear must not be more than 10 years after startYear
-    layoutObjectSchema = (layoutObjectSchema as ZodObject<any>).refine(
-      (data) => {
-        const startYear = data.startYear;
-        const endYear = data.endYear;
+    // layoutObjectSchema = (layoutObjectSchema as ZodObject<any>).refine(
+    //   (data) => {
+    //     const startYear = data.startYear;
+    //     const endYear = data.endYear;
 
-        // If either is missing, skip validation (required field will catch it)
-        if (!startYear || !endYear) return true;
+    //     // If either is missing, skip validation (required field will catch it)
+    //     if (!startYear || !endYear) return true;
 
-        const start = parseInt(String(startYear), 10);
-        const end = parseInt(String(endYear), 10);
+    //     const start = parseInt(String(startYear), 10);
+    //     const end = parseInt(String(endYear), 10);
 
-        // Check if end year is not more than 10 years after start year
-        return end <= start + 10;
-      },
-      {
-        message: 'End Year cannot be more than 10 years after Start Year',
-        path: ['endYear'],
-      }
-    );
+    //     // Check if end year is not more than 10 years after start year
+    //     return end <= start + 10;
+    //   },
+    //   {
+    //     message: 'End Year cannot be more than 10 years after Start Year',
+    //     path: ['endYear'],
+    //   }
+    // );
   }
+
   
+
   const schema = z.object({ [layout.type]: z.array(layoutObjectSchema) });
   return {
     schema,
