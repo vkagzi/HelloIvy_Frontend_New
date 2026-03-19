@@ -145,6 +145,9 @@ export const POSTGRADUATE_DEGREE_PROGRAMS = [
   'Other',
 ];
 
+const currentYear = new Date().getFullYear();
+console.log('START YEAR OPTIONS:', currentYear - 1960 + 1);
+
 // =============================================================================
 // LAYOUT BLOCK TYPE
 // =============================================================================
@@ -602,17 +605,17 @@ export const schoolTestTypeOptions = [
   'Others',
 ];
 
-const CURRENT_YEAR = new Date().getFullYear();
+// const CURRENT_YEAR = new Date().getFullYear();
 
-const END_YEAR_MAP: Record<string, string[]> = {};
+// const END_YEAR_MAP: Record<string, string[]> = {};
 
-for (let i = 0; i < 40; i++) {
-  const start = CURRENT_YEAR - i;
+// for (let i = 0; i < 40; i++) {
+//   const start = CURRENT_YEAR - i;
 
-  END_YEAR_MAP[start.toString()] = Array.from({ length: 8 }, (_, j) =>
-    (start + j).toString()
-  );
-}
+//   END_YEAR_MAP[start.toString()] = Array.from({ length: 30 }, (_, j) =>
+//     (start + j).toString()
+//   );
+// }
 
 export const educationalFieldDefs: FieldDefinition[] = [
   {
@@ -860,16 +863,34 @@ export const educationalFieldDefs: FieldDefinition[] = [
   //   placeholder: 'Select duration',
   //   required: true,
   // },
+
   {
     id: 'startYear',
-    type: 'select_autofill',
+    type: 'select',
     label: 'Start Year',
     placeholder: 'Select start year',
 
-    options: Array.from({ length: 27 }, (_, i) => {
-      const currentYear = new Date().getFullYear();
-      return (currentYear - i).toString();
-    }),
+    // options: Array.from({ length: currentYear - 1960 + 1 }, (_, i) =>
+    //   (currentYear - i).toString()
+    // ),
+
+    optionsDependsOn: {
+      fieldId: 'academicLevel',
+      map: {
+        'College/Undergraduate': Array.from(
+          { length: new Date().getFullYear() - 1960 + 1 },
+          (_, i) => (1960 + i).toString()
+        ),
+        Postgraduate: Array.from(
+          { length: new Date().getFullYear() - 1960 + 1 },
+          (_, i) => (1960 + i).toString()
+        ),
+        'Working/Completed College': Array.from(
+          { length: new Date().getFullYear() - 1960 + 1 },
+          (_, i) => (1960 + i).toString()
+        ),
+      },
+    },
 
     required: true,
   },
@@ -880,10 +901,22 @@ export const educationalFieldDefs: FieldDefinition[] = [
     label: 'End Year',
     placeholder: 'Select end year',
 
-    options: Array.from({ length: 35 }, (_, i) => {
-      const currentYear = new Date().getFullYear();
-      return (currentYear - 26 + i).toString();
-    }),
+    optionsDependsOn: {
+      fieldId: 'academicLevel',
+      map: {
+        'College/Undergraduate': Array.from({ length: 10 }, (_, i) =>
+          (new Date().getFullYear() + i).toString()
+        ),
+        Postgraduate: Array.from(
+          { length: new Date().getFullYear() - 1960 + 1 },
+          (_, i) => (1960 + i).toString()
+        ),
+        'Working/Completed College': Array.from(
+          { length: new Date().getFullYear() - 1960 + 1 },
+          (_, i) => (1960 + i).toString()
+        ),
+      },
+    },
 
     required: true,
   },
