@@ -520,12 +520,34 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
                 size="sm"
                 className="mt-2 mb-4 border-b border-neutral-300 pb-4"
               >
-                By using HelloIvy's services, you agree to comply with all applicable laws and regulations. You affirm that all information provided during signup is accurate and truthful. We collect personal information to personalize your career guidance experience and provide tailored recommendations. Your data is used to track your progress, preferences, and interactions with our platform. You agree not to misuse our services, including but not limited to: harassment, automated access, or attempts to disrupt service availability. HelloIvy reserves the right to modify these terms at any time with notice. Continued use of the service after modifications constitutes acceptance of the new terms.
+                By using HelloIvy's services, you agree to comply with all
+                applicable laws and regulations. You affirm that all information
+                provided during signup is accurate and truthful. We collect
+                personal information to personalize your career guidance
+                experience and provide tailored recommendations. Your data is
+                used to track your progress, preferences, and interactions with
+                our platform. You agree not to misuse our services, including
+                but not limited to: harassment, automated access, or attempts to
+                disrupt service availability. HelloIvy reserves the right to
+                modify these terms at any time with notice. Continued use of the
+                service after modifications constitutes acceptance of the new
+                terms.
               </Paragraph>
 
               <Label size="lg">Privacy Policy</Label>
               <Paragraph size="sm" className="mt-2">
-                We are committed to protecting your privacy. The personal information you provide, including name, email, educational background, and career interests, is stored securely and used solely to enhance your experience on HelloIvy. We do not share your information with third parties without your explicit consent, except as required by law. You have the right to access, modify, or delete your personal data at any time through your account settings. We implement industry-standard encryption and security measures to protect your data from unauthorized access. For any privacy concerns or inquiries, please contact our support team. Our privacy practices comply with applicable data protection regulations and are subject to periodic review.
+                We are committed to protecting your privacy. The personal
+                information you provide, including name, email, educational
+                background, and career interests, is stored securely and used
+                solely to enhance your experience on HelloIvy. We do not share
+                your information with third parties without your explicit
+                consent, except as required by law. You have the right to
+                access, modify, or delete your personal data at any time through
+                your account settings. We implement industry-standard encryption
+                and security measures to protect your data from unauthorized
+                access. For any privacy concerns or inquiries, please contact
+                our support team. Our privacy practices comply with applicable
+                data protection regulations and are subject to periodic review.
               </Paragraph>
             </div>
             <Controller
@@ -580,11 +602,11 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
       <div className="flex w-full items-center justify-center md:w-3/5">
         <div className="w-full max-w-md px-6 py-12 md:px-12">
           {/* Logo */}
-          <div className="mb-10 flex">
+          <div className="mb-6 flex">
             <Image
               src={imgLogo}
               alt="Hello Ivy Logo"
-              className="h-7 w-auto"
+              className="h-10 w-auto"
               priority
             />
           </div>
@@ -593,11 +615,11 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
               <Heading level={1} className="mb-2 font-extrabold">
                 {isForgot ? 'Forgot Password' : 'Sign-Up'}
               </Heading>
-              <Paragraph className="mb-16" size="sm">
+              <Paragraph className="mb-10" size="sm">
                 We’ll send an OTP to the email for verification.
               </Paragraph>
               <form
-                className="mb-16 flex flex-col gap-12"
+                className="mb-4 flex flex-col gap-4"
                 onSubmit={handleEmailSubmit(onEmailSubmit)}
                 noValidate
                 autoComplete="off"
@@ -624,10 +646,10 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
                     disabled={isEmailSubmitting}
                   />
                 </div>
-                <div className="flex gap-1">
+                <Paragraph size="sm" className="flex gap-1">
                   Already have an account?{' '}
-                  <ButtonLink href="/login" label="Login"></ButtonLink>
-                </div>
+                  <ButtonLink href="/login" label="Login" />
+                </Paragraph>
               </form>
             </>
           )}
