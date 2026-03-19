@@ -456,7 +456,7 @@ export const generateSubSchema = (
         const end = parseInt(String(endYear), 10);
 
         const currentYear = new Date().getFullYear();
-        const level = data.academicLevel;
+        const level = layout.type;
 
         // STUDENTS
         if (
