@@ -1033,7 +1033,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'testDate',
     type: 'date',
-    label: 'Test Date',
+    label: 'Test Completion Date',
     placeholder: 'Select test date',
     required: false,
   },
