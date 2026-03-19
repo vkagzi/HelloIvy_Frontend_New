@@ -343,94 +343,115 @@ const DomainResultsPage: React.FC = () => {
             {/* Interest Profile Chart - DISABLED (RIASEC removed) */}
             {/* The interest profile section has been disabled as RIASEC analysis is no longer included. */}
 
-            {/* Interests & Strengths */}
-            {(interests.length > 0 || strengths.length > 0) && (
-              <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
-                <div className="bg-linear-to-r from-[#3377ff] to-[#14cecf] px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-white">Results Summary</h3>
-                    <Button
-                      onClick={downloadResultsFile}
-                      disabled={isDownloadingResults}
-                      variant="secondary"
-                      className="bg-white/20 text-white hover:bg-white/30"
-                    >
-                      {isDownloadingResults ? (
-                        <>
-                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                          Downloading...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          Download PDF
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {interests.length > 0 && (
-                      <div className="rounded-xl bg-[#ebf2ff] p-4">
-                        <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
-                          <span className="mr-2 rounded-lg bg-[#d6e4ff] p-1.5">
-                            <svg className="h-4 w-4 text-[#3377ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                          </span>
-                          Your Interests
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {interests.map((interest, idx) => (
-                            <span
-                              key={idx}
-                              className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-[#3377ff] shadow-sm"
-                            >
-                              {interest}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+            {/* Summary Stats */}
+            <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
+              <div className="bg-linear-to-r from-[#3377ff] to-[#14cecf] px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">Results Summary</h3>
+                  <Button
+                    onClick={downloadResultsFile}
+                    disabled={isDownloadingResults}
+                    variant="secondary"
+                    className="bg-white/20 text-white hover:bg-white/30"
+                  >
+                    {isDownloadingResults ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download PDF
+                      </>
                     )}
-                    {strengths.length > 0 && (
-                      <div className="rounded-xl bg-[#e8fafa] p-4">
-                        <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
-                          <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
-                            <svg className="h-4 w-4 text-[#14cecf]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                          </span>
-                          Your Strengths
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {strengths.map((strength, idx) => (
-                            <span
-                              key={idx}
-                              className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-[#0fa5a5] shadow-sm"
-                            >
-                              {strength}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  </Button>
                 </div>
               </div>
-            )}
-
-            {/* Summary Stats */}
-            <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-2xl bg-white p-6 shadow-xl">
-              <div className="flex justify-center">
+              <div className="p-6">
+              <div className="flex justify-center mb-6">
                 <div className="rounded-xl bg-[#ebf2ff] px-8 py-4 text-center">
                   <div className="text-4xl font-bold text-[#3377ff]">
                     {recommendations.length}
                   </div>
                   <div className="mt-1 text-sm font-medium text-[#3377ff]">Domain Matches</div>
                 </div>
+              </div>
+
+              {/* Horizontal Bar Chart */}
+              <div className="space-y-3">
+                {recommendations.map((domain, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <div className="w-56 shrink-0 text-right" title={domain.domain_title}>
+                      <span className="text-xs font-medium text-gray-700 truncate block">
+                        {domain.domain_title}
+                      </span>
+                    </div>
+                    <div className="flex-1 h-7 rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-linear-to-r from-[#3377ff] to-[#14cecf] transition-all duration-700 ease-out flex items-center justify-end pr-2"
+                        style={{ width: `${domain.match_percentage}%` }}
+                      >
+                        <span className="text-xs font-bold text-white whitespace-nowrap">
+                          {domain.match_percentage}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Interests & Strengths */}
+              {(interests.length > 0 || strengths.length > 0) && (
+                <div className="mt-6 grid gap-6 md:grid-cols-2">
+                  {interests.length > 0 && (
+                    <div className="rounded-xl bg-[#ebf2ff] p-4">
+                      <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
+                        <span className="mr-2 rounded-lg bg-[#d6e4ff] p-1.5">
+                          <svg className="h-4 w-4 text-[#3377ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                        </span>
+                        Your Interests
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {interests.map((interest, idx) => (
+                          <span
+                            key={idx}
+                            className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-[#3377ff] shadow-sm"
+                          >
+                            {interest}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {strengths.length > 0 && (
+                    <div className="rounded-xl bg-[#e8fafa] p-4">
+                      <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
+                        <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
+                          <svg className="h-4 w-4 text-[#14cecf]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                        </span>
+                        Your Strengths
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {strengths.map((strength, idx) => (
+                          <span
+                            key={idx}
+                            className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-[#0fa5a5] shadow-sm"
+                          >
+                            {strength}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               </div>
             </div>
 

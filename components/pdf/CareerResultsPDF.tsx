@@ -1,6 +1,7 @@
 import React from 'react';
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import type { CareerRecommendation } from '@/lib/career-discovery-api';
+import { LOGO_APP_BASE64 } from './logo-base64';
 
 /* ── colour tokens ─────────────────────────────────────── */
 const purple = '#7f12f3';
@@ -84,6 +85,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
   <Document>
     {/* ===== Summary page ===== */}
     <Page size="A4" style={s.page}>
+      <Image src={LOGO_APP_BASE64} style={{ width: 120, height: 25, marginBottom: 12 }} />
       <View style={s.summaryHeader}>
         <Text style={s.summaryTitle}>Career Discovery Results</Text>
         {studentName && <Text style={s.summarySubtitle}>{studentName}</Text>}
@@ -92,6 +94,25 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
         <Text style={s.statNumber}>{recommendations.length}</Text>
         <Text style={s.statLabel}>Career Matches</Text>
       </View>
+
+      {/* Horizontal Bar Chart */}
+      <View style={{ marginTop: 16, padding: 12, backgroundColor: '#fff', borderRadius: 8, border: '1 solid #e5e7eb' }}>
+        <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: '#1f2937', marginBottom: 10 }}>Match Overview</Text>
+        {recommendations.map((career, index) => (
+          <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+            <Text style={{ width: 150, fontSize: 8, color: gray, textAlign: 'right', paddingRight: 8, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {career.career_title}
+            </Text>
+            <View style={{ flex: 1, height: 14, backgroundColor: '#f3f4f6', borderRadius: 7, overflow: 'hidden' }}>
+              <View style={{ width: `${career.match_percentage}%`, height: 14, borderRadius: 7, backgroundColor: purple }} />
+            </View>
+            <Text style={{ width: 32, fontSize: 8, fontFamily: 'Helvetica-Bold', color: matchColor(career.match_percentage), textAlign: 'right', paddingLeft: 4 }}>
+              {career.match_percentage}%
+            </Text>
+          </View>
+        ))}
+      </View>
+
       <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
     </Page>
 

@@ -352,13 +352,36 @@ const CareerResultsPage: React.FC = () => {
                 </div>
               </div>
               <div className="p-6">
-                <div className="flex justify-center">
+                <div className="flex justify-center mb-6">
                   <div className="rounded-xl bg-[#f3e8ff] px-8 py-4 text-center">
                     <div className="text-4xl font-bold text-[#7f12f3]">
                       {recommendations.length}
                     </div>
                     <div className="mt-1 text-sm font-medium text-[#7f12f3]">Career Matches</div>
                   </div>
+                </div>
+
+                {/* Horizontal Bar Chart */}
+                <div className="space-y-3">
+                  {recommendations.map((career, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-56 shrink-0 text-right" title={career.career_title}>
+                        <span className="text-xs font-medium text-gray-700 truncate block">
+                          {career.career_title}
+                        </span>
+                      </div>
+                      <div className="flex-1 h-7 rounded-full bg-gray-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-linear-to-r from-[#7f12f3] to-[#1a86f1] transition-all duration-700 ease-out flex items-center justify-end pr-2"
+                          style={{ width: `${career.match_percentage}%` }}
+                        >
+                          <span className="text-xs font-bold text-white whitespace-nowrap">
+                            {career.match_percentage}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
