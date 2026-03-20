@@ -14,10 +14,11 @@ import {
   TranscriptData,
   TranscriptMessage,
 } from '@/lib/domain-discovery-api';
-import { generateTranscriptPDF } from '@/lib/pdf-utils';
 import { downloadPDF } from '@/lib/pdf-from-component';
 import DomainResultsPDF from '@/components/pdf/DomainResultsPDF';
+import TranscriptReportPDF from '@/components/pdf/TranscriptReportPDF';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import { useUserAuth } from '@/app/_hooks/useUserAuth';
 import { DomainDebugDialog } from '@/components/DomainDebugDialog';
 
 type Role = 'bot' | 'user';
@@ -38,6 +39,7 @@ const DomainResultsPage: React.FC = () => {
   const sessionId = params?.sessionId as string | undefined;
   const { addToast } = useToast();
   const { personalDetails, educationalDetails } = useProfile();
+  const { userDetails } = useUserAuth();
 
   const [recommendations, setRecommendations] = useState<DomainRecommendation[]>([]);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
@@ -126,19 +128,34 @@ const DomainResultsPage: React.FC = () => {
       if (!transcriptData) {
         transcriptData = await domainDiscoveryApi.getTranscript(sessionId);
       }
+
+      // Get student name from profile, falling back to transcript data
+      const firstName = (personalDetails?.firstName as string) || '';
+      const lastName = (personalDetails?.lastName as string) || '';
+      const studentName = firstName && lastName
+        ? `${firstName} ${lastName}`
+        : (firstName || lastName || transcriptData.student_name || userDetails.email || 'Student');
       
-      // Generate PDF on the frontend
-      const pdfBlob = generateTranscriptPDF(transcriptData);
-      
-      // Create download link
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Domain_Discovery_Transcript_${transcriptData.student_name.replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Convert to Q&A pairs
+      const paired = (transcriptData.messages || []).map((m, i) => ({
+        questionNumber: m.question_number || i + 1,
+        phase: m.phase || 'general',
+        botQuestion: m.bot_question || '',
+        studentResponse: m.student_response || '',
+      }));
+
+      await downloadPDF(
+        <TranscriptReportPDF
+          variant="domain"
+          sessionId={sessionId}
+          studentName={studentName}
+          startedAt={transcriptData.started_at}
+          completedAt={transcriptData.completed_at}
+          totalQuestions={transcriptData.total_questions || paired.length}
+          messages={paired}
+        />,
+        `Domain_Discovery_Transcript_${studentName.replace(/\s+/g, '_')}`,
+      );
       
       addToast('Transcript downloaded!', { type: 'success' });
     } catch (e) {
@@ -155,7 +172,7 @@ const DomainResultsPage: React.FC = () => {
 
       const firstName = (personalDetails?.firstName as string) || '';
       const lastName = (personalDetails?.lastName as string) || '';
-      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Student');
+      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || userDetails.email || 'Student');
 
       await downloadPDF(
         <DomainResultsPDF

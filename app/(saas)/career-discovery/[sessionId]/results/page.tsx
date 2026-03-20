@@ -11,13 +11,11 @@ import {
   CareerRecommendation,
   CareerMessage,
 } from '@/lib/career-discovery-api';
-import {
-  generateCareerTranscriptPDF,
-  CareerTranscriptData,
-} from '@/lib/pdf-utils';
 import { downloadPDF } from '@/lib/pdf-from-component';
 import CareerResultsPDF from '@/components/pdf/CareerResultsPDF';
+import TranscriptReportPDF from '@/components/pdf/TranscriptReportPDF';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import { useUserAuth } from '@/app/_hooks/useUserAuth';
 
 type TabType = 'results' | 'history';
 
@@ -28,6 +26,7 @@ const CareerResultsPage: React.FC = () => {
   const sessionId = params?.sessionId as string | undefined;
   const { addToast } = useToast();
   const { personalDetails, educationalDetails } = useProfile();
+  const { userDetails } = useUserAuth();
 
   const [recommendations, setRecommendations] = useState<CareerRecommendation[]>([]);
   const [conversationHistory, setConversationHistory] = useState<CareerMessage[]>([]);
@@ -126,7 +125,7 @@ const CareerResultsPage: React.FC = () => {
       // Get student name from profile
       const firstName = (personalDetails?.firstName as string) || '';
       const lastName = (personalDetails?.lastName as string) || '';
-      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Student');
+      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || userDetails.email || 'Student');
       
       // Find session timestamps from messages
       const sortedMessages = [...messages].sort((a, b) => 
@@ -135,27 +134,33 @@ const CareerResultsPage: React.FC = () => {
       const startedAt = sortedMessages.length > 0 ? sortedMessages[0].timestamp : undefined;
       const completedAt = sortedMessages.length > 0 ? sortedMessages[sortedMessages.length - 1].timestamp : undefined;
       
-      const transcriptData: CareerTranscriptData = {
-        session_id: sessionId,
-        student_name: studentName,
-        started_at: startedAt,
-        completed_at: completedAt,
-        total_questions: messages.filter(m => m.type === 'bot').length,
-        messages: messages,
-      };
-      
-      // Generate PDF on the frontend
-      const pdfBlob = generateCareerTranscriptPDF(transcriptData);
-      
-      // Create download link
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Career_Discovery_Transcript_${studentName.replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Pair bot messages with user responses
+      const paired: { questionNumber: number; phase: string; botQuestion: string; studentResponse: string }[] = [];
+      for (let i = 0; i < messages.length; i++) {
+        const m = messages[i];
+        if (m.type === 'bot') {
+          const userReply = messages.slice(i + 1).find((n) => n.type === 'user');
+          paired.push({
+            questionNumber: paired.length + 1,
+            phase: m.phase || 'general',
+            botQuestion: m.content,
+            studentResponse: userReply?.content || '',
+          });
+        }
+      }
+
+      await downloadPDF(
+        <TranscriptReportPDF
+          variant="career"
+          sessionId={sessionId}
+          studentName={studentName}
+          startedAt={startedAt}
+          completedAt={completedAt}
+          totalQuestions={paired.length}
+          messages={paired}
+        />,
+        `Career_Discovery_Transcript_${studentName.replace(/\s+/g, '_')}`,
+      );
       
       addToast('Transcript downloaded!', { type: 'success' });
     } catch (e) {
@@ -172,7 +177,7 @@ const CareerResultsPage: React.FC = () => {
 
       const firstName = (personalDetails?.firstName as string) || '';
       const lastName = (personalDetails?.lastName as string) || '';
-      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Student');
+      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || userDetails.email || 'Student');
 
       await downloadPDF(
         <CareerResultsPDF recommendations={recommendations} studentName={studentName} />,

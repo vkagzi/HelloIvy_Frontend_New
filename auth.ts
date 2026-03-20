@@ -49,6 +49,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             id: user.id.toString(),
             email: user.email,
             name: user.name || user.email,
+            role: user.role || 'student',
             accessToken: data.token,
           };
         } catch {
@@ -63,6 +64,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
+        token.role = user.role;
         token.accessToken = (user as any).accessToken;
       }
       return token;
@@ -72,6 +74,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
+        session.user.role = token.role as string;
         (session as any).accessToken = token.accessToken;
       }
       return session;
