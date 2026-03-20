@@ -64,6 +64,12 @@ const s = StyleSheet.create({
   chipText: { fontSize: 8, color: brandBlue },
   chipPurple: { backgroundColor: '#f3e8ff', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   chipPurpleText: { fontSize: 8, color: '#7f12f3' },
+
+  /* disclaimer & footer */
+  disclaimer: { marginTop: 14, padding: 10, backgroundColor: '#fef9e7', borderRadius: 6, borderWidth: 0.5, borderColor: '#f5d063' },
+  disclaimerText: { fontSize: 7, color: '#92700c', lineHeight: 1.5, textAlign: 'center', fontStyle: 'italic' },
+  footer: { position: 'absolute', bottom: 26, left: 30, right: 30, flexDirection: 'row', justifyContent: 'center', gap: 16 },
+  footerText: { fontSize: 7, color: '#9ca3af' },
 });
 
 /* ── helpers ─────────────────────────────────────────────── */
@@ -150,6 +156,16 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
           )}
         </View>
       )}
+
+      <View style={s.disclaimer}>
+        <Text style={s.disclaimerText}>This report is generated using AI based on your responses and is intended for career exploration purposes only; results may not be fully accurate or definitive.</Text>
+      </View>
+
+      <View style={s.footer} fixed>
+        <Text style={s.footerText}>helloivy.ai</Text>
+        <Text style={s.footerText}>|</Text>
+        <Text style={s.footerText}>partners@reachivy.com</Text>
+      </View>
 
     </Page>
 
@@ -249,6 +265,11 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
               </View>
             </View>
           </View>
+        </View>
+        <View style={s.footer} fixed>
+          <Text style={s.footerText}>helloivy.ai</Text>
+          <Text style={s.footerText}>|</Text>
+          <Text style={s.footerText}>partners@reachivy.com</Text>
         </View>
         <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
       </Page>

@@ -65,6 +65,12 @@ const s = StyleSheet.create({
   consTitle: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#991b1b', marginBottom: 3 },
   proItem: { fontSize: 8, color: '#15803d', marginBottom: 2 },
   conItem: { fontSize: 8, color: '#dc2626', marginBottom: 2 },
+
+  /* disclaimer & footer */
+  disclaimer: { marginTop: 14, padding: 10, backgroundColor: '#fdf4ff', borderRadius: 6, borderWidth: 0.5, borderColor: '#d8b4fe' },
+  disclaimerText: { fontSize: 7, color: '#6b21a8', lineHeight: 1.5, textAlign: 'center', fontStyle: 'italic' },
+  footer: { position: 'absolute', bottom: 26, left: 30, right: 30, flexDirection: 'row', justifyContent: 'center', gap: 16 },
+  footerText: { fontSize: 7, color: '#9ca3af' },
 });
 
 /* ── helpers ─────────────────────────────────────────────── */
@@ -111,6 +117,16 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
             </Text>
           </View>
         ))}
+      </View>
+
+      <View style={s.disclaimer}>
+        <Text style={s.disclaimerText}>This report is generated using AI based on your responses and is intended for career exploration purposes only; results may not be fully accurate or definitive.</Text>
+      </View>
+
+      <View style={s.footer} fixed>
+        <Text style={s.footerText}>helloivy.ai</Text>
+        <Text style={s.footerText}>|</Text>
+        <Text style={s.footerText}>partners@reachivy.com</Text>
       </View>
 
       <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
@@ -238,6 +254,11 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
               </View>
             </View>
           </View>
+        </View>
+        <View style={s.footer} fixed>
+          <Text style={s.footerText}>helloivy.ai</Text>
+          <Text style={s.footerText}>|</Text>
+          <Text style={s.footerText}>partners@reachivy.com</Text>
         </View>
         <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
       </Page>
