@@ -123,14 +123,6 @@ class CareerDiscoveryAPI {
   }
 
   /**
-   * @deprecated Use getSession(sessionId) instead
-   */
-  async getCurrentSession(): Promise<CareerDiscoverySession> {
-    // Legacy: callers should migrate to getSession(sessionId)
-    throw new Error('getCurrentSession is removed. Use getSession(sessionId) instead.');
-  }
-
-  /**
    * List all sessions for the user
    */
   async listSessions(): Promise<SessionListResponse> {

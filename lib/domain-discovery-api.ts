@@ -179,14 +179,6 @@ class DomainDiscoveryAPI {
   }
 
   /**
-   * @deprecated Use getSession(sessionId) instead
-   */
-  async getCurrentSession(): Promise<DomainDiscoverySession> {
-    // Legacy: callers should migrate to getSession(sessionId)
-    throw new Error('getCurrentSession is removed. Use getSession(sessionId) instead.');
-  }
-
-  /**
    * List all sessions for the user
    * @param isCompleted - Optional filter for completed/in-progress sessions
    * @param limit - Optional limit on number of sessions to return
@@ -331,28 +323,6 @@ class DomainDiscoveryAPI {
    */
   async getTranscript(sessionId: string): Promise<TranscriptData> {
     return api<TranscriptData>(`${this.baseUrl}/${sessionId}/transcript/`);
-  }
-
-  /**
-   * @deprecated Use getTranscript() and generateTranscriptPDF() from pdf-utils instead
-   * Download conversation transcript as text file (legacy method)
-   */
-  async downloadTranscript(sessionId: string): Promise<Blob> {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-    const fullUrl = `${baseUrl}${this.baseUrl}/${sessionId}/transcript/download/`;
-
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to download transcript: ${errorText}`);
-    }
-
-    return response.blob();
   }
 
   /**

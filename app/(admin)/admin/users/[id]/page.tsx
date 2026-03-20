@@ -122,27 +122,25 @@ export default function AdminUserDetailPage() {
       {/* Back link */}
       <Link
         href="/admin/users"
-        className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
       >
         &larr; Back to Users
       </Link>
 
       {/* User Info Header */}
-      <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">{user.email}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <RoleBadge role={user.role} />
-              <StatusBadge active={user.is_active} />
-              <span className="text-sm text-gray-500">
-                ID: {user.id}
-              </span>
-            </div>
+      <div className="mb-5 rounded-lg border border-gray-200 bg-white px-5 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-bold text-gray-900">{user.email}</h1>
+            <RoleBadge role={user.role} />
+            <StatusBadge active={user.is_active} />
+            <span className="text-xs text-gray-400">
+              ID: {user.id}
+            </span>
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <InfoItem
             label="Created"
             value={new Date(user.created_at).toLocaleDateString()}
@@ -167,7 +165,7 @@ export default function AdminUserDetailPage() {
       </div>
 
       {/* Module Stats Cards */}
-      <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ModuleCard
           title="Domain Discovery"
           module="domain"
@@ -198,8 +196,8 @@ export default function AdminUserDetailPage() {
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase text-gray-400">{label}</p>
-      <p className="mt-1 text-sm text-gray-900">{value}</p>
+      <p className="text-[11px] font-medium uppercase text-gray-400">{label}</p>
+      <p className="text-sm text-gray-900">{value}</p>
     </div>
   );
 }
@@ -342,34 +340,34 @@ function ModuleCard({
       : 0;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">{title}</h2>
+    <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
+      <h2 className="mb-3 text-base font-semibold text-gray-900">{title}</h2>
 
       {/* Summary */}
-      <div className="mb-4 grid grid-cols-3 gap-4">
-        <div className="rounded-md bg-gray-50 p-3 text-center">
-          <p className="text-2xl font-bold text-gray-900">
+      <div className="mb-3 grid grid-cols-3 gap-3">
+        <div className="rounded-md bg-gray-50 px-3 py-2 text-center">
+          <p className="text-xl font-bold text-gray-900">
             {stats.total_sessions}
           </p>
-          <p className="text-xs text-gray-500">Total</p>
+          <p className="text-[11px] text-gray-500">Total</p>
         </div>
-        <div className="rounded-md bg-green-50 p-3 text-center">
-          <p className="text-2xl font-bold text-green-700">
+        <div className="rounded-md bg-green-50 px-3 py-2 text-center">
+          <p className="text-xl font-bold text-green-700">
             {stats.completed_sessions}
           </p>
-          <p className="text-xs text-gray-500">Completed</p>
+          <p className="text-[11px] text-gray-500">Completed</p>
         </div>
-        <div className="rounded-md bg-yellow-50 p-3 text-center">
-          <p className="text-2xl font-bold text-yellow-700">
+        <div className="rounded-md bg-yellow-50 px-3 py-2 text-center">
+          <p className="text-xl font-bold text-yellow-700">
             {stats.total_sessions - stats.completed_sessions}
           </p>
-          <p className="text-xs text-gray-500">In Progress</p>
+          <p className="text-[11px] text-gray-500">In Progress</p>
         </div>
       </div>
 
       {/* Progress bar */}
       {stats.total_sessions > 0 && (
-        <div className="mb-4">
+        <div className="mb-3">
           <div className="flex items-center justify-between text-xs text-gray-500">
             <span>Completion rate</span>
             <span>{progressPct}%</span>
