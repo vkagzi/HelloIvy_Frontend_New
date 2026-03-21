@@ -10,18 +10,25 @@ import api from '@/lib/api-client';
 
 type VoicePersona = 'male' | 'female';
 
-const PERSONA_META: Record<VoicePersona, { label: string; gradient: string; initials: string }> = {
-  male: { label: 'Male', gradient: 'from-blue-500 to-indigo-600', initials: 'M' },
-  female: { label: 'Female', gradient: 'from-pink-500 to-rose-600', initials: 'F' },
+const PERSONA_META: Record<
+  VoicePersona,
+  { label: string; gradient: string; initials: string }
+> = {
+  male: {
+    label: 'Male',
+    gradient: 'from-blue-500 to-indigo-600',
+    initials: 'M',
+  },
+  female: {
+    label: 'Female',
+    gradient: 'from-pink-500 to-rose-600',
+    initials: 'F',
+  },
 };
 
 export default function Dashboard(): React.ReactElement {
-  const {
-    completionPercentage,
-    isProfileComplete,
-    profileData,
-    loading,
-  } = useProfile();
+  const { completionPercentage, isProfileComplete, profileData, loading } =
+    useProfile();
 
   const [currentPersona, setCurrentPersona] = useState<VoicePersona>('male');
 
@@ -60,7 +67,7 @@ export default function Dashboard(): React.ReactElement {
     return {
       heading: 'View/Edit your profile',
       description:
-        'Your profile is complete! You can proceed to domain discovery and explore personalized recommendations.',
+        'Your profile is completed ! \n You can proceed to Domain Discovery and explore personalized recommendations.',
       linkText: 'View/Edit your profile',
       linkHref: '/profile/personal',
     };
@@ -73,7 +80,7 @@ export default function Dashboard(): React.ReactElement {
           {loading ? (
             <div className="h-14 w-24 animate-pulse rounded bg-neutral-200" />
           ) : (
-            <span className="mb-2 bg-linear-to-r from-red-500 via-pink-500 via-purple-500 via-blue-500 via-indigo-500 to-teal-400 bg-clip-text text-4xl font-semibold text-transparent md:text-5xl">
+            <span className="mb-2 bg-linear-to-r from-red-500 via-blue-500 via-indigo-500 via-pink-500 via-purple-500 to-teal-400 bg-clip-text text-4xl font-semibold text-transparent md:text-5xl">
               {completionPercentage}%
             </span>
           )}
@@ -85,12 +92,18 @@ export default function Dashboard(): React.ReactElement {
           {/* <Heading level={3} className="font-extrabold">
             {heading}
           </Heading> */}
-          <Label size="md" className="block">
+          <Label size="md" className="block whitespace-pre-line">
             {description}
           </Label>
           <Link href={linkHref} className="btn-secondary mt-4 inline-block">
             {linkText}
           </Link>
+
+          <Label size="sm" className="mt-3 block text-neutral-500">
+            Please complete your profile details carefully, this helps me
+            understand you better and ensures that your results are as accurate &
+            personalized as possible.
+          </Label>
         </div>
         <div className="flex w-full justify-center">
           <Image
@@ -120,9 +133,12 @@ export default function Dashboard(): React.ReactElement {
               <Label size="md" className="font-semibold text-neutral-900">
                 Select Your Counsellor Voice
               </Label>
-              <br/>
+              <br />
               <Label size="sm" className="text-neutral-500">
-                Currently set to <span className="font-medium text-neutral-700">{PERSONA_META[currentPersona].label}</span>
+                Currently set to{' '}
+                <span className="font-medium text-neutral-700">
+                  {PERSONA_META[currentPersona].label}
+                </span>
               </Label>
             </div>
           </div>
