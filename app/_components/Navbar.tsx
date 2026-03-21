@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiIcon } from '@/app/_components/Icons';
 import imgLogoApp from '@/assets/images/logo-app.png';
-import imgIcon from '@/assets/images/icon.png';
 import Image from 'next/image';
 import { Label } from '@/app/_components/Typography';
 import { sidebarNavItems } from '@/app/_constants/navItems';
@@ -34,18 +33,28 @@ const Navbar: React.FC = () => {
 
   const sidebarContent = (
     <>
-      <div className="flex h-12 items-center justify-between pb-3">
-        <Link href="/dashboard">
-          <Image
-            src={collapsed ? imgIcon : imgLogoApp}
-            alt="HelloIvy Logo"
-            className="h-6 w-auto transition-all duration-200"
-          />
-        </Link>
-        {/* Collapse toggle only on desktop sidebar */}
+      {/* HEADER SECTION */}
+      <div
+        className={`flex h-12 items-center pb-3 ${
+          collapsed ? 'justify-center' : 'justify-between'
+        }`}
+      >
+        {/* Show logo ONLY when sidebar expanded */}
+        {!collapsed && (
+          <Link href="/dashboard">
+            <Image
+              src={imgLogoApp}
+              alt="HelloIvy Logo"
+              className="h-6 w-auto transition-all duration-200"
+              priority
+            />
+          </Link>
+        )}
+
+        {/* Collapse toggle button */}
         <button
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="hidden overflow-clip rounded-full bg-neutral-100 p-1 leading-none transition hover:bg-neutral-300 lg:block"
+          className="hidden rounded-full bg-neutral-100 p-1 transition hover:bg-neutral-300 lg:block"
           onClick={() => setCollapsed((v) => !v)}
         >
           <FiIcon
@@ -54,21 +63,25 @@ const Navbar: React.FC = () => {
                 ? 'angle-double-small-right'
                 : 'angle-double-small-left'
             }
-            className="block h-4 w-4"
+            className="h-4 w-4"
           />
         </button>
-        {/* Close button only in mobile/tablet drawer */}
+
+        {/* Close button for mobile drawer */}
         <button
           aria-label="Close menu"
-          className="overflow-clip rounded-full bg-neutral-100 p-1 leading-none transition hover:bg-neutral-300 lg:hidden"
+          className="rounded-full bg-neutral-100 p-1 transition hover:bg-neutral-300 lg:hidden"
           onClick={closeDrawer}
         >
-          <FiIcon name="cross-small" className="block h-4 w-4" />
+          <FiIcon name="cross-small" className="h-4 w-4" />
         </button>
       </div>
+
+      {/* NAV ITEMS */}
       <ul className="mt-2 flex-1">
         {sidebarNavItems.map((item) => {
           const active = pathname === item.href;
+
           return (
             <li key={item.href} className="h-10">
               <Link
@@ -77,24 +90,28 @@ const Navbar: React.FC = () => {
                   active
                     ? 'bg-action-gradient-800 font-semibold text-white'
                     : 'hover:bg-purple-50'
-                } ${collapsed ? 'lg:w-11' : ''}`}
+                } ${collapsed ? 'lg:w-11 justify-center' : ''}`}
               >
                 <FiIcon
                   name={item.icon}
-                  className={
+                  className={`leading-none ${
+                    collapsed ? 'h-4 w-4' : 'h-6 w-6'
+                  } ${
                     active
-                      ? 'h-5 w-5 text-lg leading-none text-white'
-                      : 'from-action-gradient-800-left to-action-gradient-800-right h-5 w-5 bg-gradient-to-r bg-clip-text text-lg leading-none text-transparent'
-                  }
+                      ? 'text-white'
+                      : 'from-action-gradient-800-left to-action-gradient-800-right bg-gradient-to-r bg-clip-text text-transparent'
+                  }`}
                 />
 
-                {/* Always show label in drawer; respect collapsed state on desktop */}
-                <Label
-                  size="sm"
-                  className={`overflow-clip text-nowrap text-ellipsis ${collapsed ? 'lg:hidden' : ''}`}
-                >
-                  {item.label}
-                </Label>
+                {/* Hide labels when collapsed */}
+                {!collapsed && (
+                  <Label
+                    size="sm"
+                    className="overflow-hidden text-nowrap text-ellipsis"
+                  >
+                    {item.label}
+                  </Label>
+                )}
               </Link>
             </li>
           );
@@ -105,25 +122,23 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Desktop sidebar — hidden below lg */}
+      {/* Desktop sidebar */}
       <nav
         className={`relative hidden min-h-screen flex-col bg-white px-2 transition-all duration-200 lg:flex ${
-          collapsed ? 'w-14' : 'w-50 border-r border-neutral-200'
+          collapsed ? 'w-16' : 'w-56 border-r border-neutral-200'
         }`}
       >
         {sidebarContent}
       </nav>
 
-      {/* Mobile/Tablet overlay drawer — visible below lg when open */}
+      {/* Mobile drawer */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/30"
             onClick={closeDrawer}
-            aria-hidden="true"
           />
-          {/* Drawer panel */}
+
           <nav className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white px-2 shadow-xl">
             {sidebarContent}
           </nav>
