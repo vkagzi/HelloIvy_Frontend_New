@@ -579,14 +579,14 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                 </div>
               </div>
             </div>
-            {canEnd && (
+            {/* {canEnd && (
               <button
                 onClick={sessionEnded ? handleViewResults : handleEnd}
                 className={`ml-4 cursor-pointer whitespace-nowrap rounded-lg bg-linear-to-r ${theme.ctaFrom} ${theme.ctaTo} px-4 py-2 text-white hover:${theme.ctaHoverFrom} hover:${theme.ctaHoverTo}`}
               >
                 View Results →
               </button>
-            )}
+            )} */}
           </div>
         </div>
 
