@@ -30,16 +30,17 @@ export default function CommunicationModeModal({
       }}
     >
       <DialogContent className="max-w-md" hideCloseButton>
-        <DialogTitle className="text-center">
+        <DialogTitle className="text-center text-base font-medium text-lg">
           How do you wish to interact with Ivy?
         </DialogTitle>
-        <DialogDescription className="text-center">
+        {/* <DialogDescription className="text-center">
           Choose your preferred way to interact with the AI coach.
-        </DialogDescription>
+        </DialogDescription> */}
 
         {isPaused && (
           <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-700">
-            Your session is currently paused. Selecting either option will resume.
+            Your session is currently paused. Selecting either option will
+            resume.
           </div>
         )}
 
@@ -64,9 +65,7 @@ export default function CommunicationModeModal({
                 />
               </svg>
             </div>
-            <span className="text-base font-bold text-gray-900">
-              Text
-            </span>
+            <span className="text-base font-bold text-gray-900">Text</span>
             <span className="text-center text-xs text-gray-500">
               Type your responses
             </span>
@@ -92,9 +91,7 @@ export default function CommunicationModeModal({
                 />
               </svg>
             </div>
-            <span className="text-base font-bold text-gray-900">
-              Voice
-            </span>
+            <span className="text-base font-bold text-gray-900">Voice</span>
             <span className="text-center text-xs text-gray-500">
               Speak your responses
             </span>
