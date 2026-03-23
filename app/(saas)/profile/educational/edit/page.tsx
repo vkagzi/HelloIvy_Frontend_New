@@ -55,20 +55,16 @@ const EducationalDetailsForm: React.FC = () => {
     return isNaN(parsed.getTime()) ? null : parsed.getFullYear();
   }, [personalDetails]);
 
-  // Update startYear to only include years >= (birth year + 3), endYear >= (birth year + 10)
+  // Apply DOB-based year lower bounds: school yearOfCompletion >= DOB+1, college startYear >= DOB+10
   React.useEffect(() => {
     if (!birthYear) return;
     setFieldDefs((prev) =>
       prev.map((field) => {
-        if (field.id === 'startYear') {
-          return {
-            ...field,
-            options: (field.options ?? []).filter(
-              (y) => parseInt(y, 10) >= birthYear + 3
-            ),
-          };
+        if (field.id === 'yearOfCompletion') {
+          console.log(`Applying DOB-based constraint to yearOfCompletion: birthYear=${birthYear}, minYear=${birthYear + 1}`);
+          return { ...field, minYear: birthYear + 1 };
         }
-        if (field.id === 'endYear') {
+        if (field.id === 'startYear') {
           return {
             ...field,
             options: (field.options ?? []).filter(

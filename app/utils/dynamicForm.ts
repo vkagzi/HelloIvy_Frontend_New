@@ -47,6 +47,8 @@ export interface FieldDefinition {
   stateKey?: string;
   countryKey?: string;
   defaultValueFrom?: string;
+  minYear?: number;
+  maxYear?: number;
 }
 
 interface DynamicFormResult {

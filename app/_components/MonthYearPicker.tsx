@@ -6,6 +6,8 @@ type MonthYearPickerProps = {
   onClose?: () => void;
   open: boolean;
   anchorRef?: React.RefObject<HTMLDivElement | null>;
+  minYear?: number;
+  maxYear?: number;
 };
 
 const months = [
@@ -44,9 +46,12 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({
   open,
   anchorRef,
   onClose,
+  minYear,
+  maxYear,
 }) => {
   const today = new Date();
-  let initialYear = today.getFullYear();
+  const currentYear = today.getFullYear();
+  let initialYear = currentYear;
   let initialMonth = today.getMonth();
 
   if (value) {
@@ -62,13 +67,21 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({
     }
   }
 
-  const [year, setYear] = useState<number>(initialYear);
+  const safeInitialYear = Math.min(
+    Math.max(initialYear, minYear ?? currentYear - 40),
+    maxYear ?? currentYear + 10
+  );
+  const [year, setYear] = useState<number>(safeInitialYear);
   const [selectedMonth, setSelectedMonth] = useState<number>(initialMonth);
 
   if (!open) return null;
 
-  const currentYear = new Date().getFullYear();
-  const yearRange = Array.from({ length: 51 }, (_, i) => currentYear - 40 + i);
+  const lowerYear = minYear ?? currentYear - 40;
+  const upperYear = maxYear ?? currentYear + 10;
+  const yearRange = Array.from(
+    { length: Math.max(upperYear - lowerYear + 1, 1) },
+    (_, i) => lowerYear + i
+  );
 
   const handleSelect = (monthIdx: number): void => {
     setSelectedMonth(monthIdx);
@@ -100,7 +113,7 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({
         <button
           type="button"
           className="rounded-lg p-1 text-neutral-600 hover:bg-neutral-100"
-          onClick={() => setYear(year - 1)}
+          onClick={() => setYear((prev) => Math.max(lowerYear, prev - 1))}
           aria-label="Previous year"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,7 +134,7 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({
         <button
           type="button"
           className="rounded-lg p-1 text-neutral-600 hover:bg-neutral-100"
-          onClick={() => setYear(year + 1)}
+          onClick={() => setYear((prev) => Math.min(upperYear, prev + 1))}
           aria-label="Next year"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

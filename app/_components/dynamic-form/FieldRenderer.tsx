@@ -423,6 +423,8 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   open={showDatePicker}
                   onClose={() => setShowDatePicker(false)}
                   anchorRef={anchorRef}
+                  minYear={field.minYear}
+                  maxYear={field.maxYear}
                 />
               </div>
             );

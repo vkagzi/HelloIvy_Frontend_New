@@ -698,7 +698,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'yearOfCompletion',
     type: 'month_year',
-    label: 'Year of Completion',
+    label: 'Month of Completion',
     placeholder: 'Select month & year',
     required: true,
   },
