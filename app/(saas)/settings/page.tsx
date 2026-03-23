@@ -25,7 +25,7 @@ const PERSONAS: PersonaOption[] = [
   {
     id: 'male',
     label: 'Male',
-    description: 'A confident male voice for your counselling sessions.',
+    description: 'A confident male voice',
     gradient: 'from-blue-500 to-indigo-600',
     playingRing: 'ring-blue-400',
     waveBarClass: 'bg-blue-500',
@@ -34,7 +34,7 @@ const PERSONAS: PersonaOption[] = [
   {
     id: 'female',
     label: 'Female',
-    description: 'A warm female voice for your counselling sessions.',
+    description: 'A confident female voice',
     gradient: 'from-pink-500 to-rose-600',
     playingRing: 'ring-pink-400',
     waveBarClass: 'bg-pink-500',
@@ -154,15 +154,15 @@ export default function SettingsPage(): React.ReactElement {
       {/* Select Your Counsellor Voice card */}
       <div className="mt-8 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3">
-          <Image src={logoApp} alt="HelloIvy" height={32} className="w-auto" />
+          <Image src={logoApp} alt="HelloIvy" height={28} className="w-auto" />
           <Label size="lg" className="font-bold">
             Select Your Counsellor Voice
           </Label>
         </div>
-        <Paragraph size="sm" className="mt-1 text-neutral-500">
+        {/* <Paragraph size="sm" className="mt-1 text-neutral-500">
           Select how you want HelloIvy&apos;s AI assistant to sound when
           interacting with you.
-        </Paragraph>
+        </Paragraph> */}
 
         {loading ? (
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
