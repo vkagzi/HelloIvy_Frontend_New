@@ -293,8 +293,21 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
             if (sessionInfo?.metadata) {
               const meta = sessionInfo.metadata;
               if (meta.is_paused) setIsPaused(true);
-              if (typeof meta.total_paused_seconds === 'number')
-                setTotalPausedSeconds(meta.total_paused_seconds);
+              // Calculate effective paused seconds including any ongoing pause
+              let effectivePaused = typeof meta.total_paused_seconds === 'number'
+                ? meta.total_paused_seconds
+                : 0;
+              if (meta.is_paused && Array.isArray(meta.pause_events)) {
+                const lastEvent = meta.pause_events[meta.pause_events.length - 1] as
+                  | { paused_at?: string; resumed_at?: string | null }
+                  | undefined;
+                if (lastEvent?.paused_at && !lastEvent.resumed_at) {
+                  const pausedAt = new Date(lastEvent.paused_at).getTime();
+                  const ongoingSeconds = Math.floor((Date.now() - pausedAt) / 1000);
+                  effectivePaused += ongoingSeconds;
+                }
+              }
+              setTotalPausedSeconds(effectivePaused);
             }
           } catch (e) {
             const error = e as { message?: string };

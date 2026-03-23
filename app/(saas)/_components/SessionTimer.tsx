@@ -33,6 +33,17 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
 }) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const hasExpiredRef = useRef(false);
+  // Track when we just resumed so we don't fire expired on stale first tick
+  const justResumedRef = useRef(false);
+  const prevIsPausedRef = useRef(isPaused);
+
+  // Detect pause→unpause transitions
+  useEffect(() => {
+    if (prevIsPausedRef.current && !isPaused) {
+      justResumedRef.current = true;
+    }
+    prevIsPausedRef.current = isPaused;
+  }, [isPaused]);
 
   const updateTimer = useCallback(() => {
     if (isPaused) return;
@@ -51,10 +62,12 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
     setTimeRemaining(remaining);
 
     // Fire the expired callback exactly once when remaining hits 0
-    if (remaining === 0 && !hasExpiredRef.current) {
+    // Skip the first tick after resuming to let props stabilize
+    if (remaining === 0 && !hasExpiredRef.current && !justResumedRef.current) {
       hasExpiredRef.current = true;
       onTimeExpired?.();
     }
+    justResumedRef.current = false;
   }, [isPaused, sessionCreatedAt, totalPausedSeconds, onTimeExpired]);
 
   useEffect(() => {
