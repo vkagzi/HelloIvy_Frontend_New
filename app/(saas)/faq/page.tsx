@@ -35,7 +35,7 @@ const FAQPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-4">
         <Heading level={2} className="font-extrabold text-neutral-900">
-          Top FAQs for ReachIvy AI Platform
+          FAQs - All you need to know!
         </Heading>
 
         <P>

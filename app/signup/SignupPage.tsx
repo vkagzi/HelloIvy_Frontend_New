@@ -600,7 +600,7 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
       <SignUpLeftCol />
       {/* Right column: 100% on mobile, 60% on md+ */}
       <div className="flex w-full items-center justify-center md:w-3/5">
-        <div className="w-full max-w-md px-6 py-12 md:px-12">
+        <div className="w-full max-w-lg px-6 py-12 md:px-12">
           {/* Logo */}
           <div className="mb-6 flex">
             <Image
@@ -637,7 +637,7 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
                     />
                   )}
                 />
-                <div className="flex">
+                <div className="flex items-center gap-3">
                   <Button
                     variant="primary"
                     size="md"
@@ -645,8 +645,11 @@ export default function SignUp({ isForgot }: SignUpProps): React.ReactElement {
                     type="submit"
                     disabled={isEmailSubmitting}
                   />
+                  <span className="text-xs text-gray-500">
+                    Didn’t receive the OTP? Check your <span className="font-medium">spam folder</span>.
+                  </span>
                 </div>
-                <Paragraph size="sm" className="flex gap-1">
+                <Paragraph size="sm" className="flex gap-3">
                   Already have an account?{' '}
                   <ButtonLink href="/login" label="Login" />
                 </Paragraph>
