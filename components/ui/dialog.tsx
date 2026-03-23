@@ -25,8 +25,9 @@ export function DialogTrigger({ children, ...props }: RadixDialog.DialogTriggerP
 export function DialogContent({
   children,
   className,
+  hideCloseButton,
   ...props
-}: RadixDialog.DialogContentProps) {
+}: RadixDialog.DialogContentProps & { hideCloseButton?: boolean }) {
   return (
     <RadixDialog.Portal>
       <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
@@ -38,22 +39,24 @@ export function DialogContent({
         {...props}
       >
         {children}
-        <RadixDialog.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none">
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-          <span className="sr-only">Close</span>
-        </RadixDialog.Close>
+        {!hideCloseButton && (
+          <RadixDialog.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none">
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            <span className="sr-only">Close</span>
+          </RadixDialog.Close>
+        )}
       </RadixDialog.Content>
     </RadixDialog.Portal>
   );

@@ -22,6 +22,7 @@ import type {
   ConversationConfig,
   ConversationMessage,
 } from './types';
+import { Button } from '@/components/ui/button';
 
 /** ================== Transcript Helpers ================== */
 function loadTranscript(prefix: string, sessionId: string): ConversationMessage[] {
@@ -89,7 +90,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Communication mode selection modal
-  const [showModeModal, setShowModeModal] = useState(true);
+  const [showModeModal, setShowModeModal] = useState(false);
 
   // Realtime voice mode
   const [conversationMode, setConversationMode] = useState<'chat' | 'voice'>('chat');
@@ -307,7 +308,11 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
           setMessages(parsed.messages);
           setQuestionsCompleted(parsed.questionsCompleted);
           setProgressPercentage(parsed.progressPercentage);
-          if (parsed.sessionEnded) setSessionEnded(true);
+          if (parsed.sessionEnded) {
+            setSessionEnded(true);
+          } else {
+            setShowModeModal(true);
+          }
           saveTranscript(transcriptKeyPrefix, sessionId, parsed.messages);
           setIsLoading(false);
           return;
@@ -550,7 +555,38 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                     accentColor={theme.timerAccent}
                   />
                 )}
-                <button
+                {/* Switch to Text / Voice button */}
+                {!sessionEnded && !isInputBlockedByTimer && (
+                  <Button
+                    size="sm"
+                    onClick={handleMicToggle}
+                    disabled={voiceConnecting || voiceDisconnecting || isPaused || isLoading}
+                    className={`group flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 ${
+                      voiceConnected
+                        ? 'border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100'
+                        : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
+                    }`}
+                    title={voiceConnected ? 'Switch to text mode' : 'Switch to voice mode'}
+                  >
+                    {voiceConnected ? (
+                      <>
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span>Switch to Text</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                        <span>Switch to Voice</span>
+                      </>
+                    )}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
                   onClick={() => setShowDebugDialog(true)}
                   className="group flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-purple-100 hover:shadow-sm"
                   title="View debugging information"
@@ -559,7 +595,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                   </svg>
                   <span>Debug</span>
-                </button>
+                </Button>
               </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
                 Question {questionsCompleted + 1}
@@ -815,7 +851,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
 
       {/* Communication Mode Selection Modal */}
       <CommunicationModeModal
-        open={showModeModal}
+        open={showModeModal && !sessionEnded && !isInputBlockedByTimer}
         isPaused={isPaused}
         onSelectText={async () => {
           // If paused, resume the session when user picks text
