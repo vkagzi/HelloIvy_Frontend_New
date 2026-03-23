@@ -115,6 +115,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     isRecording: voiceRecording,
     isSpeaking: voiceSpeaking,
     isDisconnecting: voiceDisconnecting,
+    highlightLastBot,
     transcript: voiceTranscript,
     realtimeTokenUsage,
     audioLevelRef: voiceAudioLevelRef,
@@ -199,8 +200,11 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
         content: m.content,
       }));
     const lastBot = [...messages].reverse().find((m) => m.type === 'bot');
+    // Detect brand-new session: only the intro message exists, no user messages yet
+    const nonSystemMessages = messages.filter((m) => m.type !== 'system');
+    const isNewSession = !nonSystemMessages.some((m) => m.type === 'user');
     setConversationMode('voice');
-    await connectVoice(chatHistory, lastBot?.content);
+    await connectVoice(isNewSession ? [] : chatHistory, lastBot?.content, isNewSession);
   }, [messages, connectVoice]);
 
   const deactivateVoiceMode = useCallback(async () => {
@@ -573,7 +577,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                   <Button
                     size="sm"
                     onClick={handleMicToggle}
-                    disabled={voiceConnecting || voiceDisconnecting || isPaused || isLoading}
+                    disabled={voiceConnecting || voiceDisconnecting || voiceSpeaking || isPaused || isLoading}
                     className={`group flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                       voiceConnected
                         ? 'border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100'
@@ -644,8 +648,10 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
           ref={messagesContainerRef}
           className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-4"
         >
-          {messages.map((m, index) => {
-            const isLatest = m.type === 'bot' && index === messages.length - 1;
+          {(() => {
+            const lastBotIndex = messages.reduce((acc, msg, i) => msg.type === 'bot' ? i : acc, -1);
+            return messages.map((m, index) => {
+            const isLatest = m.type === 'bot' && index === lastBotIndex;
 
             // System messages (e.g. medium-switch indicators)
             if (m.type === 'system') {
@@ -684,6 +690,10 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                       m.type === 'user'
                         ? `ml-12 bg-linear-to-r ${theme.bubbleFrom} ${theme.bubbleTo} text-white`
                         : 'border bg-white text-gray-900 shadow-sm'
+                    }${
+                      isLatest && highlightLastBot
+                        ? ' ring-2 ring-indigo-400 ring-offset-1 animate-pulse'
+                        : ''
                     } `}
                   >
                     {m.type === 'user' ? (
@@ -716,7 +726,8 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                 </div>
               </div>
             );
-          })}
+          });
+          })()}
 
           {/* Loading indicator */}
           {isLoading && !sessionEnded && (
@@ -795,7 +806,8 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                   <button
                     onClick={handleMicToggle}
                     type="button"
-                    className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-red-100 text-red-500 transition-colors hover:bg-red-200"
+                    disabled={voiceSpeaking}
+                    className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${voiceSpeaking ? 'cursor-not-allowed bg-red-50 text-red-300' : 'cursor-pointer bg-red-100 text-red-500 hover:bg-red-200'}`}
                     title="Disconnect voice"
                   >
                     <FiIcon name="phone-slash" className="h-4 w-4" />

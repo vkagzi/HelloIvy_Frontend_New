@@ -55,6 +55,8 @@ export interface RealtimeVoiceClientConfig {
   onTokenUsage?: (usage: RealtimeTokenUsage) => void;
   /** Fired when the backend sends updated session progress (step count, completion) */
   onSessionProgress?: (progress: SessionProgress) => void;
+  /** Fired when a system response (intro, mode-switch) is playing — UI should highlight the last bot bubble */
+  onHighlightLastBot?: (highlight: boolean) => void;
 }
 
 export class RealtimeVoiceClient {
@@ -80,6 +82,8 @@ export class RealtimeVoiceClient {
   private _userTranscriptParts: Map<string, string> = new Map();
   /** Whether a user placeholder is active in the transcript */
   private _userPlaceholderActive = false;
+  /** When > 0, suppress transcript updates for the next N assistant responses */
+  private _skipTranscriptCount = 0;
   /** Silent reconnection state */
   private _reconnecting = false;
   private _reconnectAttempts = 0;
@@ -284,6 +288,12 @@ export class RealtimeVoiceClient {
   promptContinuation(lastBotMessage: string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
+    // Tell backend to skip logging the AI's response (the message context already exists in DB)
+    this.ws.send(JSON.stringify({ type: 'session.skip_logging', count: 1 }));
+    // Skip appending the AI's transcript to the conversation UI
+    this._skipTranscriptCount += 1;
+    this.config.onHighlightLastBot?.(true);
+
     this.ws.send(
       JSON.stringify({
         type: 'conversation.item.create',
@@ -294,6 +304,37 @@ export class RealtimeVoiceClient {
             {
               type: 'input_text',
               text: `[System: The user has switched from text chat to voice mode. Your last message was: "${lastBotMessage}". Please briefly acknowledge the switch to voice mode and continue the conversation naturally. Do NOT repeat the full message — just smoothly pick up where you left off. Be concise and conversational.]`,
+            },
+          ],
+        },
+      }),
+    );
+    this.triggerResponse();
+  }
+
+  /**
+   * Announce a static intro message at the start of a brand-new voice session.
+   * The intro text is sent as context and the AI is asked to read it aloud verbatim.
+   */
+  announceIntro(introMessage: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    // Tell backend to skip logging the AI's response (the intro is already stored in DB)
+    this.ws.send(JSON.stringify({ type: 'session.skip_logging', count: 1 }));
+    // Skip appending the AI's transcript to the conversation UI
+    this._skipTranscriptCount += 1;
+    this.config.onHighlightLastBot?.(true);
+
+    this.ws.send(
+      JSON.stringify({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: `[System: A new voice session has started. Please speak the following intro message to the student exactly as written, word for word. Do not add anything else, do not paraphrase, and do not follow up with a question yet. Just speak the intro naturally:\n\n${introMessage}]`,
             },
           ],
         },
@@ -355,6 +396,10 @@ export class RealtimeVoiceClient {
           return;
         }
         console.log(`[${this.label}] sendSwitchToText — sending switch-to-text conversation item + response.create`);
+        // Tell backend to skip logging the AI's response (this is a mode-switch acknowledgement)
+        this.ws.send(JSON.stringify({ type: 'session.skip_logging', count: 1 }));
+        // Skip appending the AI's transcript to the conversation UI
+        this._skipTranscriptCount += 1;
         this.ws.send(
           JSON.stringify({
             type: 'conversation.item.create',
@@ -364,7 +409,7 @@ export class RealtimeVoiceClient {
               content: [
                 {
                   type: 'input_text',
-                  text: '[System: The user is switching from voice to text mode. The session will continue in text. Please briefly acknowledge the switch — for example "Sure, let\'s continue over text!" Keep it to one short sentence. Do NOT say goodbye or end the session.]',
+                  text: '[System: The user is switching from voice to text mode. Say exactly this and nothing else: "Sure, let\'s switch to text"]',
                 },
               ],
             },
@@ -570,7 +615,10 @@ export class RealtimeVoiceClient {
           break;
 
         case 'conversation.item.created':
-          this.handleConversationItem(message);
+          // Don't create user placeholders for system-injected items when skipping
+          if (this._skipTranscriptCount <= 0) {
+            this.handleConversationItem(message);
+          }
           break;
 
         case 'response.audio.delta':
@@ -578,7 +626,9 @@ export class RealtimeVoiceClient {
           break;
 
         case 'response.audio_transcript.delta':
-          this.handleTranscriptDelta(message, 'assistant');
+          if (this._skipTranscriptCount <= 0) {
+            this.handleTranscriptDelta(message, 'assistant');
+          }
           break;
 
         case 'conversation.item.input_audio_transcription.completed':
@@ -589,6 +639,11 @@ export class RealtimeVoiceClient {
           const resp = message.response as Record<string, unknown> | undefined;
           const status = resp?.status;
           console.log(`[${this.label}] Response completed (status: ${status})`);
+          // If this response was being skipped (system prompt), decrement counter
+          if (this._skipTranscriptCount > 0 && status !== 'cancelled') {
+            this._skipTranscriptCount -= 1;
+            this.config.onHighlightLastBot?.(false);
+          }
           // Extract and accumulate token usage
           if (resp?.usage && status !== 'cancelled') {
             this.accumulateTokenUsage(resp.usage as Record<string, unknown>);

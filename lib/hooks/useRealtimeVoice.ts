@@ -33,6 +33,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [highlightLastBot, setHighlightLastBot] = useState(false);
   const [transcript, setTranscript] = useState<RealtimeVoiceMessage[]>([]);
   const [realtimeTokenUsage, setRealtimeTokenUsage] = useState<RealtimeTokenUsage | null>(null);
 
@@ -119,7 +120,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
   // ─── public API ───────────────────────────────────────────
 
   const connectVoice = useCallback(
-    async (chatHistory: { role: 'user' | 'assistant'; content: string }[], lastBotMessage?: string) => {
+    async (chatHistory: { role: 'user' | 'assistant'; content: string }[], lastBotMessage?: string, isNewSession?: boolean) => {
       if (clientRef.current || isConnectingRef.current) return;
       isConnectingRef.current = true;
       setIsConnecting(true);
@@ -214,6 +215,9 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
           onSessionProgress: (progress) => {
             onSessionProgressRef.current?.(progress);
           },
+          onHighlightLastBot: (highlight) => {
+            setHighlightLastBot(highlight);
+          },
         });
 
         clientRef.current = client;
@@ -223,7 +227,18 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
         await new Promise((r) => setTimeout(r, 500));
 
         if (chatHistory.length > 0) client.seedConversationHistory(chatHistory);
-        if (lastBotMessage) client.promptContinuation(lastBotMessage);
+        if (isNewSession && lastBotMessage) {
+          client.announceIntro(lastBotMessage);
+        } else if (lastBotMessage) {
+          client.promptContinuation(lastBotMessage);
+        }
+
+        // Pre-mute the mic if the bot is about to speak (intro or
+        // continuation) so no gibberish gets captured before it finishes.
+        // onPlaybackFinished will unmute once the bot is done speaking.
+        if (lastBotMessage) {
+          isMutedRef.current = true;
+        }
 
         await openMic();
       } catch (err) {
@@ -297,7 +312,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
   }, []);
 
   return {
-    isConnected, isConnecting, isRecording, isSpeaking, isDisconnecting, transcript, realtimeTokenUsage, audioLevelRef,
+    isConnected, isConnecting, isRecording, isSpeaking, isDisconnecting, highlightLastBot, transcript, realtimeTokenUsage, audioLevelRef,
     connectVoice, disconnectVoice, startRecording, stopRecording, toggleRecording, sendText, stopAudio,
   };
 }
