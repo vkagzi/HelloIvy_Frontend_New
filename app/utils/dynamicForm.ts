@@ -211,6 +211,21 @@ export const generateDynamicFormSchema = (
 
         // --- Add conditional validation for fields inside repeatable ---
         let objSchema: ZodType<{ [x: string]: unknown }> = z.object(objShape);
+        objSchema = (objSchema as z.ZodObject<any>).refine(
+          (data) => {
+            const startDate = data.startDate;
+            const endDate = data.endDate;
+
+            // Skip if either missing (required validation handles that)
+            if (!startDate || !endDate) return true;
+
+            return new Date(startDate) < new Date(endDate);
+          },
+          {
+            message: 'End date must be after Start date',
+            path: ['endDate'],
+          }
+        );
         item.fields.forEach((fid) => {
           const field = fieldDefs.find((f) => f.id === fid);
           if (field?.validationDependsOn) {
@@ -461,9 +476,7 @@ export const generateSubSchema = (
         const level = layout.type;
 
         // STUDENTS
-        if (
-          level === 'College/Undergraduate'
-        ) {
+        if (level === 'College/Undergraduate') {
           return end >= currentYear && end > start;
         }
 
@@ -520,8 +533,6 @@ export const generateSubSchema = (
     //   }
     // );
   }
-
-  
 
   const schema = z.object({ [layout.type]: z.array(layoutObjectSchema) });
   return {
