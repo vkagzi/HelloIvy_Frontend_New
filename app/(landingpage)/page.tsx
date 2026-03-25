@@ -116,13 +116,13 @@ export default function Home(): React.ReactElement {
                   Your <span className="gradient-text">AI Powered</span> Platform for Career & Educational Success
                 </h1>
                 <p>
-                  Empowering schools & colleges with personalized, data-driven guidance—from career discovery to college admission—backed by 14+ years of expertise.
+                  Empowering schools & colleges with personalized, data-driven guidance—from Career & Degree Selectionto college admission—backed by 14+ years of expertise.
                 </p>
               </div>
               <div className="intro-image">
                 <img
                   src="/images/OBJECTS.png"
-                  alt="HelloIvy AI-powered educational platform dashboard showing career discovery and college selection tools"
+                  alt="HelloIvy AI-powered educational platform dashboard showing Career & Degree Selectionand college selection tools"
                   className="responsive-img"
                 />
               </div>
@@ -143,7 +143,7 @@ export default function Home(): React.ReactElement {
                 Where Human Expertise <span className="gradient-text">Meets AI</span>
               </h2>
               <p className="about-description">
-                An AI-powered platform built to elevate counselors, empower students, and transform the career discovery journey. Designed as a smart co-pilot, it delivers personalized, data-driven support to help students uncover passions, build standout profiles, and gain admission to top global universities.
+                An AI-powered platform built to elevate counselors, empower students, and transform the Career & Degree Selectionjourney. Designed as a smart co-pilot, it delivers personalized, data-driven support to help students uncover passions, build standout profiles, and gain admission to top global universities.
               </p>
             </div>
 
@@ -315,7 +315,7 @@ export default function Home(): React.ReactElement {
             <div className="features-content">
               <div className="features-list">
                 {[
-                  { icon: '💼', text: 'Career Discovery' },
+                  { icon: '💼', text: 'Career & Degree Selection' },
                   { icon: '👤', text: 'Profile Builder' },
                   { icon: '🎓', text: 'Degree Selector' },
                   { icon: '🏫', text: 'College Selection' },

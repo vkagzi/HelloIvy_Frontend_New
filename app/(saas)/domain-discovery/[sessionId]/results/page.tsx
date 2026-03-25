@@ -772,7 +772,7 @@ const DomainResultsPage: React.FC = () => {
             size="lg"
             className="bg-linear-to-r from-[#7f12f3] to-[#1a86f1] font-semibold hover:from-[#6a0fd0] hover:to-[#1570d0]"
           >
-            <Link href="/career-discovery">🚀 Start Career Discovery</Link>
+            <Link href="/career-discovery">🚀 Start Career & Degree Selection</Link>
           </Button>
           {/* <Button
             onClick={downloadResultsFile}

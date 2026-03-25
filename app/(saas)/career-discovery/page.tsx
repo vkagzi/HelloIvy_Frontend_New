@@ -92,7 +92,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     }
 
     if (!hasDomainSessions || !latestDomainSession) {
-      setError('Please complete Domain Discovery before starting Career Discovery');
+      setError('Please complete Domain Discovery before starting Career & Degree Selection');
       return;
     }
 
@@ -115,17 +115,17 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       // Navigate to conversation page with session ID
       router.push(`/career-discovery/${session.session_id}/conversations`);
     } catch (err: any) {
-      console.error('Failed to start career discovery:', err);
+      console.error('Failed to start Career & Degree Selection:', err);
       
       // Check if the error is about missing domain discovery
       if (err?.message?.includes('Domain discovery required') || 
           err?.action_required === 'explore_domain_discovery') {
-        setError('Please complete Domain Discovery before starting Career Discovery. You will be redirected...');
+        setError('Please complete Domain Discovery before starting Career & Degree Selection. You will be redirected...');
         setTimeout(() => {
           router.push('/domain-discovery');
         }, 2000);
       } else {
-        setError('Failed to start career discovery. Please try again.');
+        setError('Failed to start Career & Degree Selection. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -177,7 +177,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           {/* Left Content */}
           <div className="flex-1">
             <span className="mb-2 bg-linear-to-r from-red-500 via-pink-500 via-purple-500 via-purple-700 via-indigo-600 to-teal-400 bg-clip-text text-2xl font-semibold text-transparent md:text-2xl">
-              Career Discovery
+              Career & Degree Selection
             </span>
             <Heading
               level={1}
@@ -186,7 +186,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             >
               Ready to start
               <br />
-              Career Discovery?
+              Career & Degree Selection?
             </Heading>
           </div>
 
@@ -208,7 +208,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                   Domain Discovery Required
                 </h3>
                 <p className="mb-4 text-sm text-blue-800">
-                  Before starting Career Discovery, you need to complete Domain Discovery first. 
+                  Before starting Career & Degree Selection, you need to complete Domain Discovery first. 
                   This helps us understand your interests and strengths to provide better career recommendations.
                 </p>
                 <Button
@@ -322,7 +322,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                   Based on Your Domain Discovery Session
                 </h3>
                 <p className="mb-2 text-sm text-green-800">
-                  Your career discovery will be personalized based on your most recent domain discovery session:
+                  Your career & degree selection will be personalized based on your most recent domain discovery session:
                 </p>
                 <div className="rounded-md bg-white p-3 text-sm">
           

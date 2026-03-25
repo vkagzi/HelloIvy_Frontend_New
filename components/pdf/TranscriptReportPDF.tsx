@@ -26,7 +26,7 @@ const themes = {
     disclaimerBorder: '#d8b4fe',
     disclaimerText: '#6b21a8',
     coachLabel: 'Career Coach',
-    title: 'Career Discovery Session Transcript',
+    title: 'Career & Degree SelectionSession Transcript',
   },
 } as const;
 
