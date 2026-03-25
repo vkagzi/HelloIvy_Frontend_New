@@ -61,7 +61,7 @@ export function DomainDebugDialog({
       <DialogContent className="max-w-6xl">
         <DialogTitle>🐛 Debug Information</DialogTitle>
         <DialogDescription>
-          Technical details about the domain discovery session
+          Technical details about the Stream & Subject Selection session
         </DialogDescription>
 
         {/* Timer override toggle */}

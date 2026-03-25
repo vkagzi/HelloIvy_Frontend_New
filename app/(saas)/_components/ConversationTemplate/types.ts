@@ -153,7 +153,7 @@ export interface ConversationSlots {
     realtimeTokenUsage?: RealtimeTokenUsage | null;
   }) => ReactNode;
 
-  /** Exit confirmation dialog (optional, e.g. domain discovery warns you) */
+  /** Exit confirmation dialog (optional, e.g. Stream & Subject Selection warns you) */
   renderExitDialog?: (params: {
     onConfirm: () => void;
     onCancel: () => void;
@@ -166,7 +166,7 @@ export interface ConversationConfig {
   featureId: string;
   /** Display label for voice hook, e.g. 'DomainDiscovery' */
   featureLabel: string;
-  /** Page title with emoji, e.g. '🧭 Domain Discovery Journey' */
+  /** Page title with emoji, e.g. '🧭 Stream & Subject Selection Journey' */
   pageTitle: string;
   /** Base route for the module, e.g. '/domain-discovery' */
   baseRoute: string;

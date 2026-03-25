@@ -123,8 +123,8 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
       // Navigate to conversation page with session ID
       router.push(`/domain-discovery/${session.session_id}/conversations`);
     } catch (err) {
-      console.error('Failed to start domain discovery:', err);
-      setError('Failed to start domain discovery. Please try again.');
+      console.error('Failed to start Stream & Subject Selection:', err);
+      setError('Failed to start Stream & Subject Selection. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -175,7 +175,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
           {/* Left Content */}
           <div className="flex-1">
             <span className="mb-2 bg-linear-to-r from-teal-500 via-emerald-500 to-blue-400 bg-clip-text text-2xl font-semibold text-transparent md:text-2xl">
-              Domain Discovery
+              Stream & Subject Selection
             </span>
             <Heading
               level={1}
@@ -324,7 +324,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
             <li className="flex gap-3">
               <span className="min-w-5 font-semibold">6</span>
               <span>
-                Domain Discovery is a prerequisite for Career & Degree Selection - understanding
+                Stream & Subject Selection is a prerequisite for Career & Degree Selection - understanding
                 your domains helps identify specific career paths later.
               </span>
             </li>
@@ -343,7 +343,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                 <div className="flex-1">
                   <p className="font-semibold text-orange-800">Profile incomplete ({completionPercentage}%)</p>
                   <p className="mt-1 text-sm text-orange-700">
-                    You need to complete your profile before starting a domain discovery session.
+                    You need to complete your profile before starting a Stream & Subject Selection session.
                     {missingSections.length > 0 && (
                       <> Missing: {missingSections.map((s, i) => {
                         const slugMap: Record<string, string> = {

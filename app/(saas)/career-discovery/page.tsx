@@ -60,7 +60,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           }
         }
       } catch (err) {
-        console.error('Failed to check domain discovery sessions:', err);
+        console.error('Failed to check Stream & Subject Selection sessions:', err);
         setHasDomainSessions(false);
         setLatestDomainSession(null);
         setDomainRecommendations([]);
@@ -92,7 +92,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     }
 
     if (!hasDomainSessions || !latestDomainSession) {
-      setError('Please complete Domain Discovery before starting Career & Degree Selection ');
+      setError('Please complete Stream & Subject Selection before starting Career & Degree Selection ');
       return;
     }
 
@@ -117,10 +117,10 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     } catch (err: any) {
       console.error('Failed to start Career & Degree Selection :', err);
       
-      // Check if the error is about missing domain discovery
-      if (err?.message?.includes('Domain discovery required') || 
+      // Check if the error is about missing Stream & Subject Selection
+      if (err?.message?.includes('Stream & Subject Selection required') || 
           err?.action_required === 'explore_domain_discovery') {
-        setError('Please complete Domain Discovery before starting Career & Degree Selection . You will be redirected...');
+        setError('Please complete Stream & Subject Selection before starting Career & Degree Selection . You will be redirected...');
         setTimeout(() => {
           router.push('/domain-discovery');
         }, 2000);
@@ -196,7 +196,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           </div>
         </div>
 
-        {/* Domain Discovery Requirement Banner */}
+        {/* Stream & Subject Selection Requirement Banner */}
         {!isCheckingDomain && !hasDomainSessions && (
           <div className="mb-6 rounded-lg border-2 border-blue-300 bg-blue-50 p-6">
             <div className="flex items-start gap-4">
@@ -205,10 +205,10 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
               </div>
               <div className="flex-1">
                 <h3 className="mb-2 text-lg font-semibold text-blue-900">
-                  Domain Discovery Required
+                  Stream & Subject Selection Required
                 </h3>
                 <p className="mb-4 text-sm text-blue-800">
-                  Before starting Career & Degree Selection , you need to complete Domain Discovery first. 
+                  Before starting Career & Degree Selection , you need to complete Stream & Subject Selection first. 
                   This helps us understand your interests and strengths to provide better career recommendations.
                 </p>
                 <Button
@@ -217,7 +217,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                   onClick={() => router.push('/domain-discovery')}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
-                  Go to Domain Discovery
+                  Go to Stream & Subject Selection
                 </Button>
               </div>
             </div>
@@ -310,7 +310,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           </div>
         )}
 
-        {/* Domain Discovery Session Info */}
+        {/* Stream & Subject Selection Session Info */}
         {!isCheckingDomain && hasDomainSessions && latestDomainSession && (
           <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-5">
             <div className="flex items-start gap-3">
@@ -319,10 +319,10 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
               </div>
               <div className="flex-1">
                 <h3 className="mb-1 text-base font-semibold text-green-900">
-                  Based on Your Domain Discovery Session
+                  Based on Your Stream & Subject Selection Session
                 </h3>
                 <p className="mb-2 text-sm text-green-800">
-                  Your Career & Degree Selection  will be personalized based on your most recent domain discovery session:
+                  Your Career & Degree Selection  will be personalized based on your most recent Stream & Subject Selection session:
                 </p>
                 <div className="rounded-md bg-white p-3 text-sm">
           
@@ -397,7 +397,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
               <span>
                 {latestDomainSession ? (
                   <>
-                    Your career recommendations will be based on your Domain Discovery insights 
+                    Your career recommendations will be based on your Stream & Subject Selection insights 
                     from <strong>{formatDate(latestDomainSession.created_at)}</strong>, 
                     combined with your profile data to provide highly personalized suggestions.
                   </>
@@ -468,7 +468,7 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             {isLoading
               ? 'Starting...'
               : !hasDomainSessions
-                ? 'Complete Domain Discovery First'
+                ? 'Complete Stream & Subject Selection First'
                 : sessions.length > 0
                   ? 'Start New Session'
                   : 'Start Session'}

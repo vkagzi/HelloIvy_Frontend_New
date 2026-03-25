@@ -24,7 +24,7 @@ function sanitizeText(text: string): string {
 
 /**
  * Shared helper to build a professional transcript PDF.
- * Used by both domain discovery and Career & Degree Selection transcripts.
+ * Used by both Stream & Subject Selection and Career & Degree Selection transcripts.
  */
 function buildTranscriptPDF(options: {
   title: string;
@@ -280,12 +280,12 @@ function buildTranscriptPDF(options: {
 }
 
 /**
- * Generate a PDF transcript from domain discovery conversation data
+ * Generate a PDF transcript from Stream & Subject Selection conversation data
  */
 export function generateTranscriptPDF(transcript: TranscriptData): Blob {
   return buildTranscriptPDF({
-    title: 'Domain Discovery Transcript',
-    headerSubtitle: 'Domain Discovery Session Transcript',
+    title: 'Stream & Subject Selection Transcript',
+    headerSubtitle: 'Stream & Subject Selection Session Transcript',
     brandColor: { r: 51, g: 119, b: 255 },      // #3377ff
     accentColor: { r: 51, g: 119, b: 255 },
     lightBg: { r: 235, g: 242, b: 255 },          // #ebf2ff

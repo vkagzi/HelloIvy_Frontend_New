@@ -167,7 +167,7 @@ export default function AdminUserDetailPage() {
       {/* Module Stats Cards */}
       <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ModuleCard
-          title="Domain Discovery"
+          title="Stream & Subject Selection"
           module="domain"
           stats={user.modules.domain_discovery}
           accessToken={(session as any)?.accessToken}
