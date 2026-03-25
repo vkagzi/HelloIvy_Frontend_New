@@ -14,7 +14,7 @@ const gray = '#4b5563';
 
 /* ── styles ─────────────────────────────────────────────── */
 const s = StyleSheet.create({
-  page: { padding: 30, fontFamily: 'Helvetica', fontSize: 9, color: '#1f2937' },
+  page: { paddingTop: 30, paddingHorizontal: 30, paddingBottom: 55, fontFamily: 'Helvetica', fontSize: 9, color: '#1f2937' },
   pageNumber: { position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center', fontSize: 7, color: '#9ca3af' },
 
   /* summary page */
@@ -96,7 +96,7 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
 }) => (
   <Document>
     {/* ===== Summary page ===== */}
-    <Page size="A4" style={s.page}>
+    <Page size="A4" style={s.page} wrap>
       <Image src={LOGO_APP_BASE64} style={{ width: 120, height: 25, marginBottom: 12 }} />
       <View style={s.summaryHeader}>
         <Text style={s.summaryTitle}>Domain Discovery Results</Text>
@@ -128,32 +128,16 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
       </View>
 
 
-      {(interests.length > 0 || strengths.length > 0) && (
-        <View style={s.twoColSummary}>
-          {interests.length > 0 && (
-            <View style={s.interestsBox}>
-              <Text style={s.summaryLabel}>Your Interests</Text>
-              <View style={s.chipRow}>
-                {interests.map((item, i) => (
-                  <View key={i} style={s.chipBlue}>
-                    <Text style={s.chipBlueText}>{item}</Text>
-                  </View>
-                ))}
+      {interests.length > 0 && (
+        <View style={{ marginTop: 10, backgroundColor: lightBlue, borderRadius: 8, padding: 10 }} wrap={false}>
+          <Text style={s.summaryLabel}>Your Interests</Text>
+          <View style={s.chipRow}>
+            {interests.map((item, i) => (
+              <View key={i} style={s.chipBlue}>
+                <Text style={s.chipBlueText}>{item}</Text>
               </View>
-            </View>
-          )}
-          {strengths.length > 0 && (
-            <View style={s.strengthsBox}>
-              <Text style={s.summaryLabel}>Your Strengths</Text>
-              <View style={s.chipRow}>
-                {strengths.map((item, i) => (
-                  <View key={i} style={s.chipTeal}>
-                    <Text style={s.chipTealText}>{item}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
+            ))}
+          </View>
         </View>
       )}
 

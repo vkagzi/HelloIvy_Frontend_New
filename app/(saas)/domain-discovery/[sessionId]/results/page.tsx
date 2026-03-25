@@ -45,7 +45,6 @@ const DomainResultsPage: React.FC = () => {
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   const [interestScores, setInterestScores] = useState<InterestScores | null>(null);
   const [interests, setInterests] = useState<string[]>([]);
-  const [strengths, setStrengths] = useState<string[]>([]);
   const [transcript, setTranscript] = useState<TranscriptData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
@@ -89,7 +88,6 @@ const DomainResultsPage: React.FC = () => {
       setRecommendations([...results.primary_domains, ...results.secondary_domains]);
       setInterestScores(results.riasec_scores);
       setInterests(results.interests_identified);
-      setStrengths(results.strengths_identified);
       
       // addToast('Results loaded successfully!', { type: 'success' });
     } catch (e) {
@@ -178,7 +176,7 @@ const DomainResultsPage: React.FC = () => {
         <DomainResultsPDF
           recommendations={recommendations}
           interests={interests}
-          strengths={strengths}
+          strengths={[]}
           studentName={studentName}
         />,
         `Domain_Discovery_Results_${studentName.replace(/\s+/g, '_')}`,
@@ -420,10 +418,9 @@ const DomainResultsPage: React.FC = () => {
                 ))}
               </div>
 
-              {/* Interests & Strengths */}
-              {(interests.length > 0 || strengths.length > 0) && (
-                <div className="mt-6 grid gap-6 md:grid-cols-2">
-                  {interests.length > 0 && (
+              {/* Interests */}
+              {interests.length > 0 && (
+                <div className="mt-6">
                     <div className="rounded-xl bg-[#ebf2ff] p-4">
                       <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
                         <span className="mr-2 rounded-lg bg-[#d6e4ff] p-1.5">
@@ -444,29 +441,6 @@ const DomainResultsPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                  )}
-                  {strengths.length > 0 && (
-                    <div className="rounded-xl bg-[#e8fafa] p-4">
-                      <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
-                        <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
-                          <svg className="h-4 w-4 text-[#14cecf]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                        </span>
-                        Your Strengths
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {strengths.map((strength, idx) => (
-                          <span
-                            key={idx}
-                            className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-[#0fa5a5] shadow-sm"
-                          >
-                            {strength}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
               </div>
