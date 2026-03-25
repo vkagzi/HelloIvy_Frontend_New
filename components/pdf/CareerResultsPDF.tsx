@@ -139,7 +139,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
         <Image src={LOGO_APP_BASE64} style={{ width: 80, height: 16, marginBottom: 8 }} />
         <View style={s.card}>
           {/* Header */}
-          <View style={[s.cardHeader, { backgroundColor: purple }]}>
+          <View wrap={false} style={[s.cardHeader, { backgroundColor: purple }]}>
             <View style={{ flex: 1 }}>
               <Text style={s.cardRank}>#{index + 1}</Text>
               <Text style={s.cardTitle}>{career.career_title}</Text>
@@ -157,21 +157,25 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
             <View style={s.twoCol}>
               {/* Left column */}
               <View style={s.col}>
-                <Text style={s.sectionTitle}>Career Overview</Text>
-                <Text style={s.sectionText}>{career.description}</Text>
+                <View wrap={false}>
+                  <Text style={s.sectionTitle}>Career Overview</Text>
+                  <Text style={s.sectionText}>{career.description}</Text>
+                </View>
 
-                <Text style={s.sectionTitle}>Why This Career Fits You</Text>
-                <Text style={s.sectionText}>{career.why_recommended}</Text>
+                <View wrap={false}>
+                  <Text style={s.sectionTitle}>Why This Career Fits You</Text>
+                  <Text style={s.sectionText}>{career.why_recommended}</Text>
+                </View>
 
                 {career.day_in_life ? (
-                  <>
+                  <View wrap={false}>
                     <Text style={s.sectionTitle}>A Day in the Life</Text>
                     <Text style={s.sectionText}>{career.day_in_life}</Text>
-                  </>
+                  </View>
                 ) : null}
 
                 {career.alignment_points?.length > 0 ? (
-                  <>
+                  <View wrap={false}>
                     <Text style={s.sectionTitle}>How This Matches Your Interests</Text>
                     {career.alignment_points.map((pt, i) => (
                       <View key={i} style={s.bulletItem}>
@@ -179,14 +183,14 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                         <Text style={s.bulletText}>{pt}</Text>
                       </View>
                     ))}
-                  </>
+                  </View>
                 ) : null}
               </View>
 
               {/* Right column */}
               <View style={s.col}>
                 {career.required_skills?.length > 0 ? (
-                  <>
+                  <View wrap={false}>
                     <Text style={s.sectionTitle}>Required Skills</Text>
                     <View style={s.chipRow}>
                       {career.required_skills.map((sk, i) => (
@@ -195,11 +199,11 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                         </View>
                       ))}
                     </View>
-                  </>
+                  </View>
                 ) : null}
 
                 {career.related_subjects?.length > 0 ? (
-                  <>
+                  <View wrap={false}>
                     <Text style={s.sectionTitle}>Related Subjects</Text>
                     <View style={s.chipRow}>
                       {career.related_subjects.map((subj, i) => (
@@ -208,11 +212,24 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                         </View>
                       ))}
                     </View>
-                  </>
+                  </View>
+                ) : null}
+
+                {career.degrees?.length > 0 ? (
+                  <View wrap={false}>
+                    <Text style={s.sectionTitle}>Potential Degrees</Text>
+                    <View style={s.chipRow}>
+                      {career.degrees.map((deg, i) => (
+                        <View key={i} style={[s.chip, { backgroundColor: '#fef3c7' }]}>
+                          <Text style={[s.chipText, { color: '#92400e' }]}>{deg}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
                 ) : null}
 
                 {career.next_steps?.length > 0 ? (
-                  <>
+                  <View wrap={false}>
                     <Text style={s.sectionTitle}>Next Steps</Text>
                     {career.next_steps.map((step, i) => (
                       <View key={i} style={[s.bulletItem, { alignItems: 'flex-start' }]}>
@@ -222,11 +239,11 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                         <Text style={s.stepText}>{step}</Text>
                       </View>
                     ))}
-                  </>
+                  </View>
                 ) : null}
 
                 {career.pros_and_cons && (career.pros_and_cons.pros?.length > 0 || career.pros_and_cons.cons?.length > 0) ? (
-                  <>
+                  <View wrap={false}>
                     <Text style={s.sectionTitle}>Pros & Cons</Text>
                     {career.pros_and_cons.pros?.length > 0 && (
                       <View style={s.prosBox}>
@@ -244,14 +261,14 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                         ))}
                       </View>
                     )}
-                  </>
+                  </View>
                 ) : null}
 
                 {career.work_life_balance ? (
-                  <>
+                  <View wrap={false}>
                     <Text style={s.sectionTitle}>Work-Life Balance</Text>
                     <Text style={s.sectionText}>{career.work_life_balance}</Text>
-                  </>
+                  </View>
                 ) : null}
               </View>
             </View>
