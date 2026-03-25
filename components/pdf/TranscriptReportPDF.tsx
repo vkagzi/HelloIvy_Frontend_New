@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, Link, StyleSheet } from '@react-pdf/renderer';
 import { LOGO_APP_BASE64 } from './logo-base64';
 
 /* ── theme presets ──────────────────────────────────────── */
@@ -37,8 +37,9 @@ const darkText = '#1f2937';
 const s = StyleSheet.create({
   page: { padding: 30, fontFamily: 'Helvetica', fontSize: 9, color: darkText },
   pageNumber: { position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center', fontSize: 7, color: '#9ca3af' },
-  footer: { position: 'absolute', bottom: 26, left: 30, right: 30, flexDirection: 'row', justifyContent: 'center', gap: 16 },
+  footer: { position: 'absolute', bottom: 26, left: 30, right: 30, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
   footerText: { fontSize: 7, color: '#9ca3af' },
+  footerLink: { fontSize: 7, color: '#9ca3af', textDecoration: 'none' },
 
   /* header banner */
   headerBanner: { borderRadius: 8, padding: 16, marginBottom: 14 },
@@ -163,7 +164,7 @@ const TranscriptReportPDF: React.FC<TranscriptReportPDFProps> = ({
         </View>
 
         <View style={s.footer} fixed>
-          <Text style={s.footerText}>helloivy.ai</Text>
+          <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
           <Text style={s.footerText}>|</Text>
           <Text style={s.footerText}>partners@reachivy.com</Text>
         </View>
@@ -211,7 +212,7 @@ const TranscriptReportPDF: React.FC<TranscriptReportPDFProps> = ({
           ))}
 
           <View style={s.footer} fixed>
-            <Text style={s.footerText}>helloivy.ai</Text>
+            <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
             <Text style={s.footerText}>|</Text>
             <Text style={s.footerText}>partners@reachivy.com</Text>
           </View>

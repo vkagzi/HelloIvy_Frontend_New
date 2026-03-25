@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, Link, StyleSheet } from '@react-pdf/renderer';
 import type { CareerRecommendation } from '@/lib/career-discovery-api';
 import { LOGO_APP_BASE64 } from './logo-base64';
 
@@ -69,8 +69,9 @@ const s = StyleSheet.create({
   /* disclaimer & footer */
   disclaimer: { marginTop: 14, padding: 10, backgroundColor: '#fdf4ff', borderRadius: 6, borderWidth: 0.5, borderColor: '#d8b4fe' },
   disclaimerText: { fontSize: 7, color: '#6b21a8', lineHeight: 1.5, textAlign: 'center', fontStyle: 'italic' },
-  footer: { position: 'absolute', bottom: 26, left: 30, right: 30, flexDirection: 'row', justifyContent: 'center', gap: 16 },
+  footer: { position: 'absolute', bottom: 26, left: 30, right: 30, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
   footerText: { fontSize: 7, color: '#9ca3af' },
+  footerLink: { fontSize: 7, color: '#9ca3af', textDecoration: 'none' },
 });
 
 /* ── helpers ─────────────────────────────────────────────── */
@@ -124,7 +125,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
       </View>
 
       <View style={s.footer} fixed>
-        <Text style={s.footerText}>helloivy.ai</Text>
+        <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
         <Text style={s.footerText}>|</Text>
         <Text style={s.footerText}>partners@reachivy.com</Text>
       </View>
@@ -135,6 +136,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
     {/* ===== One page per career ===== */}
     {recommendations.map((career, index) => (
       <Page key={index} size="A4" style={s.page} wrap>
+        <Image src={LOGO_APP_BASE64} style={{ width: 80, height: 16, marginBottom: 8 }} />
         <View style={s.card}>
           {/* Header */}
           <View style={[s.cardHeader, { backgroundColor: purple }]}>
@@ -256,7 +258,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
           </View>
         </View>
         <View style={s.footer} fixed>
-          <Text style={s.footerText}>helloivy.ai</Text>
+          <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
           <Text style={s.footerText}>|</Text>
           <Text style={s.footerText}>partners@reachivy.com</Text>
         </View>

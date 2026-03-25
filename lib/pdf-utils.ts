@@ -269,8 +269,11 @@ function buildTranscriptPDF(options: {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(156, 163, 175);
-    doc.text('helloivy.ai  |  partners@reachivy.com', margin, pageHeight - 10);
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+    const footerY = pageHeight - 10;
+    doc.textWithLink('helloivy.ai', margin, footerY, { url: 'https://helloivy.ai' });
+    const siteWidth = doc.getTextWidth('helloivy.ai');
+    doc.text(' | partners@reachivy.com', margin + siteWidth, footerY);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, footerY, { align: 'right' });
   }
 
   return doc.output('blob');
