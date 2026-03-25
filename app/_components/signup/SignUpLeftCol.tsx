@@ -159,10 +159,10 @@ export default function SignUpLeftCol(): React.ReactElement {
             <IvyWithoutBGLottie className="h-full w-full object-contain" />
           </div>
           <Heading level={3} className="mb-2 text-center font-extrabold">
-            Ivy Assistant
+            Hello, I'm Ivy
           </Heading>
           <Paragraph className="mb-6 text-center" size="sm">
-            AI-powered co-pilot for Career & Higher Education Guidance
+            Your AI powered co pilot for Career & Higher education guidance
           </Paragraph>
         </div>
       </div>

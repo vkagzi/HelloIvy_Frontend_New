@@ -110,7 +110,7 @@ const EditingWithoutBGLottie: React.FC<AnyLottieProps> = ({
   />
 );
 const IvyWithoutBGLottie: React.FC<AnyLottieProps> = ({
-  loop = 0,
+  loop = true,
   animate = true,
   className = '',
 }) => (
