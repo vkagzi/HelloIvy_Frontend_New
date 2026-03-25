@@ -30,7 +30,7 @@ export default function CommunicationModeModal({
       }}
     >
       <DialogContent className="max-w-md" hideCloseButton>
-        <DialogTitle className="text-center text-base font-medium text-lg">
+        <DialogTitle className="text-center font-medium text-lg">
           How do you wish to interact with Ivy?
         </DialogTitle>
         {/* <DialogDescription className="text-center">

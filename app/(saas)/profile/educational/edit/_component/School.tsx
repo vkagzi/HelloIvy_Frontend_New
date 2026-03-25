@@ -346,8 +346,8 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
     if (!prevValues) return;
 
-    Object.entries(prevValues).forEach(([key, value]) => {
-      form.setValue(`${sectionType}.${schoolIdx}.${key}`, value, {
+    Object.entries(prevValues as Record<string, unknown>).forEach(([key, value]) => {
+      form.setValue(`${sectionType}.${schoolIdx}.${key}`, value as undefined, {
         shouldDirty: true,
       });
     });
