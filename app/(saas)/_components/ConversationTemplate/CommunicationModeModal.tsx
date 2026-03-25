@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,8 @@ export default function CommunicationModeModal({
   onSelectText,
   onSelectVoice,
 }: CommunicationModeModalProps): React.ReactElement {
+  const [showVoicePopup, setShowVoicePopup] = useState(false);
+
   return (
     <Dialog
       open={open}
@@ -30,9 +33,39 @@ export default function CommunicationModeModal({
       }}
     >
       <DialogContent className="max-w-md" hideCloseButton>
-        <DialogTitle className="text-center font-medium text-lg">
+        <DialogTitle className="text-center text-lg font-medium">
           How do you wish to interact with Ivy?
         </DialogTitle>
+
+        <Dialog
+          open={showVoicePopup}
+          onOpenChange={() => setShowVoicePopup(false)}
+        >
+          <DialogContent className="max-w-lg">
+            <DialogTitle className="text-center text-md font-medium">
+              You’ve chosen voice mode — great choice! 🎧
+            </DialogTitle>
+
+            <div className="mt-4 text-center text-sm text-gray-600">
+              Please make sure you’re in a quiet place with minimal background
+              noise, use headphones if possible & speak clearly.
+              <br />
+              Talk soon!
+            </div>
+
+            <div className="mt-6 flex justify-center">
+              <button
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-white cursor-pointer"
+                onClick={() => {
+                  setShowVoicePopup(false);
+                  onSelectVoice();
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
         {/* <DialogDescription className="text-center">
           Choose your preferred way to interact with the AI coach.
         </DialogDescription> */}
@@ -73,7 +106,7 @@ export default function CommunicationModeModal({
 
           {/* Voice option */}
           <button
-            onClick={onSelectVoice}
+            onClick={() => setShowVoicePopup(true)}
             className="flex flex-1 cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-6 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-md"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
