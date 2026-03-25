@@ -3,10 +3,9 @@
  * Integrates with the enhanced conversational Q&A system
  */
 
-import { getAuthHeader } from '@/lib/auth-helpers';
+import api from '@/lib/api-client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const RAG_API_BASE = `${API_BASE}/api/essay-brainstorm/rag`;
+const RAG_BASE = '/api/essay-brainstorm/rag';
 
 // Types for RAG conversation system
 export interface RAGSystemStatus {
@@ -128,21 +127,7 @@ class RAGConversationAPI {
    */
   async getSystemStatus(): Promise<RAGSystemStatus> {
     try {
-      const response = await fetch(`${RAG_API_BASE}/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to check RAG system status: ${response.status}`
-        );
-      }
-
-      return await response.json();
+      return await api<RAGSystemStatus>(`${RAG_BASE}/`);
     } catch (error) {
       console.error('❌ Error checking RAG system status:', error);
       return { rag_available: false, status: 'unavailable' };
@@ -156,23 +141,10 @@ class RAGConversationAPI {
     request: RAGConversationStartRequest
   ): Promise<RAGConversationStartResponse> {
     try {
-      const response = await fetch(`${RAG_API_BASE}/conversations/start/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        body: JSON.stringify(request),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || `Failed to start conversation: ${response.status}`
-        );
-      }
-
-      return await response.json();
+      return await api<RAGConversationStartResponse>(
+        `${RAG_BASE}/conversations/start/`,
+        { method: 'POST', body: request }
+      );
     } catch (error) {
       console.error('❌ Error starting RAG conversation:', error);
       throw error;
@@ -186,23 +158,10 @@ class RAGConversationAPI {
     request: RAGConversationMessageRequest
   ): Promise<RAGConversationMessageResponse> {
     try {
-      const response = await fetch(`${RAG_API_BASE}/conversations/message/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        body: JSON.stringify(request),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || `Failed to send message: ${response.status}`
-        );
-      }
-
-      return await response.json();
+      return await api<RAGConversationMessageResponse>(
+        `${RAG_BASE}/conversations/message/`,
+        { method: 'POST', body: request }
+      );
     } catch (error) {
       console.error('❌ Error sending RAG message:', error);
       throw error;
@@ -216,26 +175,9 @@ class RAGConversationAPI {
     sessionId: string
   ): Promise<RAGConversationHistoryResponse> {
     try {
-      const response = await fetch(
-        `${RAG_API_BASE}/conversations/${sessionId}/history/`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getAuthHeader(),
-          },
-        }
+      return await api<RAGConversationHistoryResponse>(
+        `${RAG_BASE}/conversations/${sessionId}/history/`
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error ||
-            `Failed to get conversation history: ${response.status}`
-        );
-      }
-
-      return await response.json();
     } catch (error) {
       console.error('❌ Error getting RAG conversation history:', error);
       throw error;
@@ -249,26 +191,9 @@ class RAGConversationAPI {
     sessionId: string
   ): Promise<RAGConversationDatasetResponse> {
     try {
-      const response = await fetch(
-        `${RAG_API_BASE}/conversations/${sessionId}/dataset/`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getAuthHeader(),
-          },
-        }
+      return await api<RAGConversationDatasetResponse>(
+        `${RAG_BASE}/conversations/${sessionId}/dataset/`
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error ||
-            `Failed to get conversation dataset: ${response.status}`
-        );
-      }
-
-      return await response.json();
     } catch (error) {
       console.error('❌ Error getting RAG conversation dataset:', error);
       throw error;
@@ -282,25 +207,10 @@ class RAGConversationAPI {
     sessionId: string
   ): Promise<RAGConversationEndResponse> {
     try {
-      const response = await fetch(
-        `${RAG_API_BASE}/conversations/${sessionId}/end/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getAuthHeader(),
-          },
-        }
+      return await api<RAGConversationEndResponse>(
+        `${RAG_BASE}/conversations/${sessionId}/end/`,
+        { method: 'POST' }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || `Failed to end conversation: ${response.status}`
-        );
-      }
-
-      return await response.json();
     } catch (error) {
       console.error('❌ Error ending RAG conversation:', error);
       throw error;

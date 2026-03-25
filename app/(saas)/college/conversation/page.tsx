@@ -18,6 +18,7 @@ import {
   LongTermGoal,
 } from '@/lib/api-services';
 import UserStorage from '@/lib/user-storage';
+import api from '@/lib/api-client';
 
 type MsgRole = 'bot' | 'user';
 interface Message {
@@ -352,24 +353,8 @@ ${extrasText}
   // ---------- user authentication check ----------
   const getCurrentUserId = async (): Promise<string | null> => {
     try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) return null;
-
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-
-      const res = await fetch('/api/accounts/me', {
-        credentials: 'include',
-        headers,
-      });
-
-      if (res.ok) {
-        const userData = await res.json();
-        return userData.id?.toString() || null;
-      }
-      return null;
+      const userData = await api<{ id?: number }>('/api/accounts/me/');
+      return userData.id?.toString() || null;
     } catch {
       return null;
     }
@@ -395,14 +380,6 @@ ${extrasText}
 
   // ---------- profile/story fetch (user-specific, authenticated) ----------
   const fetchProfileAndStories = async () => {
-    // Check if user is authenticated and get current user ID
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      console.warn('No authentication token found');
-      clearAllUserData();
-      return;
-    }
-
     const userId = await getCurrentUserId();
     if (!userId) {
       console.warn('Unable to get current user ID');
@@ -419,47 +396,24 @@ ${extrasText}
     setCurrentUserId(userId);
 
     try {
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-
-      // Fetch personal profile with explicit headers
-      const res = await fetch('/api/profile/personal', {
-        credentials: 'include',
-        headers,
-      }).catch(() => null);
-      if (res?.ok) {
-        const profileData = await res.json();
-        setUserProfile(profileData);
-      }
+      const profileData = await api('/api/profile/personal');
+      setUserProfile(profileData);
     } catch (error) {
       console.error('Failed to fetch personal profile:', error);
     }
 
-    // Fetch educational profile data with explicit authentication
+    // Fetch educational profile data
     try {
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-
-      const res = await fetch('/api/profiles/update/', {
-        credentials: 'include',
-        headers,
-      }).catch(() => null);
-      if (res?.ok) {
-        const data = await res.json();
-        if (data?.profile?.profile?.educational) {
-          setEducationalProfile(data.profile.profile.educational);
-        }
-        if (data?.profile?.profile?.extraCurricular) {
-          setExtraCurricularProfile(
-            Array.isArray(data.profile.profile.extraCurricular)
-              ? data.profile.profile.extraCurricular
-              : [data.profile.profile.extraCurricular]
-          );
-        }
+      const data = await api('/api/profiles/update/');
+      if (data?.profile?.profile?.educational) {
+        setEducationalProfile(data.profile.profile.educational);
+      }
+      if (data?.profile?.profile?.extraCurricular) {
+        setExtraCurricularProfile(
+          Array.isArray(data.profile.profile.extraCurricular)
+            ? data.profile.profile.extraCurricular
+            : [data.profile.profile.extraCurricular]
+        );
       }
     } catch (error) {
       console.error(

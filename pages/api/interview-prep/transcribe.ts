@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import formidable from 'formidable';
 import fs from 'fs';
+import { getBackendUrl } from '@/lib/api-server';
 
 export const config = {
   api: {
@@ -50,7 +51,7 @@ export default async function handler(
 
     // Forward to Django
     const djangoResponse = await fetch(
-      'http://localhost:8000/api/interview-prep/transcribe/',
+      getBackendUrl('/api/interview-prep/transcribe/'),
       {
         method: 'POST',
         headers,

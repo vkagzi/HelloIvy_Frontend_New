@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { Textarea } from '@/components/ui/textarea';
 import { essayGoalsApi, EssayGoal } from '@/lib/api-services';
+import { me } from '@/lib/api-client';
 
 const GoalsPage: React.FC = () => {
   const { addToast } = useToast();
@@ -49,24 +50,8 @@ const GoalsPage: React.FC = () => {
 
   const getCurrentUserId = async (): Promise<string | null> => {
     try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) return null;
-
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-
-      const res = await fetch('/api/accounts/me', {
-        credentials: 'include',
-        headers,
-      });
-
-      if (res.ok) {
-        const userData = await res.json();
-        return userData.id?.toString() || null;
-      }
-      return null;
+      const userData = await me();
+      return userData.id?.toString() || null;
     } catch {
       return null;
     }

@@ -195,22 +195,13 @@ class CareerDiscoveryAPI {
     const formData = new FormData();
     formData.append('audio', audioBlob, 'audio.webm');
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-    const fullUrl = `${baseUrl}${this.baseUrl}/audio/transcribe/`;
-
-    const response = await fetch(fullUrl, {
-      method: 'POST',
-      body: formData,
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to transcribe audio: ${errorText}`);
-    }
-
-    const data: TranscribeResponse = await response.json();
+    const data = await api<TranscribeResponse>(
+      `${this.baseUrl}/audio/transcribe/`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
     return data.text;
   }
 
@@ -219,25 +210,11 @@ class CareerDiscoveryAPI {
    * Returns audio blob
    */
   async generateSpeech(text: string, voice: string = 'nova'): Promise<Blob> {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-    const fullUrl = `${baseUrl}${this.baseUrl}/audio/speech/`;
-
-    const response = await fetch(fullUrl, {
+    return api<Blob>(`${this.baseUrl}/audio/speech/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ text, voice }),
-      credentials: 'include',
+      body: { text, voice },
+      responseType: 'blob',
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to generate speech: ${errorText}`);
-    }
-
-    return response.blob();
   }
 
   /**

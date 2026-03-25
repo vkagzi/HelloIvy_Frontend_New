@@ -115,20 +115,14 @@ const InterviewSessionPage: React.FC = () => {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.wav');
 
-      const response = await fetch('/api/interview-prep/transcribe/', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUserResponse(data.transcription);
-      } else {
-        addToast('Failed to transcribe audio', { type: 'error' });
-      }
+      const data = await api<{ transcription: string }>(
+        '/api/interview-prep/transcribe/',
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+      setUserResponse(data.transcription);
     } catch (error) {
       console.error('Error transcribing audio:', error);
       addToast('Failed to transcribe audio', { type: 'error' });

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Heading, Paragraph } from '@/app/_components/Typography';
 import { useToast } from '@/app/_components/Toast';
 import UserStorage from '@/lib/user-storage';
+import api from '@/lib/api-client';
 
 type TranscriptMessage = {
   id: string;
@@ -307,46 +308,24 @@ const CollegeResultsPage: React.FC = () => {
     // Fetch additional profile data for enhanced recommendations (user-specific)
     let profileContext = '';
     try {
-      // Ensure user is authenticated
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        console.warn('No authentication token found for profile fetch');
-        // Continue without profile context
-      } else {
-        const headers = {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        };
+      const data = await api('/api/profiles/update/');
+      const educational = data?.profile?.profile?.educational;
+      const extraCurricular = data?.profile?.profile?.extraCurricular;
 
-        const res = await fetch('/api/profiles/update/', {
-          credentials: 'include',
-          headers,
-        });
-        if (res?.ok) {
-          const data = await res.json();
-          const educational = data?.profile?.profile?.educational;
-          const extraCurricular = data?.profile?.profile?.extraCurricular;
+      if (educational || extraCurricular) {
+        profileContext =
+          '\n\nDetailed Academic Profile for College Matching:';
 
-          if (educational || extraCurricular) {
-            profileContext =
-              '\n\nDetailed Academic Profile for College Matching:';
+        if (educational) {
+          const educationalSummary =
+            buildEducationalProfileSummary(educational);
+          profileContext += `\nEducational Background:\n${educationalSummary}`;
+        }
 
-            if (educational) {
-              const educationalSummary =
-                buildEducationalProfileSummary(educational);
-              profileContext += `\nEducational Background:\n${educationalSummary}`;
-            }
-
-            if (extraCurricular) {
-              const extraSummary =
-                buildExtraCurricularProfileSummary(extraCurricular);
-              profileContext += `\nExtra-curricular Activities:\n${extraSummary}`;
-            }
-          }
-        } else {
-          console.warn(
-            'Failed to fetch profile data or received invalid response'
-          );
+        if (extraCurricular) {
+          const extraSummary =
+            buildExtraCurricularProfileSummary(extraCurricular);
+          profileContext += `\nExtra-curricular Activities:\n${extraSummary}`;
         }
       }
     } catch (error) {

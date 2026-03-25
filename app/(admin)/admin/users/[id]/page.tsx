@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import api from '@/lib/api-client';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,8 @@ import DomainResultsPDF from '@/components/pdf/DomainResultsPDF';
 import CareerResultsPDF from '@/components/pdf/CareerResultsPDF';
 import TranscriptReportPDF from '@/components/pdf/TranscriptReportPDF';
 import type { TranscriptQA } from '@/components/pdf/TranscriptReportPDF';
+import type { DomainRecommendation } from '@/lib/domain-discovery-api';
+import type { CareerRecommendation } from '@/lib/career-discovery-api';
 
 interface SessionItem {
   session_id: string;
@@ -66,7 +68,6 @@ interface MessageItem {
 }
 
 export default function AdminUserDetailPage() {
-  const { data: session } = useSession();
   const params = useParams();
   const userId = params?.id;
   const [user, setUser] = useState<UserDetail | null>(null);
@@ -76,30 +77,21 @@ export default function AdminUserDetailPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const baseUrl =
-          process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-        const res = await fetch(
-          `${baseUrl}/api/accounts/admin/users/${userId}/`,
-          {
-            headers: {
-              Authorization: `Bearer ${(session as any)?.accessToken}`,
-            },
-          }
+        const data = await api<UserDetail>(
+          `/api/accounts/admin/users/${userId}/`
         );
-        if (!res.ok) throw new Error('Failed to fetch user details');
-        const data = await res.json();
         setUser(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch user details');
       } finally {
         setLoading(false);
       }
     };
 
-    if ((session as any)?.accessToken && userId) {
+    if (userId) {
       fetchUser();
     }
-  }, [session, userId]);
+  }, [userId]);
 
   if (loading) {
     return (
@@ -170,7 +162,6 @@ export default function AdminUserDetailPage() {
           title="Domain Discovery"
           module="domain"
           stats={user.modules.domain_discovery}
-          accessToken={(session as any)?.accessToken}
           studentName={
             user.first_name && user.last_name
               ? `${user.first_name} ${user.last_name}`
@@ -181,7 +172,6 @@ export default function AdminUserDetailPage() {
           title="Career Discovery"
           module="career"
           stats={user.modules.career_discovery}
-          accessToken={(session as any)?.accessToken}
           studentName={
             user.first_name && user.last_name
               ? `${user.first_name} ${user.last_name}`
@@ -206,13 +196,11 @@ function ModuleCard({
   title,
   module,
   stats,
-  accessToken,
   studentName,
 }: {
   title: string;
   module: string;
   stats: ModuleStats;
-  accessToken?: string;
   studentName?: string;
 }) {
   const [conversationOpen, setConversationOpen] = useState(false);
@@ -220,23 +208,15 @@ function ModuleCard({
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
-  const baseUrl =
-    typeof window !== 'undefined'
-      ? process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      : '';
-
   const openConversation = useCallback(
     async (sessionId: string) => {
       setActiveSessionId(sessionId);
       setConversationOpen(true);
       setLoadingMessages(true);
       try {
-        const res = await fetch(
-          `${baseUrl}/api/accounts/admin/sessions/${module}/${sessionId}/messages/`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
+        const data = await api<{ messages: MessageItem[] }>(
+          `/api/accounts/admin/sessions/${module}/${sessionId}/messages/`
         );
-        if (!res.ok) throw new Error('Failed to fetch messages');
-        const data = await res.json();
         setMessages(data.messages);
       } catch {
         setMessages([]);
@@ -244,19 +224,16 @@ function ModuleCard({
         setLoadingMessages(false);
       }
     },
-    [baseUrl, module, accessToken]
+    [module]
   );
 
   const downloadTranscript = useCallback(
     async (sessionId: string) => {
       try {
-        const res = await fetch(
-          `${baseUrl}/api/accounts/admin/sessions/${module}/${sessionId}/messages/`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
+        const data = await api<{ messages: MessageItem[] }>(
+          `/api/accounts/admin/sessions/${module}/${sessionId}/messages/`
         );
-        if (!res.ok) throw new Error('Failed to fetch');
-        const data = await res.json();
-        const msgs = data.messages as MessageItem[];
+        const msgs = data.messages;
 
         // Pair bot messages with user responses
         const paired: TranscriptQA[] = [];
@@ -289,40 +266,40 @@ function ModuleCard({
         // silent
       }
     },
-    [baseUrl, module, accessToken, studentName]
+    [module, studentName]
   );
 
   const downloadReport = useCallback(
     async (sessionId: string) => {
       try {
-        const res = await fetch(
-          `${baseUrl}/api/accounts/admin/sessions/${module}/${sessionId}/report/`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
+        const data = await api<Record<string, unknown>>(
+          `/api/accounts/admin/sessions/${module}/${sessionId}/report/`
         );
-        if (!res.ok) throw new Error('Failed to fetch');
-        const data = await res.json();
+
+        const recommendations = data.recommendations as DomainRecommendation[] | CareerRecommendation[];
+        const email = data.student_email as string | undefined;
 
         if (module === 'domain') {
           await downloadPDF(
             <DomainResultsPDF
-              recommendations={data.recommendations}
+              recommendations={recommendations as DomainRecommendation[]}
               interests={[]}
               strengths={[]}
-              studentName={studentName || data.student_email || 'Student'}
+              studentName={studentName || email || 'Student'}
             />,
             `report-domain-${sessionId}`
           );
         } else {
           await downloadPDF(
             <CareerResultsPDF
-              recommendations={data.recommendations.map((r: any) => ({
+              recommendations={(recommendations as CareerRecommendation[]).map((r) => ({
                 ...r,
                 alignment_points: r.alignment_points ?? [],
                 related_subjects: r.related_subjects ?? [],
                 pros_and_cons: r.pros_and_cons ?? { pros: [], cons: [] },
                 work_life_balance: r.work_life_balance ?? '',
               }))}
-              studentName={studentName || data.student_email || 'Student'}
+              studentName={studentName || email || 'Student'}
             />,
             `report-career-${sessionId}`
           );
@@ -331,7 +308,7 @@ function ModuleCard({
         // silent
       }
     },
-    [baseUrl, module, accessToken, studentName]
+    [module, studentName]
   );
 
   const progressPct =

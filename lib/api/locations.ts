@@ -3,7 +3,7 @@
  * Fetches data based on user input (2+ characters)
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import api from '@/lib/api-client';
 
 /**
  * Fetch countries matching search query
@@ -12,14 +12,8 @@ export async function searchCountries(query: string): Promise<string[]> {
   if (!query || query.length < 2) return [];
   
   try {
-    const url = new URL(`${API_BASE_URL}/api/locations/countries/`);
-    url.searchParams.set('q', query);
-    
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new Error('Failed to fetch countries');
-    }
-    return await response.json();
+    const params = new URLSearchParams({ q: query });
+    return await api<string[]>(`/api/locations/countries/?${params.toString()}`);
   } catch (error) {
     console.error('Error fetching countries:', error);
     return [];
@@ -38,24 +32,18 @@ export async function searchCitiesFormatted(
   if (query === undefined || query === null) return [];
   
   try {
-    const url = new URL(`${API_BASE_URL}/api/locations/cities/`);
+    const params = new URLSearchParams({ limit: '50' });
     if (query && query.length > 0) {
-      url.searchParams.set('q', query);
+      params.set('q', query);
     }
-    // Request limit of 50 cities
-    url.searchParams.set('limit', '50');
     if (country) {
-      url.searchParams.set('country', country);
+      params.set('country', country);
     }
     if (state) {
-      url.searchParams.set('state', state);
+      params.set('state', state);
     }
     
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new Error('Failed to fetch cities');
-    }
-    return await response.json();
+    return await api<string[]>(`/api/locations/cities/?${params.toString()}`);
   } catch (error) {
     console.error('Error fetching cities:', error);
     return [];
@@ -91,11 +79,7 @@ async function fetchAllLocations(): Promise<Location[]> {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/locations/locations/`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch locations');
-    }
-    const data: Location[] = await response.json();
+    const data = await api<Location[]>('/api/locations/locations/');
 
     locationCache = {
       data,

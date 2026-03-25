@@ -1,8 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import api from '@/lib/api-client';
 
 export interface Location {
   id: number;
@@ -36,11 +35,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     async function fetchLocations() {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/locations/locations/`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch locations');
-        }
-        const data: Location[] = await response.json();
+        const data = await api<Location[]>('/api/locations/locations/');
         setLocations(data);
         setError(null);
       } catch (err) {

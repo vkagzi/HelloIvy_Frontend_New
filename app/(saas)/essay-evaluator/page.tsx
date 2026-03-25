@@ -574,34 +574,16 @@ const EssayEvaluatorPage: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Use fetch directly for file upload to avoid JSON stringify on FormData
-      const token = localStorage.getItem('auth_token');
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-      const res = await fetch(
-        `${baseUrl}/api/essay-evaluator/essays/upload-essay/`,
-        {
-          method: 'POST',
-          headers,
-          body: formData,
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res
-          .json()
-          .catch(() => ({ error: 'Upload failed' }));
-        throw new Error(
-          errorData.error || `Upload failed with status ${res.status}`
-        );
-      }
-
-      const response = await res.json();
+      const response = await api<{
+        content?: string;
+        word_count?: number;
+        filename?: string;
+        truncated?: boolean;
+        max_words?: number;
+      }>('/api/essay-evaluator/essays/upload-essay/', {
+        method: 'POST',
+        body: formData,
+      });
 
       if (response.content) {
         setPastedEssayText(response.content);
@@ -659,34 +641,16 @@ const EssayEvaluatorPage: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Use fetch directly for file upload to avoid JSON stringify on FormData
-      const token = localStorage.getItem('auth_token');
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-      const res = await fetch(
-        `${baseUrl}/api/essay-evaluator/essays/upload-essay/`,
-        {
-          method: 'POST',
-          headers,
-          body: formData,
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res
-          .json()
-          .catch(() => ({ error: 'Upload failed' }));
-        throw new Error(
-          errorData.error || `Upload failed with status ${res.status}`
-        );
-      }
-
-      const response = await res.json();
+      const response = await api<{
+        content?: string;
+        word_count?: number;
+        filename?: string;
+        truncated?: boolean;
+        max_words?: number;
+      }>('/api/essay-evaluator/essays/upload-essay/', {
+        method: 'POST',
+        body: formData,
+      });
 
       if (response.content) {
         setPastedEssayText(response.content);

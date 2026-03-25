@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import api from '@/lib/api-client';
 
 interface UserItem {
   id: number;
@@ -16,7 +16,6 @@ interface UserItem {
 }
 
 export default function AdminUsersPage() {
-  const { data: session } = useSession();
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,27 +23,19 @@ export default function AdminUsersPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const baseUrl =
-          process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-        const res = await fetch(`${baseUrl}/api/accounts/admin/users/`, {
-          headers: {
-            Authorization: `Bearer ${(session as any)?.accessToken}`,
-          },
-        });
-        if (!res.ok) throw new Error('Failed to fetch users');
-        const data = await res.json();
+        const data = await api<{ users: UserItem[] }>(
+          '/api/accounts/admin/users/'
+        );
         setUsers(data.users);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch users');
       } finally {
         setLoading(false);
       }
     };
 
-    if ((session as any)?.accessToken) {
-      fetchUsers();
-    }
-  }, [session]);
+    fetchUsers();
+  }, []);
 
   if (loading) {
     return (

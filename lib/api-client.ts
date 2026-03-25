@@ -10,6 +10,10 @@ type ApiOptions = {
   body?: any;
   headers?: Record<string, string>;
   tokenOverride?: string;
+  /** When true, body is sent as-is (e.g. FormData) — no JSON.stringify, no Content-Type header. */
+  rawBody?: boolean;
+  /** Expected response type. Defaults to 'json'. */
+  responseType?: 'json' | 'blob' | 'text' | 'raw';
 };
 
 // Cache session token to avoid calling getSession on every request
@@ -61,7 +65,7 @@ const getAuthToken = async (): Promise<string | null> => {
   pendingSessionRequest = (async () => {
     try {
       const session = await getSession();
-      const token = (session as any)?.accessToken || null;
+      const token = session?.accessToken || null;
       setCachedToken(token);
       return token;
     } finally {
@@ -83,8 +87,11 @@ const api = async <T = any>(
     token = (await getAuthToken()) || undefined;
   }
 
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+  const isRawBody = options.rawBody || options.body instanceof FormData;
+
+  const headers: Record<string, string> = {
+    // Don't set Content-Type for FormData — the browser sets it with the boundary
+    ...(isRawBody ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
   };
 
@@ -99,7 +106,7 @@ const api = async <T = any>(
   const res = await fetch(fullUrl, {
     method: options.method || 'GET',
     headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: isRawBody ? options.body : options.body ? JSON.stringify(options.body) : undefined,
     cache: 'no-store',
     next: { revalidate: 0 },
     credentials: 'include',
@@ -113,7 +120,7 @@ const api = async <T = any>(
     try {
       errorBody = await res.json();
     } catch {
-      errorBody = { error: 'Unknown error' };
+      errorBody = { error: `Request failed with status ${res.status}` };
     }
 
     if (process.env.NODE_ENV !== 'production') {
@@ -134,6 +141,11 @@ const api = async <T = any>(
       },
     });
   }
+
+  const responseType = options.responseType || 'json';
+  if (responseType === 'blob') return res.blob() as Promise<T>;
+  if (responseType === 'text') return res.text() as Promise<T>;
+  if (responseType === 'raw') return res as unknown as T;
 
   return res.json();
 };
@@ -174,4 +186,4 @@ export const clearAuthCache = (): void => {
 };
 
 export default api;
-export { getToken, setToken, removeToken };
+export { getToken, setToken, removeToken, getAuthToken };

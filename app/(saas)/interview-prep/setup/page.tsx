@@ -66,8 +66,6 @@ const InterviewSetupPage: React.FC = () => {
     setLoading(true);
 
     try {
-      // For file uploads, we still need to use FormData and fetch directly
-      // because the api utility doesn't handle FormData properly
       const formDataToSend = new FormData();
       formDataToSend.append('interview_type', formData.interviewType);
       formDataToSend.append('target_college', formData.targetCollege);
@@ -77,35 +75,31 @@ const InterviewSetupPage: React.FC = () => {
         formDataToSend.append('resume', formData.resume);
       }
 
-      const response = await fetch('/api/interview-prep/start-session/', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-        },
-        body: formDataToSend,
+      const data = await api<{ session_id: string }>(
+        '/api/interview-prep/start-session/',
+        {
+          method: 'POST',
+          body: formDataToSend,
+        }
+      );
+
+      // Save session ID to localStorage
+      localStorage.setItem('current-interview-session', data.session_id);
+
+      addToast('Interview session created successfully!', {
+        type: 'success',
       });
 
-      if (response.ok) {
-        const data = await response.json();
-
-        // Save session ID to localStorage
-        localStorage.setItem('current-interview-session', data.session_id);
-
-        addToast('Interview session created successfully!', {
-          type: 'success',
-        });
-
-        // Navigate to interview session
-        router.push(`/interview-prep/session/${data.session_id}`);
-      } else {
-        const errorData = await response.json();
-        addToast(errorData.error || 'Failed to create interview session', {
-          type: 'error',
-        });
-      }
+      // Navigate to interview session
+      router.push(`/interview-prep/session/${data.session_id}`);
     } catch (error) {
       console.error('Error creating interview session:', error);
-      addToast('Failed to create interview session', { type: 'error' });
+      addToast(
+        error instanceof Error
+          ? error.message
+          : 'Failed to create interview session',
+        { type: 'error' }
+      );
     } finally {
       setLoading(false);
     }

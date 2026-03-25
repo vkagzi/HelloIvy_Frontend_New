@@ -9,6 +9,10 @@ type ApiOptions = {
   body?: any;
   headers?: Record<string, string>;
   tokenOverride?: string;
+  /** When true, body is sent as-is (e.g. FormData) — no JSON.stringify, no Content-Type header. */
+  rawBody?: boolean;
+  /** Expected response type. Defaults to 'json'. */
+  responseType?: 'json' | 'blob' | 'text' | 'raw';
 };
 
 // Cache session token to avoid calling getSession on every request
@@ -60,7 +64,7 @@ const getAuthToken = async (): Promise<string | null> => {
   pendingSessionRequest = (async () => {
     try {
       const session = await getSession();
-      const token = (session as any)?.accessToken || null;
+      const token = session?.accessToken || null;
       setCachedToken(token);
       return token;
     } finally {
@@ -82,8 +86,11 @@ const api = async <T = any>(
     token = (await getAuthToken()) || undefined;
   }
 
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+  const isRawBody = options.rawBody || options.body instanceof FormData;
+
+  const headers: Record<string, string> = {
+    // Don't set Content-Type for FormData — the browser sets it with the boundary
+    ...(isRawBody ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
   };
 
@@ -98,23 +105,23 @@ const api = async <T = any>(
   const res = await fetch(fullUrl, {
     method: options.method || 'GET',
     headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-    cache: 'no-store', // Disable Next.js caching
-    next: { revalidate: 0 }, // Always fetch fresh data
-    credentials: 'include', // Include cookies for session persistence
+    body: isRawBody ? options.body : options.body ? JSON.stringify(options.body) : undefined,
+    cache: 'no-store',
+    next: { revalidate: 0 },
+    credentials: 'include',
   });
 
   if (!res.ok) {
     let errorBody: {
       error: string;
-      [key: string]: any; // allow additional properties
+      [key: string]: any;
     };
     try {
       errorBody = await res.json();
     } catch {
-      errorBody = { error: 'Unknown error' };
+      errorBody = { error: `Request failed with status ${res.status}` };
     }
-    // only if not production
+
     if (process.env.NODE_ENV !== 'production') {
       console.error(`API request failed with status ${res.status}:`, errorBody);
     }
@@ -126,7 +133,6 @@ const api = async <T = any>(
       dispatchSessionExpired();
     }
 
-    //throw full error body for better debugging
     throw new Error(errorBody.error, {
       cause: {
         status: res.status,
@@ -134,6 +140,11 @@ const api = async <T = any>(
       },
     });
   }
+
+  const responseType = options.responseType || 'json';
+  if (responseType === 'blob') return res.blob() as Promise<T>;
+  if (responseType === 'text') return res.text() as Promise<T>;
+  if (responseType === 'raw') return res as unknown as T;
 
   return res.json();
 };
@@ -174,26 +185,11 @@ export const clearAuthCache = (): void => {
 };
 
 export const generateSpeech = async (text: string, voice = 'nova', speed = 1.0): Promise<Blob> => {
-  let token: string | undefined;
-  if (typeof window !== 'undefined') {
-    token = (await getAuthToken()) || undefined;
-  }
-
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-  const res = await fetch(`${baseUrl}/api/tts/`, {
+  return api<Blob>('/api/tts/', {
     method: 'POST',
-    headers,
-    body: JSON.stringify({ text, voice, speed }),
+    body: { text, voice, speed },
+    responseType: 'blob',
   });
-
-  if (!res.ok) {
-    throw new Error('TTS request failed');
-  }
-
-  return res.blob();
 };
 
 /**
@@ -216,6 +212,7 @@ export const generateSpeechStream = async (
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  // Streaming response with AbortSignal — use fetch directly since api() doesn't support signal
   const res = await fetch(`${baseUrl}/api/tts/`, {
     method: 'POST',
     headers,
@@ -231,4 +228,4 @@ export const generateSpeechStream = async (
 };
 
 export default api;
-export { getToken, setToken, removeToken };
+export { getToken, setToken, removeToken, getAuthToken };

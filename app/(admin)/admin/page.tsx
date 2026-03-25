@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import api from '@/lib/api-client';
 
 interface DashboardStats {
   total_users: number;
@@ -11,7 +11,6 @@ interface DashboardStats {
 }
 
 export default function AdminDashboardPage() {
-  const { data: session } = useSession();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,27 +18,19 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const baseUrl =
-          process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-        const res = await fetch(`${baseUrl}/api/accounts/admin/dashboard/`, {
-          headers: {
-            Authorization: `Bearer ${(session as any)?.accessToken}`,
-          },
-        });
-        if (!res.ok) throw new Error('Failed to fetch stats');
-        const data = await res.json();
+        const data = await api<DashboardStats>(
+          '/api/accounts/admin/dashboard/'
+        );
         setStats(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch stats');
       } finally {
         setLoading(false);
       }
     };
 
-    if ((session as any)?.accessToken) {
-      fetchStats();
-    }
-  }, [session]);
+    fetchStats();
+  }, []);
 
   if (loading) {
     return (
