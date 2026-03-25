@@ -392,9 +392,15 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
       setIsPaused(resp.is_paused);
       setTotalPausedSeconds(resp.total_paused_seconds);
 
-      // If resuming, show mode selection modal so user can pick voice or text
+      // If resuming, auto-continue with the last used medium instead of prompting
       if (!resp.is_paused) {
-        setShowModeModal(true);
+        const lastUserMsg = [...messages].reverse().find(
+          (m) => m.type === 'user' && m.medium,
+        );
+        if (lastUserMsg?.medium === 'voice') {
+          await activateVoiceMode();
+        }
+        // Otherwise stay in text/chat mode — no modal needed
       }
     } catch (error) {
       console.error('Failed to toggle pause:', error);
