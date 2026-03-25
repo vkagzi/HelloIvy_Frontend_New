@@ -1,6 +1,6 @@
 /**
- * Career & Degree SelectionAPI Client
- * Connects to Django backend using LangChain + Azure OpenAI for AI-powered Career & Degree Selection
+ * Career & Degree Selection API Client
+ * Connects to Django backend using LangChain + Azure OpenAI for AI-powered Career & Degree Selection 
  */
 import api from '@/lib/api';
 
@@ -102,7 +102,7 @@ class CareerDiscoveryAPI {
   private baseUrl = '/api/career-discovery';
 
   /**
-   * Create a new Career & Degree Selectionsession
+   * Create a new Career & Degree Selection session
    * Returns the session with the initial bot message
    */
   async createSession(
@@ -155,7 +155,7 @@ class CareerDiscoveryAPI {
   }
 
   /**
-   * End a Career & Degree Selectionsession
+   * End a Career & Degree Selection session
    */
   async endSession(sessionId: string): Promise<void> {
     return api<void>(`${this.baseUrl}/${sessionId}/end/`, {
@@ -241,7 +241,7 @@ class CareerDiscoveryAPI {
   }
 
   /**
-   * Health check for the Career & Degree Selectionservice
+   * Health check for the Career & Degree Selection service
    */
   async healthCheck(): Promise<{
     status: string;

@@ -59,7 +59,7 @@ const CareerResultsPage: React.FC = () => {
       setError(null);
 
       if (!sessionId) {
-        setError('No session found. Please complete the Career & Degree Selectionfirst.');
+        setError('No session found. Please complete the Career & Degree Selection first.');
         addToast('No session data found.', { type: 'warning' });
         setIsLoading(false);
         return;
@@ -290,7 +290,7 @@ const CareerResultsPage: React.FC = () => {
         {/* Header */}
         <div className="mb-10 text-center">
           <div className="mb-4 inline-flex items-center justify-center rounded-full bg-[#e9d5ff] px-4 py-2 text-sm font-medium text-[#7f12f3]">
-            <span className="mr-2">🎯</span> Career & Degree SelectionComplete
+            <span className="mr-2">🎯</span> Career & Degree Selection Complete
           </div>
           <Heading level={1} className="mb-4 text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
             Your Career Recommendations

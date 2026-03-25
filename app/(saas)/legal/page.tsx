@@ -98,7 +98,7 @@ const LegalPage: React.FC = () => {
 
         <SubSection title="Description of Services">
           <P>
-            HelloIvy.ai provides an AI-enabled Career & Degree Selectionplatform
+            HelloIvy.ai provides an AI-enabled Career & Degree Selection platform
             designed to help students explore potential career domains based on
             responses to structured assessments.
           </P>

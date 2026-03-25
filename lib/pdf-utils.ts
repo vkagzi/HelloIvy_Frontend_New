@@ -24,7 +24,7 @@ function sanitizeText(text: string): string {
 
 /**
  * Shared helper to build a professional transcript PDF.
- * Used by both domain discovery and Career & Degree Selectiontranscripts.
+ * Used by both domain discovery and Career & Degree Selection transcripts.
  */
 function buildTranscriptPDF(options: {
   title: string;
@@ -304,7 +304,7 @@ export function generateTranscriptPDF(transcript: TranscriptData): Blob {
   });
 }
 
-// ================== Career & Degree SelectionPDF Functions ==================
+// ================== Career & Degree Selection PDF Functions ==================
 
 /**
  * Data structure for career transcript
@@ -328,7 +328,7 @@ export interface CareerTranscriptData {
 }
 
 /**
- * Generate a PDF transcript from Career & Degree Selectionconversation data
+ * Generate a PDF transcript from Career & Degree Selection conversation data
  */
 export function generateCareerTranscriptPDF(transcript: CareerTranscriptData): Blob {
   // Pair bot messages with user responses
@@ -355,8 +355,8 @@ export function generateCareerTranscriptPDF(transcript: CareerTranscriptData): B
   }
 
   return buildTranscriptPDF({
-    title: 'Career & Degree SelectionTranscript',
-    headerSubtitle: 'Career & Degree SelectionSession Transcript',
+    title: 'Career & Degree Selection Transcript',
+    headerSubtitle: 'Career & Degree Selection Session Transcript',
     brandColor: { r: 127, g: 18, b: 243 },        // #7f12f3
     accentColor: { r: 127, g: 18, b: 243 },
     lightBg: { r: 243, g: 232, b: 255 },            // #f3e8ff (light purple)

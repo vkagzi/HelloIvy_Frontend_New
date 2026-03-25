@@ -64,7 +64,7 @@ export function CareerDebugDialog({
       <DialogContent className="max-w-6xl">
         <DialogTitle>🐛 Debug Information</DialogTitle>
         <DialogDescription>
-          Technical details about the Career & Degree Selectionsession
+          Technical details about the Career & Degree Selection session
         </DialogDescription>
 
         {/* Timer override toggle */}

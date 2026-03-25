@@ -178,7 +178,7 @@ export default function AdminUserDetailPage() {
           }
         />
         <ModuleCard
-          title="Career & Degree Selection"
+          title="Career & Degree Selection "
           module="career"
           stats={user.modules.career_discovery}
           accessToken={(session as any)?.accessToken}

@@ -1,7 +1,7 @@
 /**
  * React Hook for Realtime Voice Conversations
  *
- * Generic hook that works for any feature (domain discovery, Career & Degree Selection, …)
+ * Generic hook that works for any feature (domain discovery, Career & Degree Selection , …)
  * by accepting a WebSocket path. Exposes connect / disconnect so the page can
  * start a voice session on-demand.
  */

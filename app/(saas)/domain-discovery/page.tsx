@@ -324,7 +324,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
             <li className="flex gap-3">
               <span className="min-w-5 font-semibold">6</span>
               <span>
-                Domain Discovery is a prerequisite for Career & Degree Selection- understanding
+                Domain Discovery is a prerequisite for Career & Degree Selection - understanding
                 your domains helps identify specific career paths later.
               </span>
             </li>

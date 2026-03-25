@@ -7,7 +7,7 @@ export type NavItem = {
 export const navItems: NavItem[] = [
   { label: 'Dashboard', icon: 'sr-apps', href: '/dashboard' },
   { label: 'Domain Discovery', icon: 'world', href: '/domain-discovery' },
-  { label: 'Career & Degree Selection', icon: 'briefcase', href: '/career-discovery' },
+  { label: 'Career & Degree Selection ', icon: 'briefcase', href: '/career-discovery' },
   { label: 'Degree Selector', icon: 'graduation-cap', href: '/degree' },
   { label: 'College Selector', icon: 'school', href: '/college' },
   {

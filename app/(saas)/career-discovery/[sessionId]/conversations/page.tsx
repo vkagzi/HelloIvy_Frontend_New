@@ -64,7 +64,7 @@ const CareerConversationPage: React.FC = () => {
     () => ({
       featureId: 'career-discovery',
       featureLabel: 'CareerDiscovery',
-      pageTitle: '🚀 Career & Degree SelectionJourney',
+      pageTitle: '🚀 Career & Degree Selection Journey',
       baseRoute: '/career-discovery',
       transcriptKeyPrefix: 'career_conversation_transcript',
       theme: {

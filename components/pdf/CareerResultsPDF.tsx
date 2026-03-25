@@ -94,7 +94,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
     <Page size="A4" style={s.page}>
       <Image src={LOGO_APP_BASE64} style={{ width: 120, height: 25, marginBottom: 12 }} />
       <View style={s.summaryHeader}>
-        <Text style={s.summaryTitle}>Career & Degree SelectionResults</Text>
+        <Text style={s.summaryTitle}>Career & Degree Selection Results</Text>
         {studentName && <Text style={s.summarySubtitle}>{studentName}</Text>}
       </View>
       <View style={s.statBox}>
