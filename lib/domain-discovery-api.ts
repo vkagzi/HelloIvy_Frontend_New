@@ -96,6 +96,7 @@ export interface TranscriptData {
   completed_at?: string;
   total_questions: number;
   messages: TranscriptMessage[];
+  concluding_message?: string | null;
 }
 
 export interface DomainRecommendation {

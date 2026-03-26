@@ -151,6 +151,7 @@ const DomainResultsPage: React.FC = () => {
           completedAt={transcriptData.completed_at}
           totalQuestions={transcriptData.total_questions || paired.length}
           messages={paired}
+          concludingMessage={transcriptData.concluding_message}
         />,
         `Domain_Discovery_Transcript_${studentName.replace(/\s+/g, '_')}`,
       );
@@ -748,6 +749,21 @@ const DomainResultsPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
+
+                  {/* Concluding message from the AI Coach */}
+                  {transcript.concluding_message && (
+                    <div className="border-l-4 border-green-500 bg-green-50 p-4">
+                      <div className="mb-2 flex items-center">
+                        <span className="inline-block rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-white">
+                          Session Complete
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Domain Coach:</p>
+                        <p className="mt-1 text-gray-700">{transcript.concluding_message}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

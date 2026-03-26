@@ -136,16 +136,22 @@ const CareerResultsPage: React.FC = () => {
       
       // Pair bot messages with user responses
       const paired: { questionNumber: number; phase: string; botQuestion: string; studentResponse: string }[] = [];
+      let concludingMessage: string | null = null;
       for (let i = 0; i < messages.length; i++) {
         const m = messages[i];
         if (m.type === 'bot') {
           const userReply = messages.slice(i + 1).find((n) => n.type === 'user');
-          paired.push({
-            questionNumber: paired.length + 1,
-            phase: m.phase || 'general',
-            botQuestion: m.content,
-            studentResponse: userReply?.content || '',
-          });
+          if (userReply) {
+            paired.push({
+              questionNumber: paired.length + 1,
+              phase: m.phase || 'general',
+              botQuestion: m.content,
+              studentResponse: userReply.content,
+            });
+          } else {
+            // Final bot message with no user reply = concluding message
+            concludingMessage = m.content;
+          }
         }
       }
 
@@ -158,6 +164,7 @@ const CareerResultsPage: React.FC = () => {
           completedAt={completedAt}
           totalQuestions={paired.length}
           messages={paired}
+          concludingMessage={concludingMessage}
         />,
         `Career_Discovery_Transcript_${studentName.replace(/\s+/g, '_')}`,
       );
@@ -736,48 +743,71 @@ const CareerResultsPage: React.FC = () => {
                   {(() => {
                     // Group messages into Q&A pairs
                     const qaPairs: { questionNumber: number; botQuestion: string; studentResponse: string; timestamp?: string }[] = [];
+                    let concludingMsg: string | null = null;
                     let questionNumber = 0;
                     for (let i = 0; i < conversationHistory.length; i++) {
                       const msg = conversationHistory[i];
                       if (msg.type === 'bot') {
-                        questionNumber++;
                         const userResponse = conversationHistory[i + 1];
-                        qaPairs.push({
-                          questionNumber,
-                          botQuestion: msg.content,
-                          studentResponse: userResponse?.type === 'user' ? userResponse.content : '',
-                          timestamp: msg.timestamp,
-                        });
-                        if (userResponse?.type === 'user') i++;
+                        if (userResponse?.type === 'user') {
+                          questionNumber++;
+                          qaPairs.push({
+                            questionNumber,
+                            botQuestion: msg.content,
+                            studentResponse: userResponse.content,
+                            timestamp: msg.timestamp,
+                          });
+                          i++;
+                        } else {
+                          // Final bot message with no user reply = concluding message
+                          concludingMsg = msg.content;
+                        }
                       }
                     }
-                    return qaPairs.map((qa) => (
-                      <div key={qa.questionNumber} className="border-l-4 border-[#7f12f3] bg-gray-50 p-4">
-                        <div className="mb-4">
-                          <div className="mb-2 flex items-center">
-                            <span className="inline-block rounded-full bg-[#7f12f3] px-3 py-1 text-xs font-semibold text-white">
-                              Q{qa.questionNumber}
-                            </span>
-                            {qa.timestamp && (
-                              <span className="ml-auto text-xs text-gray-500">
-                                {new Date(qa.timestamp).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
+                    return (
+                      <>
+                        {qaPairs.map((qa) => (
+                          <div key={qa.questionNumber} className="border-l-4 border-[#7f12f3] bg-gray-50 p-4">
+                            <div className="mb-4">
+                              <div className="mb-2 flex items-center">
+                                <span className="inline-block rounded-full bg-[#7f12f3] px-3 py-1 text-xs font-semibold text-white">
+                                  Q{qa.questionNumber}
+                                </span>
+                                {qa.timestamp && (
+                                  <span className="ml-auto text-xs text-gray-500">
+                                    {new Date(qa.timestamp).toLocaleTimeString([], {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mb-3">
+                                <p className="text-sm font-semibold text-gray-900">Career Coach:</p>
+                                <p className="mt-1 text-gray-700">{qa.botQuestion}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-gray-900">You:</p>
+                                <p className="mt-1 text-gray-700">{qa.studentResponse}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {concludingMsg && (
+                          <div className="border-l-4 border-green-500 bg-green-50 p-4">
+                            <div className="mb-2 flex items-center">
+                              <span className="inline-block rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-white">
+                                Session Complete
                               </span>
-                            )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">Career Coach:</p>
+                              <p className="mt-1 text-gray-700">{concludingMsg}</p>
+                            </div>
                           </div>
-                          <div className="mb-3">
-                            <p className="text-sm font-semibold text-gray-900">Career Coach:</p>
-                            <p className="mt-1 text-gray-700">{qa.botQuestion}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">You:</p>
-                            <p className="mt-1 text-gray-700">{qa.studentResponse}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ));
+                        )}
+                      </>
+                    );
                   })()}
                 </div>
               </div>

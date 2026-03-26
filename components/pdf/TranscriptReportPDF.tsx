@@ -98,6 +98,7 @@ export interface TranscriptReportPDFProps {
   completedAt?: string;
   totalQuestions: number;
   messages: TranscriptQA[];
+  concludingMessage?: string | null;
 }
 
 /* ── component ──────────────────────────────────────────── */
@@ -109,6 +110,7 @@ const TranscriptReportPDF: React.FC<TranscriptReportPDFProps> = ({
   completedAt,
   totalQuestions,
   messages,
+  concludingMessage,
 }) => {
   const t = themes[variant];
 
@@ -219,6 +221,34 @@ const TranscriptReportPDF: React.FC<TranscriptReportPDFProps> = ({
           <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
         </Page>
       ))}
+
+      {/* ===== Concluding message page ===== */}
+      {concludingMessage && (
+        <Page size="A4" style={s.page} wrap>
+          <Image src={LOGO_APP_BASE64} style={{ width: 80, height: 16, marginBottom: 8 }} />
+
+          <View style={[s.phaseHeader, { backgroundColor: '#22c55e' }]}>
+            <Text style={s.phaseText}>SESSION COMPLETE</Text>
+          </View>
+
+          <View wrap={false} style={{ marginBottom: 4 }}>
+            <View style={[s.messageBlock, s.messageRow]}>
+              <View style={[s.accentBar, { backgroundColor: '#22c55e' }]} />
+              <View style={s.messageContent}>
+                <Text style={[s.senderLabel, { color: '#22c55e' }]}>{t.coachLabel}</Text>
+                <Text style={s.messageText}>{concludingMessage}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={s.footer} fixed>
+            <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
+            <Text style={s.footerText}>|</Text>
+            <Text style={s.footerText}>partners@reachivy.com</Text>
+          </View>
+          <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
+        </Page>
+      )}
     </Document>
   );
 };
