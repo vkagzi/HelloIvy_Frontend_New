@@ -100,7 +100,7 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
     <Page size="A4" style={s.page} wrap>
       <Image src={LOGO_APP_BASE64} style={{ width: 120, height: 25, marginBottom: 12 }} />
       <View style={s.summaryHeader}>
-        <Text style={s.summaryTitle}>Domain Discovery Results</Text>
+        <Text style={s.summaryTitle}>Stream & Subject Selection Results</Text>
         {studentName && <Text style={s.summarySubtitle}>{studentName}</Text>}
       </View>
 

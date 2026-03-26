@@ -24,7 +24,7 @@ function sanitizeText(text: string): string {
 
 /**
  * Shared helper to build a professional transcript PDF.
- * Used by both domain discovery and career discovery transcripts.
+ * Used by both Stream & Subject Selection and Career & Degree Selection transcripts.
  */
 function buildTranscriptPDF(options: {
   title: string;
@@ -280,12 +280,12 @@ function buildTranscriptPDF(options: {
 }
 
 /**
- * Generate a PDF transcript from domain discovery conversation data
+ * Generate a PDF transcript from Stream & Subject Selection conversation data
  */
 export function generateTranscriptPDF(transcript: TranscriptData): Blob {
   return buildTranscriptPDF({
-    title: 'Domain Discovery Transcript',
-    headerSubtitle: 'Domain Discovery Session Transcript',
+    title: 'Stream & Subject Selection Transcript',
+    headerSubtitle: 'Stream & Subject Selection Session Transcript',
     brandColor: { r: 51, g: 119, b: 255 },      // #3377ff
     accentColor: { r: 51, g: 119, b: 255 },
     lightBg: { r: 235, g: 242, b: 255 },          // #ebf2ff
@@ -304,7 +304,7 @@ export function generateTranscriptPDF(transcript: TranscriptData): Blob {
   });
 }
 
-// ================== Career Discovery PDF Functions ==================
+// ================== Career & Degree Selection PDF Functions ==================
 
 /**
  * Data structure for career transcript
@@ -328,7 +328,7 @@ export interface CareerTranscriptData {
 }
 
 /**
- * Generate a PDF transcript from career discovery conversation data
+ * Generate a PDF transcript from Career & Degree Selection conversation data
  */
 export function generateCareerTranscriptPDF(transcript: CareerTranscriptData): Blob {
   // Pair bot messages with user responses
@@ -355,8 +355,8 @@ export function generateCareerTranscriptPDF(transcript: CareerTranscriptData): B
   }
 
   return buildTranscriptPDF({
-    title: 'Career Discovery Transcript',
-    headerSubtitle: 'Career Discovery Session Transcript',
+    title: 'Career & Degree Selection Transcript',
+    headerSubtitle: 'Career & Degree Selection Session Transcript',
     brandColor: { r: 127, g: 18, b: 243 },        // #7f12f3
     accentColor: { r: 127, g: 18, b: 243 },
     lightBg: { r: 243, g: 232, b: 255 },            // #f3e8ff (light purple)
