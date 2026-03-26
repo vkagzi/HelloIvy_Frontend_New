@@ -58,7 +58,7 @@ const domainApi: ConversationConfig['api'] = {
 const domainConversationConfig: ConversationConfig = {
   featureId: 'domain-discovery',
   featureLabel: 'DomainDiscovery',
-  pageTitle: '🧭 Domain Discovery Journey',
+  pageTitle: '🧭 Stream & Subject Selection Journey',
   baseRoute: '/domain-discovery',
   transcriptKeyPrefix: 'domain_conversation_transcript',
   theme: {
@@ -216,7 +216,7 @@ const domainConversationConfig: ConversationConfig = {
         <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
-              Domain Discovery Not Complete
+              Stream & Subject Selection Not Complete
             </h3>
             <p className="mt-2 text-sm text-gray-600">
               Your conversation is still in progress. The AI coach will wrap up when it

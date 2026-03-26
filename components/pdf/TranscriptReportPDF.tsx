@@ -14,7 +14,7 @@ const themes = {
     disclaimerBorder: '#f5d063',
     disclaimerText: '#92700c',
     coachLabel: 'AI Coach',
-    title: 'Domain Discovery Session Transcript',
+    title: 'Stream & Subject Selection Session Transcript',
   },
   career: {
     brand: '#7f12f3',
@@ -26,7 +26,7 @@ const themes = {
     disclaimerBorder: '#d8b4fe',
     disclaimerText: '#6b21a8',
     coachLabel: 'Career Coach',
-    title: 'Career Discovery Session Transcript',
+    title: 'Career & Degree Selection Session Transcript',
   },
 } as const;
 

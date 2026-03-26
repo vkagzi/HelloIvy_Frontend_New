@@ -50,7 +50,7 @@ export default function Dashboard(): React.ReactElement {
       return {
         heading: 'Create your profile',
         description:
-          'Create your profile to proceed with personalized recommendations, domain discovery, and more.',
+          'Create your profile to proceed with personalized recommendations, Stream & Subject Selection, and more.',
         linkText: 'Create your profile',
         linkHref: '/profile/personal',
       };
@@ -67,7 +67,7 @@ export default function Dashboard(): React.ReactElement {
     return {
       heading: 'View/Edit your profile',
       description:
-        'Your profile is completed ! \n You can proceed to Domain Discovery and explore personalized recommendations.',
+        'Your profile is completed ! \n You can proceed to Stream & Subject Selection and explore personalized recommendations.',
       linkText: 'View/Edit your profile',
       linkHref: '/profile/personal',
     };

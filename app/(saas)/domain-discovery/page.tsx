@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { domainDiscoveryApi, SessionListItem } from '@/lib/domain-discovery-api';
+import {
+  domainDiscoveryApi,
+  SessionListItem,
+} from '@/lib/domain-discovery-api';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import { Checkbox } from '@/app/_components/Checkbox';
 import { BrainWithoutBGLottie } from '@/app/_components/LottieAnimation';
@@ -20,7 +23,11 @@ import {
 interface DomainDiscoveryPageProps {}
 
 // Module-level cache to prevent duplicate API calls in Strict Mode
-let sessionsCache: { data: SessionListItem[] | null; promise: Promise<SessionListItem[]> | null; timestamp: number } = {
+let sessionsCache: {
+  data: SessionListItem[] | null;
+  promise: Promise<SessionListItem[]> | null;
+  timestamp: number;
+} = {
   data: null,
   promise: null,
   timestamp: 0,
@@ -36,40 +43,48 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [hasReadInstructions, setHasReadInstructions] = useState(false);
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
-  const { isProfileComplete, completionPercentage, missingSections, loading: profileLoading } = useProfile();
-
-
+  const {
+    isProfileComplete,
+    completionPercentage,
+    missingSections,
+    loading: profileLoading,
+  } = useProfile();
 
   useEffect(() => {
     let isCancelled = false;
-    
+
     const loadSessions = async () => {
       try {
         setIsLoadingSessions(true);
-        
+
         const now = Date.now();
-        const isCacheValid = sessionsCache.data !== null && (now - sessionsCache.timestamp) < CACHE_TTL;
-        
+        const isCacheValid =
+          sessionsCache.data !== null &&
+          now - sessionsCache.timestamp < CACHE_TTL;
+
         // Use cached data if available and not expired
         if (isCacheValid) {
           setSessions(sessionsCache.data!);
           setIsLoadingSessions(false);
           return;
         }
-        
+
         // Reuse in-flight request if one exists
         if (!sessionsCache.promise) {
-          sessionsCache.promise = domainDiscoveryApi.listSessions().then(res => {
-            sessionsCache.data = res.sessions;
-            sessionsCache.promise = null;
-            sessionsCache.timestamp = Date.now();
-            return res.sessions;
-          }).catch(err => {
-            sessionsCache.promise = null;
-            throw err;
-          });
+          sessionsCache.promise = domainDiscoveryApi
+            .listSessions()
+            .then((res) => {
+              sessionsCache.data = res.sessions;
+              sessionsCache.promise = null;
+              sessionsCache.timestamp = Date.now();
+              return res.sessions;
+            })
+            .catch((err) => {
+              sessionsCache.promise = null;
+              throw err;
+            });
         }
-        
+
         const sessionsList = await sessionsCache.promise;
         if (!isCancelled) {
           setSessions(sessionsList);
@@ -82,9 +97,9 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
         }
       }
     };
-    
+
     loadSessions();
-    
+
     return () => {
       isCancelled = true;
     };
@@ -123,8 +138,8 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
       // Navigate to conversation page with session ID
       router.push(`/domain-discovery/${session.session_id}/conversations`);
     } catch (err) {
-      console.error('Failed to start domain discovery:', err);
-      setError('Failed to start domain discovery. Please try again.');
+      console.error('Failed to start Stream & Subject Selection:', err);
+      setError('Failed to start Stream & Subject Selection. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -175,7 +190,7 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
           {/* Left Content */}
           <div className="flex-1">
             <span className="mb-2 bg-linear-to-r from-teal-500 via-emerald-500 to-blue-400 bg-clip-text text-2xl font-semibold text-transparent md:text-2xl">
-              Domain Discovery
+              Stream & Subject Selection
             </span>
             <Heading
               level={1}
@@ -190,7 +205,10 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
 
           {/* Right - Brain Animation */}
           <div className="w-full shrink-0 md:w-auto">
-            <BrainWithoutBGLottie loop={true} className="h-[200px] w-full max-w-[345px]" />
+            <BrainWithoutBGLottie
+              loop={true}
+              className="h-[200px] w-full max-w-[345px]"
+            />
           </div>
         </div>
 
@@ -205,7 +223,8 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                       Your Previous Sessions
                     </span>
                     <span className="rounded-full bg-gray-200 px-2 py-0.5 text-sm text-gray-500">
-                      {sessions.length} session{sessions.length !== 1 ? 's' : ''}
+                      {sessions.length} session
+                      {sessions.length !== 1 ? 's' : ''}
                     </span>
                   </div>
                 </AccordionTrigger>
@@ -230,8 +249,8 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                               </span>
                             </div>
                             <div className="mt-1 text-sm text-gray-600">
-                              Progress: {session.current_step}{' '}
-                              questions answered
+                              Progress: {session.current_step} questions
+                              answered
                               {/* {session.current_phase === 'riasec'
                                 ? `Initial: ${session.riasec_completed}/${session.riasec_questions_count ?? 10}`
                                 : `Deep Dive: ${session.deepdive_completed}/${session.deepdive_questions_count ?? 10}`} */}
@@ -242,7 +261,9 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleResumeSession(session.session_id)}
+                                onClick={() =>
+                                  handleResumeSession(session.session_id)
+                                }
                                 className="border-teal-500 text-teal-600 hover:bg-teal-50"
                               >
                                 Resume
@@ -251,7 +272,9 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleViewResults(session.session_id)}
+                                onClick={() =>
+                                  handleViewResults(session.session_id)
+                                }
                                 className="border-green-500 text-green-600 hover:bg-green-50"
                               >
                                 View Results
@@ -289,8 +312,9 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
             <li className="flex gap-3">
               <span className="min-w-5 font-semibold">1</span>
               <span>
-                This module helps you discover academic and interest domains that
-                match your natural curiosities, passions, and learning preferences.
+                This module helps you discover academic and interest domains
+                that match your natural curiosities, passions, and learning
+                preferences.
               </span>
             </li>
             <li className="flex gap-3">
@@ -310,8 +334,8 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
             <li className="flex gap-3">
               <span className="min-w-5 font-semibold">4</span>
               <span>
-                Receive detailed domain matches with related subjects, exploration
-                activities, and potential career paths to pursue.
+                Receive detailed domain matches with related subjects,
+                exploration activities, and potential career paths to pursue.
               </span>
             </li>
             <li className="flex gap-3">
@@ -324,8 +348,9 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
             <li className="flex gap-3">
               <span className="min-w-5 font-semibold">6</span>
               <span>
-                Domain Discovery is a prerequisite for Career Discovery - understanding
-                your domains helps identify specific career paths later.
+                This module is a prerequisite for the next - understanding your
+                Streams & Subjects helps identify specific Career Paths &
+                Degrees later.
               </span>
             </li>
           </ol>
@@ -339,39 +364,51 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
           {!profileLoading && !isProfileComplete ? (
             <div className="mt-6 rounded-lg border border-orange-200 bg-orange-50 p-4">
               <div className="flex items-start gap-3">
-                <FiIcon name="exclamation-circle" className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" />
+                <FiIcon
+                  name="exclamation-circle"
+                  className="mt-0.5 h-5 w-5 shrink-0 text-orange-500"
+                />
                 <div className="flex-1">
-                  <p className="font-semibold text-orange-800">Profile incomplete ({completionPercentage}%)</p>
+                  <p className="font-semibold text-orange-800">
+                    Profile incomplete ({completionPercentage}%)
+                  </p>
                   <p className="mt-1 text-sm text-orange-700">
-                    You need to complete your profile before starting a domain discovery session.
+                    You need to complete your profile before starting a Stream &
+                    Subject Selection session.
                     {missingSections.length > 0 && (
-                      <> Missing: {missingSections.map((s, i) => {
-                        const slugMap: Record<string, string> = {
-                          personalDetails: 'personal',
-                          educational: 'educational',
-                          extraCurricular: 'extra-curricular',
-                        };
-                        const labelMap: Record<string, string> = {
-                          personalDetails: 'Personal Details',
-                          educational: 'Educational',
-                          extraCurricular: 'Extra Curricular',
-                        };
-                        const slug = slugMap[s] ?? s;
-                        const label = labelMap[s] ?? s.charAt(0).toUpperCase() + s.slice(1);
-                        return (
-                          <span key={s}>
-                            {i > 0 && ', '}
-                            <Link
-                              href={`/profile/${slug}/edit`}
-                              className="font-medium underline underline-offset-2 hover:text-orange-900"
-                            >
-                              {label}
-                            </Link>
-                          </span>
-                        );
-                      })}
-                      .
-                    </>)}
+                      <>
+                        {' '}
+                        Missing:{' '}
+                        {missingSections.map((s, i) => {
+                          const slugMap: Record<string, string> = {
+                            personalDetails: 'personal',
+                            educational: 'educational',
+                            extraCurricular: 'extra-curricular',
+                          };
+                          const labelMap: Record<string, string> = {
+                            personalDetails: 'Personal Details',
+                            educational: 'Educational',
+                            extraCurricular: 'Extra Curricular',
+                          };
+                          const slug = slugMap[s] ?? s;
+                          const label =
+                            labelMap[s] ??
+                            s.charAt(0).toUpperCase() + s.slice(1);
+                          return (
+                            <span key={s}>
+                              {i > 0 && ', '}
+                              <Link
+                                href={`/profile/${slug}/edit`}
+                                className="font-medium underline underline-offset-2 hover:text-orange-900"
+                              >
+                                {label}
+                              </Link>
+                            </span>
+                          );
+                        })}
+                        .
+                      </>
+                    )}
                   </p>
                   <Link
                     href="/profile/personal/edit"
@@ -404,7 +441,9 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                 size="lg"
                 onClick={handleStartDomainDiscovery}
                 disabled={isLoading || !hasReadInstructions || profileLoading}
-                iconRight={<FiIcon name="arrow-small-right" className="h-5 w-5" />}
+                iconRight={
+                  <FiIcon name="arrow-small-right" className="h-5 w-5" />
+                }
                 className="mt-6"
               >
                 {isLoading

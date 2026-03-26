@@ -1,7 +1,7 @@
 /**
  * Generic Realtime Voice Client
  * Handles WebSocket connection to Azure OpenAI Realtime API via Django proxy.
- * Works for domain discovery, career discovery, or any feature that needs
+ * Works for Stream & Subject Selection, Career & Degree Selection , or any feature that needs
  * realtime voice over a backend WebSocket proxy.
  */
 

@@ -1,6 +1,6 @@
 /**
- * Domain Discovery API Client
- * Connects to Django backend using LangChain + Azure OpenAI for AI-powered domain discovery
+ * Stream & Subject Selection API Client
+ * Connects to Django backend using LangChain + Azure OpenAI for AI-powered Stream & Subject Selection
  */
 import api from '@/lib/api';
 
@@ -163,7 +163,7 @@ class DomainDiscoveryAPI {
   private baseUrl = '/api/domain-discovery';
 
   /**
-   * Create a new domain discovery session
+   * Create a new Stream & Subject Selection session
    * Returns the session with the initial bot message
    */
   async createSession(): Promise<DomainDiscoverySession> {
@@ -227,7 +227,7 @@ class DomainDiscoveryAPI {
   }
 
   /**
-   * End a domain discovery session
+   * End a Stream & Subject Selection session
    */
   async endSession(sessionId: string): Promise<void> {
     return api<void>(`${this.baseUrl}/${sessionId}/end/`, {
@@ -304,7 +304,7 @@ class DomainDiscoveryAPI {
   }
 
   /**
-   * Health check for the domain discovery service
+   * Health check for the Stream & Subject Selection service
    */
   async healthCheck(): Promise<{
     status: string;
