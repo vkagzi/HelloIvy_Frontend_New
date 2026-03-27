@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import React from 'react';
-import AdminNavbar from '@/app/(admin)/_components/AdminNavbar';
-import AdminHead from '@/app/(admin)/_components/AdminHead';
+import SchoolNavbar from '@/app/(school)/_components/SchoolNavbar';
+import SchoolHead from '@/app/(school)/_components/SchoolHead';
 import SessionGuard from '@/app/_components/SessionGuard';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
@@ -9,15 +9,15 @@ import { SessionProvider } from 'next-auth/react';
 import { NavbarProvider } from '@/app/_contexts/NavbarContext';
 
 export const metadata: Metadata = {
-  title: 'Admin - HelloIvy',
-  description: 'Admin Dashboard',
+  title: 'School Admin - HelloIvy',
+  description: 'School Admin Dashboard',
   robots: {
     index: false,
     follow: false,
   },
 };
 
-export default async function AdminLayout({
+export default async function SchoolLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -28,8 +28,7 @@ export default async function AdminLayout({
     redirect('/login');
   }
 
-  const adminRoles = ['superadmin', 'operationadmin'];
-  if (!adminRoles.includes(session.user.role ?? '')) {
+  if (session.user.role !== 'schooladmin') {
     redirect('/');
   }
 
@@ -38,9 +37,9 @@ export default async function AdminLayout({
       <SessionProvider session={session}>
         <NavbarProvider>
           <SessionGuard>
-            <AdminNavbar />
+            <SchoolNavbar />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              <AdminHead session={session} />
+              <SchoolHead session={session} />
               <main className="flex-1 overflow-auto px-4 py-5 md:px-8 lg:px-15">
                 {children}
               </main>

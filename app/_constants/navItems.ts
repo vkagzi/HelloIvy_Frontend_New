@@ -43,5 +43,5 @@ export const navItems: NavItem[] = [
 
 // Subset of nav items shown in the sidebar
 export const sidebarNavItems: NavItem[] = navItems.filter((item) =>
-  ['/dashboard', '/domain-discovery', '/career-discovery', '/notifications', '/documents'].includes(item.href)
+  ['/dashboard', '/domain-discovery', '/career-discovery'].includes(item.href)
 );

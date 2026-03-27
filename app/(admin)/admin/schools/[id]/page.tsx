@@ -4,6 +4,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api-client';
+import InfoItem from '@/components/admin/InfoItem';
+import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 
 interface SubscriptionItem {
   id: number;
@@ -41,6 +43,14 @@ interface StudentItem {
   is_active: boolean;
 }
 
+interface AdminItem {
+  id: number;
+  email: string;
+  is_active: boolean;
+  last_login: string | null;
+  created_at: string;
+}
+
 export default function SchoolDetailPage() {
   const params = useParams();
   const schoolId = params?.id;
@@ -62,18 +72,28 @@ export default function SchoolDetailPage() {
   const [addStudentEmail, setAddStudentEmail] = useState('');
   const [addStudentSaving, setAddStudentSaving] = useState(false);
 
+  // School admins
+  const [admins, setAdmins] = useState<AdminItem[]>([]);
+  const [addAdminOpen, setAddAdminOpen] = useState(false);
+  const [addAdminEmail, setAddAdminEmail] = useState('');
+  const [addAdminSaving, setAddAdminSaving] = useState(false);
+
   const fetchData = useCallback(async () => {
     if (!schoolId) return;
     try {
-      const [schoolData, studentsData] = await Promise.all([
+      const [schoolData, studentsData, adminsData] = await Promise.all([
         api<SchoolDetail>(`/api/schools/${schoolId}/`),
         api<{ students: StudentItem[]; total: number }>(
           `/api/schools/${schoolId}/students/?page_size=10`
+        ),
+        api<{ admins: AdminItem[]; total: number }>(
+          `/api/schools/${schoolId}/admins/`
         ),
       ]);
       setSchool(schoolData);
       setStudents(studentsData.students);
       setTotalStudents(studentsData.total);
+      setAdmins(adminsData.admins);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load school');
     } finally {
@@ -127,21 +147,38 @@ export default function SchoolDetailPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-gray-500">Loading school details...</p>
-      </div>
-    );
-  }
+  const handleAddAdmin = async () => {
+    if (!schoolId || !addAdminEmail.trim()) return;
+    setAddAdminSaving(true);
+    try {
+      await api(`/api/schools/${schoolId}/admins/`, {
+        method: 'POST',
+        body: { email: addAdminEmail },
+      });
+      setAddAdminOpen(false);
+      setAddAdminEmail('');
+      fetchData();
+    } catch {
+      // silent
+    } finally {
+      setAddAdminSaving(false);
+    }
+  };
 
-  if (error || !school) {
-    return (
-      <div className="rounded-md bg-red-50 p-4">
-        <p className="text-sm text-red-700">Error: {error || 'Not found'}</p>
-      </div>
-    );
-  }
+  const handleRemoveAdmin = async (userId: number) => {
+    if (!schoolId) return;
+    try {
+      await api(`/api/schools/${schoolId}/admins/${userId}/`, {
+        method: 'DELETE',
+      });
+      fetchData();
+    } catch {
+      // silent
+    }
+  };
+
+  if (loading) return <LoadingState message="Loading school details..." />;
+  if (error || !school) return <ErrorState message={error || 'Not found'} />;
 
   const moduleChoices = [
     'essay_brainstormer',
@@ -212,7 +249,7 @@ export default function SchoolDetailPage() {
           </h2>
           <button
             onClick={() => setSubOpen(true)}
-            className="rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white"
+            className="cursor-pointer rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white"
           >
             Add Module
           </button>
@@ -244,6 +281,61 @@ export default function SchoolDetailPage() {
         )}
       </div>
 
+      {/* School Admins */}
+      <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-900">
+            School Admins ({admins.length})
+          </h2>
+          <button
+            onClick={() => setAddAdminOpen(true)}
+            className="cursor-pointer rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white"
+          >
+            Add Admin
+          </button>
+        </div>
+        {admins.length > 0 ? (
+          <div className="space-y-2">
+            {admins.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 px-4 py-2"
+              >
+                <div>
+                  <Link
+                    href={`/admin/users/${a.id}`}
+                    className="text-sm font-medium text-purple-600 hover:text-purple-800"
+                  >
+                    {a.email}
+                  </Link>
+                  <p className="text-xs text-gray-500">
+                    Added {new Date(a.created_at).toLocaleDateString()}
+                    {a.last_login
+                      ? ` · Last login ${new Date(a.last_login).toLocaleDateString()}`
+                      : ' · Never logged in'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`inline-flex rounded-full px-2 text-xs font-semibold ${a.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                  >
+                    {a.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                  <button
+                    onClick={() => handleRemoveAdmin(a.id)}
+                    className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">No school admins assigned yet.</p>
+        )}
+      </div>
+
       {/* Students */}
       <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
         <div className="mb-3 flex items-center justify-between">
@@ -252,7 +344,7 @@ export default function SchoolDetailPage() {
           </h2>
           <button
             onClick={() => setAddStudentOpen(true)}
-            className="rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white"
+            className="cursor-pointer rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white"
           >
             Add Student
           </button>
@@ -339,14 +431,14 @@ export default function SchoolDetailPage() {
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setSubOpen(false)}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+                  className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddSubscription}
                   disabled={subSaving || !subModule || !subExpiry}
-                  className="rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+                  className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
                   {subSaving ? 'Saving...' : 'Add'}
                 </button>
@@ -377,14 +469,14 @@ export default function SchoolDetailPage() {
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setAddStudentOpen(false)}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+                  className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddStudent}
                   disabled={addStudentSaving || !addStudentEmail.trim()}
-                  className="rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+                  className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
                   {addStudentSaving ? 'Adding...' : 'Add'}
                 </button>
@@ -393,17 +485,47 @@ export default function SchoolDetailPage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
-function InfoItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[11px] font-medium uppercase text-gray-400">
-        {label}
-      </p>
-      <p className="text-sm text-gray-900">{value}</p>
+      {/* Add Admin Modal */}
+      {addAdminOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="mb-4 text-lg font-semibold">Add School Admin</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Admin Email
+                </label>
+                <input
+                  type="email"
+                  value={addAdminEmail}
+                  onChange={(e) => setAddAdminEmail(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="admin@example.com"
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                If the user exists, their role will be updated to school admin. Otherwise, a new account will be created.
+              </p>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setAddAdminOpen(false)}
+                  className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddAdmin}
+                  disabled={addAdminSaving || !addAdminEmail.trim()}
+                  className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+                >
+                  {addAdminSaving ? 'Adding...' : 'Add'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

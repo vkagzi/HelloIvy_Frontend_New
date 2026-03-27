@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api-client';
+import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 
 interface SchoolItem {
   id: number;
@@ -39,21 +40,8 @@ export default function SchoolsListPage() {
     fetchSchools();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-gray-500">Loading schools...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-md bg-red-50 p-4">
-        <p className="text-sm text-red-700">Error: {error}</p>
-      </div>
-    );
-  }
+  if (loading) return <LoadingState message="Loading schools..." />;
+  if (error) return <ErrorState message={error} />;
 
   return (
     <div>

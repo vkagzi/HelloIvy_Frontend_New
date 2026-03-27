@@ -4,12 +4,25 @@ import { NextResponse } from 'next/server';
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = ['/', '/login', '/signup', '/essay-evaluator'];
 
-// Auth routes that should redirect to dashboard if logged in
+// Auth routes that should redirect to role-appropriate dashboard if logged in
 const AUTH_ROUTES = ['/login', '/signup'];
+
+function getRoleDashboard(role: string): string {
+  switch (role) {
+    case 'superadmin':
+    case 'operationadmin':
+      return '/admin';
+    case 'schooladmin':
+      return '/school/dashboard';
+    default:
+      return '/dashboard';
+  }
+}
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth?.user;
   const pathname = req.nextUrl.pathname;
+  const role = (req.auth?.user?.role as string) ?? 'student';
 
   // Check if route is public
   const isPublicRoute = PUBLIC_ROUTES.some(
@@ -19,17 +32,33 @@ export default auth((req) => {
   // Check if route is an auth route (login/signup)
   const isAuthRoute = AUTH_ROUTES.includes(pathname);
 
-  // Redirect logged-in users away from login/signup to dashboard
+  // Redirect logged-in users away from login/signup to their dashboard
   if (isLoggedIn && isAuthRoute) {
-    return NextResponse.redirect(new URL('/dashboard', req.nextUrl));
+    return NextResponse.redirect(new URL(getRoleDashboard(role), req.nextUrl));
   }
 
   // Redirect unauthenticated users to login for protected routes
   if (!isLoggedIn && !isPublicRoute) {
     const loginUrl = new URL('/login', req.nextUrl);
-    // Store the original URL to redirect back after login
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Role-based route protection for authenticated users
+  if (isLoggedIn) {
+    // /admin/* — only superadmin and operationadmin
+    if (pathname.startsWith('/admin')) {
+      if (role !== 'superadmin' && role !== 'operationadmin') {
+        return NextResponse.redirect(new URL('/', req.nextUrl));
+      }
+    }
+
+    // /school/* — only schooladmin
+    if (pathname.startsWith('/school')) {
+      if (role !== 'schooladmin') {
+        return NextResponse.redirect(new URL('/', req.nextUrl));
+      }
+    }
   }
 
   return NextResponse.next();

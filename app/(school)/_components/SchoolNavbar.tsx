@@ -10,17 +10,15 @@ import Image from 'next/image';
 import { Label } from '@/app/_components/Typography';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
 
-const adminNavItems: { label: string; icon: string; href: string }[] = [
-  { label: 'Dashboard', icon: 'sr-apps', href: '/admin' },
-  { label: 'Users', icon: 'users', href: '/admin/users' },
-  { label: 'Schools', icon: 'building', href: '/admin/schools' },
+const schoolNavItems = [
+  { label: 'Dashboard', icon: 'sr-apps', href: '/school/dashboard' },
+  { label: 'Students', icon: 'users', href: '/school/students' },
 ];
 
-const AdminNavbar: React.FC = () => {
+const SchoolNavbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const pathname = usePathname();
   const { isDrawerOpen, closeDrawer } = useNavbar();
-  const visibleNavItems = adminNavItems;
 
   useEffect(() => {
     closeDrawer();
@@ -39,7 +37,7 @@ const AdminNavbar: React.FC = () => {
   const sidebarContent = (
     <>
       <div className="flex h-12 items-center justify-between pb-3">
-        <Link href="/admin">
+        <Link href="/school/dashboard">
           <Image
             src={collapsed ? imgIcon : imgLogoApp}
             alt="HelloIvy Logo"
@@ -69,16 +67,16 @@ const AdminNavbar: React.FC = () => {
         </button>
       </div>
 
-      {/* Admin badge */}
+      {/* School Admin badge */}
       <div className={`mb-2 ${collapsed ? 'lg:hidden' : ''}`}>
-        <span className="inline-flex rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-800">
-          Admin
+        <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+          School Admin
         </span>
       </div>
 
       <ul className="mt-2 flex-1">
-        {visibleNavItems.map((item) => {
-          const active = pathname === item.href;
+        {schoolNavItems.map((item) => {
+          const active = pathname === item.href || pathname?.startsWith(item.href + '/');
           return (
             <li key={item.href} className="h-10">
               <Link
@@ -150,4 +148,4 @@ const AdminNavbar: React.FC = () => {
   );
 };
 
-export default AdminNavbar;
+export default SchoolNavbar;

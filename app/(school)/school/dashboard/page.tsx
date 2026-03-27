@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import api from '@/lib/api-client';
+import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 
 interface ModuleInfo {
   module_name: string;
@@ -127,11 +128,7 @@ export default function SchoolDashboardPage() {
   };
 
   if (status === 'loading' || (loading && schoolId)) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-gray-500">Loading school dashboard...</p>
-      </div>
-    );
+    return <LoadingState message="Loading school dashboard..." />;
   }
 
   if (!schoolId) {
@@ -144,13 +141,7 @@ export default function SchoolDashboardPage() {
     );
   }
 
-  if (error || !dashboard) {
-    return (
-      <div className="rounded-md bg-red-50 p-4">
-        <p className="text-sm text-red-700">Error: {error || 'No data'}</p>
-      </div>
-    );
-  }
+  if (error || !dashboard) return <ErrorState message={error || 'No data'} />;
 
   const grades = ['8', '9', '10', '11', '12'];
 
@@ -287,7 +278,7 @@ export default function SchoolDashboardPage() {
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm">
                     <a
-                      href={`/admin/school-students?grade=${g.grade}`}
+                      href={`/school/students?grade=${g.grade}`}
                       className="text-purple-600 hover:text-purple-800"
                     >
                       View Students

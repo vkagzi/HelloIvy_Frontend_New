@@ -86,6 +86,13 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
         </div>
         <div className="flex items-center gap-4">
           <Link
+            href="/documents"
+            className="rounded-md p-1.5 transition hover:bg-neutral-100"
+            aria-label="Documents"
+          >
+            <FiIcon name="document" className="block h-5 w-5 text-neutral-700" />
+          </Link>
+          <Link
             href="/notifications"
             className="relative rounded-md p-1.5 transition hover:bg-neutral-100"
             aria-label="Notifications"

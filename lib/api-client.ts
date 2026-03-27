@@ -6,7 +6,7 @@ import { broadcastLogout, dispatchSessionExpired } from '@/lib/auth-broadcast';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 type ApiOptions = {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: any;
   headers?: Record<string, string>;
   tokenOverride?: string;

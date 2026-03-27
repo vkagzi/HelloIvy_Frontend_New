@@ -11,6 +11,20 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  async redirects() {
+    return [
+      {
+        source: '/admin/school-dashboard',
+        destination: '/school/dashboard',
+        permanent: true,
+      },
+      {
+        source: '/admin/school-students',
+        destination: '/school/students',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       // Rewrite Django API routes
