@@ -63,7 +63,7 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
           >
             <FiIcon name="menu-burger" className="block h-5 w-5 text-neutral-700" />
           </button>
-          <Heading level={3} className="font-extrabold">
+          <Heading level={3} className="font-extrabold bg-linear-to-r from-teal-500 via-emerald-500 to-blue-400 bg-clip-text text-2xl text-transparent md:text-2xl">
             {heading}
           </Heading>
         </div>

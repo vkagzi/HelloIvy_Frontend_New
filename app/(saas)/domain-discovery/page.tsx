@@ -186,12 +186,12 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
     <div className="h-full overflow-auto bg-white">
       <div className="mx-auto px-1">
         {/* Hero Section */}
-        <div className="mb-10 flex flex-col items-center justify-between gap-8 md:flex-row">
+        <div className="mb-5 flex flex-col items-center justify-between gap-8 md:flex-row">
           {/* Left Content */}
           <div className="flex-1">
-            <span className="mb-2 bg-linear-to-r from-teal-500 via-emerald-500 to-blue-400 bg-clip-text text-2xl font-semibold text-transparent md:text-2xl">
+            {/* <span className="mb-2 bg-linear-to-r from-teal-500 via-emerald-500 to-blue-400 bg-clip-text text-2xl font-semibold text-transparent md:text-2xl">
               Stream & Subject Selection
-            </span>
+            </span> */}
             <Heading
               level={1}
               variant="web"
