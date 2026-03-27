@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Heading, Label } from '@/app/_components/Typography';
 import { FiIcon } from '@/app/_components/Icons';
 import { usePathname } from 'next/navigation';
@@ -15,6 +15,7 @@ import {
 import type { Session } from 'next-auth';
 import { navItems } from '@/app/_constants/navItems';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
+import api from '@/lib/api-client';
 
 type AppHeadProps = {
   session: Session | null;
@@ -23,10 +24,26 @@ type AppHeadProps = {
 const AppHead: React.FC<AppHeadProps> = ({ session }) => {
   const userAuth = useUserAuth(session);
   const { openDrawer } = useNavbar();
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const pathname = usePathname();
   const currentNavItem = navItems.find((item) => pathname === item.href);
   const heading = currentNavItem ? currentNavItem.label : 'Dashboard';
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const data = await api<{ unread_count: number }>('/api/notifications/unread-count/');
+      setUnreadCount(data.unread_count);
+    } catch {
+      // silent
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   // Calculate user initials from name
   const getUserInitials = (name: string): string => {
@@ -68,6 +85,18 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
           </Heading>
         </div>
         <div className="flex items-center gap-4">
+          <Link
+            href="/notifications"
+            className="relative rounded-md p-1.5 transition hover:bg-neutral-100"
+            aria-label="Notifications"
+          >
+            <FiIcon name="bell" className="block h-5 w-5 text-neutral-700" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 rounded-lg p-1 outline-none transition-colors hover:bg-neutral-100 focus:ring-2 focus:ring-blue-500/20">

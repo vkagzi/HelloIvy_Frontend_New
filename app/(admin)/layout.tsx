@@ -28,7 +28,8 @@ export default async function AdminLayout({
     redirect('/login');
   }
 
-  if (session.user.role !== 'superadmin') {
+  const adminRoles = ['superadmin', 'operationadmin', 'schooladmin'];
+  if (!adminRoles.includes(session.user.role ?? '')) {
     redirect('/dashboard');
   }
 

@@ -18,6 +18,7 @@ import { useNavbar } from '@/app/_contexts/NavbarContext';
 const adminNavItems = [
   { label: 'Admin Dashboard', href: '/admin' },
   { label: 'Users', href: '/admin/users' },
+  { label: 'Schools', href: '/admin/schools' },
 ];
 
 type AdminHeadProps = {

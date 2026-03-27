@@ -50,6 +50,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             email: user.email,
             name: user.name || user.email,
             role: user.role || 'student',
+            school_id: user.school_id || undefined,
+            school_name: user.school_name || undefined,
             accessToken: data.token,
           };
         } catch {
@@ -65,6 +67,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.email = user.email;
         token.name = user.name;
         token.role = user.role;
+        token.school_id = user.school_id;
+        token.school_name = user.school_name;
         token.accessToken = user.accessToken;
       }
       return token;
@@ -75,6 +79,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.role = token.role as string;
+        session.user.school_id = token.school_id as number | undefined;
+        session.user.school_name = token.school_name as string | undefined;
         session.accessToken = token.accessToken as string;
       }
       return session;

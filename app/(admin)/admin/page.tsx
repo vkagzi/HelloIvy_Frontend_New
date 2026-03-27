@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api-client';
 
 interface DashboardStats {
@@ -11,11 +13,18 @@ interface DashboardStats {
 }
 
 export default function AdminDashboardPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (session?.user?.role === 'schooladmin') {
+      router.replace('/admin/school-dashboard');
+      return;
+    }
+
     const fetchStats = async () => {
       try {
         const data = await api<DashboardStats>(
@@ -30,7 +39,7 @@ export default function AdminDashboardPage() {
     };
 
     fetchStats();
-  }, []);
+  }, [session, router]);
 
   if (loading) {
     return (
@@ -70,7 +79,7 @@ export default function AdminDashboardPage() {
         <h2 className="mb-4 text-lg font-semibold text-gray-800">
           Users by Role
         </h2>
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

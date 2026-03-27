@@ -9,16 +9,26 @@ import imgIcon from '@/assets/images/icon.png';
 import Image from 'next/image';
 import { Label } from '@/app/_components/Typography';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
+import { useSession } from 'next-auth/react';
 
-const adminNavItems = [
-  { label: 'Dashboard', icon: 'sr-apps', href: '/admin' },
-  { label: 'Users', icon: 'users', href: '/admin/users' },
+const adminNavItems: { label: string; icon: string; href: string; roles?: string[] }[] = [
+  { label: 'Dashboard', icon: 'sr-apps', href: '/admin', roles: ['superadmin', 'operationadmin'] },
+  { label: 'Users', icon: 'users', href: '/admin/users', roles: ['superadmin', 'operationadmin'] },
+  { label: 'Schools', icon: 'building', href: '/admin/schools', roles: ['superadmin', 'operationadmin'] },
+  { label: 'School Dashboard', icon: 'sr-apps', href: '/admin/school-dashboard', roles: ['schooladmin'] },
+  { label: 'Students', icon: 'users', href: '/admin/school-students', roles: ['schooladmin'] },
 ];
 
 const AdminNavbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const pathname = usePathname();
   const { isDrawerOpen, closeDrawer } = useNavbar();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role ?? 'student';
+
+  const visibleNavItems = adminNavItems.filter(
+    (item) => !item.roles || item.roles.includes(userRole)
+  );
 
   useEffect(() => {
     closeDrawer();
@@ -75,7 +85,7 @@ const AdminNavbar: React.FC = () => {
       </div>
 
       <ul className="mt-2 flex-1">
-        {adminNavItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const active = pathname === item.href;
           return (
             <li key={item.href} className="h-10">

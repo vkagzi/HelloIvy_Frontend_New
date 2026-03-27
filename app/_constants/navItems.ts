@@ -33,6 +33,8 @@ export const navItems: NavItem[] = [
     href: '/interview-prep',
   },
   { label: 'Application', icon: 'form', href: '/application' },
+  { label: 'Notifications', icon: 'bell', href: '/notifications' },
+  { label: 'Documents', icon: 'document', href: '/documents' },
   { label: 'Starred', icon: 'star', href: '/starred' },
   { label: 'Personal Details', icon: 'user', href: '/profile/personal/edit' },
   { label: 'Settings', icon: 'settings', href: '/settings' },
@@ -41,5 +43,5 @@ export const navItems: NavItem[] = [
 
 // Subset of nav items shown in the sidebar
 export const sidebarNavItems: NavItem[] = navItems.filter((item) =>
-  ['/dashboard', '/domain-discovery', '/career-discovery'].includes(item.href)
+  ['/dashboard', '/domain-discovery', '/career-discovery', '/notifications', '/documents'].includes(item.href)
 );

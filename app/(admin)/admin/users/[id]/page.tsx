@@ -515,6 +515,8 @@ function ModuleCard({
 function RoleBadge({ role }: { role: string }) {
   const colors: Record<string, string> = {
     superadmin: 'bg-purple-100 text-purple-800',
+    operationadmin: 'bg-orange-100 text-orange-800',
+    schooladmin: 'bg-emerald-100 text-emerald-800',
     school: 'bg-blue-100 text-blue-800',
     student: 'bg-gray-100 text-gray-800',
   };

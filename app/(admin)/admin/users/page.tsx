@@ -10,6 +10,8 @@ interface UserItem {
   role: string;
   is_active: boolean;
   terms_accepted: boolean;
+  school_id: number | null;
+  school_name: string | null;
   last_login: string | null;
   created_at: string;
   updated_at: string;
@@ -56,11 +58,19 @@ export default function AdminUsersPage() {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-        <p className="text-sm text-gray-500">{users.length} total users</p>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+          <p className="text-sm text-gray-500">{users.length} total users</p>
+        </div>
+        <Link
+          href="/admin/users/create"
+          className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
+        >
+          Add User
+        </Link>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -72,6 +82,9 @@ export default function AdminUsersPage() {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                 Role
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                School
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                 Status
@@ -96,11 +109,14 @@ export default function AdminUsersPage() {
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                   {user.id}
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                <td className="whitespace-nowrap px-2 py-4 text-sm font-medium text-gray-900">
                   {user.email}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
                   <RoleBadge role={user.role} />
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                  {user.school_name || '—'}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
                   <span
@@ -144,6 +160,8 @@ export default function AdminUsersPage() {
 function RoleBadge({ role }: { role: string }) {
   const colors: Record<string, string> = {
     superadmin: 'bg-purple-100 text-purple-800',
+    operationadmin: 'bg-orange-100 text-orange-800',
+    schooladmin: 'bg-emerald-100 text-emerald-800',
     school: 'bg-blue-100 text-blue-800',
     student: 'bg-gray-100 text-gray-800',
   };

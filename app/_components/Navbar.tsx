@@ -9,11 +9,15 @@ import Image from 'next/image';
 import { Label } from '@/app/_components/Typography';
 import { sidebarNavItems } from '@/app/_constants/navItems';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
+import { useSession } from 'next-auth/react';
 
 const Navbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const pathname = usePathname();
   const { isDrawerOpen, closeDrawer } = useNavbar();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role ?? 'student';
+  const isAdmin = ['superadmin', 'operationadmin'].includes(userRole);
 
   // Close drawer on route change
   useEffect(() => {
@@ -117,6 +121,19 @@ const Navbar: React.FC = () => {
           );
         })}
       </ul>
+
+      {/* Admin link at bottom for admins */}
+      {isAdmin && (
+        <div className={`border-t border-neutral-200 pt-3 pb-4 ${collapsed ? 'lg:hidden' : ''}`}>
+          <Link
+            href="/admin"
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-neutral-500 transition hover:bg-purple-50 hover:text-neutral-700"
+          >
+            <FiIcon name="settings" className="h-4 w-4" />
+            <span>Admin Panel</span>
+          </Link>
+        </div>
+      )}
     </>
   );
 
