@@ -179,7 +179,7 @@ export default function UserTable<T extends { id: number; email: string }>({
                 setEmailQuery('');
                 setRoleFilter('');
               }}
-              className="rounded-md px-2 py-1.5 text-xs text-gray-500 hover:text-gray-800"
+              className="cursor-pointer rounded-md px-2 py-1.5 text-xs text-gray-500 hover:text-gray-800"
             >
               Clear filters
             </button>
@@ -241,14 +241,14 @@ export default function UserTable<T extends { id: number; email: string }>({
             <button
               onClick={() => pagination.onPageChange(Math.max(1, pagination.page - 1))}
               disabled={pagination.page === 1}
-              className="rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-50"
+              className="cursor-pointer rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-50"
             >
               Previous
             </button>
             <button
               onClick={() => pagination.onPageChange(Math.min(pagination.totalPages, pagination.page + 1))}
               disabled={pagination.page === pagination.totalPages}
-              className="rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-50"
+              className="cursor-pointer rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-50"
             >
               Next
             </button>

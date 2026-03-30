@@ -196,14 +196,14 @@ export default function CreateUserPage() {
           <button
             type="button"
             onClick={() => router.push('/admin/users')}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+            className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+            className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
           >
             {saving ? 'Creating...' : 'Add User'}
           </button>

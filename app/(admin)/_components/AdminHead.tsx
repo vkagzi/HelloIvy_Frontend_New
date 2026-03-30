@@ -50,7 +50,7 @@ const AdminHead: React.FC<AdminHeadProps> = ({ session }) => {
       <div className="flex items-center gap-3">
         <button
           aria-label="Open menu"
-          className="rounded-md p-1 transition hover:bg-neutral-100 lg:hidden"
+          className="cursor-pointer rounded-md p-1 transition hover:bg-neutral-100 lg:hidden"
           onClick={openDrawer}
         >
           <FiIcon name="menu-burger" className="block h-5 w-5 text-neutral-700" />
@@ -62,7 +62,7 @@ const AdminHead: React.FC<AdminHeadProps> = ({ session }) => {
       <div className="flex items-center gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg p-1 outline-none transition-colors hover:bg-neutral-100 focus:ring-2 focus:ring-blue-500/20">
+            <button className="flex cursor-pointer items-center gap-2 rounded-lg p-1 outline-none transition-colors hover:bg-neutral-100 focus:ring-2 focus:ring-blue-500/20">
               <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-neutral-200">
                 <Label size="sm">{getUserInitials(displayName)}</Label>
               </div>

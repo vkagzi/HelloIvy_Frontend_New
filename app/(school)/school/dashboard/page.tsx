@@ -2,8 +2,11 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import api from '@/lib/api-client';
+import { FiIcon } from '@/app/_components/Icons';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
+import { Button } from '@/components/ui/button';
 
 interface ModuleInfo {
   module_name: string;
@@ -167,6 +170,41 @@ export default function SchoolDashboardPage() {
         </div>
       </div>
 
+      {/* Quick Links */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold text-gray-800">
+          Quick Links
+        </h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {[
+            { label: 'View Students', icon: 'users', href: '/school/students' },
+            { label: 'Send Notification', icon: 'bell', action: () => setNotifOpen(true) },
+            { label: 'Set Deadline', icon: 'calendar', action: () => setDeadlineOpen(true) },
+          ].map((link) =>
+            link.href ? (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 shadow-sm transition hover:border-purple-300 hover:bg-purple-50"
+              >
+                <FiIcon name={link.icon} className="h-5 w-5 text-purple-600" />
+                <span className="text-sm font-medium text-gray-700">{link.label}</span>
+              </Link>
+            ) : (
+              <Button
+                key={link.label}
+                onClick={link.action}
+                variant="outline"
+                className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-left transition hover:border-purple-300 hover:bg-purple-50"
+              >
+                <FiIcon name={link.icon} className="h-5 w-5 text-purple-600" />
+                <span className="text-sm font-medium text-gray-700">{link.label}</span>
+              </Button>
+            ),
+          )}
+        </div>
+      </section>
+
       {/* Section 1: Module Overview */}
       <section>
         <h2 className="mb-4 text-lg font-semibold text-gray-800">
@@ -214,18 +252,21 @@ export default function SchoolDashboardPage() {
             Grade-Wise Overview
           </h2>
           <div className="flex gap-2">
-            <button
+            <Button
+              size='sm'
               onClick={() => setNotifOpen(true)}
               className="rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-purple-700"
             >
               Send Notification
-            </button>
-            <button
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
               onClick={() => setDeadlineOpen(true)}
               className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
             >
               Set Deadline
-            </button>
+            </Button>
           </div>
         </div>
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">

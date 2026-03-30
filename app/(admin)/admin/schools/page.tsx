@@ -54,7 +54,7 @@ export default function SchoolsListPage() {
         </div>
         <Link
           href="/admin/schools/create"
-          className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
+          className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
         >
           Create School
         </Link>
@@ -130,7 +130,7 @@ export default function SchoolsListPage() {
                 <td className="whitespace-nowrap px-6 py-4 text-sm">
                   <Link
                     href={`/admin/schools/${school.id}`}
-                    className="inline-flex rounded-md bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 transition hover:bg-purple-100"
+                    className="inline-flex cursor-pointer rounded-md bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 transition hover:bg-purple-100"
                   >
                     Manage
                   </Link>

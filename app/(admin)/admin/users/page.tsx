@@ -86,7 +86,7 @@ const columns: Column<UserItem>[] = [
     render: (u) => (
       <Link
         href={`/admin/users/${u.id}`}
-        className="inline-flex rounded-md bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 transition hover:bg-purple-100"
+        className="inline-flex cursor-pointer rounded-md bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 transition hover:bg-purple-100"
       >
         View Details
       </Link>
@@ -147,7 +147,7 @@ export default function AdminUsersPage() {
       headerRight={
         <Link
           href="/admin/users/create"
-          className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
+          className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
         >
           Add User
         </Link>

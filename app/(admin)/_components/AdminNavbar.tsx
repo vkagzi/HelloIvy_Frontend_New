@@ -48,7 +48,7 @@ const AdminNavbar: React.FC = () => {
         </Link>
         <button
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="hidden overflow-clip rounded-full bg-neutral-100 p-1 leading-none transition hover:bg-neutral-300 lg:block"
+          className="hidden cursor-pointer overflow-clip rounded-full bg-neutral-100 p-1 leading-none transition hover:bg-neutral-300 lg:block"
           onClick={() => setCollapsed((v) => !v)}
         >
           <FiIcon
@@ -62,7 +62,7 @@ const AdminNavbar: React.FC = () => {
         </button>
         <button
           aria-label="Close menu"
-          className="overflow-clip rounded-full bg-neutral-100 p-1 leading-none transition hover:bg-neutral-300 lg:hidden"
+          className="cursor-pointer overflow-clip rounded-full bg-neutral-100 p-1 leading-none transition hover:bg-neutral-300 lg:hidden"
           onClick={closeDrawer}
         >
           <FiIcon name="cross-small" className="block h-4 w-4" />

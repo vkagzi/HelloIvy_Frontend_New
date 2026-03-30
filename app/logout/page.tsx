@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { clearAuthCache } from '@/lib/api-client';
+import { broadcastLogout } from '@/lib/auth-broadcast';
 
 /** Delete all cookies with the given name across path/domain variants. */
 function clearCookie(name: string): void {
@@ -23,6 +24,7 @@ function clearAllAuthCookies(): void {
 
 function cleanupAndRedirect(): void {
   clearAuthCache();
+  broadcastLogout();
   try { localStorage.clear(); } catch { /* ignore */ }
   try { sessionStorage.clear(); } catch { /* ignore */ }
   clearAllAuthCookies();

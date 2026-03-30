@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSession } from 'next-auth/react';
 import { CHANNEL_NAME, STORAGE_KEY } from '@/lib/auth-broadcast';
+import { clearAuthCache } from '@/lib/api-client';
 
 /**
  * Detects session expiry / cross-tab logout through three channels:
@@ -27,6 +28,7 @@ export function useSessionExpiry() {
 
   // --- mark expired (idempotent) ---
   const markExpired = useCallback(() => {
+    clearAuthCache();
     setIsSessionExpired(true);
   }, []);
 
@@ -78,6 +80,10 @@ export function useSessionExpiry() {
     const onVisibilityChange = async () => {
       if (document.visibilityState !== 'visible') return;
       if (isSessionExpired) return; // already showing modal
+
+      // Always clear the cached token so the next API call fetches a
+      // fresh token from the (possibly updated) session cookie.
+      clearAuthCache();
 
       try {
         const session = await getSession();

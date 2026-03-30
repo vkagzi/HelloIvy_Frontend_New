@@ -97,6 +97,15 @@ export default function SchoolStudentsPage() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [gradeFilter, setGradeFilter] = useState(initialGrade);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addEmail, setAddEmail] = useState('');
+  const [addFirstName, setAddFirstName] = useState('');
+  const [addLastName, setAddLastName] = useState('');
+  const [addGrade, setAddGrade] = useState('');
+  const [addSection, setAddSection] = useState('');
+  const [addBoard, setAddBoard] = useState('');
+  const [addSaving, setAddSaving] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const fetchStudents = useCallback(async () => {
     if (!schoolId) return;
@@ -127,6 +136,37 @@ export default function SchoolStudentsPage() {
     fetchStudents();
   }, [fetchStudents]);
 
+  const handleAddStudent = async (): Promise<void> => {
+    if (!schoolId || !addEmail.trim()) return;
+    setAddSaving(true);
+    setAddError(null);
+    try {
+      await api(`/api/schools/${schoolId}/students/`, {
+        method: 'POST',
+        body: {
+          email: addEmail.trim(),
+          first_name: addFirstName.trim(),
+          last_name: addLastName.trim(),
+          grade: addGrade,
+          section: addSection.trim(),
+          board: addBoard.trim(),
+        },
+      });
+      setAddOpen(false);
+      setAddEmail('');
+      setAddFirstName('');
+      setAddLastName('');
+      setAddGrade('');
+      setAddSection('');
+      setAddBoard('');
+      fetchStudents();
+    } catch (err: unknown) {
+      setAddError(err instanceof Error ? err.message : 'Failed to add student');
+    } finally {
+      setAddSaving(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / pageSize);
   const grades = ['8', '9', '10', '11', '12'];
 
@@ -147,6 +187,7 @@ export default function SchoolStudentsPage() {
   if (error) return <ErrorState message={error} />;
 
   return (
+    <>
     <UserTable
       data={students}
       columns={columns}
@@ -172,21 +213,29 @@ export default function SchoolStudentsPage() {
         }
       }}
       headerRight={
-        <select
-          value={gradeFilter}
-          onChange={(e) => {
-            setGradeFilter(e.target.value);
-            setPage(1);
-          }}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-        >
-          <option value="">All Grades</option>
-          {grades.map((g) => (
-            <option key={g} value={g}>
-              Grade {g}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setAddOpen(true)}
+            className="rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-purple-700"
+          >
+            + Add Student
+          </button>
+          <select
+            value={gradeFilter}
+            onChange={(e) => {
+              setGradeFilter(e.target.value);
+              setPage(1);
+            }}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          >
+            <option value="">All Grades</option>
+            {grades.map((g) => (
+              <option key={g} value={g}>
+                Grade {g}
+              </option>
+            ))}
+          </select>
+        </div>
       }
       pagination={{
         page,
@@ -194,5 +243,102 @@ export default function SchoolStudentsPage() {
         onPageChange: setPage,
       }}
     />
+
+      {/* Add Student Modal */}
+      {addOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="mb-4 text-lg font-semibold">Add Student</h3>
+            {addError && (
+              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+                {addError}
+              </div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Email *</label>
+                <input
+                  type="email"
+                  value={addEmail}
+                  onChange={(e) => setAddEmail(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="student@example.com"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">First Name</label>
+                  <input
+                    type="text"
+                    value={addFirstName}
+                    onChange={(e) => setAddFirstName(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Last Name</label>
+                  <input
+                    type="text"
+                    value={addLastName}
+                    onChange={(e) => setAddLastName(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Grade</label>
+                  <select
+                    value={addGrade}
+                    onChange={(e) => setAddGrade(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  >
+                    <option value="">Select</option>
+                    {grades.map((g) => (
+                      <option key={g} value={g}>Grade {g}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Section</label>
+                  <input
+                    type="text"
+                    value={addSection}
+                    onChange={(e) => setAddSection(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    placeholder="e.g., A"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Board</label>
+                  <input
+                    type="text"
+                    value={addBoard}
+                    onChange={(e) => setAddBoard(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    placeholder="e.g., CBSE"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => { setAddOpen(false); setAddError(null); }}
+                  className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddStudent}
+                  disabled={addSaving || !addEmail.trim()}
+                  className="rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+                >
+                  {addSaving ? 'Adding...' : 'Add Student'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

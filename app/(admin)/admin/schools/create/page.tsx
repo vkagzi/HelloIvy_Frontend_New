@@ -120,7 +120,7 @@ export default function CreateSchoolPage() {
             <button
               type="button"
               onClick={() => { setLogoMode('url'); setLogoFile(null); setLogoPreview(null); }}
-              className={`rounded-md px-3 py-1 text-sm font-medium transition ${
+              className={`cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition ${
                 logoMode === 'url'
                   ? 'bg-purple-600 text-white'
                   : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -131,7 +131,7 @@ export default function CreateSchoolPage() {
             <button
               type="button"
               onClick={() => { setLogoMode('upload'); setForm((p) => ({ ...p, logo_url: '' })); }}
-              className={`rounded-md px-3 py-1 text-sm font-medium transition ${
+              className={`cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition ${
                 logoMode === 'upload'
                   ? 'bg-purple-600 text-white'
                   : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -277,14 +277,14 @@ export default function CreateSchoolPage() {
           <button
             type="button"
             onClick={() => router.push('/admin/schools')}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+            className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+            className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
           >
             {saving ? 'Creating...' : 'Create School'}
           </button>
