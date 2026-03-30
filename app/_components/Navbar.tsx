@@ -125,7 +125,7 @@ const Navbar: React.FC = () => {
       {/* Desktop sidebar */}
       <nav
         className={`relative hidden min-h-screen flex-col bg-white px-2 transition-all duration-200 lg:flex ${
-          collapsed ? 'w-16' : 'w-56 border-r border-neutral-200'
+          collapsed ? 'w-16' : 'w-60 border-r border-neutral-200'
         }`}
       >
         {sidebarContent}
