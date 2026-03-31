@@ -2,6 +2,15 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/app/_components/Select';
 
 // ---------- types ----------
 
@@ -19,6 +28,8 @@ export interface FilterConfig {
   showEmailSearch?: boolean;
   /** Options for the user‑type / role dropdown. Empty array = hidden. */
   roleOptions?: { value: string; label: string }[];
+  /** Options for the school dropdown filter. Empty array = hidden. */
+  schoolOptions?: { value: string; label: string }[];
 }
 
 interface SortState {
@@ -34,6 +45,8 @@ interface Props<T extends { id: number; email: string }> {
   getNameValue?: (row: T) => string;
   /** Field resolver for role / user‑type filter */
   getRoleValue?: (row: T) => string;
+  /** Field resolver for school filter */
+  getSchoolValue?: (row: T) => string;
   /** Field resolver used for generic sort comparison  */
   getSortValue?: (row: T, key: string) => string | number | boolean | null;
   /** Total label shown above table, e.g. "32 total users" */
@@ -58,6 +71,7 @@ export default function UserTable<T extends { id: number; email: string }>({
   filters = {},
   getNameValue,
   getRoleValue,
+  getSchoolValue,
   getSortValue,
   totalLabel,
   headerRight,
@@ -67,6 +81,7 @@ export default function UserTable<T extends { id: number; email: string }>({
   const [nameQuery, setNameQuery] = useState('');
   const [emailQuery, setEmailQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [schoolFilter, setSchoolFilter] = useState('');
   const [sort, setSort] = useState<SortState | null>(null);
 
   // ---- filter ----
@@ -87,8 +102,12 @@ export default function UserTable<T extends { id: number; email: string }>({
       rows = rows.filter((r) => getRoleValue(r) === roleFilter);
     }
 
+    if (schoolFilter && getSchoolValue) {
+      rows = rows.filter((r) => getSchoolValue(r) === schoolFilter);
+    }
+
     return rows;
-  }, [data, nameQuery, emailQuery, roleFilter, getNameValue, getRoleValue]);
+  }, [data, nameQuery, emailQuery, roleFilter, schoolFilter, getNameValue, getRoleValue, getSchoolValue]);
 
   // ---- sort ----
   const sorted = useMemo(() => {
@@ -122,7 +141,7 @@ export default function UserTable<T extends { id: number; email: string }>({
   };
 
   const hasFilters =
-    filters.showNameSearch || filters.showEmailSearch || (filters.roleOptions && filters.roleOptions.length > 0);
+    filters.showNameSearch || filters.showEmailSearch || (filters.roleOptions && filters.roleOptions.length > 0) || (filters.schoolOptions && filters.schoolOptions.length > 0);
 
   return (
     <div>
@@ -141,48 +160,66 @@ export default function UserTable<T extends { id: number; email: string }>({
       {hasFilters && (
         <div className="mb-4 flex flex-wrap items-center gap-3">
           {filters.showNameSearch && (
-            <input
+            <Input
               type="text"
               placeholder="Search by name…"
               value={nameQuery}
               onChange={(e) => setNameQuery(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm placeholder:text-gray-400 focus:border-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-400"
+              className="h-9 w-48"
             />
           )}
           {filters.showEmailSearch && (
-            <input
+            <Input
               type="text"
               placeholder="Search by email…"
               value={emailQuery}
               onChange={(e) => setEmailQuery(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm placeholder:text-gray-400 focus:border-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-400"
+              className="h-9 w-48"
             />
           )}
           {filters.roleOptions && filters.roleOptions.length > 0 && (
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-400"
-            >
-              <option value="">All Types</option>
-              {filters.roleOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v === '__all__' ? '' : v)}>
+              <SelectTrigger className="h-9 w-40">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Types</SelectItem>
+                {filters.roleOptions.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
-          {(nameQuery || emailQuery || roleFilter) && (
-            <button
+          {filters.schoolOptions && filters.schoolOptions.length > 0 && (
+            <Select value={schoolFilter} onValueChange={(v) => setSchoolFilter(v === '__all__' ? '' : v)}>
+              <SelectTrigger className="h-9 w-44">
+                <SelectValue placeholder="All Schools" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Schools</SelectItem>
+                {filters.schoolOptions.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {(nameQuery || emailQuery || roleFilter || schoolFilter) && (
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 setNameQuery('');
                 setEmailQuery('');
                 setRoleFilter('');
+                setSchoolFilter('');
               }}
-              className="cursor-pointer rounded-md px-2 py-1.5 text-xs text-gray-500 hover:text-gray-800"
             >
               Clear filters
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -238,20 +275,22 @@ export default function UserTable<T extends { id: number; email: string }>({
             Page {pagination.page} of {pagination.totalPages}
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => pagination.onPageChange(Math.max(1, pagination.page - 1))}
               disabled={pagination.page === 1}
-              className="cursor-pointer rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-50"
             >
               Previous
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => pagination.onPageChange(Math.min(pagination.totalPages, pagination.page + 1))}
               disabled={pagination.page === pagination.totalPages}
-              className="cursor-pointer rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-50"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       )}

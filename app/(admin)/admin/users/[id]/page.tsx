@@ -7,6 +7,8 @@ import UserDetailHeader from '@/components/admin/UserDetailHeader';
 import ModuleCard from '@/components/admin/ModuleCard';
 import type { ModuleStats } from '@/components/admin/ModuleCard';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
+import ProfileViewDetails from '@/app/(saas)/profile/_components/ProfileView';
+import { calculateProfileCompletion } from '@/app/(saas)/profile/utils/profileCompletion';
 
 interface SchoolOption {
   id: number;
@@ -30,7 +32,20 @@ interface UserDetail {
     domain_discovery: ModuleStats;
     career_discovery: ModuleStats;
   };
+  profile_data?: {
+    profile?: Record<string, unknown>;
+  };
 }
+
+type ProfileData = Record<string, unknown>;
+
+const PROFILE_SECTIONS = [
+  { key: 'personal', label: 'Personal Details', contextKey: 'personalDetails' },
+  { key: 'educational', label: 'Educational Details', contextKey: 'educational' },
+  { key: 'professional', label: 'Professional Details', contextKey: 'professional' },
+  { key: 'extra-curricular', label: 'Extra Curricular Activities', contextKey: 'extraCurricular' },
+  { key: 'additional', label: 'Additional Information', contextKey: 'additional' },
+] as const;
 
 const ROLES = [
   { value: 'student', label: 'Student' },
@@ -68,11 +83,16 @@ export default function AdminUserDetailPage() {
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [deactivateSaving, setDeactivateSaving] = useState(false);
 
+  // Main vertical tab state
+  const [activeTab, setActiveTab] = useState<string>('profile');
+  // Profile section sub-tab state
+  const [activeProfileSection, setActiveProfileSection] = useState<string>('personal');
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const data = await api<UserDetail>(
-          `/api/accounts/admin/users/${userId}/`
+          `/api/accounts/admin/users/${userId}/?include_profile=true`
         );
         setUser(data);
       } catch (err: unknown) {
@@ -150,7 +170,7 @@ export default function AdminUserDetailPage() {
       });
       setEditSuccess(true);
       // Refresh user data
-      const data = await api<UserDetail>(`/api/accounts/admin/users/${userId}/`);
+      const data = await api<UserDetail>(`/api/accounts/admin/users/${userId}/?include_profile=true`);
       setUser(data);
     } catch (err: unknown) {
       setEditError(err instanceof Error ? err.message : 'Failed to update user');
@@ -167,7 +187,7 @@ export default function AdminUserDetailPage() {
         method: 'PATCH',
         body: { is_active: !user.is_active },
       });
-      const data = await api<UserDetail>(`/api/accounts/admin/users/${userId}/`);
+      const data = await api<UserDetail>(`/api/accounts/admin/users/${userId}/?include_profile=true`);
       setUser(data);
       setDeactivateOpen(false);
     } catch {
@@ -221,28 +241,138 @@ export default function AdminUserDetailPage() {
         }
       />
 
-      {/* Module Stats Cards */}
-      <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ModuleCard
-          title="Stream & Subject Selection"
-          module="domain"
-          stats={user.modules.domain_discovery}
-          studentName={
-            user.first_name && user.last_name
-              ? `${user.first_name} ${user.last_name}`
-              : user.first_name || user.last_name || user.email
-          }
-        />
-        <ModuleCard
-          title="Career & Degree Selection "
-          module="career"
-          stats={user.modules.career_discovery}
-          studentName={
-            user.first_name && user.last_name
-              ? `${user.first_name} ${user.last_name}`
-              : user.first_name || user.last_name || user.email
-          }
-        />
+      {/* Vertical Tabs Layout */}
+      <div className="mb-5 flex gap-5">
+        {/* Vertical Tab Sidebar */}
+        <div className="w-56 shrink-0">
+          <nav className="flex flex-col rounded-lg border border-gray-200 bg-white">
+            {(() => {
+              const profileInner = user.profile_data?.profile as Record<string, unknown> | undefined;
+              const completionPct = profileInner
+                ? calculateProfileCompletion({
+                    personalDetails: profileInner.personalDetails as Record<string, unknown>,
+                    educationalDetails: profileInner.educational as Record<string, unknown>,
+                    extraCurricularDetails: profileInner.extraCurricular,
+                  })
+                : 0;
+
+              const tabs = [
+                {
+                  key: 'profile',
+                  label: 'Profile',
+                  badge: `${completionPct}%`,
+                },
+                {
+                  key: 'domain',
+                  label: 'Stream & Subject Selection',
+                  badge: `${user.modules.domain_discovery.completed_sessions}/${user.modules.domain_discovery.total_sessions}`,
+                },
+                {
+                  key: 'career',
+                  label: 'Career & Degree Selection',
+                  badge: `${user.modules.career_discovery.completed_sessions}/${user.modules.career_discovery.total_sessions}`,
+                },
+              ];
+
+              return tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center justify-between px-4 py-3 text-left text-sm font-medium transition cursor-pointer border-l-2 ${
+                    activeTab === tab.key
+                      ? 'border-l-indigo-600 bg-indigo-50 text-indigo-700'
+                      : 'border-l-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                    activeTab === tab.key
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {tab.badge}
+                  </span>
+                </button>
+              ));
+            })()}
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="min-w-0 flex-1">
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (() => {
+            const profileInner = user.profile_data?.profile as Record<string, unknown> | undefined;
+            if (!profileInner) {
+              return (
+                <div className="rounded-lg border border-gray-200 bg-white px-5 py-10 text-center text-sm text-gray-400">
+                  No profile data available.
+                </div>
+              );
+            }
+
+            const activeSectionConfig = PROFILE_SECTIONS.find(s => s.key === activeProfileSection) ?? PROFILE_SECTIONS[0];
+            let sectionData: ProfileData = (profileInner[activeSectionConfig.contextKey] as ProfileData) ?? {};
+
+            if (activeSectionConfig.key === 'extra-curricular') {
+              sectionData = {
+                extraCurricular: profileInner.extraCurricular ?? [],
+                educational: profileInner.educational,
+              };
+            }
+
+            return (
+              <div className="rounded-lg border border-gray-200 bg-white">
+                <div className="flex border-b border-gray-200 overflow-x-auto">
+                  {PROFILE_SECTIONS.map((section) => (
+                    <button
+                      key={section.key}
+                      onClick={() => setActiveProfileSection(section.key)}
+                      className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap transition cursor-pointer ${
+                        activeProfileSection === section.key
+                          ? 'border-b-2 border-indigo-600 text-indigo-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      {section.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="px-5 py-4">
+                  <ProfileViewDetails defaultValues={sectionData} section={activeProfileSection} hideNav />
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Stream & Subject Selection Tab */}
+          {activeTab === 'domain' && (
+            <ModuleCard
+              title="Stream & Subject Selection"
+              module="domain"
+              stats={user.modules.domain_discovery}
+              studentName={
+                user.first_name && user.last_name
+                  ? `${user.first_name} ${user.last_name}`
+                  : user.first_name || user.last_name || user.email
+              }
+            />
+          )}
+
+          {/* Career & Degree Selection Tab */}
+          {activeTab === 'career' && (
+            <ModuleCard
+              title="Career & Degree Selection"
+              module="career"
+              stats={user.modules.career_discovery}
+              studentName={
+                user.first_name && user.last_name
+                  ? `${user.first_name} ${user.last_name}`
+                  : user.first_name || user.last_name || user.email
+              }
+            />
+          )}
+        </div>
       </div>
 
       {/* Change Password Modal */}

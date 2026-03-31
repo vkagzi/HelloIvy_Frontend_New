@@ -3,7 +3,7 @@
 import React from 'react';
 import { Heading, Label } from '@/app/_components/Typography';
 import { FiIcon } from '@/app/_components/Icons';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -25,15 +25,26 @@ type AdminHeadProps = {
   session: Session | null;
 };
 
+const TYPE_HEADINGS: Record<string, string> = {
+  b2c: 'B2C Users',
+  schoolusers: 'School Users',
+  admin: 'Admin Users',
+};
+
 const AdminHead: React.FC<AdminHeadProps> = ({ session }) => {
   const { openDrawer } = useNavbar();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const typeParam = searchParams?.get('type') ?? null;
   const currentNavItem = adminNavItems.find((item) => pathname === item.href);
-  const heading = currentNavItem
-    ? currentNavItem.label
-    : pathname?.startsWith('/admin/users/')
-      ? 'User Details'
-      : 'Admin';
+  const heading = (() => {
+    if (pathname === '/admin/users' && typeParam && TYPE_HEADINGS[typeParam]) {
+      return TYPE_HEADINGS[typeParam];
+    }
+    if (currentNavItem) return currentNavItem.label;
+    if (pathname?.startsWith('/admin/users/')) return 'User Details';
+    return 'Admin';
+  })();
 
   const getUserInitials = (name: string): string => {
     if (!name || name.trim() === '') return 'A';

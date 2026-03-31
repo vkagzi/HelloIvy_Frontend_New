@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { FiIcon } from '@/app/_components/Icons';
 import imgLogoApp from '@/assets/images/logo-app.png';
 import imgIcon from '@/assets/images/icon.png';
@@ -10,17 +10,44 @@ import Image from 'next/image';
 import { Label } from '@/app/_components/Typography';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
 
-const adminNavItems: { label: string; icon: string; href: string }[] = [
+interface NavItem {
+  label: string;
+  icon: string;
+  href: string;
+  children?: { label: string; href: string }[];
+}
+
+const adminNavItems: NavItem[] = [
   { label: 'Dashboard', icon: 'sr-apps', href: '/admin' },
-  { label: 'Users', icon: 'users', href: '/admin/users' },
+  {
+    label: 'Users',
+    icon: 'users',
+    href: '/admin/users',
+    children: [
+      { label: 'All Users', href: '/admin/users' },
+      { label: 'B2C Users', href: '/admin/users?type=b2c' },
+      { label: 'School Users', href: '/admin/users?type=schoolusers' },
+      { label: 'Admin Users', href: '/admin/users?type=admin' },
+    ],
+  },
   { label: 'Schools', icon: 'building', href: '/admin/schools' },
 ];
 
 const AdminNavbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isDrawerOpen, closeDrawer } = useNavbar();
   const visibleNavItems = adminNavItems;
+
+  // Auto-expand parent if a child route is active
+  useEffect(() => {
+    const typeParam = searchParams?.get('type') ?? null;
+    if (pathname === '/admin/users' && typeParam) {
+      setExpandedItem('/admin/users');
+    }
+  }, [pathname, searchParams]);
 
   useEffect(() => {
     closeDrawer();
@@ -78,12 +105,20 @@ const AdminNavbar: React.FC = () => {
 
       <ul className="mt-2 flex-1">
         {visibleNavItems.map((item) => {
-          const active = pathname === item.href;
+          const currentType = searchParams?.get('type') ?? null;
+          const active = pathname === item.href && !currentType;
+          const isExpanded = expandedItem === item.href;
+          const hasChildren = item.children && item.children.length > 0;
+
           return (
-            <li key={item.href} className="h-10">
+            <li key={item.href}>
               <Link
                 href={item.href}
-                className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all ${
+                onClick={hasChildren ? (e) => {
+                  e.preventDefault();
+                  setExpandedItem(isExpanded ? null : item.href);
+                } : undefined}
+                className={`flex h-10 items-center gap-2 rounded-md px-3 py-2 transition-all ${
                   active
                     ? 'bg-action-gradient-800 font-semibold text-white'
                     : 'hover:bg-purple-50'
@@ -93,17 +128,47 @@ const AdminNavbar: React.FC = () => {
                   name={item.icon}
                   className={
                     active
-                      ? 'h-5 w-5 text-lg leading-none text-white'
-                      : 'from-action-gradient-800-left to-action-gradient-800-right h-5 w-5 bg-gradient-to-r bg-clip-text text-lg leading-none text-transparent'
+                      ? 'h-5 w-5 shrink-0 text-lg leading-none text-white'
+                      : 'from-action-gradient-800-left to-action-gradient-800-right h-5 w-5 shrink-0 bg-gradient-to-r bg-clip-text text-lg leading-none text-transparent'
                   }
                 />
                 <Label
                   size="sm"
-                  className={`overflow-clip text-nowrap text-ellipsis ${collapsed ? 'lg:hidden' : ''}`}
+                  className={`flex-1 overflow-clip text-nowrap text-ellipsis ${collapsed ? 'lg:hidden' : ''}`}
                 >
                   {item.label}
                 </Label>
+                {hasChildren && !collapsed && (
+                  <FiIcon
+                    name={isExpanded ? 'angle-small-up' : 'angle-small-down'}
+                    className={`block h-4 w-4 shrink-0 ${active ? 'text-white' : 'text-neutral-400'}`}
+                  />
+                )}
               </Link>
+              {hasChildren && isExpanded && !collapsed && (
+                <ul className="ml-6 border-l border-neutral-200 pl-2">
+                  {item.children!.map((child) => {
+                    const childUrl = new URL(child.href, 'http://x');
+                    const childType = childUrl.searchParams.get('type');
+                    const childActive =
+                      pathname === childUrl.pathname && currentType === childType;
+                    return (
+                      <li key={child.href} className="h-8">
+                        <Link
+                          href={child.href}
+                          className={`flex items-center rounded-md px-3 py-1.5 text-sm transition-all ${
+                            childActive
+                              ? 'font-semibold text-purple-700 bg-purple-50'
+                              : 'text-neutral-600 hover:bg-purple-50 hover:text-neutral-800'
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </li>
           );
         })}

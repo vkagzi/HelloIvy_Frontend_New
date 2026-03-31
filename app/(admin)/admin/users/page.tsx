@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api-client';
 import UserTable, { RoleBadge, StatusBadge, Column } from '@/components/admin/UserTable';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
@@ -94,10 +95,33 @@ const columns: Column<UserItem>[] = [
   },
 ];
 
+const ADMIN_ROLES = ['superadmin', 'operationadmin', 'schooladmin'];
+
+const TYPE_CONFIG: Record<string, { title: string; label: string; filter: (u: UserItem) => boolean }> = {
+  b2c: {
+    title: 'B2C Users',
+    label: 'B2C users',
+    filter: (u) => u.school_id === null,
+  },
+  schoolusers: {
+    title: 'School Users',
+    label: 'school users',
+    filter: (u) => u.school_id !== null,
+  },
+  admin: {
+    title: 'Admin Users',
+    label: 'admin users',
+    filter: (u) => ADMIN_ROLES.includes(u.role),
+  },
+};
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const typeParam = searchParams?.get('type') ?? null;
+  const typeConfig = typeParam ? TYPE_CONFIG[typeParam] : null;
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -116,22 +140,42 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, []);
 
+  const filteredUsers = useMemo(() => {
+    if (!typeConfig) return users;
+    return users.filter(typeConfig.filter);
+  }, [users, typeConfig]);
+
+  const title = typeConfig?.title ?? 'Users';
+  const totalLabel = typeConfig
+    ? `${filteredUsers.length} ${typeConfig.label}`
+    : `${filteredUsers.length} total users`;
+
   if (loading) return <LoadingState message="Loading users..." />;
   if (error) return <ErrorState message={error} />;
 
   return (
     <UserTable
-      data={users}
+      data={filteredUsers}
       columns={columns}
-      title="Users"
-      totalLabel={`${users.length} total users`}
+      title={title}
+      totalLabel={totalLabel}
       filters={{
         showNameSearch: true,
         showEmailSearch: true,
         roleOptions: ROLE_OPTIONS,
+        schoolOptions: (() => {
+          const schools = new Map<string, string>();
+          for (const u of users) {
+            if (u.school_id != null && u.school_name) {
+              schools.set(String(u.school_id), u.school_name);
+            }
+          }
+          return Array.from(schools, ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+        })(),
       }}
       getNameValue={(u) => [u.first_name, u.last_name, u.email].filter(Boolean).join(' ')}
       getRoleValue={(u) => u.role}
+      getSchoolValue={(u) => u.school_id != null ? String(u.school_id) : ''}
       getSortValue={(u, key) => {
         switch (key) {
           case 'name': return [u.first_name, u.last_name].filter(Boolean).join(' ').toLowerCase() || u.email.toLowerCase();

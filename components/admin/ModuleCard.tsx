@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import api from '@/lib/api-client';
 import {
   Dialog,
@@ -12,6 +12,9 @@ import {
   MessageSquareText,
   FileDown,
   Award,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { downloadPDF } from '@/lib/pdf-from-component';
 import DomainResultsPDF from '@/components/pdf/DomainResultsPDF';
@@ -63,6 +66,51 @@ export default function ModuleCard({
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+  // Sorting state
+  type SortKey = 'date' | 'progress' | 'status';
+  type SortDir = 'asc' | 'desc';
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  };
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="ml-1 inline h-3 w-3 text-gray-300" />;
+    return sortDir === 'asc'
+      ? <ArrowUp className="ml-1 inline h-3 w-3" />
+      : <ArrowDown className="ml-1 inline h-3 w-3" />;
+  };
+
+  const sortedSessions = useMemo(() => {
+    const list = [...stats.sessions];
+    const dir = sortDir === 'asc' ? 1 : -1;
+    list.sort((a, b) => {
+      switch (sortKey) {
+        case 'date':
+          return dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        case 'progress': {
+          const pctA = a.total_steps > 0 ? a.current_step / a.total_steps : 0;
+          const pctB = b.total_steps > 0 ? b.current_step / b.total_steps : 0;
+          return dir * (pctA - pctB);
+        }
+        case 'status': {
+          const rank = (s: SessionItem) => s.is_completed ? 2 : s.is_active ? 1 : 0;
+          return dir * (rank(a) - rank(b));
+        }
+        default:
+          return 0;
+      }
+    });
+    return list;
+  }, [stats.sessions, sortKey, sortDir]);
 
   const openConversation = useCallback(
     async (sessionId: string) => {
@@ -213,14 +261,22 @@ export default function ModuleCard({
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b text-xs uppercase text-gray-400">
-                <th className="pb-2">Date</th>
-                <th className="pb-2">Progress</th>
-                <th className="pb-2">Status</th>
-                <th className="pb-2 text-right">Actions</th>
+                <th className="pb-2 cursor-pointer select-none" onClick={() => toggleSort('date')}>
+                  Date <SortIcon col="date" />
+                </th>
+                <th className="pb-2 cursor-pointer select-none" onClick={() => toggleSort('progress')}>
+                  Progress <SortIcon col="progress" />
+                </th>
+                <th className="pb-2 cursor-pointer select-none" onClick={() => toggleSort('status')}>
+                  Status <SortIcon col="status" />
+                </th>
+                <th className="pb-2 text-center">Conversation</th>
+                <th className="pb-2 text-center">Transcript</th>
+                <th className="pb-2 text-center">Result</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {stats.sessions.map((s) => (
+              {sortedSessions.map((s) => (
                 <tr key={s.session_id}>
                   <td className="py-2 text-gray-600">
                     {new Date(s.created_at).toLocaleDateString()}
@@ -248,34 +304,40 @@ export default function ModuleCard({
                       </span>
                     )}
                   </td>
-                  <td className="py-2 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                  <td className="py-2 text-center">
+                    <button
+                      onClick={() => openConversation(s.session_id)}
+                      className="cursor-pointer rounded-md p-1.5 text-indigo-600 transition hover:bg-indigo-50"
+                      title="View Conversation"
+                    >
+                      <MessageSquareText className="h-4 w-4" />
+                    </button>
+                  </td>
+                  <td className="py-2 text-center">
+                    {s.is_completed ? (
                       <button
-                        onClick={() => openConversation(s.session_id)}
-                        className="cursor-pointer rounded-md p-1.5 text-indigo-600 transition hover:bg-indigo-50"
-                        title="View Conversation"
+                        onClick={() => downloadTranscript(s.session_id)}
+                        className="cursor-pointer rounded-md p-1.5 text-emerald-600 transition hover:bg-emerald-50"
+                        title="Download Transcript PDF"
                       >
-                        <MessageSquareText className="h-4 w-4" />
+                        <FileDown className="h-4 w-4" />
                       </button>
-                      {s.is_completed && (
-                        <>
-                          <button
-                            onClick={() => downloadTranscript(s.session_id)}
-                            className="cursor-pointer rounded-md p-1.5 text-emerald-600 transition hover:bg-emerald-50"
-                            title="Download Transcript PDF"
-                          >
-                            <FileDown className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => downloadReport(s.session_id)}
-                            className="cursor-pointer rounded-md p-1.5 text-purple-600 transition hover:bg-purple-50"
-                            title="Download Results PDF"
-                          >
-                            <Award className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
+                    )}
+                  </td>
+                  <td className="py-2 text-center">
+                    {s.is_completed ? (
+                      <button
+                        onClick={() => downloadReport(s.session_id)}
+                        className="cursor-pointer rounded-md p-1.5 text-purple-600 transition hover:bg-purple-50"
+                        title="Download Results PDF"
+                      >
+                        <Award className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
+                    )}
                   </td>
                 </tr>
               ))}
