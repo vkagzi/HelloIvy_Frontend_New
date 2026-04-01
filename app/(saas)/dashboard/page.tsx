@@ -102,11 +102,17 @@ export default function Dashboard(): React.ReactElement {
             {linkText}
           </Link>
 
-          <Label size="sm" className="mt-3 block text-neutral-500">
-            Please complete your profile details carefully, this helps me
-            understand you better and ensures that your results are as accurate &
-            personalized as possible.
-          </Label>
+          <div className="mt-3 text-xs text-neutral-500">
+            <ol className="ml-5 list-decimal space-y-1">
+              <li>
+                Please complete your profile details carefully, to help me understand you better and ensure that your results are accurate.
+              </li>
+              <li>You can use this tool on your computer, iPad, or tablet.</li>
+              <li>
+                If using voice, wear your headphones and find a quiet place.
+              </li>
+            </ol>
+          </div>
         </div>
         <div className="flex w-full justify-center">
           <Image
