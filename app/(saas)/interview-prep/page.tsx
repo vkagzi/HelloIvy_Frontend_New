@@ -67,7 +67,7 @@ const InterviewPrepLandingPage: React.FC = () => {
 
           <ol className="space-y-3 text-gray-700">
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">1</span>
+              <span className="min-w-5 font-semibold">1</span>
               <span>
                 This module helps you master your interview skills with
                 AI-powered practice sessions, personalized feedback, and expert
@@ -75,42 +75,42 @@ const InterviewPrepLandingPage: React.FC = () => {
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">2</span>
+              <span className="min-w-5 font-semibold">2</span>
               <span>
                 Choose from undergraduate admissions, graduate programs, or MBA
                 interviews based on your needs.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">3</span>
+              <span className="min-w-5 font-semibold">3</span>
               <span>
                 Upload your resume (optional) to get personalized questions
                 based on your background and experiences.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">4</span>
+              <span className="min-w-5 font-semibold">4</span>
               <span>
                 Practice answering interview questions using voice or text
                 input. Our AI will recognize your speech naturally.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">5</span>
+              <span className="min-w-5 font-semibold">5</span>
               <span>
                 Receive detailed analysis with scoring and improvement tips
                 instantly to help you improve your responses.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">6</span>
+              <span className="min-w-5 font-semibold">6</span>
               <span>
                 Track your progress by reviewing your sessions and monitoring
                 improvement over time.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="min-w-[20px] font-semibold">7</span>
+              <span className="min-w-5 font-semibold">7</span>
               <span>
                 Find a quiet environment with good audio quality and have your
                 resume and application materials ready before starting.

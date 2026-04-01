@@ -31,6 +31,15 @@ const adminNavItems: NavItem[] = [
     ],
   },
   { label: 'Schools', icon: 'building', href: '/admin/schools' },
+  {
+    label: 'Payments',
+    icon: 'credit-card',
+    href: '/admin/payments/b2c',
+    children: [
+      { label: 'B2C Payments', href: '/admin/payments/b2c' },
+      { label: 'School Payments', href: '/admin/payments/schools' },
+    ],
+  },
 ];
 
 const AdminNavbar: React.FC = () => {
@@ -46,6 +55,8 @@ const AdminNavbar: React.FC = () => {
     const typeParam = searchParams?.get('type') ?? null;
     if (pathname === '/admin/users' && typeParam) {
       setExpandedItem('/admin/users');
+    } else if (pathname.startsWith('/admin/payments')) {
+      setExpandedItem('/admin/payments/b2c');
     }
   }, [pathname, searchParams]);
 
@@ -106,9 +117,14 @@ const AdminNavbar: React.FC = () => {
       <ul className="mt-2 flex-1">
         {visibleNavItems.map((item) => {
           const currentType = searchParams?.get('type') ?? null;
-          const active = pathname === item.href && !currentType;
           const isExpanded = expandedItem === item.href;
           const hasChildren = item.children && item.children.length > 0;
+          const hasActiveChild = !!item.children?.some((child) => {
+            const childUrl = new URL(child.href, 'http://x');
+            const childType = childUrl.searchParams.get('type');
+            return pathname === childUrl.pathname && currentType === childType;
+          });
+          const active = (pathname === item.href && !currentType) || hasActiveChild;
 
           return (
             <li key={item.href}>
@@ -129,7 +145,7 @@ const AdminNavbar: React.FC = () => {
                   className={
                     active
                       ? 'h-5 w-5 shrink-0 text-lg leading-none text-white'
-                      : 'from-action-gradient-800-left to-action-gradient-800-right h-5 w-5 shrink-0 bg-gradient-to-r bg-clip-text text-lg leading-none text-transparent'
+                      : 'from-action-gradient-800-left to-action-gradient-800-right h-5 w-5 shrink-0 bg-linear-to-r bg-clip-text text-lg leading-none text-transparent'
                   }
                 />
                 <Label

@@ -345,7 +345,7 @@ const GoalsPage: React.FC = () => {
         {/* Ivy's Welcome Message */}
         <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6">
           <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
               <span className="text-lg text-blue-600">🎯</span>
             </div>
             <div className="flex-1">
@@ -374,7 +374,7 @@ const GoalsPage: React.FC = () => {
         {/* Instructions Section */}
         <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6">
           <div className="flex items-start gap-4">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
               <span className="text-sm text-blue-600">📋</span>
             </div>
             <div className="flex-1">

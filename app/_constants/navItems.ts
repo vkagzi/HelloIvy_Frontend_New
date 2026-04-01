@@ -39,6 +39,9 @@ export const navItems: NavItem[] = [
   { label: 'Personal Details', icon: 'user', href: '/profile/personal/edit' },
   { label: 'Settings', icon: 'settings', href: '/settings' },
   { label: 'Legal', icon: 'document', href: '/legal' },
+  { label: 'Unlock Modules', icon: 'star', href: '/pay-as-student' },
+  { label: 'Checkout', icon: 'credit-card', href: '/pay-as-student/checkout' },
+  { label: 'My Subscriptions', icon: 'list-check', href: '/subscription' },
 ];
 
 // Subset of nav items shown in the sidebar

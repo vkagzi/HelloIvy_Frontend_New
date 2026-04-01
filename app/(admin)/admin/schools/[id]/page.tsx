@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import ModuleAssignDialog, { type ModuleRow } from '@/components/admin/ModuleAssignDialog';
 
 interface SubscriptionItem {
   id: number;
@@ -18,6 +19,7 @@ interface SubscriptionItem {
   max_students: number | null;
   expiry_date: string;
   is_active: boolean;
+  source: string;
 }
 
 interface SchoolDetail {
@@ -119,9 +121,6 @@ export default function SchoolDetailPage() {
 
   // Add subscription modal
   const [subOpen, setSubOpen] = useState(false);
-  const [subRows, setSubRows] = useState([{ module_name: '', max_students: '', expiry_date: '' }]);
-  const [subSaving, setSubSaving] = useState(false);
-  const [subError, setSubError] = useState<string | null>(null);
 
   // Edit subscription modal
   const [editSubOpen, setEditSubOpen] = useState(false);
@@ -174,30 +173,20 @@ export default function SchoolDetailPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleAddSubscription = async () => {
-    const validRows = subRows.filter((r) => r.module_name && r.expiry_date);
-    if (!schoolId || validRows.length === 0) return;
-    setSubSaving(true);
-    setSubError(null);
-    try {
-      for (const row of validRows) {
-        await api(`/api/schools/${schoolId}/subscriptions/`, {
-          method: 'POST',
-          body: {
-            module_name: row.module_name,
-            max_students: row.max_students ? parseInt(row.max_students) : null,
-            expiry_date: row.expiry_date,
-          },
-        });
-      }
-      setSubOpen(false);
-      setSubRows([{ module_name: '', max_students: '', expiry_date: '' }]);
-      fetchData();
-    } catch (err: unknown) {
-      setSubError(err instanceof Error ? err.message : 'Failed to add subscriptions');
-    } finally {
-      setSubSaving(false);
+  const handleAddSubscription = async (rows: ModuleRow[]) => {
+    if (!schoolId) return;
+    for (const row of rows) {
+      await api(`/api/schools/${schoolId}/subscriptions/`, {
+        method: 'POST',
+        body: {
+          module_name: row.module_name,
+          max_students: row.max_students ? parseInt(row.max_students) : null,
+          expiry_date: row.expiry_date,
+          source: row.source,
+        },
+      });
     }
+    fetchData();
   };
 
   const openEditSub = (sub: SubscriptionItem) => {
@@ -296,17 +285,6 @@ export default function SchoolDetailPage() {
 
   if (loading) return <LoadingState message="Loading school details..." />;
   if (error || !school) return <ErrorState message={error || 'Not found'} />;
-
-  const moduleChoices = [
-    'essay_brainstormer',
-    'essay_evaluator',
-    'college_selector',
-    'degree_selector',
-    'interview_prep',
-    'resume_builder',
-    'career_discovery',
-    'domain_discovery',
-  ];
 
   const subscribedModuleNames = new Set(school.subscriptions.map(s => s.module_name));
 
@@ -426,7 +404,7 @@ export default function SchoolDetailPage() {
                 </p>
                 <p className="text-xs text-gray-500">
                   Max: {sub.max_students ?? 'Unlimited'} · Expires:{' '}
-                  {new Date(sub.expiry_date).toLocaleDateString()}
+                  {new Date(sub.expiry_date).toLocaleDateString()} · Source: <span className="capitalize">{sub.source}</span>
                 </p>
                 <div className="mt-2 flex items-center gap-2">
                   <span
@@ -558,83 +536,15 @@ export default function SchoolDetailPage() {
       </div>
 
       {/* Add Subscription Modal */}
-      <Dialog open={subOpen} onOpenChange={(open) => { if (!open) { setSubOpen(false); setSubRows([{ module_name: '', max_students: '', expiry_date: '' }]); setSubError(null); } }}>
-        <DialogContent className="max-w-2xl">
-          <DialogTitle>Add Modules</DialogTitle>
-          {subError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{subError}</p>}
-          <div className="mb-1 grid grid-cols-[1fr_120px_150px_32px] gap-2 text-xs font-medium text-gray-500">
-            <span>Module</span>
-            <span>Max Students</span>
-            <span>Expiry Date</span>
-            <span />
-          </div>
-          <div className="space-y-2">
-            {subRows.map((row, idx) => {
-              const otherSelected = new Set(subRows.filter((_, i) => i !== idx).map(r => r.module_name).filter(Boolean));
-              const available = moduleChoices.filter(m => (!subscribedModuleNames.has(m) || m === row.module_name) && !otherSelected.has(m));
-              return (
-                <div key={idx} className="grid grid-cols-[1fr_120px_150px_32px] gap-2 items-center">
-                  <select
-                    value={row.module_name}
-                    onChange={(e) => {
-                      const updated = [...subRows];
-                      updated[idx] = { ...updated[idx], module_name: e.target.value };
-                      setSubRows(updated);
-                    }}
-                    className={SELECT_CN}
-                  >
-                    <option value="">Select module...</option>
-                    {available.map((m) => (
-                      <option key={m} value={m}>{m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
-                    ))}
-                  </select>
-                  <Input
-                    type="number"
-                    placeholder="Unlimited"
-                    value={row.max_students}
-                    onChange={(e) => {
-                      const updated = [...subRows];
-                      updated[idx] = { ...updated[idx], max_students: e.target.value };
-                      setSubRows(updated);
-                    }}
-                  />
-                  <Input
-                    type="date"
-                    value={row.expiry_date}
-                    onChange={(e) => {
-                      const updated = [...subRows];
-                      updated[idx] = { ...updated[idx], expiry_date: e.target.value };
-                      setSubRows(updated);
-                    }}
-                  />
-                  <button
-                    onClick={() => setSubRows(subRows.filter((_, i) => i !== idx))}
-                    disabled={subRows.length === 1}
-                    className="flex h-8 w-8 items-center justify-center rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-          <button
-            onClick={() => setSubRows([...subRows, { module_name: '', max_students: '', expiry_date: '' }])}
-            className="mt-1 text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
-          >
-            + Add another module
-          </button>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => { setSubOpen(false); setSubRows([{ module_name: '', max_students: '', expiry_date: '' }]); setSubError(null); }}>Cancel</Button>
-            <Button
-              onClick={handleAddSubscription}
-              disabled={subSaving || subRows.every((r) => !r.module_name || !r.expiry_date)}
-            >
-              {subSaving ? 'Saving...' : `Add ${subRows.filter((r) => r.module_name && r.expiry_date).length || ''} Module(s)`}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ModuleAssignDialog
+        open={subOpen}
+        onOpenChange={setSubOpen}
+        assignedModuleNames={subscribedModuleNames}
+        showMaxStudents
+        title="Add Modules"
+        submitLabel="Add"
+        onSubmit={handleAddSubscription}
+      />
 
       {/* Edit Subscription Modal */}
       <Dialog open={editSubOpen} onOpenChange={setEditSubOpen}>

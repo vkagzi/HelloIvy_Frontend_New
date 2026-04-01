@@ -19,13 +19,13 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
   const router = useRouter();
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
+    <div className="flex min-h-full items-center justify-center bg-linear-to-br from-purple-50 via-white to-blue-50 p-4">
       <div className="w-full max-w-3xl">
         {/* Main Card */}
         <div className="relative overflow-hidden rounded-3xl bg-white p-8 shadow-2xl md:p-12">
           {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 -mt-32 -mr-32 h-64 w-64 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 opacity-30 blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 -mb-24 -ml-24 h-48 w-48 rounded-full bg-gradient-to-tr from-pink-100 to-yellow-100 opacity-30 blur-3xl"></div>
+          <div className="absolute top-0 right-0 -mt-32 -mr-32 h-64 w-64 rounded-full bg-linear-to-br from-purple-100 to-blue-100 opacity-30 blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-24 -ml-24 h-48 w-48 rounded-full bg-linear-to-tr from-pink-100 to-yellow-100 opacity-30 blur-3xl"></div>
 
           {/* Confetti Icons */}
           <div
@@ -75,13 +75,13 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
           <div className="relative z-10">
             {/* Header */}
             <div className="mb-8 text-center">
-              <div className="mb-6 inline-flex h-20 w-20 transform items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 to-blue-500 shadow-lg transition-transform hover:scale-110">
+              <div className="mb-6 inline-flex h-20 w-20 transform items-center justify-center rounded-2xl bg-linear-to-br from-purple-400 to-blue-500 shadow-lg transition-transform hover:scale-110">
                 <span className="text-4xl">{icon}</span>
               </div>
               <h1 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
                 {title}
               </h1>
-              <div className="mb-6 inline-block rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-2 text-lg font-semibold text-white">
+              <div className="mb-6 inline-block rounded-full bg-linear-to-r from-purple-600 to-blue-600 px-6 py-2 text-lg font-semibold text-white">
                 COMING SOON
               </div>
             </div>
@@ -101,9 +101,9 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
                   {features.map((feature, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-3 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 p-4 transition-shadow hover:shadow-md"
+                      className="flex items-start gap-3 rounded-xl bg-linear-to-r from-purple-50 to-blue-50 p-4 transition-shadow hover:shadow-md"
                     >
-                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-blue-500">
                         <svg
                           className="h-4 w-4 text-white"
                           fill="none"
@@ -126,7 +126,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
             )}
 
             {/* Notification Section */}
-            <div className="mb-8 rounded-2xl bg-gradient-to-r from-purple-100 to-blue-100 p-6">
+            <div className="mb-8 rounded-2xl bg-linear-to-r from-purple-100 to-blue-100 p-6">
               <div className="text-center">
                 <p className="mb-4 text-gray-700">
                   <span className="font-semibold">
@@ -141,7 +141,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
                     placeholder="Enter your email"
                     className="w-full rounded-lg border-2 border-purple-200 px-4 py-3 focus:border-purple-500 focus:outline-none sm:w-64"
                   />
-                  <button className="w-full transform rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-3 font-semibold text-white transition-all hover:scale-105 hover:shadow-lg sm:w-auto">
+                  <button className="w-full transform rounded-lg bg-linear-to-r from-purple-600 to-blue-600 px-6 py-3 font-semibold text-white transition-all hover:scale-105 hover:shadow-lg sm:w-auto">
                     Notify Me
                   </button>
                 </div>

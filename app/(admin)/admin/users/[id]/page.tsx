@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import ModuleAssignDialog from '@/components/admin/ModuleAssignDialog';
 
 interface SchoolOption {
   id: number;
@@ -25,6 +26,7 @@ interface UserModuleSub {
   module_display: string;
   expiry_date: string;
   is_active: boolean;
+  source: string;
   created_at: string;
 }
 
@@ -58,11 +60,6 @@ const PROFILE_SECTIONS = [
   { key: 'professional', label: 'Professional Details', contextKey: 'professional' },
   { key: 'extra-curricular', label: 'Extra Curricular Activities', contextKey: 'extraCurricular' },
   { key: 'additional', label: 'Additional Information', contextKey: 'additional' },
-] as const;
-
-const ALL_MODULES = [
-  'essay_brainstormer', 'essay_evaluator', 'college_selector', 'degree_selector',
-  'interview_prep', 'resume_builder', 'career_discovery', 'domain_discovery',
 ] as const;
 
 const SELECT_CN = 'h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-neutral-400 disabled:opacity-50';
@@ -106,10 +103,6 @@ export default function AdminUserDetailPage() {
   // User module subscriptions state (for users without a school)
   const [userModules, setUserModules] = useState<UserModuleSub[]>([]);
   const [addModuleOpen, setAddModuleOpen] = useState(false);
-  const [addModuleName, setAddModuleName] = useState('');
-  const [addModuleExpiry, setAddModuleExpiry] = useState('');
-  const [addModuleSaving, setAddModuleSaving] = useState(false);
-  const [addModuleError, setAddModuleError] = useState<string | null>(null);
   const [editModuleOpen, setEditModuleOpen] = useState(false);
   const [editModuleData, setEditModuleData] = useState<UserModuleSub | null>(null);
   const [editModuleExpiry, setEditModuleExpiry] = useState('');
@@ -249,24 +242,15 @@ export default function AdminUserDetailPage() {
     }
   };
 
-  const handleAddModule = async () => {
-    if (!userId || !addModuleName || !addModuleExpiry) return;
-    setAddModuleSaving(true);
-    setAddModuleError(null);
-    try {
+  const handleAddModule = async (rows: { module_name: string; max_students: string; expiry_date: string; source: string }[]) => {
+    if (!userId) return;
+    for (const row of rows) {
       await api(`/api/accounts/admin/users/${userId}/modules/`, {
         method: 'POST',
-        body: { module_name: addModuleName, expiry_date: addModuleExpiry, is_active: true },
+        body: { module_name: row.module_name, expiry_date: row.expiry_date, is_active: true, source: row.source },
       });
-      setAddModuleOpen(false);
-      setAddModuleName('');
-      setAddModuleExpiry('');
-      fetchUserModules();
-    } catch (err: unknown) {
-      setAddModuleError(err instanceof Error ? err.message : 'Failed to add module');
-    } finally {
-      setAddModuleSaving(false);
     }
+    fetchUserModules();
   };
 
   const openEditModule = (sub: UserModuleSub) => {
@@ -500,7 +484,7 @@ export default function AdminUserDetailPage() {
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-gray-900">Module Access</h2>
                 <button
-                  onClick={() => { setAddModuleName(''); setAddModuleExpiry(''); setAddModuleError(null); setAddModuleOpen(true); }}
+                  onClick={() => setAddModuleOpen(true)}
                   className="cursor-pointer rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
                 >
                   Assign Module
@@ -513,7 +497,7 @@ export default function AdminUserDetailPage() {
                       <div>
                         <p className="text-sm font-medium text-gray-900">{sub.module_display}</p>
                         <p className="text-xs text-gray-500">
-                          Expires: {new Date(sub.expiry_date).toLocaleDateString()}
+                          Expires: {new Date(sub.expiry_date).toLocaleDateString()} · Source: <span className="capitalize">{sub.source}</span>
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
@@ -603,36 +587,14 @@ export default function AdminUserDetailPage() {
       </Dialog>
 
       {/* Assign Module Modal */}
-      <Dialog open={addModuleOpen} onOpenChange={setAddModuleOpen}>
-        <DialogContent className="max-w-md">
-          <DialogTitle>Assign Module</DialogTitle>
-          {addModuleError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{addModuleError}</p>}
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="assign-module">Module</Label>
-              <select
-                id="assign-module"
-                value={addModuleName}
-                onChange={(e) => setAddModuleName(e.target.value)}
-                className={SELECT_CN}
-              >
-                <option value="">Select module...</option>
-                {ALL_MODULES.filter(m => !userModules.some(um => um.module_name === m)).map((m) => (
-                  <option key={m} value={m}>{m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="assign-expiry">Expiry Date</Label>
-              <Input id="assign-expiry" type="date" value={addModuleExpiry} onChange={(e) => setAddModuleExpiry(e.target.value)} />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setAddModuleOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddModule} disabled={addModuleSaving || !addModuleName || !addModuleExpiry}>{addModuleSaving ? 'Saving...' : 'Assign'}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ModuleAssignDialog
+        open={addModuleOpen}
+        onOpenChange={setAddModuleOpen}
+        assignedModuleNames={new Set(userModules.map((m) => m.module_name))}
+        title="Assign Modules"
+        submitLabel="Assign"
+        onSubmit={handleAddModule}
+      />
 
       {/* Edit Module Modal */}
       <Dialog open={editModuleOpen} onOpenChange={setEditModuleOpen}>

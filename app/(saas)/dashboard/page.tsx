@@ -83,7 +83,7 @@ export default function Dashboard(): React.ReactElement {
           {loading ? (
             <div className="h-14 w-24 animate-pulse rounded bg-neutral-200" />
           ) : (
-            <span className="mb-2 bg-linear-to-r from-red-500 via-blue-500 via-indigo-500 via-pink-500 via-purple-500 to-teal-400 bg-clip-text text-4xl font-semibold text-transparent md:text-5xl">
+            <span className="mb-2 bg-linear-to-r from-red-500 via-purple-500 to-teal-400 bg-clip-text text-4xl font-semibold text-transparent md:text-5xl">
               {completionPercentage}%
             </span>
           )}
@@ -125,7 +125,7 @@ export default function Dashboard(): React.ReactElement {
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-purple-100 bg-purple-50 px-4 py-2.5">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 flex-shrink-0 text-purple-500"
+            className="h-4 w-4 shrink-0 text-purple-500"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
