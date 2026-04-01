@@ -5,10 +5,12 @@ export const Regexvalidations = {
   justNumberWithBlank: '^$|^[0-9]+$',
   indiaAndUSZipCode: '^(?:[1-9][0-9]{5}|\\d{5}(?:-\\d{4})?)$',
   percentage: '^(?:[0-9]{1,2}|100)?$',
+  percentile: '^([1-9][0-9]?|100)?$',
 };
 
 export type FieldValidation = {
   regex?: string;
+  regexMessage?: string;
   format?: string;
   min?: number;
   max?: number;
@@ -76,7 +78,7 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
       if (field.validation?.regex)
         base = base.regex(
           new RegExp(field.validation.regex),
-          `${field.label} format is invalid`
+          field.validation.regexMessage ?? `${field.label} format is invalid`
         );
       if (field.validation?.format === 'email')
         base = base.email('Enter a valid email address');

@@ -1060,11 +1060,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'writingYourPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'mathTitle',
@@ -1081,11 +1081,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'mathYourPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'criticalReadingTitle',
@@ -1102,11 +1102,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'criticalReadingYourPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'retakeExamDate',
@@ -1117,11 +1117,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'yourPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'yourScore',
@@ -1146,11 +1146,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'analyticalWritingPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'verbalReasoningTitle',
@@ -1167,11 +1167,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'verbalReasoningPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'quantitativeReasoningTitle',
@@ -1188,11 +1188,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'quantitativeReasoningPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'dataInsightsTitle',
@@ -1209,11 +1209,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'dataInsightsPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'englishTitle',
@@ -1230,11 +1230,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'englishYourPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'readingTitle',
@@ -1251,11 +1251,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'readingYourPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'scienceTitle',
@@ -1272,11 +1272,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'scienceYourPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'integratedReasoningTitle',
@@ -1293,11 +1293,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'integratedReasoningPercentile',
-    type: 'text',
+    type: 'number',
     label: 'Your Percentile',
     placeholder: 'Enter your percentile',
     required: false,
-    validation: { regex: Regexvalidations.percentage },
+    validation: { min: 1, max: 100 },
   },
   {
     id: 'tookCoaching',

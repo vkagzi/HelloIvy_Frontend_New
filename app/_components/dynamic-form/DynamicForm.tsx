@@ -155,6 +155,12 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   let { schema } = generateDynamicFormSchema(fieldDefs, layout);
 
   // Add test scores validation schema
+  const percentileField = z
+    .number()
+    .min(1, 'Percentile must be at least 1')
+    .max(100, 'Percentile must be at most 100')
+    .optional();
+
   const testScoresSchema = z.object({
     testScores: z
       .array(
@@ -164,29 +170,29 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             testDate: z.string().optional(),
             totalScore: z.string().optional(),
             yourScore: z.string().optional(),
-            yourPercentile: z.string().optional(),
+            yourPercentile: percentileField,
             writingYourScore: z.string().optional(),
-            writingYourPercentile: z.string().optional(),
+            writingYourPercentile: percentileField,
             mathYourScore: z.string().optional(),
-            mathYourPercentile: z.string().optional(),
+            mathYourPercentile: percentileField,
             criticalReadingYourScore: z.string().optional(),
-            criticalReadingYourPercentile: z.string().optional(),
+            criticalReadingYourPercentile: percentileField,
             analyticalWritingScore: z.string().optional(),
-            analyticalWritingPercentile: z.string().optional(),
+            analyticalWritingPercentile: percentileField,
             verbalReasoningScore: z.string().optional(),
-            verbalReasoningPercentile: z.string().optional(),
+            verbalReasoningPercentile: percentileField,
             quantitativeReasoningScore: z.string().optional(),
-            quantitativeReasoningPercentile: z.string().optional(),
+            quantitativeReasoningPercentile: percentileField,
             dataInsightsScore: z.string().optional(),
-            dataInsightsPercentile: z.string().optional(),
+            dataInsightsPercentile: percentileField,
             englishYourScore: z.string().optional(),
-            englishYourPercentile: z.string().optional(),
+            englishYourPercentile: percentileField,
             readingYourScore: z.string().optional(),
-            readingYourPercentile: z.string().optional(),
+            readingYourPercentile: percentileField,
             scienceYourScore: z.string().optional(),
-            scienceYourPercentile: z.string().optional(),
+            scienceYourPercentile: percentileField,
             integratedReasoningScore: z.string().optional(),
-            integratedReasoningPercentile: z.string().optional(),
+            integratedReasoningPercentile: percentileField,
             retakeExamDate: z.string().optional(),
             tookCoaching: z.string().optional(),
             coachingName: z.string().optional(),

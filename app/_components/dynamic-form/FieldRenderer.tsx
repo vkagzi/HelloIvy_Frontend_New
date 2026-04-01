@@ -122,6 +122,12 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   type={field.type === 'file' ? 'text' : field.type}
                   disabled={disabledField}
                   placeholder={field.placeholder}
+                  {...(field.type === 'number' && field.validation?.min !== undefined
+                    ? { min: field.validation.min }
+                    : {})}
+                  {...(field.type === 'number' && field.validation?.max !== undefined
+                    ? { max: field.validation.max }
+                    : {})}
                   value={
                     typeof controllerField.value === 'string' ||
                     typeof controllerField.value === 'number'
