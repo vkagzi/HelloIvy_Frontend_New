@@ -13,6 +13,7 @@
     "predeploy": "npm run lint && npm run type-check && npm run build"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.31.0",
     "@flaticon/flaticon-uicons": "^3.3.1",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.2.0",

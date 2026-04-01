@@ -25,7 +25,6 @@ export default function CreateSchoolPage() {
   const { addToast } = useToast();
   const [form, setForm] = useState({
     name: '',
-    logo_url: '',
     address: '',
     city: '',
     state: '',
@@ -34,7 +33,6 @@ export default function CreateSchoolPage() {
     contact_email: '',
     contact_phone: '',
   });
-  const [logoMode, setLogoMode] = useState<'url' | 'upload'>('url');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,16 +45,31 @@ export default function CreateSchoolPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/svg+xml']);
+  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
-    setLogoFile(file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setLogoPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    } else {
+    if (!file) {
+      setLogoFile(null);
       setLogoPreview(null);
+      return;
     }
+    if (!ALLOWED_TYPES.has(file.type)) {
+      setError('Invalid file type. Only JPG, JPEG, PNG, and SVG are allowed.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      setError('File too large. Maximum allowed size is 10 MB.');
+      e.target.value = '';
+      return;
+    }
+    setError(null);
+    setLogoFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setLogoPreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,16 +81,24 @@ export default function CreateSchoolPage() {
     setSaving(true);
     setError(null);
     try {
-      if (logoMode === 'upload' && logoFile) {
-        const formData = new FormData();
-        Object.entries(form).forEach(([key, value]) => {
-          if (key !== 'logo_url' && value) formData.append(key, value);
-        });
+      const formData = new FormData();
+      
+      // Add all form fields
+      formData.append('name', form.name);
+      formData.append('address', form.address);
+      formData.append('city', form.city);
+      formData.append('state', form.state);
+      formData.append('country', form.country);
+      formData.append('website', form.website);
+      formData.append('contact_email', form.contact_email);
+      formData.append('contact_phone', form.contact_phone);
+      
+      // Add logo file if selected
+      if (logoFile) {
         formData.append('logo_file', logoFile);
-        await api('/api/schools/', { method: 'POST', body: formData });
-      } else {
-        await api('/api/schools/', { method: 'POST', body: form });
       }
+      
+      await api('/api/schools/', { method: 'POST', body: formData });
       router.push('/admin/schools');
     } catch (err: unknown) {
       const message = extractApiError(err, 'Failed to create school');
@@ -116,69 +137,31 @@ export default function CreateSchoolPage() {
           <label className="mb-1 block text-sm font-medium text-gray-700">
             School Logo
           </label>
-          <div className="mb-2 flex gap-2">
-            <button
-              type="button"
-              onClick={() => { setLogoMode('url'); setLogoFile(null); setLogoPreview(null); }}
-              className={`cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition ${
-                logoMode === 'url'
-                  ? 'bg-purple-600 text-white'
-                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Paste URL
-            </button>
-            <button
-              type="button"
-              onClick={() => { setLogoMode('upload'); setForm((p) => ({ ...p, logo_url: '' })); }}
-              className={`cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition ${
-                logoMode === 'upload'
-                  ? 'bg-purple-600 text-white'
-                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Upload File
-            </button>
-          </div>
-
-          {logoMode === 'url' ? (
-            <input
-              type="url"
-              name="logo_url"
-              value={form.logo_url}
-              onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-              placeholder="https://..."
-            />
-          ) : (
-            <div>
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500 transition hover:border-purple-400 hover:text-purple-600"
-              >
-                {logoPreview ? (
-                  <img
-                    src={logoPreview}
-                    alt="Logo preview"
-                    className="mb-2 h-16 w-16 rounded object-contain"
-                  />
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="mb-1 h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                )}
-                <span>{logoFile ? logoFile.name : 'Click to select an image'}</span>
-                <span className="mt-1 text-xs text-gray-400">JPG, PNG, GIF, WebP, SVG (max 5 MB)</span>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
-                onChange={handleFileChange}
-                className="hidden"
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500 transition hover:border-purple-400 hover:text-purple-600"
+          >
+            {logoPreview ? (
+              <img
+                src={logoPreview}
+                alt="Logo preview"
+                className="mb-2 h-16 w-16 rounded object-contain"
               />
-            </div>
-          )}
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="mb-1 h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            )}
+            <span>{logoFile ? logoFile.name : 'Click to select an image'}</span>
+            <span className="mt-1 text-xs text-gray-400">JPG, JPEG, PNG, SVG (max 10 MB)</span>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/svg+xml"
+            onChange={handleFileChange}
+            className="hidden"
+          />
         </div>
 
         <div>

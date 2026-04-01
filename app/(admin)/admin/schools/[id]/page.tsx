@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api-client';
@@ -59,6 +59,57 @@ export default function SchoolDetailPage() {
   const [totalStudents, setTotalStudents] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Logo editing
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoSaving, setLogoSaving] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/svg+xml']);
+  const MAX_SIZE = 5 * 1024 * 1024;
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    if (!ALLOWED_TYPES.has(file.type)) {
+      setLogoError('Invalid file type. Only JPG, PNG, and SVG are allowed.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      setLogoError('File too large. Maximum allowed size is 5 MB.');
+      e.target.value = '';
+      return;
+    }
+    setLogoError(null);
+    setLogoFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setLogoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoSave = async () => {
+    if (!logoFile || !schoolId) return;
+    setLogoSaving(true);
+    setLogoError(null);
+    try {
+      const formData = new FormData();
+      formData.append('logo_file', logoFile);
+      const updated = await api<SchoolDetail>(`/api/schools/${schoolId}/`, {
+        method: 'PUT',
+        body: formData,
+      });
+      setSchool(updated);
+      setLogoFile(null);
+      setLogoPreview(null);
+    } catch (err: unknown) {
+      setLogoError(err instanceof Error ? err.message : 'Failed to upload logo');
+    } finally {
+      setLogoSaving(false);
+    }
+  };
 
   // Add subscription modal
   const [subOpen, setSubOpen] = useState(false);
@@ -203,17 +254,38 @@ export default function SchoolDetailPage() {
       {/* School Info */}
       <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
         <div className="flex items-center gap-4">
-          {school.logo_url ? (
-            <img
-              src={school.logo_url}
-              alt={school.name}
-              className="h-14 w-14 rounded-lg object-cover"
-            />
-          ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-purple-100 text-xl font-bold text-purple-700">
-              {school.name.charAt(0)}
+          <div className="group relative">
+            <div
+              onClick={() => logoInputRef.current?.click()}
+              className="relative h-14 w-14 cursor-pointer rounded-lg overflow-hidden"
+              title="Click to change logo"
+            >
+              {logoPreview || school.logo_url ? (
+                <img
+                  src={logoPreview ?? school.logo_url!}
+                  alt={school.name}
+                  className="h-14 w-14 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-purple-100 text-xl font-bold text-purple-700">
+                  {school.name.charAt(0)}
+                </div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
             </div>
-          )}
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/svg+xml"
+              onChange={handleLogoChange}
+              className="hidden"
+            />
+          </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">{school.name}</h1>
             <p className="text-sm text-gray-500">
@@ -221,6 +293,26 @@ export default function SchoolDetailPage() {
                 .filter(Boolean)
                 .join(', ')}
             </p>
+            {logoFile && (
+              <div className="mt-1 flex items-center gap-2">
+                <button
+                  onClick={handleLogoSave}
+                  disabled={logoSaving}
+                  className="cursor-pointer rounded-md bg-purple-600 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
+                >
+                  {logoSaving ? 'Saving...' : 'Save logo'}
+                </button>
+                <button
+                  onClick={() => { setLogoFile(null); setLogoPreview(null); setLogoError(null); }}
+                  className="cursor-pointer rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+            {logoError && (
+              <p className="mt-1 text-xs text-red-600">{logoError}</p>
+            )}
           </div>
           <div className="ml-auto">
             <span
