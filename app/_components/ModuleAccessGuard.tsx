@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
 
+// TODO: Re-enable paywall when ready
+const PAYWALL_DISABLED = true;
+
 interface ModuleAccessGuardProps {
   moduleName: string;
   moduleDisplay: string;
@@ -19,6 +22,8 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   const { hasAccess, loading } = useModuleAccess();
   const { data: session } = useSession();
   const hasSchool = !!session?.user?.school_id;
+
+  if (PAYWALL_DISABLED) return <>{children}</>;
 
   if (loading) {
     return (
