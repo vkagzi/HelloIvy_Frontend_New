@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Heading, Paragraph } from '@/app/_components/Typography';
 import Button from '@/app/_components/Button';
 import { useToast } from '@/app/_components/Toast';
+import ModuleAccessGuard from '@/app/_components/ModuleAccessGuard';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -2947,4 +2948,10 @@ const EssayEvaluatorPage: React.FC = () => {
   );
 };
 
-export default EssayEvaluatorPage;
+export default function Page() {
+  return (
+    <ModuleAccessGuard moduleName="essay_evaluator" moduleDisplay="Essay Evaluator">
+      <EssayEvaluatorPage />
+    </ModuleAccessGuard>
+  );
+}

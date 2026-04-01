@@ -19,6 +19,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import ModuleAccessGuard from '@/app/_components/ModuleAccessGuard';
 
 interface DomainDiscoveryPageProps {}
 
@@ -36,7 +37,7 @@ let sessionsCache: {
 // Cache expires after 30 seconds to ensure fresh data on real navigation
 const CACHE_TTL = 30000;
 
-export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
+function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
@@ -457,5 +458,13 @@ export default function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <ModuleAccessGuard moduleName="domain_discovery" moduleDisplay="Stream & Subject Selection">
+      <DomainDiscoveryPage />
+    </ModuleAccessGuard>
   );
 }

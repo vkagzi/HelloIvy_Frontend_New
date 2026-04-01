@@ -6,6 +6,10 @@ import Link from 'next/link';
 import api from '@/lib/api-client';
 import InfoItem from '@/components/admin/InfoItem';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 interface SubscriptionItem {
   id: number;
@@ -50,6 +54,8 @@ interface AdminItem {
   last_login: string | null;
   created_at: string;
 }
+
+const SELECT_CN = 'h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-neutral-400 disabled:opacity-50';
 
 export default function SchoolDetailPage() {
   const params = useParams();
@@ -113,10 +119,22 @@ export default function SchoolDetailPage() {
 
   // Add subscription modal
   const [subOpen, setSubOpen] = useState(false);
-  const [subModule, setSubModule] = useState('');
-  const [subMaxStudents, setSubMaxStudents] = useState('');
-  const [subExpiry, setSubExpiry] = useState('');
+  const [subRows, setSubRows] = useState([{ module_name: '', max_students: '', expiry_date: '' }]);
   const [subSaving, setSubSaving] = useState(false);
+  const [subError, setSubError] = useState<string | null>(null);
+
+  // Edit subscription modal
+  const [editSubOpen, setEditSubOpen] = useState(false);
+  const [editSubData, setEditSubData] = useState<SubscriptionItem | null>(null);
+  const [editSubMaxStudents, setEditSubMaxStudents] = useState('');
+  const [editSubExpiry, setEditSubExpiry] = useState('');
+  const [editSubIsActive, setEditSubIsActive] = useState(true);
+  const [editSubSaving, setEditSubSaving] = useState(false);
+  const [editSubError, setEditSubError] = useState<string | null>(null);
+
+  // Delete subscription confirm
+  const [deleteSubId, setDeleteSubId] = useState<number | null>(null);
+  const [deleteSubSaving, setDeleteSubSaving] = useState(false);
 
   // Add student modal
   const [addStudentOpen, setAddStudentOpen] = useState(false);
@@ -157,26 +175,74 @@ export default function SchoolDetailPage() {
   }, [fetchData]);
 
   const handleAddSubscription = async () => {
-    if (!schoolId || !subModule || !subExpiry) return;
+    const validRows = subRows.filter((r) => r.module_name && r.expiry_date);
+    if (!schoolId || validRows.length === 0) return;
     setSubSaving(true);
+    setSubError(null);
     try {
-      await api(`/api/schools/${schoolId}/subscriptions/`, {
-        method: 'POST',
-        body: {
-          module_name: subModule,
-          max_students: subMaxStudents ? parseInt(subMaxStudents) : null,
-          expiry_date: subExpiry,
-        },
-      });
+      for (const row of validRows) {
+        await api(`/api/schools/${schoolId}/subscriptions/`, {
+          method: 'POST',
+          body: {
+            module_name: row.module_name,
+            max_students: row.max_students ? parseInt(row.max_students) : null,
+            expiry_date: row.expiry_date,
+          },
+        });
+      }
       setSubOpen(false);
-      setSubModule('');
-      setSubMaxStudents('');
-      setSubExpiry('');
+      setSubRows([{ module_name: '', max_students: '', expiry_date: '' }]);
       fetchData();
-    } catch {
-      // silent
+    } catch (err: unknown) {
+      setSubError(err instanceof Error ? err.message : 'Failed to add subscriptions');
     } finally {
       setSubSaving(false);
+    }
+  };
+
+  const openEditSub = (sub: SubscriptionItem) => {
+    setEditSubData(sub);
+    setEditSubMaxStudents(sub.max_students !== null ? String(sub.max_students) : '');
+    setEditSubExpiry(sub.expiry_date);
+    setEditSubIsActive(sub.is_active);
+    setEditSubError(null);
+    setEditSubOpen(true);
+  };
+
+  const handleEditSubscription = async () => {
+    if (!schoolId || !editSubData) return;
+    setEditSubSaving(true);
+    setEditSubError(null);
+    try {
+      await api(`/api/schools/${schoolId}/subscriptions/${editSubData.id}/`, {
+        method: 'PATCH',
+        body: {
+          max_students: editSubMaxStudents ? parseInt(editSubMaxStudents) : null,
+          expiry_date: editSubExpiry,
+          is_active: editSubIsActive,
+        },
+      });
+      setEditSubOpen(false);
+      setEditSubData(null);
+      fetchData();
+    } catch (err: unknown) {
+      setEditSubError(err instanceof Error ? err.message : 'Failed to update subscription');
+    } finally {
+      setEditSubSaving(false);
+    }
+  };
+
+  const handleDeleteSubscription = async () => {
+    if (!schoolId || deleteSubId === null) return;
+    setDeleteSubSaving(true);
+    try {
+      await api(`/api/schools/${schoolId}/subscriptions/${deleteSubId}/`, { method: 'DELETE' });
+      setDeleteSubId(null);
+      fetchData();
+    } catch {
+      // ignore
+    } finally {
+      setDeleteSubSaving(false);
     }
   };
 
@@ -241,6 +307,8 @@ export default function SchoolDetailPage() {
     'career_discovery',
     'domain_discovery',
   ];
+
+  const subscribedModuleNames = new Set(school.subscriptions.map(s => s.module_name));
 
   return (
     <div className="space-y-6">
@@ -360,11 +428,25 @@ export default function SchoolDetailPage() {
                   Max: {sub.max_students ?? 'Unlimited'} · Expires:{' '}
                   {new Date(sub.expiry_date).toLocaleDateString()}
                 </p>
-                <span
-                  className={`inline-flex rounded-full px-2 text-xs font-semibold ${sub.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                >
-                  {sub.is_active ? 'Active' : 'Inactive'}
-                </span>
+                <div className="mt-2 flex items-center gap-2">
+                  <span
+                    className={`inline-flex rounded-full px-2 text-xs font-semibold ${sub.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                  >
+                    {sub.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                  <button
+                    onClick={() => openEditSub(sub)}
+                    className="cursor-pointer rounded-md px-2 py-0.5 text-xs font-medium text-purple-600 hover:bg-purple-50"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setDeleteSubId(sub.id)}
+                    className="cursor-pointer rounded-md px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -476,148 +558,171 @@ export default function SchoolDetailPage() {
       </div>
 
       {/* Add Subscription Modal */}
-      {subOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold">Add Module</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Module
-                </label>
-                <select
-                  value={subModule}
-                  onChange={(e) => setSubModule(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Select module...</option>
-                  {moduleChoices.map((m) => (
-                    <option key={m} value={m}>
-                      {m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Max Students (optional)
-                </label>
-                <input
-                  type="number"
-                  value={subMaxStudents}
-                  onChange={(e) => setSubMaxStudents(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Expiry Date
-                </label>
-                <input
-                  type="date"
-                  value={subExpiry}
-                  onChange={(e) => setSubExpiry(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setSubOpen(false)}
-                  className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddSubscription}
-                  disabled={subSaving || !subModule || !subExpiry}
-                  className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
-                >
-                  {subSaving ? 'Saving...' : 'Add'}
-                </button>
-              </div>
-            </div>
+      <Dialog open={subOpen} onOpenChange={(open) => { if (!open) { setSubOpen(false); setSubRows([{ module_name: '', max_students: '', expiry_date: '' }]); setSubError(null); } }}>
+        <DialogContent className="max-w-2xl">
+          <DialogTitle>Add Modules</DialogTitle>
+          {subError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{subError}</p>}
+          <div className="mb-1 grid grid-cols-[1fr_120px_150px_32px] gap-2 text-xs font-medium text-gray-500">
+            <span>Module</span>
+            <span>Max Students</span>
+            <span>Expiry Date</span>
+            <span />
           </div>
-        </div>
-      )}
+          <div className="space-y-2">
+            {subRows.map((row, idx) => {
+              const otherSelected = new Set(subRows.filter((_, i) => i !== idx).map(r => r.module_name).filter(Boolean));
+              const available = moduleChoices.filter(m => (!subscribedModuleNames.has(m) || m === row.module_name) && !otherSelected.has(m));
+              return (
+                <div key={idx} className="grid grid-cols-[1fr_120px_150px_32px] gap-2 items-center">
+                  <select
+                    value={row.module_name}
+                    onChange={(e) => {
+                      const updated = [...subRows];
+                      updated[idx] = { ...updated[idx], module_name: e.target.value };
+                      setSubRows(updated);
+                    }}
+                    className={SELECT_CN}
+                  >
+                    <option value="">Select module...</option>
+                    {available.map((m) => (
+                      <option key={m} value={m}>{m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+                    ))}
+                  </select>
+                  <Input
+                    type="number"
+                    placeholder="Unlimited"
+                    value={row.max_students}
+                    onChange={(e) => {
+                      const updated = [...subRows];
+                      updated[idx] = { ...updated[idx], max_students: e.target.value };
+                      setSubRows(updated);
+                    }}
+                  />
+                  <Input
+                    type="date"
+                    value={row.expiry_date}
+                    onChange={(e) => {
+                      const updated = [...subRows];
+                      updated[idx] = { ...updated[idx], expiry_date: e.target.value };
+                      setSubRows(updated);
+                    }}
+                  />
+                  <button
+                    onClick={() => setSubRows(subRows.filter((_, i) => i !== idx))}
+                    disabled={subRows.length === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => setSubRows([...subRows, { module_name: '', max_students: '', expiry_date: '' }])}
+            className="mt-1 text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+          >
+            + Add another module
+          </button>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => { setSubOpen(false); setSubRows([{ module_name: '', max_students: '', expiry_date: '' }]); setSubError(null); }}>Cancel</Button>
+            <Button
+              onClick={handleAddSubscription}
+              disabled={subSaving || subRows.every((r) => !r.module_name || !r.expiry_date)}
+            >
+              {subSaving ? 'Saving...' : `Add ${subRows.filter((r) => r.module_name && r.expiry_date).length || ''} Module(s)`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Subscription Modal */}
+      <Dialog open={editSubOpen} onOpenChange={setEditSubOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Edit Module</DialogTitle>
+          {editSubData && <p className="text-sm text-gray-500">{editSubData.module_display}</p>}
+          {editSubError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{editSubError}</p>}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="edit-sub-max">Max Students (optional)</Label>
+              <Input id="edit-sub-max" type="number" value={editSubMaxStudents} onChange={(e) => setEditSubMaxStudents(e.target.value)} placeholder="Unlimited" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-sub-expiry">Expiry Date</Label>
+              <Input id="edit-sub-expiry" type="date" value={editSubExpiry} onChange={(e) => setEditSubExpiry(e.target.value)} />
+            </div>
+            <Label className="flex items-center gap-2 font-normal cursor-pointer">
+              <input type="checkbox" checked={editSubIsActive} onChange={(e) => setEditSubIsActive(e.target.checked)} className="rounded border-gray-300" />
+              Active
+            </Label>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setEditSubOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditSubscription} disabled={editSubSaving || !editSubExpiry}>{editSubSaving ? 'Saving...' : 'Save Changes'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Subscription Confirmation */}
+      <Dialog open={deleteSubId !== null} onOpenChange={(open) => { if (!open) setDeleteSubId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogTitle>Delete Module</DialogTitle>
+          <p className="text-sm text-gray-600">Are you sure you want to delete this module subscription? This cannot be undone.</p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setDeleteSubId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteSubscription} disabled={deleteSubSaving}>{deleteSubSaving ? 'Deleting...' : 'Delete'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Student Modal */}
-      {addStudentOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold">Add Student</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Student Email
-                </label>
-                <input
-                  type="email"
-                  value={addStudentEmail}
-                  onChange={(e) => setAddStudentEmail(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  placeholder="student@example.com"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setAddStudentOpen(false)}
-                  className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddStudent}
-                  disabled={addStudentSaving || !addStudentEmail.trim()}
-                  className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
-                >
-                  {addStudentSaving ? 'Adding...' : 'Add'}
-                </button>
-              </div>
+      <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Add Student</DialogTitle>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="student-email">Student Email</Label>
+              <Input
+                id="student-email"
+                type="email"
+                value={addStudentEmail}
+                onChange={(e) => setAddStudentEmail(e.target.value)}
+                placeholder="student@example.com"
+              />
             </div>
           </div>
-        </div>
-      )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setAddStudentOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddStudent} disabled={addStudentSaving || !addStudentEmail.trim()}>{addStudentSaving ? 'Adding...' : 'Add'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Admin Modal */}
-      {addAdminOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold">Add School Admin</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Admin Email
-                </label>
-                <input
-                  type="email"
-                  value={addAdminEmail}
-                  onChange={(e) => setAddAdminEmail(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  placeholder="admin@example.com"
-                />
-              </div>
-              <p className="text-xs text-gray-500">
-                If the user exists, their role will be updated to school admin. Otherwise, a new account will be created.
-              </p>
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setAddAdminOpen(false)}
-                  className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddAdmin}
-                  disabled={addAdminSaving || !addAdminEmail.trim()}
-                  className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
-                >
-                  {addAdminSaving ? 'Adding...' : 'Add'}
-                </button>
-              </div>
+      <Dialog open={addAdminOpen} onOpenChange={setAddAdminOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Add School Admin</DialogTitle>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="admin-email">Admin Email</Label>
+              <Input
+                id="admin-email"
+                type="email"
+                value={addAdminEmail}
+                onChange={(e) => setAddAdminEmail(e.target.value)}
+                placeholder="admin@example.com"
+              />
             </div>
+            <p className="text-xs text-gray-500">
+              If the user exists, their role will be updated to school admin. Otherwise, a new account will be created.
+            </p>
           </div>
-        </div>
-      )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setAddAdminOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddAdmin} disabled={addAdminSaving || !addAdminEmail.trim()}>{addAdminSaving ? 'Adding...' : 'Add'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

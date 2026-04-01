@@ -2,8 +2,9 @@
 
 import React from 'react';
 import ComingSoon from '@/app/_components/ComingSoon';
+import ModuleAccessGuard from '@/app/_components/ModuleAccessGuard';
 
-export default function DegreeSelectorPage() {
+function DegreeSelectorPage() {
   return (
     <ComingSoon
       title="Degree Selector"
@@ -18,5 +19,13 @@ export default function DegreeSelectorPage() {
         'AI-powered matching with your career goals',
       ]}
     />
+  );
+}
+
+export default function Page() {
+  return (
+    <ModuleAccessGuard moduleName="degree_selector" moduleDisplay="Degree Selector">
+      <DegreeSelectorPage />
+    </ModuleAccessGuard>
   );
 }

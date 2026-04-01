@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Heading, Label } from '@/app/_components/Typography';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import api from '@/lib/api-client';
+import { useSession } from 'next-auth/react';
 
 type VoicePersona = 'male' | 'female';
 
@@ -29,6 +30,8 @@ const PERSONA_META: Record<
 export default function Dashboard(): React.ReactElement {
   const { completionPercentage, isProfileComplete, profileData, loading } =
     useProfile();
+  const { data: session } = useSession();
+  const schoolName = session?.user?.school_name;
 
   const [currentPersona, setCurrentPersona] = useState<VoicePersona>('male');
 
@@ -118,6 +121,32 @@ export default function Dashboard(): React.ReactElement {
 
   return (
     <>
+      {schoolName && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-purple-100 bg-purple-50 px-4 py-2.5">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 flex-shrink-0 text-purple-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 14l9-5-9-5-9 5 9 5z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 14l6.16-3.422A12.083 12.083 0 0121 13c0 5.523-4.03 10-9 10S3 18.523 3 13c0-.857.124-1.68.356-2.456L12 14z"
+            />
+          </svg>
+          <Label size="sm" className="text-purple-700">
+            <span className="font-medium">{schoolName}</span>
+          </Label>
+        </div>
+      )}
       {renderCompleteProfile()}
 
       {/* Select Your Counsellor Voice quick-link */}

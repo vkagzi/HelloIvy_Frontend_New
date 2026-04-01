@@ -47,8 +47,7 @@ export default function SchoolsListPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Schools</h1>
-          <p className="text-sm text-gray-500">
+          <p className=" text-gray-500">
             {schools.length} total schools
           </p>
         </div>

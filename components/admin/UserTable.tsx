@@ -149,8 +149,8 @@ export default function UserTable<T extends { id: number; email: string }>({
       {(title || headerRight) && (
         <div className="mb-6 flex items-center justify-between">
           <div>
-            {title && <h1 className="text-2xl font-bold text-gray-900">{title}</h1>}
-            {totalLabel && <p className="text-sm text-gray-500">{totalLabel}</p>}
+            {/* {title && <h1 className="text-2xl font-bold text-gray-900">{title}</h1>} */}
+            {totalLabel && <p className=" text-gray-500">{totalLabel}</p>}
           </div>
           {headerRight}
         </div>

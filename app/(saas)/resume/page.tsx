@@ -2,8 +2,9 @@
 
 import React from 'react';
 import ComingSoon from '@/app/_components/ComingSoon';
+import ModuleAccessGuard from '@/app/_components/ModuleAccessGuard';
 
-export default function ResumeBuilderPage() {
+function ResumeBuilderPage() {
   return (
     <ComingSoon
       title="Resume Builder"
@@ -18,5 +19,13 @@ export default function ResumeBuilderPage() {
         'Integration with your HelloIvy profile data',
       ]}
     />
+  );
+}
+
+export default function Page() {
+  return (
+    <ModuleAccessGuard moduleName="resume_builder" moduleDisplay="Resume Builder">
+      <ResumeBuilderPage />
+    </ModuleAccessGuard>
   );
 }

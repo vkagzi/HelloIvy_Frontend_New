@@ -9,10 +9,23 @@ import type { ModuleStats } from '@/components/admin/ModuleCard';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import ProfileViewDetails from '@/app/(saas)/profile/_components/ProfileView';
 import { calculateProfileCompletion } from '@/app/(saas)/profile/utils/profileCompletion';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 interface SchoolOption {
   id: number;
   name: string;
+}
+
+interface UserModuleSub {
+  id: number;
+  module_name: string;
+  module_display: string;
+  expiry_date: string;
+  is_active: boolean;
+  created_at: string;
 }
 
 interface UserDetail {
@@ -46,6 +59,13 @@ const PROFILE_SECTIONS = [
   { key: 'extra-curricular', label: 'Extra Curricular Activities', contextKey: 'extraCurricular' },
   { key: 'additional', label: 'Additional Information', contextKey: 'additional' },
 ] as const;
+
+const ALL_MODULES = [
+  'essay_brainstormer', 'essay_evaluator', 'college_selector', 'degree_selector',
+  'interview_prep', 'resume_builder', 'career_discovery', 'domain_discovery',
+] as const;
+
+const SELECT_CN = 'h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-neutral-400 disabled:opacity-50';
 
 const ROLES = [
   { value: 'student', label: 'Student' },
@@ -83,10 +103,42 @@ export default function AdminUserDetailPage() {
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [deactivateSaving, setDeactivateSaving] = useState(false);
 
+  // User module subscriptions state (for users without a school)
+  const [userModules, setUserModules] = useState<UserModuleSub[]>([]);
+  const [addModuleOpen, setAddModuleOpen] = useState(false);
+  const [addModuleName, setAddModuleName] = useState('');
+  const [addModuleExpiry, setAddModuleExpiry] = useState('');
+  const [addModuleSaving, setAddModuleSaving] = useState(false);
+  const [addModuleError, setAddModuleError] = useState<string | null>(null);
+  const [editModuleOpen, setEditModuleOpen] = useState(false);
+  const [editModuleData, setEditModuleData] = useState<UserModuleSub | null>(null);
+  const [editModuleExpiry, setEditModuleExpiry] = useState('');
+  const [editModuleIsActive, setEditModuleIsActive] = useState(true);
+  const [editModuleSaving, setEditModuleSaving] = useState(false);
+  const [editModuleError, setEditModuleError] = useState<string | null>(null);
+  const [deleteModuleId, setDeleteModuleId] = useState<number | null>(null);
+  const [deleteModuleSaving, setDeleteModuleSaving] = useState(false);
+
   // Main vertical tab state
   const [activeTab, setActiveTab] = useState<string>('profile');
   // Profile section sub-tab state
   const [activeProfileSection, setActiveProfileSection] = useState<string>('personal');
+
+  const fetchUserModules = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const data = await api<{ subscriptions: UserModuleSub[] }>(`/api/accounts/admin/users/${userId}/modules/`);
+      setUserModules(data.subscriptions);
+    } catch {
+      // ignore
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (activeTab === 'modules') {
+      fetchUserModules();
+    }
+  }, [activeTab, fetchUserModules]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -197,6 +249,69 @@ export default function AdminUserDetailPage() {
     }
   };
 
+  const handleAddModule = async () => {
+    if (!userId || !addModuleName || !addModuleExpiry) return;
+    setAddModuleSaving(true);
+    setAddModuleError(null);
+    try {
+      await api(`/api/accounts/admin/users/${userId}/modules/`, {
+        method: 'POST',
+        body: { module_name: addModuleName, expiry_date: addModuleExpiry, is_active: true },
+      });
+      setAddModuleOpen(false);
+      setAddModuleName('');
+      setAddModuleExpiry('');
+      fetchUserModules();
+    } catch (err: unknown) {
+      setAddModuleError(err instanceof Error ? err.message : 'Failed to add module');
+    } finally {
+      setAddModuleSaving(false);
+    }
+  };
+
+  const openEditModule = (sub: UserModuleSub) => {
+    setEditModuleData(sub);
+    setEditModuleExpiry(sub.expiry_date);
+    setEditModuleIsActive(sub.is_active);
+    setEditModuleError(null);
+    setEditModuleOpen(true);
+  };
+
+  const handleEditModule = async () => {
+    if (!userId || !editModuleData) return;
+    setEditModuleSaving(true);
+    setEditModuleError(null);
+    try {
+      await api(`/api/accounts/admin/users/${userId}/modules/${editModuleData.id}/`, {
+        method: 'PATCH',
+        body: { expiry_date: editModuleExpiry, is_active: editModuleIsActive },
+      });
+      setEditModuleOpen(false);
+      setEditModuleData(null);
+      fetchUserModules();
+    } catch (err: unknown) {
+      setEditModuleError(err instanceof Error ? err.message : 'Failed to update module');
+    } finally {
+      setEditModuleSaving(false);
+    }
+  };
+
+  const handleDeleteModule = async () => {
+    if (!userId || deleteModuleId === null) return;
+    setDeleteModuleSaving(true);
+    try {
+      await api(`/api/accounts/admin/users/${userId}/modules/${deleteModuleId}/`, {
+        method: 'DELETE',
+      });
+      setDeleteModuleId(null);
+      fetchUserModules();
+    } catch {
+      // ignore
+    } finally {
+      setDeleteModuleSaving(false);
+    }
+  };
+
   if (loading) return <LoadingState message="Loading user details..." />;
   if (error || !user) return <ErrorState message={error || 'User not found'} />;
 
@@ -210,6 +325,7 @@ export default function AdminUserDetailPage() {
         isActive={user.is_active}
         userId={user.id}
         infoFields={[
+          { label: 'School', value: user.school_name || (user.school_id ? String(user.school_id) : 'No School') },
           { label: 'Created', value: new Date(user.created_at).toLocaleDateString() },
           { label: 'Last Login', value: user.last_login ? new Date(user.last_login).toLocaleString() : 'Never' },
           { label: 'Terms Accepted', value: user.terms_accepted ? 'Yes' : 'No' },
@@ -272,7 +388,12 @@ export default function AdminUserDetailPage() {
                   label: 'Career & Degree Selection',
                   badge: `${user.modules.career_discovery.completed_sessions}/${user.modules.career_discovery.total_sessions}`,
                 },
-              ];
+                  ...(user.school_id === null ? [{
+                    key: 'modules',
+                    label: 'Module Access',
+                    badge: userModules.length > 0 ? String(userModules.length) : '0',
+                  }] : []),
+                ];
 
               return tabs.map((tab) => (
                 <button
@@ -372,131 +493,203 @@ export default function AdminUserDetailPage() {
               }
             />
           )}
+
+          {/* Module Access Tab - only for users without a school */}
+          {activeTab === 'modules' && (
+            <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-base font-semibold text-gray-900">Module Access</h2>
+                <button
+                  onClick={() => { setAddModuleName(''); setAddModuleExpiry(''); setAddModuleError(null); setAddModuleOpen(true); }}
+                  className="cursor-pointer rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                >
+                  Assign Module
+                </button>
+              </div>
+              {userModules.length > 0 ? (
+                <div className="space-y-2">
+                  {userModules.map((sub) => (
+                    <div key={sub.id} className="flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 px-4 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{sub.module_display}</p>
+                        <p className="text-xs text-gray-500">
+                          Expires: {new Date(sub.expiry_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`inline-flex rounded-full px-2 text-xs font-semibold ${
+                          sub.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {sub.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                        <button
+                          onClick={() => openEditModule(sub)}
+                          className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => setDeleteModuleId(sub.id)}
+                          className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">No module subscriptions assigned yet.</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Change Password Modal */}
-      {pwOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">Change Password</h3>
-            <p className="mb-3 text-sm text-gray-500">Set a new password for <strong>{user.email}</strong></p>
-            {pwError && <p className="mb-3 rounded bg-red-50 p-2 text-sm text-red-600">{pwError}</p>}
-            {pwSuccess && <p className="mb-3 rounded bg-green-50 p-2 text-sm text-green-600">Password changed successfully</p>}
-            <label className="mb-1 block text-sm font-medium text-gray-700">New Password</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="mb-3 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Min 8 characters"
-            />
-            <label className="mb-1 block text-sm font-medium text-gray-700">Confirm Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mb-4 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Re-enter password"
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setPwOpen(false)}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleChangePassword}
-                disabled={pwSaving}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
-              >
-                {pwSaving ? 'Saving...' : 'Change Password'}
-              </button>
+      <Dialog open={pwOpen} onOpenChange={setPwOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Change Password</DialogTitle>
+          <p className="text-sm text-gray-500">Set a new password for <strong>{user.email}</strong></p>
+          {pwError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{pwError}</p>}
+          {pwSuccess && <p className="rounded bg-green-50 p-2 text-sm text-green-600">Password changed successfully</p>}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="pw-new">New Password</Label>
+              <Input id="pw-new" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min 8 characters" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="pw-confirm">Confirm Password</Label>
+              <Input id="pw-confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter password" />
             </div>
           </div>
-        </div>
-      )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setPwOpen(false)}>Cancel</Button>
+            <Button onClick={handleChangePassword} disabled={pwSaving}>{pwSaving ? 'Saving...' : 'Change Password'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Details Modal */}
-      {editOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">Edit User Details</h3>
-            {editError && <p className="mb-3 rounded bg-red-50 p-2 text-sm text-red-600">{editError}</p>}
-            {editSuccess && <p className="mb-3 rounded bg-green-50 p-2 text-sm text-green-600">User updated successfully</p>}
-            <label className="mb-1 block text-sm font-medium text-gray-700">Role</label>
-            <select
-              value={editRole}
-              onChange={(e) => setEditRole(e.target.value)}
-              className="mb-3 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-            <label className="mb-1 block text-sm font-medium text-gray-700">School</label>
-            <select
-              value={editSchoolId}
-              onChange={(e) => setEditSchoolId(e.target.value)}
-              className="mb-4 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              <option value="">No School</option>
-              {schools.map((s) => (
-                <option key={s.id} value={String(s.id)}>{s.name}</option>
-              ))}
-            </select>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setEditOpen(false)}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEditDetails}
-                disabled={editSaving}
-                className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 cursor-pointer"
-              >
-                {editSaving ? 'Saving...' : 'Save Changes'}
-              </button>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Edit User Details</DialogTitle>
+          {editError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{editError}</p>}
+          {editSuccess && <p className="rounded bg-green-50 p-2 text-sm text-green-600">User updated successfully</p>}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="edit-role">Role</Label>
+              <select id="edit-role" value={editRole} onChange={(e) => setEditRole(e.target.value)} className={SELECT_CN}>
+                {ROLES.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-school">School</Label>
+              <select id="edit-school" value={editSchoolId} onChange={(e) => setEditSchoolId(e.target.value)} className={SELECT_CN}>
+                <option value="">No School</option>
+                {schools.map((s) => (
+                  <option key={s.id} value={String(s.id)}>{s.name}</option>
+                ))}
+              </select>
             </div>
           </div>
-        </div>
-      )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={handleEditDetails} disabled={editSaving}>{editSaving ? 'Saving...' : 'Save Changes'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Module Modal */}
+      <Dialog open={addModuleOpen} onOpenChange={setAddModuleOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Assign Module</DialogTitle>
+          {addModuleError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{addModuleError}</p>}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="assign-module">Module</Label>
+              <select
+                id="assign-module"
+                value={addModuleName}
+                onChange={(e) => setAddModuleName(e.target.value)}
+                className={SELECT_CN}
+              >
+                <option value="">Select module...</option>
+                {ALL_MODULES.filter(m => !userModules.some(um => um.module_name === m)).map((m) => (
+                  <option key={m} value={m}>{m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="assign-expiry">Expiry Date</Label>
+              <Input id="assign-expiry" type="date" value={addModuleExpiry} onChange={(e) => setAddModuleExpiry(e.target.value)} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setAddModuleOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddModule} disabled={addModuleSaving || !addModuleName || !addModuleExpiry}>{addModuleSaving ? 'Saving...' : 'Assign'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Module Modal */}
+      <Dialog open={editModuleOpen} onOpenChange={setEditModuleOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Edit Module</DialogTitle>
+          {editModuleData && <p className="text-sm text-gray-500">{editModuleData.module_display}</p>}
+          {editModuleError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{editModuleError}</p>}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="edit-module-expiry">Expiry Date</Label>
+              <Input id="edit-module-expiry" type="date" value={editModuleExpiry} onChange={(e) => setEditModuleExpiry(e.target.value)} />
+            </div>
+            <Label className="flex items-center gap-2 font-normal cursor-pointer">
+              <input type="checkbox" checked={editModuleIsActive} onChange={(e) => setEditModuleIsActive(e.target.checked)} className="rounded border-gray-300" />
+              Active
+            </Label>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setEditModuleOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditModule} disabled={editModuleSaving || !editModuleExpiry}>{editModuleSaving ? 'Saving...' : 'Save Changes'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Module Confirmation */}
+      <Dialog open={deleteModuleId !== null} onOpenChange={(open) => { if (!open) setDeleteModuleId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogTitle>Remove Module</DialogTitle>
+          <p className="text-sm text-gray-600">Are you sure you want to remove this module subscription?</p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setDeleteModuleId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteModule} disabled={deleteModuleSaving}>{deleteModuleSaving ? 'Removing...' : 'Remove'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Deactivate / Activate Confirmation Modal */}
-      {deactivateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-3 text-lg font-semibold text-gray-900">
-              {user.is_active ? 'Deactivate User' : 'Activate User'}
-            </h3>
-            <p className="mb-4 text-sm text-gray-600">
-              Are you sure you want to {user.is_active ? 'deactivate' : 'activate'}{' '}
-              <strong>{user.email}</strong>?
-              {user.is_active && ' They will no longer be able to log in.'}
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setDeactivateOpen(false)}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleToggleActive}
-                disabled={deactivateSaving}
-                className={`rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50 cursor-pointer ${
-                  user.is_active ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-                }`}
-              >
-                {deactivateSaving ? 'Saving...' : user.is_active ? 'Deactivate' : 'Activate'}
-              </button>
-            </div>
+      <Dialog open={deactivateOpen} onOpenChange={setDeactivateOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogTitle>{user.is_active ? 'Deactivate User' : 'Activate User'}</DialogTitle>
+          <p className="text-sm text-gray-600">
+            Are you sure you want to {user.is_active ? 'deactivate' : 'activate'}{' '}
+            <strong>{user.email}</strong>?
+            {user.is_active && ' They will no longer be able to log in.'}
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setDeactivateOpen(false)}>Cancel</Button>
+            <Button
+              variant={user.is_active ? 'destructive' : 'default'}
+              onClick={handleToggleActive}
+              disabled={deactivateSaving}
+            >
+              {deactivateSaving ? 'Saving...' : user.is_active ? 'Deactivate' : 'Activate'}
+            </Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

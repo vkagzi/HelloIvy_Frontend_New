@@ -7,6 +7,7 @@ import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
 import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { Checkbox } from '@/app/_components/Checkbox';
+import ModuleAccessGuard from '@/app/_components/ModuleAccessGuard';
 
 const EssayBrainstormLandingPage: React.FC = () => {
   const { addToast } = useToast();
@@ -265,4 +266,10 @@ const EssayBrainstormLandingPage: React.FC = () => {
   );
 };
 
-export default EssayBrainstormLandingPage;
+export default function Page() {
+  return (
+    <ModuleAccessGuard moduleName="essay_brainstormer" moduleDisplay="Essay Brainstormer">
+      <EssayBrainstormLandingPage />
+    </ModuleAccessGuard>
+  );
+}

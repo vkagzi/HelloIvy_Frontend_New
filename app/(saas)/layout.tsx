@@ -7,6 +7,7 @@ import { auth } from '@/auth';
 import { SessionProvider } from 'next-auth/react';
 import { ProfileProvider } from '@/app/(saas)/profile/_context/ProfileContext';
 import { NavbarProvider } from '@/app/_contexts/NavbarContext';
+import { ModuleAccessProvider } from '@/app/_contexts/ModuleAccessContext';
 
 export const metadata: Metadata = {
   title: 'Student Dashboard',
@@ -29,15 +30,17 @@ export default async function RootLayout({
       <SessionProvider session={session}>
         <ProfileProvider>
           <NavbarProvider>
-            <SessionGuard>
-              <Navbar />
-              <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-                <AppHead session={session} />
-                <main className="flex-1 overflow-auto px-4 py-5 md:px-8 lg:px-15">
-                  {children}
-                </main>
-              </div>
-            </SessionGuard>
+            <ModuleAccessProvider>
+              <SessionGuard>
+                <Navbar />
+                <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                  <AppHead session={session} />
+                  <main className="flex-1 overflow-auto px-4 py-5 md:px-8 lg:px-15">
+                    {children}
+                  </main>
+                </div>
+              </SessionGuard>
+            </ModuleAccessProvider>
           </NavbarProvider>
         </ProfileProvider>
       </SessionProvider>

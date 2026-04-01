@@ -8,8 +8,9 @@ import { Button } from '@/app/_components/Button';
 import { FiIcon } from '@/app/_components/Icons';
 import { Heading, Label } from '@/app/_components/Typography';
 import LottieAnimation, { BrainWithoutBGLottie, IvyWithoutBGLottie } from '@/app/_components/LottieAnimation';
+import ModuleAccessGuard from '@/app/_components/ModuleAccessGuard';
 
-export default function CollegeLandingPage() {
+function CollegeLandingPage() {
   const router = useRouter();
   const [hasReadInstructions, setHasReadInstructions] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -156,5 +157,13 @@ export default function CollegeLandingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <ModuleAccessGuard moduleName="college_selector" moduleDisplay="College Selector">
+      <CollegeLandingPage />
+    </ModuleAccessGuard>
   );
 }

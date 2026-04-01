@@ -13,16 +13,16 @@ import { BrainWithoutBGLottie } from '@/app/_components/LottieAnimation';
 import { Heading } from '@/app/_components/Typography';
 import { Button } from '@/app/_components/Button';
 import { FiIcon } from '@/app/_components/Icons';
-import {
-  Accordion,
+import { Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import ModuleAccessGuard from '@/app/_components/ModuleAccessGuard';
 
 interface CareerDiscoveryPageProps {}
 
-export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
+function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
@@ -476,5 +476,13 @@ export default function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <ModuleAccessGuard moduleName="career_discovery" moduleDisplay="Career & Degree Selection">
+      <CareerDiscoveryPage />
+    </ModuleAccessGuard>
   );
 }

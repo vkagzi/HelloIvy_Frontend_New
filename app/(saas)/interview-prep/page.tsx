@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { Checkbox } from '@/app/_components/Checkbox';
+import ModuleAccessGuard from '@/app/_components/ModuleAccessGuard';
 
 const InterviewPrepLandingPage: React.FC = () => {
   const router = useRouter();
@@ -154,4 +155,10 @@ const InterviewPrepLandingPage: React.FC = () => {
   );
 };
 
-export default InterviewPrepLandingPage;
+export default function Page() {
+  return (
+    <ModuleAccessGuard moduleName="interview_prep" moduleDisplay="Interview Prep">
+      <InterviewPrepLandingPage />
+    </ModuleAccessGuard>
+  );
+}
