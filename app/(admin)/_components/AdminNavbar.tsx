@@ -55,7 +55,7 @@ const AdminNavbar: React.FC = () => {
     const typeParam = searchParams?.get('type') ?? null;
     if (pathname === '/admin/users' && typeParam) {
       setExpandedItem('/admin/users');
-    } else if (pathname.startsWith('/admin/payments')) {
+    } else if (pathname?.startsWith('/admin/payments')) {
       setExpandedItem('/admin/payments/b2c');
     }
   }, [pathname, searchParams]);
