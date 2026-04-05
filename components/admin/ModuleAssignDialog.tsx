@@ -143,24 +143,27 @@ export default function ModuleAssignDialog({
                   <option value="other">Other</option>
                 </select>
 
-                <button
+                <Button
                   onClick={() => setRows(rows.filter((_, i) => i !== idx))}
                   disabled={rows.length === 1}
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 cursor-pointer"
+                  variant="ghost"
+                  size="icon"
+                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30"
                 >
                   ✕
-                </button>
+                </Button>
               </div>
             );
           })}
         </div>
 
-        <button
+        <Button
           onClick={() => setRows([...rows, { ...EMPTY_ROW }])}
-          className="mt-1 text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+          variant="ghost"
+          className="mt-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-transparent"
         >
           + Add another module
-        </button>
+        </Button>
 
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>

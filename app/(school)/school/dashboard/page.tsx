@@ -454,19 +454,18 @@ export default function SchoolDashboardPage() {
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <button
+                <Button
                   onClick={() => setNotifOpen(false)}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+                  variant="outline"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleSendNotification}
                   disabled={notifSending || !notifMessage.trim()}
-                  className="rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
                   {notifSending ? 'Sending...' : 'Save'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -532,19 +531,18 @@ export default function SchoolDashboardPage() {
                 </select>
               </div>
               <div className="flex justify-end gap-2">
-                <button
+                <Button
                   onClick={() => setDeadlineOpen(false)}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+                  variant="outline"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleCreateDeadline}
                   disabled={dlSaving || !dlTitle.trim() || !dlDate}
-                  className="rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
                   {dlSaving ? 'Saving...' : 'Save'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

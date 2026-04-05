@@ -40,6 +40,8 @@ interface UserDetail {
   terms_accepted: boolean;
   school_id: number | null;
   school_name: string | null;
+  academic_level: string | null;
+  grade_level: string | null;
   last_login: string | null;
   created_at: string;
   updated_at: string;
@@ -61,6 +63,27 @@ const PROFILE_SECTIONS = [
   { key: 'extra-curricular', label: 'Extra Curricular Activities', contextKey: 'extraCurricular' },
   { key: 'additional', label: 'Additional Information', contextKey: 'additional' },
 ] as const;
+
+const ACADEMIC_LEVEL_LABELS: Record<string, string> = {
+  high_school: 'High School (9th–12th grade)',
+  undergraduate: 'College/Undergraduate',
+  postgraduate: "Postgraduate/Master's",
+  professional: 'Working Professional',
+};
+
+const ACADEMIC_LEVELS = [
+  { value: 'high_school', label: 'High School (9th–12th grade)' },
+  { value: 'undergraduate', label: 'College/Undergraduate' },
+  { value: 'postgraduate', label: "Postgraduate/Master's" },
+  { value: 'professional', label: 'Working Professional' },
+];
+
+const GRADE_LEVELS: Record<string, string[]> = {
+  high_school: ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+  undergraduate: ['Year 1', 'Year 2', 'Year 3', 'Year 4'],
+  postgraduate: ['Year 1', 'Year 2'],
+  professional: ['1-3 years', '3-5 years', '5+ years'],
+};
 
 const SELECT_CN = 'h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-neutral-400 disabled:opacity-50';
 
@@ -91,6 +114,8 @@ export default function AdminUserDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editRole, setEditRole] = useState('');
   const [editSchoolId, setEditSchoolId] = useState<string>('');
+  const [editAcademicLevel, setEditAcademicLevel] = useState<string>('');
+  const [editGradeLevel, setEditGradeLevel] = useState<string>('');
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -196,6 +221,8 @@ export default function AdminUserDetailPage() {
     if (!user) return;
     setEditRole(user.role);
     setEditSchoolId(user.school_id ? String(user.school_id) : '');
+    setEditAcademicLevel(user.academic_level || '');
+    setEditGradeLevel(user.grade_level || '');
     setEditError(null);
     setEditSuccess(false);
     setEditOpen(true);
@@ -211,6 +238,8 @@ export default function AdminUserDetailPage() {
         body: {
           role: editRole,
           school_id: editSchoolId ? Number(editSchoolId) : null,
+          academic_level: editAcademicLevel || null,
+          grade_level: editGradeLevel || null,
         },
       });
       setEditSuccess(true);
@@ -310,6 +339,8 @@ export default function AdminUserDetailPage() {
         userId={user.id}
         infoFields={[
           { label: 'School', value: user.school_name || (user.school_id ? String(user.school_id) : 'No School') },
+          { label: 'Academic Level', value: (user.academic_level && ACADEMIC_LEVEL_LABELS[user.academic_level]) || '—' },
+          { label: 'Grade Level', value: user.grade_level || '—' },
           { label: 'Created', value: new Date(user.created_at).toLocaleDateString() },
           { label: 'Last Login', value: user.last_login ? new Date(user.last_login).toLocaleString() : 'Never' },
           { label: 'Terms Accepted', value: user.terms_accepted ? 'Yes' : 'No' },
@@ -317,26 +348,29 @@ export default function AdminUserDetailPage() {
         ]}
         actions={
           <>
-            <button
+            <Button
               onClick={() => { setPwError(null); setPwSuccess(false); setNewPassword(''); setConfirmPassword(''); setPwOpen(true); }}
-              className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition cursor-pointer"
+              variant="default"
+              className="bg-indigo-600 hover:bg-indigo-700"
+              size="sm"
             >
               Change Password
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={openEditModal}
-              className="rounded-md bg-gray-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 transition cursor-pointer"
+              variant="secondary"
+              size="sm"
             >
               Edit Details
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setDeactivateOpen(true)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium text-white transition cursor-pointer ${
-                user.is_active ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-              }`}
+              variant={user.is_active ? 'destructive' : 'default'}
+              className={user.is_active ? '' : 'bg-green-600 hover:bg-green-700'}
+              size="sm"
             >
               {user.is_active ? 'Deactivate' : 'Activate'}
-            </button>
+            </Button>
           </>
         }
       />
@@ -380,16 +414,17 @@ export default function AdminUserDetailPage() {
                 ];
 
               return tabs.map((tab) => (
-                <button
+                <Button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center justify-between px-4 py-3 text-left text-sm font-medium transition cursor-pointer border-l-2 ${
+                  variant="ghost"
+                  className={`justify-between px-4 py-3 text-left text-sm font-medium transition border-l-2 rounded-none min-w-0 ${
                     activeTab === tab.key
                       ? 'border-l-indigo-600 bg-indigo-50 text-indigo-700'
                       : 'border-l-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  <span>{tab.label}</span>
+                  <span className="truncate">{tab.label}</span>
                   <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                     activeTab === tab.key
                       ? 'bg-indigo-100 text-indigo-700'
@@ -397,7 +432,7 @@ export default function AdminUserDetailPage() {
                   }`}>
                     {tab.badge}
                   </span>
-                </button>
+                </Button>
               ));
             })()}
           </nav>
@@ -430,17 +465,18 @@ export default function AdminUserDetailPage() {
               <div className="rounded-lg border border-gray-200 bg-white">
                 <div className="flex border-b border-gray-200 overflow-x-auto">
                   {PROFILE_SECTIONS.map((section) => (
-                    <button
+                    <Button
                       key={section.key}
                       onClick={() => setActiveProfileSection(section.key)}
-                      className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap transition cursor-pointer ${
+                      variant="ghost"
+                      className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap transition rounded-none border-b-2 ${
                         activeProfileSection === section.key
-                          ? 'border-b-2 border-indigo-600 text-indigo-600'
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'border-b-indigo-600 text-indigo-600'
+                          : 'border-b-transparent text-gray-500 hover:text-gray-700'
                       }`}
                     >
                       {section.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 <div className="px-5 py-4">
@@ -483,12 +519,13 @@ export default function AdminUserDetailPage() {
             <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-gray-900">Module Access</h2>
-                <button
+                <Button
                   onClick={() => setAddModuleOpen(true)}
-                  className="cursor-pointer rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                  size="sm"
                 >
                   Assign Module
-                </button>
+                </Button>
               </div>
               {userModules.length > 0 ? (
                 <div className="space-y-2">
@@ -506,18 +543,22 @@ export default function AdminUserDetailPage() {
                         }`}>
                           {sub.is_active ? 'Active' : 'Inactive'}
                         </span>
-                        <button
+                        <Button
                           onClick={() => openEditModule(sub)}
-                          className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+                          variant="ghost"
+                          size="sm"
+                          className="text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
                         >
                           Edit
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => setDeleteModuleId(sub.id)}
-                          className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
                           Remove
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -578,6 +619,26 @@ export default function AdminUserDetailPage() {
                 ))}
               </select>
             </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-academic-level">Academic Level</Label>
+              <select id="edit-academic-level" value={editAcademicLevel} onChange={(e) => { setEditAcademicLevel(e.target.value); setEditGradeLevel(''); }} className={SELECT_CN}>
+                <option value="">None</option>
+                {ACADEMIC_LEVELS.map((al) => (
+                  <option key={al.value} value={al.value}>{al.label}</option>
+                ))}
+              </select>
+            </div>
+            {editAcademicLevel && (GRADE_LEVELS[editAcademicLevel] ?? []).length > 0 && (
+              <div className="space-y-1">
+                <Label htmlFor="edit-grade-level">Grade Level</Label>
+                <select id="edit-grade-level" value={editGradeLevel} onChange={(e) => setEditGradeLevel(e.target.value)} className={SELECT_CN}>
+                  <option value="">Select grade level</option>
+                  {(GRADE_LEVELS[editAcademicLevel] ?? []).map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>

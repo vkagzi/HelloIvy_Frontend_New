@@ -341,19 +341,20 @@ export default function SchoolDetailPage() {
             </p>
             {logoFile && (
               <div className="mt-1 flex items-center gap-2">
-                <button
+                <Button
                   onClick={handleLogoSave}
                   disabled={logoSaving}
-                  className="cursor-pointer rounded-md bg-purple-600 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
+                  size="sm"
                 >
                   {logoSaving ? 'Saving...' : 'Save logo'}
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => { setLogoFile(null); setLogoPreview(null); setLogoError(null); }}
-                  className="cursor-pointer rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600"
+                  variant="outline"
+                  size="sm"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             )}
             {logoError && (
@@ -385,12 +386,12 @@ export default function SchoolDetailPage() {
           <h2 className="text-base font-semibold text-gray-900">
             Module Subscriptions
           </h2>
-          <button
+          <Button
             onClick={() => setSubOpen(true)}
-            className="cursor-pointer rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white"
+            size="sm"
           >
             Add Module
-          </button>
+          </Button>
         </div>
         {school.subscriptions.length > 0 ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -412,18 +413,22 @@ export default function SchoolDetailPage() {
                   >
                     {sub.is_active ? 'Active' : 'Inactive'}
                   </span>
-                  <button
+                  <Button
                     onClick={() => openEditSub(sub)}
-                    className="cursor-pointer rounded-md px-2 py-0.5 text-xs font-medium text-purple-600 hover:bg-purple-50"
+                    variant="ghost"
+                    size="sm"
+                    className="text-purple-600 hover:bg-purple-50 hover:text-purple-700"
                   >
                     Edit
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setDeleteSubId(sub.id)}
-                    className="cursor-pointer rounded-md px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -439,12 +444,12 @@ export default function SchoolDetailPage() {
           <h2 className="text-base font-semibold text-gray-900">
             School Admins ({admins.length})
           </h2>
-          <button
+          <Button
             onClick={() => setAddAdminOpen(true)}
-            className="cursor-pointer rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white"
+            size="sm"
           >
             Add Admin
-          </button>
+          </Button>
         </div>
         {admins.length > 0 ? (
           <div className="space-y-2">
@@ -473,12 +478,14 @@ export default function SchoolDetailPage() {
                   >
                     {a.is_active ? 'Active' : 'Inactive'}
                   </span>
-                  <button
+                  <Button
                     onClick={() => handleRemoveAdmin(a.id)}
-                    className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
                     Remove
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -494,12 +501,12 @@ export default function SchoolDetailPage() {
           <h2 className="text-base font-semibold text-gray-900">
             Students ({totalStudents})
           </h2>
-          <button
+          <Button
             onClick={() => setAddStudentOpen(true)}
-            className="cursor-pointer rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white"
+            size="sm"
           >
             Add Student
-          </button>
+          </Button>
         </div>
         {students.length > 0 ? (
           <div className="space-y-2">

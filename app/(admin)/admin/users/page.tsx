@@ -17,6 +17,8 @@ interface UserItem {
   terms_accepted: boolean;
   school_id: number | null;
   school_name: string | null;
+  academic_level: string | null;
+  grade_level: string | null;
   last_login: string | null;
   created_at: string;
   updated_at: string;
@@ -28,6 +30,13 @@ const ROLE_OPTIONS = [
   { value: 'schooladmin', label: 'School Admin' },
   { value: 'student', label: 'Student' },
 ];
+
+const ACADEMIC_LEVEL_LABELS: Record<string, string> = {
+  high_school: 'High School (9th–12th grade)',
+  undergraduate: 'College/Undergraduate',
+  postgraduate: "Postgraduate/Master's",
+  professional: 'Working Professional',
+};
 
 const columns: Column<UserItem>[] = [
   {
@@ -60,6 +69,18 @@ const columns: Column<UserItem>[] = [
     label: 'School',
     sortable: true,
     render: (u) => <span className="text-gray-500">{u.school_name || '—'}</span>,
+  },
+  {
+    key: 'academic_level',
+    label: 'Academic Level',
+    sortable: true,
+    render: (u) => <span className="text-gray-500">{(u.academic_level && ACADEMIC_LEVEL_LABELS[u.academic_level]) || '—'}</span>,
+  },
+  {
+    key: 'grade_level',
+    label: 'Grade Level',
+    sortable: true,
+    render: (u) => <span className="text-gray-500">{u.grade_level || '—'}</span>,
   },
   {
     key: 'status',
@@ -182,6 +203,8 @@ export default function AdminUsersPage() {
           case 'email': return u.email.toLowerCase();
           case 'role': return u.role;
           case 'school': return u.school_name?.toLowerCase() ?? '';
+          case 'academic_level': return u.academic_level?.toLowerCase() ?? '';
+          case 'grade_level': return u.grade_level?.toLowerCase() ?? '';
           case 'status': return u.is_active ? 'active' : 'inactive';
           case 'created_at': return u.created_at;
           case 'last_login': return u.last_login ?? '';
@@ -189,12 +212,20 @@ export default function AdminUsersPage() {
         }
       }}
       headerRight={
-        <Link
-          href="/admin/users/create"
-          className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
-        >
-          Add User
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/users/bulk-import"
+            className="cursor-pointer rounded-md border border-purple-600 px-4 py-2 text-sm font-medium text-purple-600 transition hover:bg-purple-50"
+          >
+            Bulk Import
+          </Link>
+          <Link
+            href="/admin/users/create"
+            className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
+          >
+            Add User
+          </Link>
+        </div>
       }
     />
   );

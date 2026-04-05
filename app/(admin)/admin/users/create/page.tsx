@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
+import { Button } from '@/components/ui/button';
 
 function extractApiError(err: unknown, fallback: string): string {
   if (err instanceof Error) {
@@ -32,6 +34,20 @@ const ROLES = [
   { value: 'superadmin', label: 'Superadmin' },
 ];
 
+const ACADEMIC_LEVELS = [
+  { value: 'high_school', label: 'High School (9th–12th grade)' },
+  { value: 'undergraduate', label: 'College/Undergraduate' },
+  { value: 'postgraduate', label: "Postgraduate/Master's" },
+  { value: 'professional', label: 'Working Professional' },
+];
+
+const GRADE_LEVELS: Record<string, string[]> = {
+  high_school: ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+  undergraduate: ['Year 1', 'Year 2', 'Year 3', 'Year 4'],
+  postgraduate: ['Year 1', 'Year 2'],
+  professional: ['1-3 years', '3-5 years', '5+ years'],
+};
+
 export default function CreateUserPage() {
   const router = useRouter();
   const { addToast } = useToast();
@@ -41,6 +57,8 @@ export default function CreateUserPage() {
     role: 'student',
     school_id: '',
     is_active: true,
+    academic_level: '',
+    grade_level: '',
   });
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [saving, setSaving] = useState(false);
@@ -85,6 +103,8 @@ export default function CreateUserPage() {
           role: form.role,
           school_id: form.school_id ? parseInt(form.school_id) : null,
           is_active: form.is_active,
+          academic_level: form.academic_level || null,
+          grade_level: form.grade_level || null,
         },
       });
       router.push('/admin/users');
@@ -98,10 +118,21 @@ export default function CreateUserPage() {
   };
 
   const showSchoolField = ['student', 'schooladmin'].includes(form.role);
+  const gradeOptions = form.academic_level ? (GRADE_LEVELS[form.academic_level] ?? []) : [];
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Add User</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Add User</h1>
+        <Button
+          asChild
+          variant="outline"
+        >
+          <Link href="/admin/users/bulk-import">
+            Bulk Import
+          </Link>
+        </Button>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
@@ -178,6 +209,52 @@ export default function CreateUserPage() {
           </div>
         )}
 
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Academic Level
+          </label>
+          <select
+            name="academic_level"
+            value={form.academic_level}
+            onChange={(e) => {
+              setForm((prev) => ({
+                ...prev,
+                academic_level: e.target.value,
+                grade_level: '',
+              }));
+            }}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="">None</option>
+            {ACADEMIC_LEVELS.map((al) => (
+              <option key={al.value} value={al.value}>
+                {al.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {gradeOptions.length > 0 && (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Grade Level
+            </label>
+            <select
+              name="grade_level"
+              value={form.grade_level}
+              onChange={handleChange}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="">Select grade level</option>
+              {gradeOptions.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -193,20 +270,19 @@ export default function CreateUserPage() {
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() => router.push('/admin/users')}
-            className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             disabled={saving}
-            className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
           >
             {saving ? 'Creating...' : 'Add User'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
