@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api-client';
+import { formatDate, formatDateTime } from '@/lib/utils/date-formatter';
 import UserDetailHeader from '@/components/admin/UserDetailHeader';
 import ModuleCard from '@/components/admin/ModuleCard';
 import type { ModuleStats } from '@/components/admin/ModuleCard';
@@ -341,10 +342,10 @@ export default function AdminUserDetailPage() {
           { label: 'School', value: user.school_name || (user.school_id ? String(user.school_id) : 'No School') },
           { label: 'Academic Level', value: (user.academic_level && ACADEMIC_LEVEL_LABELS[user.academic_level]) || '—' },
           { label: 'Grade Level', value: user.grade_level || '—' },
-          { label: 'Created', value: new Date(user.created_at).toLocaleDateString() },
-          { label: 'Last Login', value: user.last_login ? new Date(user.last_login).toLocaleString() : 'Never' },
+          { label: 'Created', value: formatDate(user.created_at) },
+          { label: 'Last Login', value: user.last_login ? formatDateTime(user.last_login) : 'Never' },
           { label: 'Terms Accepted', value: user.terms_accepted ? 'Yes' : 'No' },
-          { label: 'Last Updated', value: new Date(user.updated_at).toLocaleDateString() },
+          { label: 'Last Updated', value: formatDate(user.updated_at) },
         ]}
         actions={
           <>

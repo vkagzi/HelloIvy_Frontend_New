@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api-client';
 import { FiIcon } from '@/app/_components/Icons';
@@ -36,9 +36,13 @@ function CheckoutForm() {
   const [processing, setProcessing] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const initRef = useRef(false);
 
   // Create pending payment on load
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
     if (!modulesParam) {
       router.replace('/pay-as-student');
       return;

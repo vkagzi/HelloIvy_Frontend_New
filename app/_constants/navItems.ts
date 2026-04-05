@@ -41,10 +41,10 @@ export const navItems: NavItem[] = [
   { label: 'Legal', icon: 'document', href: '/legal' },
   { label: 'Unlock Modules', icon: 'star', href: '/pay-as-student' },
   { label: 'Checkout', icon: 'credit-card', href: '/pay-as-student/checkout' },
-  { label: 'My Subscriptions', icon: 'list-check', href: '/subscription' },
+  { label: 'Subscription', icon: 'list-check', href: '/subscription' },
 ];
 
 // Subset of nav items shown in the sidebar
 export const sidebarNavItems: NavItem[] = navItems.filter((item) =>
-  ['/dashboard', '/domain-discovery', '/career-discovery'].includes(item.href)
+  ['/dashboard', '/domain-discovery', '/career-discovery', '/subscription'].includes(item.href)
 );

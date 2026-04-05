@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api-client';
+import { formatDate } from '@/lib/utils/date-formatter';
 import InfoItem from '@/components/admin/InfoItem';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -375,7 +376,7 @@ export default function SchoolDetailPage() {
           <InfoItem label="Phone" value={school.contact_phone || '-'} />
           <InfoItem
             label="Created"
-            value={new Date(school.created_at).toLocaleDateString()}
+            value={formatDate(school.created_at)}
           />
         </div>
       </div>
@@ -466,9 +467,9 @@ export default function SchoolDetailPage() {
                     {a.email}
                   </Link>
                   <p className="text-xs text-gray-500">
-                    Added {new Date(a.created_at).toLocaleDateString()}
+                    Added {formatDate(a.created_at)}
                     {a.last_login
-                      ? ` · Last login ${new Date(a.last_login).toLocaleDateString()}`
+                      ? ` · Last login ${formatDate(a.last_login)}`
                       : ' · Never logged in'}
                   </p>
                 </div>

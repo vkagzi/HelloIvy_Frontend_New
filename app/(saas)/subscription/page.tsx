@@ -63,6 +63,10 @@ export default function SubscriptionPage() {
 
   const loading = accessLoading || choicesLoading || paymentsLoading;
 
+  const inactiveModules = moduleChoices.filter(
+    (m) => !activeModules.includes(m.value)
+  );
+
   return (
     <div className="space-y-8">
       {/* Active Modules */}
@@ -88,10 +92,12 @@ export default function SubscriptionPage() {
         ) : activeModules.length === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 py-12 text-center">
             <p className="text-sm text-gray-500">No active modules yet.</p>
-            {isB2C && (
+            {isB2C ? (
               <Link href="/pay-as-student" className="mt-3 inline-block text-sm font-medium text-purple-600 hover:underline">
                 Unlock your first module →
               </Link>
+            ) : (
+              <p className="mt-2 text-sm text-gray-400">Contact your school to get modules activated.</p>
             )}
           </div>
         ) : (
@@ -107,6 +113,42 @@ export default function SubscriptionPage() {
           </div>
         )}
       </section>
+
+      {/* Locked Modules */}
+      {!loading && inactiveModules.length > 0 && (
+        <section>
+          <h2 className="mb-4 text-lg font-bold text-gray-900">Locked Modules</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {inactiveModules.map((m) => (
+              <div key={m.value} className="flex flex-col gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-200">
+                    <FiIcon name={MODULE_ICONS[m.value] ?? 'star'} className="h-4 w-4 text-neutral-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-700">{m.label}</p>
+                    <span className="inline-flex rounded-full bg-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-500">
+                      Locked
+                    </span>
+                  </div>
+                </div>
+                {isB2C ? (
+                  <Link
+                    href="/pay-as-student"
+                    className="mt-1 text-xs font-medium text-purple-600 hover:underline"
+                  >
+                    Unlock this module →
+                  </Link>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-400">
+                    Contact your school to unlock this module
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Payment History — only for B2C */}
       {isB2C && (

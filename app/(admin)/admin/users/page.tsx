@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api-client';
+import { formatDate, formatDateTime } from '@/lib/utils/date-formatter';
 import UserTable, { RoleBadge, StatusBadge, Column } from '@/components/admin/UserTable';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 
@@ -92,14 +93,14 @@ const columns: Column<UserItem>[] = [
     key: 'created_at',
     label: 'Created',
     sortable: true,
-    render: (u) => <span className="text-gray-500">{new Date(u.created_at).toLocaleDateString()}</span>,
+    render: (u) => <span className="text-gray-500">{formatDate(u.created_at)}</span>,
   },
   {
     key: 'last_login',
     label: 'Last Login',
     sortable: true,
     render: (u) => (
-      <span className="text-gray-500">{u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</span>
+      <span className="text-gray-500">{u.last_login ? formatDateTime(u.last_login) : 'Never'}</span>
     ),
   },
   {

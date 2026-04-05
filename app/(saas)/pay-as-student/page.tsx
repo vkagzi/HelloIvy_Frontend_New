@@ -28,12 +28,6 @@ export default function PayAsStudentPage() {
   const { modules: activeModules, loading: accessLoading } = useModuleAccess();
   const [cart, setCart] = React.useState<Set<string>>(new Set());
 
-  // Redirect school students away
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.school_id) {
-      router.replace('/dashboard');
-    }
-  }, [status, session, router]);
 
   const toggleCart = (value: string) => {
     setCart((prev) => {
@@ -53,6 +47,15 @@ export default function PayAsStudentPage() {
   };
 
   const loading = modulesLoading || accessLoading || status === 'loading';
+
+  if (status === 'authenticated' && session?.user?.school_id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <p className="text-lg font-semibold text-gray-800">Contact your school for payment</p>
+        <p className="mt-2 text-sm text-gray-500">Your school manages access to modules on your behalf.</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

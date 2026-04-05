@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import api from '@/lib/api-client';
+import { formatDate, formatTime } from '@/lib/utils/date-formatter';
 import {
   Dialog,
   DialogContent,
@@ -280,7 +281,7 @@ export default function ModuleCard({
               {sortedSessions.map((s) => (
                 <tr key={s.session_id}>
                   <td className="py-2 text-gray-600">
-                    {new Date(s.created_at).toLocaleDateString()}
+                    {formatDate(s.created_at)}
                   </td>
                   <td className="py-2 text-gray-600">
                     {s.current_step}/{s.total_steps}
@@ -408,7 +409,7 @@ export default function ModuleCard({
                       <p className="whitespace-pre-wrap">{m.content}</p>
                     </div>
                     <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400">
-                      <span>{new Date(m.timestamp).toLocaleTimeString()}</span>
+                      <span>{formatTime(m.timestamp)}</span>
                       {m.question_type && (
                         <span className="capitalize">({m.question_type})</span>
                       )}
