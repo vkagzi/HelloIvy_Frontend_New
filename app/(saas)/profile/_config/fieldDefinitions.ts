@@ -19,6 +19,7 @@ import {
 // =============================================================================
 const seniorSecondarySubjects = [
   'Accounting',
+  'Additional Mathematics',
   'Advanced Mathematics',
   'Anthropology',
   'Applied Mathematics',
@@ -66,6 +67,7 @@ const seniorSecondarySubjects = [
   'History',
   'Information Technology (IT)',
   'Innovation & Design Thinking',
+  'International Mathematics',
   'Japanese',
   'Leadership Studies',
   'Life Skills Education',
@@ -761,9 +763,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
       'Standard',
       'Advanced',
       'AP',
+      'Core',
       'Honors',
       'A Level',
       'AS Level',
+      'Extended',
     ],
     required: false,
   },
