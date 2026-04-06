@@ -9,6 +9,7 @@ declare module 'next-auth' {
       role?: string;
       school_id?: number;
       school_name?: string;
+      terms_accepted?: boolean;
     } & DefaultSession['user'];
     accessToken?: string;
   }
@@ -20,6 +21,7 @@ declare module 'next-auth' {
     role?: string;
     school_id?: number;
     school_name?: string;
+    terms_accepted?: boolean;
     accessToken?: string;
   }
 }
@@ -32,6 +34,7 @@ declare module 'next-auth/jwt' {
     role?: string;
     school_id?: number;
     school_name?: string;
+    terms_accepted?: boolean;
     accessToken?: string;
   }
 }

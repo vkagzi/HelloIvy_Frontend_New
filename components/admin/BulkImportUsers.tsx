@@ -22,6 +22,8 @@ interface BulkImportUsersProps {
   onComplete?: () => void;
   /** Back link URL */
   backUrl: string;
+  /** When true, hides the role selector and defaults to student */
+  hideRoleSelector?: boolean;
 }
 
 type Step = 'upload' | 'review' | 'configure' | 'result';
@@ -48,6 +50,7 @@ export default function BulkImportUsers({
   currentSchoolName,
   onComplete,
   backUrl,
+  hideRoleSelector = false,
 }: BulkImportUsersProps) {
   const [step, setStep] = useState<Step>('upload');
 
@@ -67,6 +70,7 @@ export default function BulkImportUsers({
   const [schoolsLoaded, setSchoolsLoaded] = useState(false);
   const [academicLevel, setAcademicLevel] = useState<string>('');
   const [gradeLevel, setGradeLevel] = useState<string>('');
+  const [sendPasswordEmail, setSendPasswordEmail] = useState(true);
 
   // Result step
   const [isImporting, setIsImporting] = useState(false);
@@ -213,7 +217,7 @@ export default function BulkImportUsers({
     setError(null);
     setIsImporting(true);
     try {
-      const result = await bulkImportApi.import(validEmails, role, effectiveSchoolId, academicLevel || null, gradeLevel || null);
+      const result = await bulkImportApi.import(validEmails, role, effectiveSchoolId, academicLevel || null, gradeLevel || null, sendPasswordEmail);
       setImportResult(result);
       setStep('result');
     } catch (err: any) {
@@ -482,6 +486,7 @@ export default function BulkImportUsers({
             )}
 
             {/* Role selector */}
+            {!hideRoleSelector && (
             <div className="mb-4">
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 User Role <span className="text-red-500">*</span>
@@ -501,6 +506,7 @@ export default function BulkImportUsers({
                 <option value="schooladmin">School Admin</option>
               </select>
             </div>
+            )}
 
             {/* Academic Level selector (not applicable for schooladmin) */}
             {role !== 'schooladmin' && (<div className="mb-4">
@@ -548,6 +554,27 @@ export default function BulkImportUsers({
               </div>
             )}
 
+            {/* Send password email toggle */}
+            <div className="mb-4 flex items-start gap-3">
+              <input
+                id="send-password-email"
+                type="checkbox"
+                checked={sendPasswordEmail}
+                onChange={(e) => setSendPasswordEmail(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              />
+              <div>
+                <label htmlFor="send-password-email" className="block text-sm font-medium text-gray-700 cursor-pointer">
+                  Send temporary password email
+                </label>
+                <p className="text-xs text-gray-500">
+                  {sendPasswordEmail
+                    ? 'Each user will receive an email with their temporary password.'
+                    : 'Users will be created without receiving a password email. You can share credentials manually.'}
+                </p>
+              </div>
+            </div>
+
             {/* Summary */}
             <div className="mt-6 rounded-md border border-purple-100 bg-purple-50 p-4">
               <h3 className="mb-2 text-sm font-semibold text-purple-900">Import Summary</h3>
@@ -584,7 +611,12 @@ export default function BulkImportUsers({
                     Grade Level: <span className="font-medium">{gradeLevel}</span>
                   </li>
                 )}
-                <li>Each user will receive a temporary password via email</li>
+                <li>
+                  Password email:{' '}
+                  <span className={`font-medium ${sendPasswordEmail ? 'text-purple-900' : 'text-gray-500'}`}>
+                    {sendPasswordEmail ? 'Will be sent' : 'Will not be sent'}
+                  </span>
+                </li>
               </ul>
             </div>
           </div>

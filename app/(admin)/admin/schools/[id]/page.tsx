@@ -136,16 +136,8 @@ export default function SchoolDetailPage() {
   const [deleteSubId, setDeleteSubId] = useState<number | null>(null);
   const [deleteSubSaving, setDeleteSubSaving] = useState(false);
 
-  // Add student modal
-  const [addStudentOpen, setAddStudentOpen] = useState(false);
-  const [addStudentEmail, setAddStudentEmail] = useState('');
-  const [addStudentSaving, setAddStudentSaving] = useState(false);
-
   // School admins
   const [admins, setAdmins] = useState<AdminItem[]>([]);
-  const [addAdminOpen, setAddAdminOpen] = useState(false);
-  const [addAdminEmail, setAddAdminEmail] = useState('');
-  const [addAdminSaving, setAddAdminSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!schoolId) return;
@@ -233,42 +225,6 @@ export default function SchoolDetailPage() {
       // ignore
     } finally {
       setDeleteSubSaving(false);
-    }
-  };
-
-  const handleAddStudent = async () => {
-    if (!schoolId || !addStudentEmail.trim()) return;
-    setAddStudentSaving(true);
-    try {
-      await api(`/api/schools/${schoolId}/students/`, {
-        method: 'POST',
-        body: { email: addStudentEmail },
-      });
-      setAddStudentOpen(false);
-      setAddStudentEmail('');
-      fetchData();
-    } catch {
-      // silent
-    } finally {
-      setAddStudentSaving(false);
-    }
-  };
-
-  const handleAddAdmin = async () => {
-    if (!schoolId || !addAdminEmail.trim()) return;
-    setAddAdminSaving(true);
-    try {
-      await api(`/api/schools/${schoolId}/admins/`, {
-        method: 'POST',
-        body: { email: addAdminEmail },
-      });
-      setAddAdminOpen(false);
-      setAddAdminEmail('');
-      fetchData();
-    } catch {
-      // silent
-    } finally {
-      setAddAdminSaving(false);
     }
   };
 
@@ -445,12 +401,12 @@ export default function SchoolDetailPage() {
           <h2 className="text-base font-semibold text-gray-900">
             School Admins ({admins.length})
           </h2>
-          <Button
-            onClick={() => setAddAdminOpen(true)}
-            size="sm"
+          <Link
+            href={`/admin/users/create?schoolId=${schoolId}&type=schooladmin`}
+            className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
           >
             Add Admin
-          </Button>
+          </Link>
         </div>
         {admins.length > 0 ? (
           <div className="space-y-2">
@@ -502,12 +458,12 @@ export default function SchoolDetailPage() {
           <h2 className="text-base font-semibold text-gray-900">
             Students ({totalStudents})
           </h2>
-          <Button
-            onClick={() => setAddStudentOpen(true)}
-            size="sm"
+          <Link
+            href={`/admin/users/create?schoolId=${schoolId}&type=schoolusers`}
+            className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
           >
             Add Student
-          </Button>
+          </Link>
         </div>
         {students.length > 0 ? (
           <div className="space-y-2">
@@ -593,54 +549,6 @@ export default function SchoolDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Student Modal */}
-      <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
-        <DialogContent className="max-w-md">
-          <DialogTitle>Add Student</DialogTitle>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="student-email">Student Email</Label>
-              <Input
-                id="student-email"
-                type="email"
-                value={addStudentEmail}
-                onChange={(e) => setAddStudentEmail(e.target.value)}
-                placeholder="student@example.com"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setAddStudentOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddStudent} disabled={addStudentSaving || !addStudentEmail.trim()}>{addStudentSaving ? 'Adding...' : 'Add'}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Admin Modal */}
-      <Dialog open={addAdminOpen} onOpenChange={setAddAdminOpen}>
-        <DialogContent className="max-w-md">
-          <DialogTitle>Add School Admin</DialogTitle>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="admin-email">Admin Email</Label>
-              <Input
-                id="admin-email"
-                type="email"
-                value={addAdminEmail}
-                onChange={(e) => setAddAdminEmail(e.target.value)}
-                placeholder="admin@example.com"
-              />
-            </div>
-            <p className="text-xs text-gray-500">
-              If the user exists, their role will be updated to school admin. Otherwise, a new account will be created.
-            </p>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setAddAdminOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddAdmin} disabled={addAdminSaving || !addAdminEmail.trim()}>{addAdminSaving ? 'Adding...' : 'Add'}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

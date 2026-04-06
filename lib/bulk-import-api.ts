@@ -27,6 +27,7 @@ export const bulkImportApi = {
     schoolId: number | null,
     academicLevel?: string | null,
     gradeLevel?: string | null,
+    sendPasswordEmail: boolean = true,
   ): Promise<BulkImportResult> => {
     return api<BulkImportResult>('/api/accounts/admin/users/bulk-import/', {
       method: 'POST',
@@ -36,6 +37,7 @@ export const bulkImportApi = {
         school_id: schoolId,
         academic_level: academicLevel || null,
         grade_level: gradeLevel || null,
+        send_password_email: sendPasswordEmail,
       },
     });
   },

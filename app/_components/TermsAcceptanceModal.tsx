@@ -1,0 +1,124 @@
+'use client';
+
+import React, { useState, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
+import api from '@/lib/api-client';
+import { Label, Paragraph } from '@/app/_components/Typography';
+import { Checkbox } from '@/app/_components/Checkbox';
+import Button from '@/app/_components/Button';
+import { FiArrowSmallRight } from '@/app/_components/Icons';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+
+interface TermsAcceptanceModalProps {
+  isOpen: boolean;
+}
+
+export default function TermsAcceptanceModal({
+  isOpen,
+}: TermsAcceptanceModalProps): React.ReactElement | null {
+  const { update } = useSession();
+  const [hasAgreed, setHasAgreed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleAccept = useCallback(async () => {
+    if (!hasAgreed) return;
+    setIsSubmitting(true);
+    try {
+      await api('/api/accounts/accept-terms/', {
+        method: 'POST',
+        body: {},
+      });
+      // Update the session so terms_accepted becomes true without re-login
+      await update({ terms_accepted: true });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [hasAgreed, update]);
+
+  if (!isOpen) return null;
+
+  return (
+    <Dialog
+      open={isOpen}
+      onOpenChange={() => {
+        /* non-dismissible */
+      }}
+    >
+      <DialogContent
+        className="max-w-lg"
+        hideCloseButton
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogTitle className="border-b border-neutral-200 pb-3 text-xl font-extrabold">
+          Agree to Terms &amp; Conditions and Privacy Policy
+        </DialogTitle>
+
+        <DialogDescription asChild>
+          <div className="max-h-[55vh] overflow-auto px-1 py-2">
+            <Label size="lg">Terms &amp; Conditions</Label>
+            <Paragraph size="sm" className="mt-2 mb-4 border-b border-neutral-300 pb-4">
+              By using HelloIvy&apos;s services, you agree to comply with all
+              applicable laws and regulations. You affirm that all information
+              provided during signup is accurate and truthful. We collect
+              personal information to personalize your career guidance experience
+              and provide tailored recommendations. Your data is used to track
+              your progress, preferences, and interactions with our platform. You
+              agree not to misuse our services, including but not limited to:
+              harassment, automated access, or attempts to disrupt service
+              availability. HelloIvy reserves the right to modify these terms at
+              any time with notice. Continued use of the service after
+              modifications constitutes acceptance of the new terms.
+            </Paragraph>
+
+            <Label size="lg">Privacy Policy</Label>
+            <Paragraph size="sm" className="mt-2">
+              We are committed to protecting your privacy. The personal
+              information you provide, including name, email, educational
+              background, and career interests, is stored securely and used
+              solely to enhance your experience on HelloIvy. We do not share your
+              information with third parties without your explicit consent, except
+              as required by law. You have the right to access, modify, or delete
+              your personal data at any time through your account settings. We
+              implement industry-standard encryption and security measures to
+              protect your data from unauthorized access. For any privacy
+              concerns or inquiries, please contact our support team. Our privacy
+              practices comply with applicable data protection regulations and are
+              subject to periodic review.
+            </Paragraph>
+          </div>
+        </DialogDescription>
+
+        <div className="flex flex-col gap-4 border-t border-neutral-200 pt-4">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="terms-agree"
+              checked={hasAgreed}
+              onCheckedChange={(checked) => setHasAgreed(Boolean(checked))}
+            />
+            <label htmlFor="terms-agree" className="cursor-pointer text-sm">
+              I have read all the instructions mentioned above.
+            </label>
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              variant="primary"
+              type="button"
+              label={isSubmitting ? 'Continuing...' : 'Continue'}
+              iconRight={<FiArrowSmallRight />}
+              disabled={!hasAgreed || isSubmitting}
+              onClick={handleAccept}
+            />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

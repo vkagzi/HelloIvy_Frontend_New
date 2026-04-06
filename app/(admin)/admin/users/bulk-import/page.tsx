@@ -9,8 +9,9 @@ export default function AdminBulkImportPage() {
   return (
     <BulkImportUsers
       mode="superadmin"
-      backUrl="/admin/users"
-      onComplete={() => router.push('/admin/users')}
+      backUrl="/admin/users?type=schoolusers"
+      onComplete={() => router.push('/admin/users?type=schoolusers')}
+      hideRoleSelector={true}
     />
   );
 }

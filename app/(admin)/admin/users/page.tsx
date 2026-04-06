@@ -3,17 +3,19 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import api from '@/lib/api-client';
 import { formatDate, formatDateTime } from '@/lib/utils/date-formatter';
 import UserTable, { RoleBadge, StatusBadge, Column } from '@/components/admin/UserTable';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
+import { ADMIN_ROLES, ROLE_FILTER_OPTIONS, type RoleValue } from '@/lib/constants/roles';
 
 interface UserItem {
   id: number;
   email: string;
   first_name?: string;
   last_name?: string;
-  role: string;
+  role: RoleValue;
   is_active: boolean;
   terms_accepted: boolean;
   school_id: number | null;
@@ -25,12 +27,16 @@ interface UserItem {
   updated_at: string;
 }
 
-const ROLE_OPTIONS = [
-  { value: 'superadmin', label: 'Super Admin' },
-  { value: 'operationadmin', label: 'Operation Admin' },
-  { value: 'schooladmin', label: 'School Admin' },
-  { value: 'student', label: 'Student' },
-];
+const ROLE_OPTIONS = ROLE_FILTER_OPTIONS;
+
+/** Ordered from highest to lowest privilege */
+const ROLE_TIER: string[] = ['superadmin', 'operationadmin', 'schooladmin', 'schoolopsadmin', 'student'];
+
+/** Roles that may see the user-type filter at all */
+const ROLES_WITH_TYPE_FILTER = ['superadmin', 'operationadmin', 'schooladmin'];
+
+/** Roles that may see the school filter */
+const ROLES_WITH_SCHOOL_FILTER = ['superadmin', 'operationadmin'];
 
 const ACADEMIC_LEVEL_LABELS: Record<string, string> = {
   high_school: 'High School (9th–12th grade)',
@@ -117,8 +123,6 @@ const columns: Column<UserItem>[] = [
   },
 ];
 
-const ADMIN_ROLES = ['superadmin', 'operationadmin', 'schooladmin'];
-
 const TYPE_CONFIG: Record<string, { title: string; label: string; filter: (u: UserItem) => boolean }> = {
   b2c: {
     title: 'B2C Users',
@@ -144,6 +148,18 @@ export default function AdminUsersPage() {
   const searchParams = useSearchParams();
   const typeParam = searchParams?.get('type') ?? null;
   const typeConfig = typeParam ? TYPE_CONFIG[typeParam] : null;
+  const { data: session } = useSession();
+  const currentRole = session?.user?.role ?? '';
+
+  // Role options: only shown for superadmin, operationadmin, schooladmin
+  // Options are limited to roles with a lower tier than the current user
+  const roleFilterOptions = useMemo(() => {
+    if (!ROLES_WITH_TYPE_FILTER.includes(currentRole)) return [];
+    const currentTierIndex = ROLE_TIER.indexOf(currentRole);
+    if (currentTierIndex === -1) return [];
+    const lowerTierRoles = ROLE_TIER.slice(currentTierIndex + 1);
+    return ROLE_OPTIONS.filter((o) => lowerTierRoles.includes(o.value));
+  }, [currentRole]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -184,16 +200,18 @@ export default function AdminUsersPage() {
       filters={{
         showNameSearch: true,
         showEmailSearch: true,
-        roleOptions: ROLE_OPTIONS,
-        schoolOptions: (() => {
-          const schools = new Map<string, string>();
-          for (const u of users) {
-            if (u.school_id != null && u.school_name) {
-              schools.set(String(u.school_id), u.school_name);
-            }
-          }
-          return Array.from(schools, ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
-        })(),
+        roleOptions: roleFilterOptions,
+        schoolOptions: ROLES_WITH_SCHOOL_FILTER.includes(currentRole)
+          ? (() => {
+              const schools = new Map<string, string>();
+              for (const u of users) {
+                if (u.school_id != null && u.school_name) {
+                  schools.set(String(u.school_id), u.school_name);
+                }
+              }
+              return Array.from(schools, ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+            })()
+          : [],
       }}
       getNameValue={(u) => [u.first_name, u.last_name, u.email].filter(Boolean).join(' ')}
       getRoleValue={(u) => u.role}
@@ -214,14 +232,16 @@ export default function AdminUsersPage() {
       }}
       headerRight={
         <div className="flex gap-2">
+          {typeParam === 'schoolusers' && (
+            <Link
+              href="/admin/users/bulk-import"
+              className="cursor-pointer rounded-md border border-purple-600 px-4 py-2 text-sm font-medium text-purple-600 transition hover:bg-purple-50"
+            >
+              Bulk Import
+            </Link>
+          )}
           <Link
-            href="/admin/users/bulk-import"
-            className="cursor-pointer rounded-md border border-purple-600 px-4 py-2 text-sm font-medium text-purple-600 transition hover:bg-purple-50"
-          >
-            Bulk Import
-          </Link>
-          <Link
-            href="/admin/users/create"
+            href={`/admin/users/create${typeParam ? `?type=${typeParam}` : ''}`}
             className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
           >
             Add User

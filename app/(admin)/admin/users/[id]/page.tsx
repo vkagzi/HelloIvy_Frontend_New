@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import ModuleAssignDialog from '@/components/admin/ModuleAssignDialog';
+import { ALL_ROLES, ADMIN_ROLES } from '@/lib/constants/roles';
 
 interface SchoolOption {
   id: number;
@@ -88,12 +89,7 @@ const GRADE_LEVELS: Record<string, string[]> = {
 
 const SELECT_CN = 'h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-neutral-400 disabled:opacity-50';
 
-const ROLES = [
-  { value: 'student', label: 'Student' },
-  { value: 'schooladmin', label: 'School Admin' },
-  { value: 'operationadmin', label: 'Operation Admin' },
-  { value: 'superadmin', label: 'Superadmin' },
-];
+const ROLES = ALL_ROLES;
 
 export default function AdminUserDetailPage() {
   const params = useParams();
@@ -336,15 +332,18 @@ export default function AdminUserDetailPage() {
         backLabel="Back to Users"
         email={user.email}
         role={user.role}
+        roleLabel={user.role === 'student' ? `student (${user.school_id ? 'school' : 'b2c'})` : user.role}
         isActive={user.is_active}
         userId={user.id}
         infoFields={[
-          { label: 'School', value: user.school_name || (user.school_id ? String(user.school_id) : 'No School') },
-          { label: 'Academic Level', value: (user.academic_level && ACADEMIC_LEVEL_LABELS[user.academic_level]) || '—' },
-          { label: 'Grade Level', value: user.grade_level || '—' },
+          ...(!ADMIN_ROLES.includes(user.role as typeof ADMIN_ROLES[number]) ? [
+            { label: 'School', value: user.school_name || (user.school_id ? String(user.school_id) : 'No School') },
+            { label: 'Academic Level', value: (user.academic_level && ACADEMIC_LEVEL_LABELS[user.academic_level]) || '—' },
+            { label: 'Grade Level', value: user.grade_level || '—' },
+          ] : []),
           { label: 'Created', value: formatDate(user.created_at) },
           { label: 'Last Login', value: user.last_login ? formatDateTime(user.last_login) : 'Never' },
-          { label: 'Terms Accepted', value: user.terms_accepted ? 'Yes' : 'No' },
+          // { label: 'Terms Accepted', value: user.terms_accepted ? 'Yes' : 'No' },
           { label: 'Last Updated', value: formatDate(user.updated_at) },
         ]}
         actions={
@@ -376,8 +375,8 @@ export default function AdminUserDetailPage() {
         }
       />
 
-      {/* Vertical Tabs Layout */}
-      <div className="mb-5 flex gap-5">
+      {/* Vertical Tabs Layout — only shown for non-admin users */}
+      {ADMIN_ROLES.includes(user.role as typeof ADMIN_ROLES[number]) ? null : <div className="mb-5 flex gap-5">
         {/* Vertical Tab Sidebar */}
         <div className="w-56 shrink-0">
           <nav className="flex flex-col rounded-lg border border-gray-200 bg-white">
@@ -570,7 +569,7 @@ export default function AdminUserDetailPage() {
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* Change Password Modal */}
       <Dialog open={pwOpen} onOpenChange={setPwOpen}>
