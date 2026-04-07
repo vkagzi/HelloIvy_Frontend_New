@@ -24,7 +24,9 @@ const PersonalDetailsForm: React.FC = () => {
   const router = useRouter();
   const { rawApiResponse, loading, error, refetch } = useProfile();
   const [parsedResumeData, setParsedResumeData] = useState<any>(null);
-  const [resumeFormDefaults, setResumeFormDefaults] = useState<Record<string, unknown>>({});
+  const [resumeFormDefaults, setResumeFormDefaults] = useState<
+    Record<string, unknown>
+  >({});
   const { userDetails } = useUserAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -120,7 +122,6 @@ const PersonalDetailsForm: React.FC = () => {
 
   useEffect(() => {
     if (!parsedResumeData?.personal) return;
-
     const p = parsedResumeData.personal;
 
     setResumeFormDefaults((prev) => ({
@@ -133,6 +134,9 @@ const PersonalDetailsForm: React.FC = () => {
       gender: p.gender ?? prev.gender,
       dob: p.dob ?? prev.dob,
       addressLine: p.address ?? prev.addressLine,
+      zipCode: p.zip_code ?? prev.zipCode,
+      motherProfession: p.mother_profession ?? prev.motherProfession,
+      fatherProfession: p.father_profession ?? prev.fatherProfession,
     }));
   }, [parsedResumeData]);
 
@@ -219,8 +223,16 @@ const PersonalDetailsForm: React.FC = () => {
   const formDefaults = {
     ...personalDetails,
     ...resumeFormDefaults,
-    firstName: userDetails.first_name || (resumeFormDefaults.firstName as string) || (personalDetails.firstName as string) || '',
-    lastName: userDetails.last_name || (resumeFormDefaults.lastName as string) || (personalDetails.lastName as string) || '',
+    firstName:
+      userDetails.first_name ||
+      (resumeFormDefaults.firstName as string) ||
+      (personalDetails.firstName as string) ||
+      '',
+    lastName:
+      userDetails.last_name ||
+      (resumeFormDefaults.lastName as string) ||
+      (personalDetails.lastName as string) ||
+      '',
   };
 
   return (

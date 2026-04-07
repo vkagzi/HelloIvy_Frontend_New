@@ -62,43 +62,35 @@ const EducationalDetailsForm: React.FC = () => {
     return isNaN(parsed.getTime()) ? null : parsed.getFullYear();
   }, [personalDetails]);
 
+  const detectYear = (startYear?: number) => {
+    if (!startYear) return null;
+
+    const currentYear = new Date().getFullYear();
+
+    const diff = currentYear - startYear;
+
+    if (diff < 1 || diff > 5) return null;
+
+    return `Year ${diff}`;
+  };
+
   useEffect(() => {
-    if (!parsedResumeData?.education) return;
+    if (!parsedResumeData?.personal) return;
+
+    const p = parsedResumeData.personal;
 
     setFormDefaults((prev) => ({
       ...prev,
-      academicLevel:
-        parsedResumeData.education.education_level ?? prev.academicLevel,
+
+      academicLevel: p.degree ? 'College/Undergraduate' : prev.academicLevel,
+
+      institutionName: p.institution ?? prev.institutionName,
+      degree: p.degree ?? prev.degree,
+      major: p.major ?? prev.major,
+      score: p.cgpa ?? prev.score,
+      gradeLevel: detectYear(p.start_year) ?? prev.gradeLevel,
     }));
   }, [parsedResumeData]);
-
-  useEffect(() => {
-    if (!parsedResumeData?.education) return;
-    if (!formDefaults.academicLevel) return;
-
-    setFormDefaults((prev) => ({
-      ...prev,
-      year: parsedResumeData.education.current_year ?? prev.year,
-    }));
-  }, [parsedResumeData, formDefaults.academicLevel]);
-
-  useEffect(() => {
-    if (!parsedResumeData?.education) return;
-    if (formDefaults.academicLevel !== 'College/Undergraduate') return;
-
-    const e = parsedResumeData.education;
-
-    setFormDefaults((prev) => ({
-      ...prev,
-      institutionName: e.institution ?? prev.institutionName,
-      degree: e.degree ?? prev.degree,
-      major: e.major ?? prev.major,
-      startYear: e.start_year ?? prev.startYear,
-      endYear: e.end_year ?? prev.endYear,
-      score: e.cgpa ?? prev.score,
-      estimatedRank: e.rank ?? prev.estimatedRank,
-    }));
-  }, [parsedResumeData, formDefaults.academicLevel]);
 
   // Apply DOB-based year lower bounds: school yearOfCompletion >= DOB+1, college startYear >= DOB+10
   React.useEffect(() => {
@@ -358,10 +350,7 @@ const EducationalDetailsForm: React.FC = () => {
       <Tabs />
       <DynamicForm
         key={JSON.stringify(formDefaults)}
-        defaultValues={{
-          ...educationalDetails,
-          ...formDefaults,
-        }}
+        defaultValues={formDefaults}
         fieldDefs={fieldDefs}
         layout={layout}
         onSubmit={onSubmit}
