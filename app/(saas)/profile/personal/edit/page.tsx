@@ -14,11 +14,13 @@ import { personalFieldDefs as fieldDefs, personalLayout as layout } from '@/app/
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import { useUserAuth } from '@/app/_hooks/useUserAuth';
 
 const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, loading, error, refetch } = useProfile();
+  const { userDetails } = useUserAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
@@ -33,10 +35,26 @@ const PersonalDetailsForm: React.FC = () => {
       // Parse formatted city strings to extract city, state, country
       const parsedData = parseFormLocationData(_data);
 
+      // Extract firstName/lastName to save to users table
+      const firstName = (parsedData.firstName as string) || '';
+      const lastName = (parsedData.lastName as string) || '';
+
       console.log('Submitting personal details:', parsedData); // Debug log
 
       // Show loading toast
       addToast('Updating profile...', { type: 'info' });
+
+      // Save firstName/lastName to users table
+      if (firstName || lastName) {
+        try {
+          await api('/api/accounts/me/', {
+            method: 'PATCH',
+            body: { first_name: firstName, last_name: lastName },
+          });
+        } catch (e) {
+          console.error('Failed to save name to user account:', e);
+        }
+      }
 
       // Fetch latest profile data to ensure we have the most recent data
       const latestData = await getProfileData();
@@ -170,6 +188,13 @@ const PersonalDetailsForm: React.FC = () => {
 
   console.log('Personal details for form:', personalDetails); // Debug log
 
+  // Inject firstName/lastName from user session (source of truth is users table)
+  const formDefaults = {
+    ...personalDetails,
+    firstName: userDetails.first_name || (personalDetails.firstName as string) || '',
+    lastName: userDetails.last_name || (personalDetails.lastName as string) || '',
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
@@ -178,7 +203,7 @@ const PersonalDetailsForm: React.FC = () => {
         fieldDefs={fieldDefs}
         layout={layout}
         onSubmit={onSubmit}
-        defaultValues={personalDetails}
+        defaultValues={formDefaults}
         formClassName="space-y-6"
         buttonName="Add Educational Details"
         showSaveButton={{ showSave: true, href: '/profile/educational/edit' }}

@@ -163,6 +163,20 @@ export type LayoutBlock = LayoutItem;
 
 export const personalFieldDefs: FieldDefinition[] = [
   {
+    id: 'firstName',
+    type: 'text',
+    label: 'First Name',
+    placeholder: 'Enter your first name',
+    required: true,
+  },
+  {
+    id: 'lastName',
+    type: 'text',
+    label: 'Last Name',
+    placeholder: 'Enter your last name',
+    required: true,
+  },
+  {
     id: 'dob',
     type: 'date',
     label: 'Date of Birth',
@@ -505,7 +519,7 @@ export const personalLayout: LayoutBlock[] = [
   },
   {
     type: 'fieldset',
-    fields: ['dob'],
+    fields: ['firstName', 'lastName', 'dob'],
     columns: 3,
   },
   {
