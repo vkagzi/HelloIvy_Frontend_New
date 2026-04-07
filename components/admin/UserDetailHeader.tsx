@@ -12,6 +12,7 @@ interface UserDetailHeaderProps {
   backHref: string;
   backLabel: string;
   email: string;
+  name?: string;
   role?: string;
   roleLabel?: string;
   isActive: boolean;
@@ -24,6 +25,7 @@ export default function UserDetailHeader({
   backHref,
   backLabel,
   email,
+  name,
   role,
   roleLabel,
   isActive,
@@ -43,7 +45,8 @@ export default function UserDetailHeader({
       <div className="mb-5 rounded-lg border border-gray-200 bg-white px-5 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-bold text-gray-900">{email}</h1>
+            <h1 className="text-lg font-bold text-gray-900">{name || email}</h1>
+            {name && <span className="text-sm text-gray-500">{email}</span>}
             {role && <RoleBadge role={role} label={roleLabel ?? role} />}
             <StatusBadge active={isActive} />
             {userId !== undefined && (

@@ -322,6 +322,7 @@ export default function AdminUserDetailPage() {
         backHref="/admin/users"
         backLabel="Back to Users"
         email={user.email}
+        name={[user.first_name, user.last_name].filter(Boolean).join(' ') || undefined}
         role={user.role}
         roleLabel={user.role === 'student' ? `student (${user.school_id ? 'school' : 'b2c'})` : user.role}
         isActive={user.is_active}

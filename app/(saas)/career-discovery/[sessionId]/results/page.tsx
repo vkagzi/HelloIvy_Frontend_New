@@ -122,9 +122,9 @@ const CareerResultsPage: React.FC = () => {
         messages = historyResponse.messages;
       }
       
-      // Get student name from profile
-      const firstName = (personalDetails?.firstName as string) || '';
-      const lastName = (personalDetails?.lastName as string) || '';
+      // Get student name from user session
+      const firstName = userDetails.first_name || '';
+      const lastName = userDetails.last_name || '';
       const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || userDetails.email || 'Student');
       
       // Find session timestamps from messages
@@ -182,8 +182,8 @@ const CareerResultsPage: React.FC = () => {
     try {
       setIsDownloadingResults(true);
 
-      const firstName = (personalDetails?.firstName as string) || '';
-      const lastName = (personalDetails?.lastName as string) || '';
+      const firstName = userDetails.first_name || '';
+      const lastName = userDetails.last_name || '';
       const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || userDetails.email || 'Student');
 
       await downloadPDF(

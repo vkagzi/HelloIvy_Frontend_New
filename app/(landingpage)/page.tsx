@@ -15,6 +15,7 @@ export default async function Home(): Promise<React.ReactElement> {
         redirect('/admin');
         break;
       case 'schooladmin':
+      case 'schoolopsadmin':
         redirect('/school/dashboard');
         break;
       default:

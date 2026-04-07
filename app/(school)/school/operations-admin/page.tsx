@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api-client';
 import UserTable, { StatusBadge, Column } from '@/components/admin/UserTable';
@@ -62,6 +63,14 @@ const columns: Column<OpsAdminItem>[] = [
 export default function SchoolOpsAdminsPage() {
   const { data: session, status } = useSession();
   const schoolId = session?.user?.school_id;
+  const router = useRouter();
+
+  // Redirect schoolopsadmin away from this page
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'schoolopsadmin') {
+      router.replace('/school/dashboard');
+    }
+  }, [session, status, router]);
 
   const [opsAdmins, setOpsAdmins] = useState<OpsAdminItem[]>([]);
   const [total, setTotal] = useState(0);

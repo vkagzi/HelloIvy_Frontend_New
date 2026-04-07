@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import api from '@/lib/api-client';
@@ -16,6 +16,13 @@ export default function CreateOpsAdminPage() {
   const { data: session, status } = useSession();
   const schoolId = session?.user?.school_id;
   const { addToast } = useToast();
+
+  // Redirect schoolopsadmin away from this page
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'schoolopsadmin') {
+      router.replace('/school/dashboard');
+    }
+  }, [session, status, router]);
 
   const [form, setForm] = useState({
     email: '',

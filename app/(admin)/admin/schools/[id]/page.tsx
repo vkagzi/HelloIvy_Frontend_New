@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import api from '@/lib/api-client';
 import { formatDate } from '@/lib/utils/date-formatter';
@@ -69,6 +70,8 @@ interface AdminItem {
 export default function SchoolDetailPage() {
   const params = useParams();
   const schoolId = params?.id;
+  const { data: session } = useSession();
+  const isOpsAdmin = session?.user?.role === 'operationadmin';
   const [school, setSchool] = useState<SchoolDetail | null>(null);
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
@@ -379,12 +382,14 @@ export default function SchoolDetailPage() {
           <h2 className="text-base font-semibold text-gray-900">
             School Admins ({admins.length})
           </h2>
-          <Link
-            href={`/admin/users/create?schoolId=${schoolId}&type=schooladmin`}
-            className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
-          >
-            Add Admin
-          </Link>
+          {!isOpsAdmin && (
+            <Link
+              href={`/admin/users/create?schoolId=${schoolId}&type=schooladmin`}
+              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+            >
+              Add Admin
+            </Link>
+          )}
         </div>
         {admins.length > 0 ? (
           <div className="space-y-2">
@@ -437,18 +442,22 @@ export default function SchoolDetailPage() {
             Students ({totalStudents})
           </h2>
           <div className="flex items-center gap-2">
-            <Link
-              href={`/admin/users/bulk-import?schoolId=${schoolId}`}
-              className="inline-flex h-9 items-center justify-center rounded-md border border-primary px-3 text-sm font-medium text-primary shadow-sm hover:bg-primary/10"
-            >
-              Bulk Import
-            </Link>
-            <Link
-              href={`/admin/users/create?schoolId=${schoolId}&type=schoolusers`}
-              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
-            >
-              Add Student
-            </Link>
+            {!isOpsAdmin && (
+              <>
+                <Link
+                  href={`/admin/users/bulk-import?schoolId=${schoolId}`}
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-primary px-3 text-sm font-medium text-primary shadow-sm hover:bg-primary/10"
+                >
+                  Bulk Import
+                </Link>
+                <Link
+                  href={`/admin/users/create?schoolId=${schoolId}&type=schoolusers`}
+                  className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+                >
+                  Add Student
+                </Link>
+              </>
+            )}
           </div>
         </div>
         {students.length > 0 ? (

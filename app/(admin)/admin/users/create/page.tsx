@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
@@ -74,6 +75,14 @@ function getPageConfig(type: PageType) {
 export default function CreateUserPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+
+  // Redirect operationadmin away from create user page
+  useEffect(() => {
+    if (session?.user?.role === 'operationadmin') {
+      router.replace('/admin/users');
+    }
+  }, [session, router]);
   const typeParam = (searchParams?.get('type') ?? null) as PageType;
   const schoolIdParam = searchParams?.get('schoolId') ?? '';
   const config = getPageConfig(typeParam);

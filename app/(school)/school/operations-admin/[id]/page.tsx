@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import api from '@/lib/api-client';
 import { formatDate, formatDateTime } from '@/lib/utils/date-formatter';
 import UserDetailHeader from '@/components/admin/UserDetailHeader';
@@ -26,6 +27,15 @@ export default function OpsAdminDetailPage() {
   const params = useParams();
   const opsAdminId = params?.id;
   const { addToast } = useToast();
+  const router = useRouter();
+  const { data: session, status } = useSession();
+
+  // Redirect schoolopsadmin away from this page
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'schoolopsadmin') {
+      router.replace('/school/dashboard');
+    }
+  }, [session, status, router]);
 
   const [opsAdmin, setOpsAdmin] = useState<OpsAdminDetail | null>(null);
   const [loading, setLoading] = useState(true);

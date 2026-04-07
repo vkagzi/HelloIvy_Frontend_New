@@ -5,11 +5,11 @@
  * helloivy-api-main/apps/profiles/services.py → calculate_profile_completion().
  *
  * Tracked sections (3):
- *   1. personalDetails  – 11 required fields checked individually
+ *   1. personalDetails  – 9 required fields checked individually
  *   2. educational       – 1 required field  (academicLevel)
  *   3. extraCurricular   – non-empty array   (1 point)
  *
- * Total required items = 13.  Percentage = Math.round(filled / 13 * 100).
+ * Total required items = 11.  Percentage = Math.round(filled / 11 * 100).
  */
 
 type ProfileData = Record<string, unknown>;
@@ -19,7 +19,7 @@ type ProfileData = Record<string, unknown>;
 // _EDUCATIONAL_REQUIRED_FIELDS lists exactly.
 // ---------------------------------------------------------------------------
 const PERSONAL_REQUIRED_FIELDS = [
-  'firstName', 'lastName', 'dob', 'countryCode', 'phoneNumber',
+  'dob', 'countryCode', 'phoneNumber',
   'gender', 'addressline', 'city', 'zipcode', 'citizenShip', 'annualIncome',
 ] as const;
 

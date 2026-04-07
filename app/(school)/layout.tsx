@@ -28,7 +28,8 @@ export default async function SchoolLayout({
     redirect('/login');
   }
 
-  if (session.user.role !== 'schooladmin') {
+  const schoolRoles = ['schooladmin', 'schoolopsadmin'];
+  if (!schoolRoles.includes(session.user.role ?? '')) {
     redirect('/');
   }
 

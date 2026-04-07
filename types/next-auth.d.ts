@@ -6,6 +6,8 @@ declare module 'next-auth' {
       id: string;
       email: string;
       name: string;
+      first_name?: string;
+      last_name?: string;
       role?: string;
       school_id?: number;
       school_name?: string;
@@ -18,6 +20,8 @@ declare module 'next-auth' {
     id: string;
     email: string;
     name: string;
+    first_name?: string;
+    last_name?: string;
     role?: string;
     school_id?: number;
     school_name?: string;
@@ -31,6 +35,8 @@ declare module 'next-auth/jwt' {
     id: string;
     email: string;
     name: string;
+    first_name?: string;
+    last_name?: string;
     role?: string;
     school_id?: number;
     school_name?: string;
