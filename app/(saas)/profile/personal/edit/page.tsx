@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DynamicForm from '@/app/_components/dynamic-form/DynamicForm';
 import Tabs from '@/app/(saas)/profile/_components/Tabs';
 import { getProfileData } from '@/app/(saas)/profile/lib/api';
@@ -10,19 +10,28 @@ import { useToast } from '@/app/_components/Toast';
 import { useRouter } from 'next/navigation';
 import { parseFormLocationData } from '@/lib/utils/location-parser';
 import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
-import { personalFieldDefs as fieldDefs, personalLayout as layout } from '@/app/(saas)/profile/_config/fieldDefinitions';
+import {
+  personalFieldDefs as fieldDefs,
+  personalLayout as layout,
+} from '@/app/(saas)/profile/_config/fieldDefinitions';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
+import ResumeUploader from '@/app/_components/ResumeUploader';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { rawApiResponse, loading, error, refetch } = useProfile();
+  const [parsedResumeData, setParsedResumeData] = useState<any>(null);
+  const [formDefaults, setFormDefaults] = useState<Record<string, unknown>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  // Reconstruct formatted location data for display
+
   const transformedResponse = React.useMemo(
-    () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
+    () =>
+      reconstructFormLocationData(
+        (rawApiResponse ?? {}) as Record<string, unknown>
+      ),
     [rawApiResponse]
   );
   const defaultValues = transformedResponse as Record<string, unknown>;
@@ -92,6 +101,17 @@ const PersonalDetailsForm: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (!parsedResumeData) return;
+
+    setFormDefaults((prev) => ({
+      ...prev,
+      firstName: parsedResumeData.first_name ?? prev.firstName,
+      lastName: parsedResumeData.last_name ?? prev.lastName,
+      phoneNumber: parsedResumeData.phone ?? prev.phoneNumber,
+    }));
+  }, [parsedResumeData]);
+
   if (loading) {
     return (
       <div className="flex flex-col gap-4">
@@ -111,6 +131,7 @@ const PersonalDetailsForm: React.FC = () => {
     return (
       <div className="flex flex-col gap-4">
         <Instructions />
+        {/* <ResumeUploader /> */}
         <Tabs />
         <div className="flex min-h-[400px] items-center justify-center">
           <div className="max-w-md rounded-lg border border-red-200 bg-red-50 p-6 text-center">
@@ -173,12 +194,17 @@ const PersonalDetailsForm: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
+      <ResumeUploader onParsed={setParsedResumeData} />
       <Tabs />
       <DynamicForm
+        key={JSON.stringify(formDefaults)}
         fieldDefs={fieldDefs}
         layout={layout}
         onSubmit={onSubmit}
-        defaultValues={personalDetails}
+        defaultValues={{
+          ...personalDetails,
+          ...formDefaults,
+        }}
         formClassName="space-y-6"
         buttonName="Add Educational Details"
         showSaveButton={{ showSave: true, href: '/profile/educational/edit' }}
@@ -187,7 +213,10 @@ const PersonalDetailsForm: React.FC = () => {
           addToast('Personal details saved successfully!', { type: 'success' });
         }}
         onSaveAndNavigate={() => {
-          addToast('Personal details saved! Navigating to educational details...', { type: 'success' });
+          addToast(
+            'Personal details saved! Navigating to educational details...',
+            { type: 'success' }
+          );
           setTimeout(() => {
             router.push('/profile/educational/edit');
           }, 500);

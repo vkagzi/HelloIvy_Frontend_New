@@ -167,14 +167,14 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'First Name',
     placeholder: 'Enter your first name',
-    required: true,
+    required: false,
   },
   {
     id: 'lastName',
     type: 'text',
     label: 'Last Name',
     placeholder: 'Enter your last name',
-    required: true,
+    required: false,
   },
   {
     id: 'dob',
@@ -197,7 +197,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Mobile Number',
     placeholder: 'Enter your phone number',
-    required: true,
+    required: false,
     validation: {
       regex: Regexvalidations.justNumberWithBlank,
       maxLength: 10,
