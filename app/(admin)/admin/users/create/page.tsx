@@ -5,44 +5,19 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
+import { extractApiError } from '@/lib/utils/api-error';
+import { ACADEMIC_LEVELS, GRADE_LEVELS } from '@/lib/constants/academic';
+import { ErrorAlert } from '@/components/form/ErrorAlert';
+import { FormActions } from '@/components/form/FormActions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import { ADMIN_CREATE_ROLES } from '@/lib/constants/roles';
 
-function extractApiError(err: unknown, fallback: string): string {
-  if (err instanceof Error) {
-    if (err.message) return err.message;
-    const body = (err as any).cause?.body;
-    if (body && typeof body === 'object') {
-      const messages = Object.entries(body)
-        .flatMap(([key, val]) =>
-          Array.isArray(val) ? val.map((v) => `${key}: ${v}`) : [`${key}: ${val}`]
-        );
-      if (messages.length) return messages.join('; ');
-    }
-  }
-  return fallback;
-}
-
 interface SchoolOption {
   id: number;
   name: string;
 }
-
-const ACADEMIC_LEVELS = [
-  { value: 'high_school', label: 'High School (9th–12th grade)' },
-  { value: 'undergraduate', label: 'College/Undergraduate' },
-  { value: 'postgraduate', label: "Postgraduate/Master's" },
-  { value: 'professional', label: 'Working Professional' },
-];
-
-const GRADE_LEVELS: Record<string, string[]> = {
-  high_school: ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-  undergraduate: ['Year 1', 'Year 2', 'Year 3', 'Year 4'],
-  postgraduate: ['Year 1', 'Year 2'],
-  professional: ['1-3 years', '3-5 years', '5+ years'],
-};
 
 type PageType = 'b2c' | 'schoolusers' | 'admin' | 'schooladmin' | null;
 
@@ -207,11 +182,7 @@ export default function CreateUserPage() {
         )}
       </div>
       <form onSubmit={handleSubmit} className="space-y-5">
-        {error && (
-          <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        <ErrorAlert error={error} />
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -339,12 +310,7 @@ export default function CreateUserPage() {
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={() => router.push(backUrl)}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? 'Creating...' : 'Add User'}
-          </Button>
+          <FormActions isLoading={saving} onCancel={() => router.push(backUrl)} submitLabel="Add User" cancelLabel="Cancel" />
         </div>
       </form>
     </div>

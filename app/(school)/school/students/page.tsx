@@ -94,21 +94,14 @@ export default function SchoolStudentsPage() {
   const initialGrade = searchParams?.get('grade') ?? '';
 
   const [students, setStudents] = useState<StudentItem[]>([]);
+  const [groupedStudents, setGroupedStudents] = useState<Record<string, StudentItem[]>>({});
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [gradeFilter, setGradeFilter] = useState(initialGrade);
-  const [addOpen, setAddOpen] = useState(false);
-  const [addEmail, setAddEmail] = useState('');
-  const [addFirstName, setAddFirstName] = useState('');
-  const [addLastName, setAddLastName] = useState('');
-  const [addGrade, setAddGrade] = useState('');
-  const [addSection, setAddSection] = useState('');
-  const [addBoard, setAddBoard] = useState('');
-  const [addSaving, setAddSaving] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
+  const [isGrouped, setIsGrouped] = useState(false);
 
   const fetchStudents = useCallback(async () => {
     if (!schoolId) return;
@@ -119,56 +112,34 @@ export default function SchoolStudentsPage() {
         page_size: pageSize.toString(),
       });
       if (gradeFilter) params.set('grade', gradeFilter);
+      if (isGrouped) params.set('group_by', 'grade');
 
       const data = await api<{
-        students: StudentItem[];
+        students?: StudentItem[];
+        grouped_students?: Record<string, StudentItem[]>;
         total: number;
-        page: number;
-        page_size: number;
+        page?: number;
+        page_size?: number;
       }>(`/api/schools/${schoolId}/students/?${params.toString()}`);
-      setStudents(data.students);
+      
+      if (isGrouped && data.grouped_students) {
+        setGroupedStudents(data.grouped_students);
+        setStudents([]);
+      } else if (data.students) {
+        setStudents(data.students);
+        setGroupedStudents({});
+      }
       setTotal(data.total);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load students');
     } finally {
       setLoading(false);
     }
-  }, [schoolId, page, pageSize, gradeFilter]);
+  }, [schoolId, page, pageSize, gradeFilter, isGrouped]);
 
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
-
-  const handleAddStudent = async (): Promise<void> => {
-    if (!schoolId || !addEmail.trim()) return;
-    setAddSaving(true);
-    setAddError(null);
-    try {
-      await api(`/api/schools/${schoolId}/students/`, {
-        method: 'POST',
-        body: {
-          email: addEmail.trim(),
-          first_name: addFirstName.trim(),
-          last_name: addLastName.trim(),
-          grade: addGrade,
-          section: addSection.trim(),
-          board: addBoard.trim(),
-        },
-      });
-      setAddOpen(false);
-      setAddEmail('');
-      setAddFirstName('');
-      setAddLastName('');
-      setAddGrade('');
-      setAddSection('');
-      setAddBoard('');
-      fetchStudents();
-    } catch (err: unknown) {
-      setAddError(err instanceof Error ? err.message : 'Failed to add student');
-    } finally {
-      setAddSaving(false);
-    }
-  };
 
   const totalPages = Math.ceil(total / pageSize);
   const grades = ['8', '9', '10', '11', '12'];
@@ -191,154 +162,151 @@ export default function SchoolStudentsPage() {
 
   return (
     <>
-    <UserTable
-      data={students}
-      columns={columns}
-      title="Students"
-      totalLabel={`${total} total students`}
-      filters={{
-        showNameSearch: true,
-        showEmailSearch: true,
-        roleOptions: grades.map((g) => ({ value: g, label: `Grade ${g}` })),
-      }}
-      getNameValue={(s) => [s.first_name, s.last_name, s.email].filter(Boolean).join(' ')}
-      getRoleValue={(s) => s.grade}
-      getSortValue={(s, key) => {
-        switch (key) {
-          case 'name': return [s.first_name, s.last_name].filter(Boolean).join(' ').toLowerCase() || s.email.toLowerCase();
-          case 'email': return s.email.toLowerCase();
-          case 'grade': return s.grade || '';
-          case 'section': return s.section || '';
-          case 'board': return s.board || '';
-          case 'status': return s.is_active ? 'active' : 'inactive';
-          case 'last_login': return s.last_login ?? '';
-          default: return null;
-        }
-      }}
-      headerRight={
-        <div className="flex items-center gap-2">
-          <Button
-            asChild
-            variant="outline"
-          >
-            <Link href="/school/users/bulk-import">
-              Bulk Import
-            </Link>
-          </Button>
-          <Button
-            onClick={() => setAddOpen(true)}
-          >
-            + Add Student
-          </Button>
-          <Select value={gradeFilter || '__all__'} onValueChange={(v) => { setGradeFilter(v === '__all__' ? '' : v); setPage(1); }}>
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="All Grades" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">All Grades</SelectItem>
-              {grades.map((g) => (
-                <SelectItem key={g} value={g}>Grade {g}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      }
-      pagination={{
-        page,
-        totalPages,
-        onPageChange: setPage,
-      }}
-    />
-
-      {/* Add Student Modal */}
-      {addOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold">Add Student</h3>
-            {addError && (
-              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
-                {addError}
-              </div>
-            )}
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Email *</label>
-                <Input
-                  type="email"
-                  value={addEmail}
-                  onChange={(e) => setAddEmail(e.target.value)}
-                  placeholder="student@example.com"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">First Name</label>
-                  <Input
-                    type="text"
-                    value={addFirstName}
-                    onChange={(e) => setAddFirstName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Last Name</label>
-                  <Input
-                    type="text"
-                    value={addLastName}
-                    onChange={(e) => setAddLastName(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Grade</label>
-                  <Select value={addGrade || '__none__'} onValueChange={(v) => setAddGrade(v === '__none__' ? '' : v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Select</SelectItem>
-                      {grades.map((g) => (
-                        <SelectItem key={g} value={g}>Grade {g}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Section</label>
-                  <Input
-                    type="text"
-                    value={addSection}
-                    onChange={(e) => setAddSection(e.target.value)}
-                    placeholder="e.g., A"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Board</label>
-                  <Input
-                    type="text"
-                    value={addBoard}
-                    onChange={(e) => setAddBoard(e.target.value)}
-                    placeholder="e.g., CBSE"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  onClick={() => { setAddOpen(false); setAddError(null); }}
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddStudent}
-                  disabled={addSaving || !addEmail.trim()}
-                >
-                  {addSaving ? 'Adding...' : 'Add Student'}
-                </Button>
-              </div>
+      {isGrouped ? (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Students</h1>
+              <p className="text-sm text-gray-500">{total} total students</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={isGrouped ? "default" : "outline"}
+                onClick={() => setIsGrouped(!isGrouped)}
+                className="text-sm"
+              >
+                {isGrouped ? 'Grouped View' : 'List View'}
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/school/users/bulk-import">Bulk Import</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/school/students/create">+ Add Student</Link>
+              </Button>
             </div>
           </div>
+
+          {Object.entries(groupedStudents).length > 0 ? (
+            Object.entries(groupedStudents).map(([grade, gradeStudents]) => (
+              <div key={grade} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {grade} ({gradeStudents.length} students)
+                  </h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Section</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Board</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Last Login</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {gradeStudents.map((s) => (
+                        <tr key={s.id} className="hover:bg-gray-50 transition">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Link
+                              href={`/school/students/${s.id}`}
+                              className="font-medium text-purple-600 hover:text-purple-800"
+                            >
+                              {s.first_name || s.last_name ? `${s.first_name} ${s.last_name}`.trim() : s.email}
+                            </Link>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.section || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.board || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <StatusBadge active={s.is_active} />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {s.last_login ? new Date(s.last_login).toLocaleString() : 'Never'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Link
+                              href={`/school/students/${s.id}`}
+                              className="inline-flex rounded-md bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 transition hover:bg-purple-100"
+                            >
+                              View Details
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-md bg-yellow-50 p-4">
+              <p className="text-sm text-yellow-700">No students found.</p>
+            </div>
+          )}
         </div>
+      ) : (
+        <>
+          <UserTable
+            data={students}
+            columns={columns}
+            title="Students"
+            totalLabel={`${total} total students`}
+            filters={{
+              showNameSearch: true,
+              showEmailSearch: true,
+              roleOptions: grades.map((g) => ({ value: g, label: `Grade ${g}` })),
+            }}
+            getNameValue={(s) => [s.first_name, s.last_name, s.email].filter(Boolean).join(' ')}
+            getRoleValue={(s) => s.grade}
+            getSortValue={(s, key) => {
+              switch (key) {
+                case 'name': return [s.first_name, s.last_name].filter(Boolean).join(' ').toLowerCase() || s.email.toLowerCase();
+                case 'email': return s.email.toLowerCase();
+                case 'grade': return s.grade || '';
+                case 'section': return s.section || '';
+                case 'board': return s.board || '';
+                case 'status': return s.is_active ? 'active' : 'inactive';
+                case 'last_login': return s.last_login ?? '';
+                default: return null;
+              }
+            }}
+            headerRight={
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={isGrouped ? "default" : "outline"}
+                  onClick={() => setIsGrouped(!isGrouped)}
+                  className="text-sm"
+                >
+                  {isGrouped ? 'Grouped View' : 'List View'}
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                >
+                  <Link href="/school/users/bulk-import">
+                    Bulk Import
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                >
+                  <Link href="/school/students/create">
+                    + Add Student
+                  </Link>
+                </Button>
+              </div>
+            }
+            pagination={{
+              page,
+              totalPages,
+              onPageChange: setPage,
+            }}
+          />
+        </>
       )}
     </>
   );

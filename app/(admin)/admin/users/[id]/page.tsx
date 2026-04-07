@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api-client';
 import { formatDate, formatDateTime } from '@/lib/utils/date-formatter';
 import UserDetailHeader from '@/components/admin/UserDetailHeader';
+import UserPasswordChangeModal from '@/components/admin/UserPasswordChangeModal';
+import UserStatusToggleModal from '@/components/admin/UserStatusToggleModal';
 import ModuleCard from '@/components/admin/ModuleCard';
 import type { ModuleStats } from '@/components/admin/ModuleCard';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
@@ -101,8 +103,6 @@ export default function AdminUserDetailPage() {
 
   // Change Password modal state
   const [pwOpen, setPwOpen] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = useState(false);
@@ -187,28 +187,19 @@ export default function AdminUserDetailPage() {
     fetchSchools();
   }, []);
 
-  const handleChangePassword = async () => {
-    setPwError(null);
-    setPwSuccess(false);
-    if (newPassword.length < 8) {
-      setPwError('Password must be at least 8 characters');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPwError('Passwords do not match');
-      return;
-    }
+  const handleChangePassword = async (newPassword: string, confirmPassword: string) => {
     setPwSaving(true);
+    setPwError(null);
     try {
       await api(`/api/accounts/admin/users/${userId}/`, {
         method: 'PATCH',
         body: { password: newPassword },
       });
       setPwSuccess(true);
-      setNewPassword('');
-      setConfirmPassword('');
+      setTimeout(() => setPwOpen(false), 1500);
     } catch (err: unknown) {
-      setPwError(err instanceof Error ? err.message : 'Failed to change password');
+      const message = err instanceof Error ? err.message : 'Failed to change password';
+      setPwError(message);
     } finally {
       setPwSaving(false);
     }
@@ -349,7 +340,7 @@ export default function AdminUserDetailPage() {
         actions={
           <>
             <Button
-              onClick={() => { setPwError(null); setPwSuccess(false); setNewPassword(''); setConfirmPassword(''); setPwOpen(true); }}
+              onClick={() => { setPwError(null); setPwSuccess(false); setPwOpen(true); }}
               variant="default"
               className="bg-indigo-600 hover:bg-indigo-700"
               size="sm"
@@ -572,28 +563,15 @@ export default function AdminUserDetailPage() {
       </div>}
 
       {/* Change Password Modal */}
-      <Dialog open={pwOpen} onOpenChange={setPwOpen}>
-        <DialogContent className="max-w-md">
-          <DialogTitle>Change Password</DialogTitle>
-          <p className="text-sm text-gray-500">Set a new password for <strong>{user.email}</strong></p>
-          {pwError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{pwError}</p>}
-          {pwSuccess && <p className="rounded bg-green-50 p-2 text-sm text-green-600">Password changed successfully</p>}
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="pw-new">New Password</Label>
-              <Input id="pw-new" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min 8 characters" />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="pw-confirm">Confirm Password</Label>
-              <Input id="pw-confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter password" />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setPwOpen(false)}>Cancel</Button>
-            <Button onClick={handleChangePassword} disabled={pwSaving}>{pwSaving ? 'Saving...' : 'Change Password'}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <UserPasswordChangeModal
+        open={pwOpen}
+        onOpenChange={setPwOpen}
+        onSubmit={handleChangePassword}
+        loading={pwSaving}
+        error={pwError}
+        success={pwSuccess}
+        minPasswordLength={8}
+      />
 
       {/* Edit Details Modal */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -713,26 +691,14 @@ export default function AdminUserDetailPage() {
       </Dialog>
 
       {/* Deactivate / Activate Confirmation Modal */}
-      <Dialog open={deactivateOpen} onOpenChange={setDeactivateOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogTitle>{user.is_active ? 'Deactivate User' : 'Activate User'}</DialogTitle>
-          <p className="text-sm text-gray-600">
-            Are you sure you want to {user.is_active ? 'deactivate' : 'activate'}{' '}
-            <strong>{user.email}</strong>?
-            {user.is_active && ' They will no longer be able to log in.'}
-          </p>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setDeactivateOpen(false)}>Cancel</Button>
-            <Button
-              variant={user.is_active ? 'destructive' : 'default'}
-              onClick={handleToggleActive}
-              disabled={deactivateSaving}
-            >
-              {deactivateSaving ? 'Saving...' : user.is_active ? 'Deactivate' : 'Activate'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <UserStatusToggleModal
+        open={deactivateOpen}
+        onOpenChange={setDeactivateOpen}
+        onSubmit={handleToggleActive}
+        isActive={user.is_active}
+        loading={deactivateSaving}
+        userEmail={user.email}
+      />
     </div>
   );
 }

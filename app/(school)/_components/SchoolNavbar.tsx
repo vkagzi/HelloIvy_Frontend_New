@@ -13,6 +13,7 @@ import { useNavbar } from '@/app/_contexts/NavbarContext';
 const schoolNavItems = [
   { label: 'Dashboard', icon: 'sr-apps', href: '/school/dashboard' },
   { label: 'Students', icon: 'users', href: '/school/students' },
+  { label: 'Operations Admin', icon: 'users', href: '/school/operations-admin' },
   { label: 'Payment', icon: 'credit-card', href: '/school/payment' },
 ];
 

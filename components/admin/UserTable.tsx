@@ -31,6 +31,8 @@ export interface FilterConfig {
   roleOptions?: { value: string; label: string }[];
   /** Options for the school dropdown filter. Empty array = hidden. */
   schoolOptions?: { value: string; label: string }[];
+  /** Group rows by 'loginStatus' or 'gradeLevel'. Undefined = no grouping. */
+  groupBy?: 'loginStatus' | 'gradeLevel';
 }
 
 interface SortState {
@@ -48,6 +50,10 @@ interface Props<T extends { id: number; email: string }> {
   getRoleValue?: (row: T) => string;
   /** Field resolver for school filter */
   getSchoolValue?: (row: T) => string;
+  /** Field resolver for login status grouping filter */
+  getLoginStatusValue?: (row: T) => string;
+  /** Field resolver for grade level grouping filter */
+  getGradeLevelValue?: (row: T) => string;
   /** Field resolver used for generic sort comparison  */
   getSortValue?: (row: T, key: string) => string | number | boolean | null;
   /** Total label shown above table, e.g. "32 total users" */
@@ -73,6 +79,8 @@ export default function UserTable<T extends { id: number; email: string }>({
   getNameValue,
   getRoleValue,
   getSchoolValue,
+  getLoginStatusValue,
+  getGradeLevelValue,
   getSortValue,
   totalLabel,
   headerRight,
@@ -140,6 +148,28 @@ export default function UserTable<T extends { id: number; email: string }>({
       return { key, dir: 'asc' };
     });
   };
+
+  // ---- grouping ----
+  const getGroupedRows = () => {
+    if (!filters.groupBy) return rows;
+
+    const grouped: { [key: string]: T[] } = {};
+    rows.forEach((row) => {
+      let groupKey = '';
+      if (filters.groupBy === 'loginStatus' && getLoginStatusValue) {
+        groupKey = getLoginStatusValue(row);
+      } else if (filters.groupBy === 'gradeLevel' && getGradeLevelValue) {
+        groupKey = getGradeLevelValue(row);
+      }
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = [];
+      }
+      grouped[groupKey].push(row);
+    });
+    return grouped;
+  };
+
+  const groupedData = getGroupedRows();
 
   const hasFilters =
     filters.showNameSearch || filters.showEmailSearch || (filters.roleOptions && filters.roleOptions.length > 0) || (filters.schoolOptions && filters.schoolOptions.length > 0);
@@ -249,7 +279,7 @@ export default function UserTable<T extends { id: number; email: string }>({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
-            {rows.map((row) => (
+            {!filters.groupBy && rows.map((row) => (
               <tr key={row.id} className="hover:bg-gray-50">
                 {columns.map((col) => (
                   <td key={col.key} className="whitespace-nowrap px-6 py-4 text-sm">
@@ -257,6 +287,24 @@ export default function UserTable<T extends { id: number; email: string }>({
                   </td>
                 ))}
               </tr>
+            ))}
+            {filters.groupBy && typeof groupedData === 'object' && !Array.isArray(groupedData) && Object.entries(groupedData).map(([groupKey, groupRows]) => (
+              <React.Fragment key={groupKey}>
+                <tr className="bg-gray-100">
+                  <td colSpan={columns.length} className="px-6 py-2 text-sm font-semibold text-gray-700">
+                    {groupKey || 'Ungrouped'} ({groupRows.length})
+                  </td>
+                </tr>
+                {(groupRows as T[]).map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50">
+                    {columns.map((col) => (
+                      <td key={col.key} className="whitespace-nowrap px-6 py-4 text-sm">
+                        {col.render(row)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </React.Fragment>
             ))}
             {rows.length === 0 && (
               <tr>

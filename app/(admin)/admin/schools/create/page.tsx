@@ -4,23 +4,10 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
+import { extractApiError } from '@/lib/utils/api-error';
+import { ErrorAlert } from '@/components/form/ErrorAlert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-function extractApiError(err: unknown, fallback: string): string {
-  if (err instanceof Error) {
-    if (err.message) return err.message;
-    const body = (err as any).cause?.body;
-    if (body && typeof body === 'object') {
-      const messages = Object.entries(body)
-        .flatMap(([key, val]) =>
-          Array.isArray(val) ? val.map((v) => `${key}: ${v}`) : [`${key}: ${val}`]
-        );
-      if (messages.length) return messages.join('; ');
-    }
-  }
-  return fallback;
-}
 
 export default function CreateSchoolPage() {
   const router = useRouter();
@@ -115,11 +102,7 @@ export default function CreateSchoolPage() {
     <div className="mx-auto max-w-2xl">
       <h1 className="mb-6 text-2xl font-bold text-gray-900">Create School</h1>
       <form onSubmit={handleSubmit} className="space-y-5">
-        {error && (
-          <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        <ErrorAlert error={error} />
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
