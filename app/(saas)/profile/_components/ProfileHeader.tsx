@@ -69,10 +69,11 @@ const ProfileHeaderView: React.FC = () => {
   };
 
   const getFullName = (): string => {
-    const firstName = getStringValue(defaultValues.firstName) ?? 'Not Provided';
-    const lastName = getStringValue(defaultValues.lastName) ?? '';
-
-    return `${firstName} ${lastName}`.trim();
+    const { first_name, last_name, name } = userDetails;
+    if (first_name || last_name) {
+      return `${first_name} ${last_name}`.trim();
+    }
+    return name || 'Not Provided';
   };
 
   const profileInfo = [

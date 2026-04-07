@@ -13,6 +13,7 @@ import {
   ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import api from '@/lib/api';
+import { Input } from '@/components/ui/input';
 import { generateEssayReport } from '@/app/utils/pdfGenerator';
 
 // Types for the new 5-criteria essay evaluator
@@ -1326,11 +1327,11 @@ const EssayEvaluatorPage: React.FC = () => {
                       </label>
                     ))}
                   </div>
-                  <input
+                  <Input
                     type="number"
                     value={essayLimit}
                     onChange={(e) => setEssayLimit(parseInt(e.target.value))}
-                    className="w-32 rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                    className="w-32"
                     placeholder="250"
                   />
                 </div>
@@ -1341,12 +1342,11 @@ const EssayEvaluatorPage: React.FC = () => {
                     <label className="mb-2 block text-sm font-medium text-gray-900">
                       College <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <Input
                       type="text"
                       value={selectedCollege}
                       onChange={(e) => setSelectedCollege(e.target.value)}
                       placeholder="Brynmawr"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
@@ -1354,12 +1354,11 @@ const EssayEvaluatorPage: React.FC = () => {
                     <label className="mb-2 block text-sm font-medium text-gray-900">
                       Degree <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <Input
                       type="text"
                       value={selectedDegree}
                       onChange={(e) => setSelectedDegree(e.target.value)}
                       placeholder="Bachelor of Fine Arts (BA)"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
@@ -1367,12 +1366,11 @@ const EssayEvaluatorPage: React.FC = () => {
                     <label className="mb-2 block text-sm font-medium text-gray-900">
                       Major <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <Input
                       type="text"
                       value={selectedMajor}
                       onChange={(e) => setSelectedMajor(e.target.value)}
                       placeholder="Graphic Design"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>

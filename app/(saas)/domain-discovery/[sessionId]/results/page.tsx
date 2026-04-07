@@ -127,9 +127,9 @@ const DomainResultsPage: React.FC = () => {
         transcriptData = await domainDiscoveryApi.getTranscript(sessionId);
       }
 
-      // Get student name from profile, falling back to transcript data
-      const firstName = (personalDetails?.firstName as string) || '';
-      const lastName = (personalDetails?.lastName as string) || '';
+      // Get student name from user session, falling back to transcript data
+      const firstName = userDetails.first_name || '';
+      const lastName = userDetails.last_name || '';
       const studentName = firstName && lastName
         ? `${firstName} ${lastName}`
         : (firstName || lastName || transcriptData.student_name || userDetails.email || 'Student');
@@ -169,8 +169,8 @@ const DomainResultsPage: React.FC = () => {
     try {
       setIsDownloadingResults(true);
 
-      const firstName = (personalDetails?.firstName as string) || '';
-      const lastName = (personalDetails?.lastName as string) || '';
+      const firstName = userDetails.first_name || '';
+      const lastName = userDetails.last_name || '';
       const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || userDetails.email || 'Student');
 
       await downloadPDF(

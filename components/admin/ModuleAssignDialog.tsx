@@ -4,10 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
-
-const SELECT_CN =
-  'h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-neutral-400 disabled:opacity-50';
 
 export interface ModuleRow {
   module_name: string;
@@ -105,18 +103,16 @@ export default function ModuleAssignDialog({
 
             return (
               <div key={idx} className={`grid ${gridCols} gap-2 items-center`}>
-                <select
-                  value={row.module_name}
-                  onChange={(e) => updateRow(idx, { module_name: e.target.value })}
-                  className={SELECT_CN}
-                >
-                  <option value="">Select module...</option>
-                  {available.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
+                <Select value={row.module_name} onValueChange={(v) => updateRow(idx, { module_name: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select module..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {available.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
                 {showMaxStudents && (
                   <Input
@@ -133,15 +129,16 @@ export default function ModuleAssignDialog({
                   onChange={(e) => updateRow(idx, { expiry_date: e.target.value })}
                 />
 
-                <select
-                  value={row.source}
-                  onChange={(e) => updateRow(idx, { source: e.target.value })}
-                  className={SELECT_CN}
-                >
-                  <option value="admin">Admin</option>
-                  <option value="payment">Payment</option>
-                  <option value="other">Other</option>
-                </select>
+                <Select value={row.source} onValueChange={(v) => updateRow(idx, { source: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="payment">Payment</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
 
                 <Button
                   onClick={() => setRows(rows.filter((_, i) => i !== idx))}

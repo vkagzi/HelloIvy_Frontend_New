@@ -13,6 +13,7 @@ function getRoleDashboard(role: string): string {
     case 'operationadmin':
       return '/admin';
     case 'schooladmin':
+    case 'schoolopsadmin':
       return '/school/dashboard';
     default:
       return '/dashboard';
@@ -53,9 +54,9 @@ export default auth((req) => {
       }
     }
 
-    // /school/* — only schooladmin
+    // /school/* — only schooladmin and schoolopsadmin
     if (pathname.startsWith('/school')) {
-      if (role !== 'schooladmin') {
+      if (role !== 'schooladmin' && role !== 'schoolopsadmin') {
         return NextResponse.redirect(new URL('/', req.nextUrl));
       }
     }

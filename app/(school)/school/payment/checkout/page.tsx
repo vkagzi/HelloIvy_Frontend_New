@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api-client';
 import { FiIcon } from '@/app/_components/Icons';
+import { Input } from '@/components/ui/input';
 
 interface LineItem {
   module: string;
@@ -142,47 +143,46 @@ function SchoolCheckoutForm() {
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-700">Name on card</label>
-            <input
+            <Input
               type="text"
               placeholder="John Doe"
               value={nameOnCard}
               onChange={(e) => setNameOnCard(e.target.value)}
-              className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm shadow-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
             />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-700">Card number</label>
-            <input
+            <Input
               type="text"
               inputMode="numeric"
               placeholder="1234 5678 9012 3456"
               value={cardNumber}
               onChange={(e) => setCardNumber(formatCard(e.target.value))}
-              className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 font-mono text-sm shadow-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+              className="font-mono"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-700">Expiry (MM/YY)</label>
-              <input
+              <Input
                 type="text"
                 inputMode="numeric"
                 placeholder="MM/YY"
                 value={expiry}
                 onChange={(e) => setExpiry(formatExpiry(e.target.value))}
-                className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 font-mono text-sm shadow-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+                className="font-mono"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-700">CVV</label>
-              <input
+              <Input
                 type="password"
                 inputMode="numeric"
                 placeholder="•••"
                 maxLength={4}
                 value={cvv}
                 onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 font-mono text-sm shadow-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+                className="font-mono"
               />
             </div>
           </div>

@@ -21,20 +21,39 @@ interface TermsAcceptanceModalProps {
 export default function TermsAcceptanceModal({
   isOpen,
 }: TermsAcceptanceModalProps): React.ReactElement | null {
-  const { update } = useSession();
+  const { update, data: session } = useSession();
   const [hasAgreed, setHasAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAccept = useCallback(async () => {
     if (!hasAgreed) return;
     setIsSubmitting(true);
+    setError(null);
+    
     try {
+      // Step 1: Accept terms on the backend
       await api('/api/accounts/accept-terms/', {
         method: 'POST',
         body: {},
       });
-      // Update the session so terms_accepted becomes true without re-login
-      await update({ terms_accepted: true });
+      
+      // Step 2: Fetch the latest user data to ensure terms_accepted is true
+      const userData = await api<{ terms_accepted: boolean }>('/api/accounts/me/');
+      
+      // Step 3: Update the NextAuth session with the latest terms_accepted status
+      // This will trigger the JWT callback with trigger='update'
+      await update({ 
+        terms_accepted: userData.terms_accepted ?? true,
+      });
+      
+      // If update was successful, the modal will automatically close
+      // because TermsGuard will detect terms_accepted = true and hide the modal
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while accepting terms';
+      setError(errorMessage);
+      console.error('Error accepting terms:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -94,6 +113,12 @@ export default function TermsAcceptanceModal({
             </Paragraph>
           </div>
         </DialogDescription>
+
+        {error && (
+          <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
         <div className="flex flex-col gap-4 border-t border-neutral-200 pt-4">
           <div className="flex items-center gap-2">

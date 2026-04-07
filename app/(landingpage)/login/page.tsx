@@ -48,8 +48,19 @@ function LoginForm(): React.ReactElement {
       }
 
       if (result?.ok) {
-        // Successful login - redirect to callback URL or dashboard
-        router.push(callbackUrl);
+        // Role-based redirect after login
+        const res = await fetch('/api/auth/session');
+        const session = await res.json();
+        const role = session?.user?.role;
+
+        if (role === 'operationadmin' || role === 'superadmin') {
+          router.push('/admin');
+        } else if (role === 'schooladmin' || role === 'schoolopsadmin') {
+          router.push('/school/dashboard');
+        } else {
+          // For students/other roles, use callbackUrl if provided
+          router.push(callbackUrl && callbackUrl !== '/' ? callbackUrl : '/');
+        }
       }
     } catch (error) {
       const message =

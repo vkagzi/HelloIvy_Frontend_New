@@ -61,13 +61,15 @@ export default function AdminDashboardPage() {
         <div className="rounded-lg border border-gray-200 bg-white px-5 py-5">
           <h2 className="mb-4 text-base font-semibold text-gray-900">Quick Actions</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <ActionCard
-              href="/admin/users/create"
-              icon="+"
-              title="Add New User"
-              description="Create a student, admin, or school admin account"
-              color="indigo"
-            />
+            {session?.user?.role !== 'operationadmin' && (
+              <ActionCard
+                href="/admin/users/create"
+                icon="+"
+                title="Add New User"
+                description="Create a student, admin, or school admin account"
+                color="indigo"
+              />
+            )}
             <ActionCard
               href="/admin/users"
               icon="👥"

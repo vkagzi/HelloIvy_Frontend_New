@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { FiIcon } from '@/app/_components/Icons';
 import imgLogoApp from '@/assets/images/logo-app.png';
 import imgIcon from '@/assets/images/icon.png';
@@ -13,13 +14,23 @@ import { useNavbar } from '@/app/_contexts/NavbarContext';
 const schoolNavItems = [
   { label: 'Dashboard', icon: 'sr-apps', href: '/school/dashboard' },
   { label: 'Students', icon: 'users', href: '/school/students' },
+  { label: 'Operations Admin', icon: 'users', href: '/school/operations-admin' },
   { label: 'Payment', icon: 'credit-card', href: '/school/payment' },
 ];
 
 const SchoolNavbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const pathname = usePathname();
+  const { data: session } = useSession();
   const { isDrawerOpen, closeDrawer } = useNavbar();
+  const userRole = session?.user?.role;
+
+  const visibleNavItems = useMemo(() => {
+    if (userRole === 'schoolopsadmin') {
+      return schoolNavItems.filter((item) => item.href !== '/school/operations-admin');
+    }
+    return schoolNavItems;
+  }, [userRole]);
 
   useEffect(() => {
     closeDrawer();
@@ -70,13 +81,17 @@ const SchoolNavbar: React.FC = () => {
 
       {/* School Admin badge */}
       <div className={`mb-2 ${collapsed ? 'lg:hidden' : ''}`}>
-        <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-          School Admin
+        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+          userRole === 'schoolopsadmin'
+            ? 'bg-teal-100 text-teal-800'
+            : 'bg-emerald-100 text-emerald-800'
+        }`}>
+          {userRole === 'schoolopsadmin' ? 'School Ops Admin' : 'School Admin'}
         </span>
       </div>
 
       <ul className="mt-2 flex-1">
-        {schoolNavItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const active = pathname === item.href || pathname?.startsWith(item.href + '/');
           return (
             <li key={item.href} className="h-10">
@@ -93,7 +108,7 @@ const SchoolNavbar: React.FC = () => {
                   className={
                     active
                       ? 'h-5 w-5 text-lg leading-none text-white'
-                      : 'from-action-gradient-800-left to-action-gradient-800-right h-5 w-5 bg-gradient-to-r bg-clip-text text-lg leading-none text-transparent'
+                      : 'from-action-gradient-800-left to-action-gradient-800-right h-5 w-5 bg-linear-to-r bg-clip-text text-lg leading-none text-transparent'
                   }
                 />
                 <Label

@@ -11,6 +11,8 @@ type UserAuthContextType = {
   userDetails: {
     email: string;
     name: string;
+    first_name: string;
+    last_name: string;
     id: number;
   };
 };
@@ -38,6 +40,8 @@ export const useUserAuth = (
 
   const userDetails = {
     email: session?.user?.email || '',
+    first_name: session?.user?.first_name || '',
+    last_name: session?.user?.last_name || '',
     name: session?.user?.name || session?.user?.email || '',
     id: session?.user?.id ? parseInt(session.user.id) : 0,
   };

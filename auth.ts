@@ -48,7 +48,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return {
             id: user.id.toString(),
             email: user.email,
-            name: user.name || user.email,
+            first_name: user.first_name || '',
+            last_name: user.last_name || '',
+            name: [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email,
             role: user.role || 'student',
             school_id: user.school_id || undefined,
             school_name: user.school_name || undefined,
@@ -67,6 +69,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
+        token.first_name = user.first_name;
+        token.last_name = user.last_name;
         token.role = user.role;
         token.school_id = user.school_id;
         token.school_name = user.school_name;
@@ -83,6 +87,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
+        session.user.first_name = token.first_name as string | undefined;
+        session.user.last_name = token.last_name as string | undefined;
         session.user.role = token.role as string;
         session.user.school_id = token.school_id as number | undefined;
         session.user.school_name = token.school_name as string | undefined;

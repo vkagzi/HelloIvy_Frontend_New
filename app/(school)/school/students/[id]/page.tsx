@@ -68,9 +68,9 @@ export default function SchoolStudentDetailPage() {
         backHref="/school/students"
         backLabel="Back to Students"
         email={user.email}
+        name={studentName !== user.email ? studentName : undefined}
         isActive={user.is_active}
         infoFields={[
-          { label: 'Name', value: studentName },
           { label: 'Created', value: formatDate(user.created_at) },
           { label: 'Last Login', value: user.last_login ? formatDateTime(user.last_login) : 'Never' },
           { label: 'School', value: user.school_name || 'N/A' },

@@ -305,10 +305,10 @@ const ConfirmationPage: React.FC = () => {
       {/* Main Content */}
       <div className="mx-auto max-w-4xl p-8">
         {/* Ivy Message */}
-        <div className="relative mb-8 rounded-2xl border border-blue-200 bg-gradient-to-r from-green-100 to-blue-100 p-6">
+        <div className="relative mb-8 rounded-2xl border border-blue-200 bg-linear-to-r from-green-100 to-blue-100 p-6">
           <div className="flex items-start gap-4">
-            <div className="flex-shrink-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-blue-600 text-lg font-bold text-white">
+            <div className="shrink-0">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-green-500 to-blue-600 text-lg font-bold text-white">
                 ✓
               </div>
             </div>
@@ -567,7 +567,7 @@ const ConfirmationPage: React.FC = () => {
         {/* Session Management Options */}
         <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-6">
           <div className="flex items-start gap-4">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
                 <span className="text-lg text-blue-600">🔒</span>
               </div>
@@ -631,7 +631,7 @@ const ConfirmationPage: React.FC = () => {
             className={`rounded-lg px-8 py-3 text-base font-medium transition-all ${
               !collegeData || personalStories.length === 0
                 ? 'cursor-not-allowed bg-gray-300 text-gray-500'
-                : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-sm hover:from-blue-600 hover:to-purple-700 hover:shadow-md'
+                : 'bg-linear-to-r from-blue-500 to-purple-600 text-white shadow-sm hover:from-blue-600 hover:to-purple-700 hover:shadow-md'
             }`}
           />
         </div>

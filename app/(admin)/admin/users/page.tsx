@@ -232,7 +232,7 @@ export default function AdminUsersPage() {
       }}
       headerRight={
         <div className="flex gap-2">
-          {typeParam === 'schoolusers' && (
+          {typeParam === 'schoolusers' && session?.user?.role !== 'operationadmin' && (
             <Link
               href="/admin/users/bulk-import"
               className="cursor-pointer rounded-md border border-purple-600 px-4 py-2 text-sm font-medium text-purple-600 transition hover:bg-purple-50"
@@ -240,12 +240,14 @@ export default function AdminUsersPage() {
               Bulk Import
             </Link>
           )}
-          <Link
-            href={`/admin/users/create${typeParam ? `?type=${typeParam}` : ''}`}
-            className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
-          >
-            Add User
-          </Link>
+          {session?.user?.role !== 'operationadmin' && (
+            <Link
+              href={`/admin/users/create${typeParam ? `?type=${typeParam}` : ''}`}
+              className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
+            >
+              Add User
+            </Link>
+          )}
         </div>
       }
     />
