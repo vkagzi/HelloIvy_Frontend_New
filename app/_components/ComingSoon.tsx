@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
 
 interface ComingSoonProps {
   title: string;
@@ -136,10 +137,10 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
                   We're working hard to bring you this amazing feature!
                 </p>
                 <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <input
+                  <Input
                     type="email"
                     placeholder="Enter your email"
-                    className="w-full rounded-lg border-2 border-purple-200 px-4 py-3 focus:border-purple-500 focus:outline-none sm:w-64"
+                    className="w-full sm:w-64"
                   />
                   <button className="w-full transform rounded-lg bg-linear-to-r from-purple-600 to-blue-600 px-6 py-3 font-semibold text-white transition-all hover:scale-105 hover:shadow-lg sm:w-auto">
                     Notify Me

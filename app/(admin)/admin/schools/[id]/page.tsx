@@ -47,7 +47,11 @@ interface StudentItem {
   first_name: string;
   last_name: string;
   grade: string;
+  section: string;
+  board: string;
   is_active: boolean;
+  last_login: string | null;
+  created_at: string;
 }
 
 interface AdminItem {
@@ -58,7 +62,9 @@ interface AdminItem {
   created_at: string;
 }
 
-const SELECT_CN = 'h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-neutral-400 disabled:opacity-50';
+
+
+
 
 export default function SchoolDetailPage() {
   const params = useParams();
@@ -339,23 +345,17 @@ export default function SchoolDetailPage() {
 
       {/* Module Subscriptions */}
       <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3">
           <h2 className="text-base font-semibold text-gray-900">
             Module Subscriptions
           </h2>
-          <Button
-            onClick={() => setSubOpen(true)}
-            size="sm"
-          >
-            Add Module
-          </Button>
         </div>
         {school.subscriptions.length > 0 ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {school.subscriptions.map((sub) => (
               <div
                 key={sub.id}
-                className="rounded-md border border-gray-100 bg-gray-50 p-3"
+                className={`rounded-md border p-3 shadow-sm ${sub.is_active ? 'border-purple-200 bg-purple-50' : 'border-gray-200 bg-gray-50 opacity-60'}`}
               >
                 <p className="font-medium text-gray-900">
                   {sub.module_display}
@@ -364,29 +364,7 @@ export default function SchoolDetailPage() {
                   Max: {sub.max_students ?? 'Unlimited'} · Expires:{' '}
                   {new Date(sub.expiry_date).toLocaleDateString()} · Source: <span className="capitalize">{sub.source}</span>
                 </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span
-                    className={`inline-flex rounded-full px-2 text-xs font-semibold ${sub.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                  >
-                    {sub.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                  <Button
-                    onClick={() => openEditSub(sub)}
-                    variant="ghost"
-                    size="sm"
-                    className="text-purple-600 hover:bg-purple-50 hover:text-purple-700"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    onClick={() => setDeleteSubId(sub.id)}
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                  >
-                    Delete
-                  </Button>
-                </div>
+
               </div>
             ))}
           </div>
@@ -458,36 +436,75 @@ export default function SchoolDetailPage() {
           <h2 className="text-base font-semibold text-gray-900">
             Students ({totalStudents})
           </h2>
-          <Link
-            href={`/admin/users/create?schoolId=${schoolId}&type=schoolusers`}
-            className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
-          >
-            Add Student
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/admin/users/bulk-import?schoolId=${schoolId}`}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-primary px-3 text-sm font-medium text-primary shadow-sm hover:bg-primary/10"
+            >
+              Bulk Import
+            </Link>
+            <Link
+              href={`/admin/users/create?schoolId=${schoolId}&type=schoolusers`}
+              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+            >
+              Add Student
+            </Link>
+          </div>
         </div>
         {students.length > 0 ? (
-          <div className="space-y-2">
-            {students.map((s) => (
-              <div
-                key={s.id}
-                className="flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 px-4 py-2"
-              >
-                <div>
-                  <Link
-                    href={`/admin/users/${s.id}`}
-                    className="text-sm font-medium text-purple-600 hover:text-purple-800"
-                  >
-                    {s.first_name || s.last_name
-                      ? `${s.first_name} ${s.last_name}`.trim()
-                      : s.email}
-                  </Link>
-                  <p className="text-xs text-gray-500">{s.email}</p>
+          <div className="space-y-5">
+            {Object.entries(
+              students.reduce<Record<string, StudentItem[]>>((acc, s) => {
+                const key = s.grade ? `Grade ${s.grade}` : 'No Grade';
+                (acc[key] = acc[key] || []).push(s);
+                return acc;
+              }, {})
+            )
+              .sort(([a], [b]) => {
+                if (a === 'No Grade') return 1;
+                if (b === 'No Grade') return -1;
+                return a.localeCompare(b, undefined, { numeric: true });
+              })
+              .map(([gradeLabel, gradeStudents]) => (
+                <div key={gradeLabel}>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">{gradeLabel}</p>
+                  <div className="space-y-2">
+                    {gradeStudents.map((s) => (
+                      <div
+                        key={s.id}
+                        className="flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 px-4 py-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/admin/users/${s.id}`}
+                              className="text-sm font-medium text-purple-600 hover:text-purple-800"
+                            >
+                              {s.first_name || s.last_name
+                                ? `${s.first_name} ${s.last_name}`.trim()
+                                : s.email}
+                            </Link>
+                            <span
+                              className={`inline-flex rounded-full px-1.5 text-xs font-semibold ${
+                                s.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                              }`}
+                            >
+                              {s.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">{s.email}</p>
+                        </div>
+                        <div className="ml-4 shrink-0 text-right text-xs text-gray-500 space-y-0.5">
+                          {s.section && <p>Section {s.section}</p>}
+                          {s.board && <p>{s.board}</p>}
+                          <p>Joined {formatDate(s.created_at)}</p>
+                          <p>{s.last_login ? `Last login ${formatDate(s.last_login)}` : 'Never logged in'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">
-                  {s.grade ? `Grade ${s.grade}` : ''}
-                </div>
-              </div>
-            ))}
+              ))}
             {totalStudents > 10 && (
               <p className="pt-2 text-center text-xs text-gray-400">
                 Showing 10 of {totalStudents} students

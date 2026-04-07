@@ -6,6 +6,8 @@ import Link from 'next/link';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import { ADMIN_CREATE_ROLES } from '@/lib/constants/roles';
 
 function extractApiError(err: unknown, fallback: string): string {
@@ -215,12 +217,11 @@ export default function CreateUserPage() {
           <label className="mb-1 block text-sm font-medium text-gray-700">
             Email *
           </label>
-          <input
+          <Input
             type="email"
             name="email"
             value={form.email}
             onChange={handleChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             required
           />
         </div>
@@ -231,18 +232,16 @@ export default function CreateUserPage() {
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Role *
             </label>
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              {(typeParam === 'admin' ? ADMIN_CREATE_ROLES : ADMIN_CREATE_ROLES).map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+            <Select value={form.role} onValueChange={(v) => setForm((prev) => ({ ...prev, role: v, ...(!['schooladmin', 'schoolopsadmin'].includes(v) ? { school_id: '' } : {}) }))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(typeParam === 'admin' ? ADMIN_CREATE_ROLES : ADMIN_CREATE_ROLES).map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
@@ -251,21 +250,16 @@ export default function CreateUserPage() {
             <label className="mb-1 block text-sm font-medium text-gray-700">
               School{typeParam === 'schoolusers' || typeParam === 'schooladmin' ? ' *' : ''}
             </label>
-            <select
-              name="school_id"
-              value={form.school_id}
-              onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-500"
-              required={typeParam === 'schoolusers' || typeParam === 'schooladmin'}
-              disabled={!!schoolIdParam}
-            >
-              <option value="">Select a school...</option>
-              {schools.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+            <Select value={form.school_id} onValueChange={(v) => setForm((prev) => ({ ...prev, school_id: v }))} disabled={!!schoolIdParam}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a school..." />
+              </SelectTrigger>
+              <SelectContent>
+                {schools.map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
@@ -275,25 +269,17 @@ export default function CreateUserPage() {
               <label className="mb-1 block text-sm font-medium text-gray-700">
                 Academic Level
               </label>
-              <select
-                name="academic_level"
-                value={form.academic_level}
-                onChange={(e) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    academic_level: e.target.value,
-                    grade_level: '',
-                  }));
-                }}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="">None</option>
-                {ACADEMIC_LEVELS.map((al) => (
-                  <option key={al.value} value={al.value}>
-                    {al.label}
-                  </option>
-                ))}
-              </select>
+              <Select value={form.academic_level || '__none__'} onValueChange={(v) => setForm((prev) => ({ ...prev, academic_level: v === '__none__' ? '' : v, grade_level: '' }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None</SelectItem>
+                  {ACADEMIC_LEVELS.map((al) => (
+                    <SelectItem key={al.value} value={al.value}>{al.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {gradeOptions.length > 0 && (
@@ -301,19 +287,17 @@ export default function CreateUserPage() {
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                   Grade Level
                 </label>
-                <select
-                  name="grade_level"
-                  value={form.grade_level}
-                  onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Select grade level</option>
-                  {gradeOptions.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
+                <Select value={form.grade_level || '__none__'} onValueChange={(v) => setForm((prev) => ({ ...prev, grade_level: v === '__none__' ? '' : v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select grade level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Select grade level</SelectItem>
+                    {gradeOptions.map((g) => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </>

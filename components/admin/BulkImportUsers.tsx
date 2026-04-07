@@ -1,9 +1,13 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { bulkImportApi, ValidateEmailsResponse, BulkImportResult } from '@/lib/bulk-import-api';
 import api from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -26,7 +30,7 @@ interface BulkImportUsersProps {
   hideRoleSelector?: boolean;
 }
 
-type Step = 'upload' | 'review' | 'configure' | 'result';
+type Step = 'configure' | 'upload' | 'review' | 'result';
 
 const ACADEMIC_LEVELS = [
   { value: 'high_school', label: 'High School (9th–12th grade)' },
@@ -52,7 +56,7 @@ export default function BulkImportUsers({
   backUrl,
   hideRoleSelector = false,
 }: BulkImportUsersProps) {
-  const [step, setStep] = useState<Step>('upload');
+  const [step, setStep] = useState<Step>('configure');
 
   // Upload step
   const [rawInput, setRawInput] = useState('');
@@ -68,7 +72,7 @@ export default function BulkImportUsers({
   const [schoolId, setSchoolId] = useState<number | null>(currentSchoolId ?? null);
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [schoolsLoaded, setSchoolsLoaded] = useState(false);
-  const [academicLevel, setAcademicLevel] = useState<string>('');
+  const [academicLevel, setAcademicLevel] = useState<string>('high_school');
   const [gradeLevel, setGradeLevel] = useState<string>('');
   const [sendPasswordEmail, setSendPasswordEmail] = useState(true);
 
@@ -76,6 +80,25 @@ export default function BulkImportUsers({
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<BulkImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // ─── Load schools for superadmin on mount ──────────────────────────────
+
+  useEffect(() => {
+    if (mode !== 'superadmin') return;
+    if (currentSchoolId) {
+      // Fetch just this school's name
+      api<{ id: number; name: string }>(`/api/schools/${currentSchoolId}/`)
+        .then((data) => setSchools([{ id: data.id, name: data.name }]))
+        .catch(() => {});
+    } else {
+      api<{ schools: SchoolOption[] }>('/api/schools/')
+        .then((data) => {
+          setSchools(data.schools);
+          setSchoolsLoaded(true);
+        })
+        .catch(() => {});
+    }
+  }, [mode, currentSchoolId]);
 
   // ─── Upload helpers ──────────────────────────────────────────────────────
 
@@ -185,23 +208,17 @@ export default function BulkImportUsers({
     }
   };
 
-  const handleProceedToConfigure = async () => {
+  const handleProceedToImport = () => {
     if (validEmails.length === 0) {
       setError('No valid emails to import');
       return;
     }
-    setError(null);
-    // Load schools for superadmin
-    if (mode === 'superadmin' && !schoolsLoaded) {
-      try {
-        const data = await api<{ schools: SchoolOption[] }>('/api/schools/');
-        setSchools(data.schools);
-        setSchoolsLoaded(true);
-      } catch {
-        // Non-blocking
-      }
+    if (invalidEmails.length > 0) {
+      setError('Please fix or remove all invalid emails before continuing.');
+      return;
     }
-    setStep('configure');
+    setError(null);
+    handleImport();
   };
 
   // ─── Import ──────────────────────────────────────────────────────────────
@@ -247,14 +264,14 @@ export default function BulkImportUsers({
 
       {/* Step indicator */}
       <div className="mb-8 flex items-center gap-2">
-        {(['upload', 'review', 'configure', 'result'] as Step[]).map((s, idx) => (
+        {(['configure', 'upload', 'review', 'result'] as Step[]).map((s, idx) => (
           <React.Fragment key={s}>
             {idx > 0 && <div className="h-px flex-1 bg-gray-200" />}
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
                 step === s
                   ? 'bg-purple-600 text-white'
-                  : (['upload', 'review', 'configure', 'result'].indexOf(step) > idx
+                  : (['configure', 'upload', 'review', 'result'].indexOf(step) > idx
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-100 text-gray-400')
               }`}
@@ -264,9 +281,9 @@ export default function BulkImportUsers({
           </React.Fragment>
         ))}
         <div className="ml-2 text-sm text-gray-500">
+          {step === 'configure' && 'Configure'}
           {step === 'upload' && 'Add Emails'}
           {step === 'review' && 'Review Emails'}
-          {step === 'configure' && 'Configure'}
           {step === 'result' && 'Results'}
         </div>
       </div>
@@ -277,46 +294,215 @@ export default function BulkImportUsers({
         </div>
       )}
 
-      {/* ── Step 1: Upload ─────────────────────────────────────────────── */}
+      {/* ── Step 1: Configure ────────────────────────────────────────── */}
+      {step === 'configure' && (
+        <div className="space-y-6">
+          <div className="rounded-lg border border-gray-200 bg-white p-6">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">Configure Import</h2>
+
+            {/* School selector (superadmin only, no pre-set school) */}
+            {mode === 'superadmin' && !currentSchoolId && (
+              <div className="mb-4">
+                <Label className="mb-2 block">
+                  School <span className="text-red-500">*</span>
+                </Label>
+                <Select value={schoolId != null ? String(schoolId) : '__none__'} onValueChange={(v) => setSchoolId(v !== '__none__' ? parseInt(v) : null)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a school..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Select a school...</SelectItem>
+                    {schools.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* School display (schooladmin or superadmin with pre-set school) */}
+            {((mode === 'schooladmin' && currentSchoolName) ||
+              (mode === 'superadmin' && currentSchoolId)) && (
+              <div className="mb-4">
+                <Label className="mb-1 block">School</Label>
+                <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  {mode === 'superadmin'
+                    ? (schools.find((s) => s.id === currentSchoolId)?.name ?? `School #${currentSchoolId}`)
+                    : currentSchoolName}
+                </div>
+              </div>
+            )}
+
+            {/* Role selector */}
+            {!hideRoleSelector && (
+            <div className="mb-4">
+              <Label className="mb-2 block">
+                User Role <span className="text-red-500">*</span>
+              </Label>
+              <Select value={role} onValueChange={(v) => { setRole(v); if (v === 'schooladmin') { setAcademicLevel(''); setGradeLevel(''); } }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="schooladmin">School Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            )}
+
+            {/* Academic Level selector (not applicable for schooladmin) */}
+            {role !== 'schooladmin' && (<div className="mb-4">
+              <Label className="mb-2 block">
+                Academic Level
+              </Label>
+              <Select value={academicLevel || '__none__'} onValueChange={(v) => { setAcademicLevel(v === '__none__' ? '' : v); setGradeLevel(''); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None</SelectItem>
+                  {(mode === 'schooladmin'
+                    ? ACADEMIC_LEVELS.filter((al) => al.value === 'high_school')
+                    : ACADEMIC_LEVELS
+                  ).map((al) => (
+                    <SelectItem key={al.value} value={al.value}>{al.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>)}
+
+            {/* Grade Level selector */}
+            {role !== 'schooladmin' && academicLevel && (GRADE_LEVELS[academicLevel] ?? []).length > 0 && (
+              <div className="mb-4">
+                <Label className="mb-2 block">
+                  Grade Level
+                </Label>
+                <Select value={gradeLevel || '__none__'} onValueChange={(v) => setGradeLevel(v === '__none__' ? '' : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select grade level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Select grade level</SelectItem>
+                    {(GRADE_LEVELS[academicLevel] ?? []).map((g) => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Send password email toggle */}
+            <div className="mb-4 flex items-start gap-3">
+              <input
+                id="send-password-email"
+                type="checkbox"
+                checked={sendPasswordEmail}
+                onChange={(e) => setSendPasswordEmail(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              />
+              <div>
+                <Label htmlFor="send-password-email" className="block cursor-pointer">
+                  Send temporary password email
+                </Label>
+                <p className="text-xs text-gray-500">
+                  {sendPasswordEmail
+                    ? 'Each user will receive an email with their temporary password.'
+                    : 'Users will be created without receiving a password email. You can share credentials manually.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              onClick={() => {
+                const effectiveSchoolId = mode === 'schooladmin' ? currentSchoolId ?? null : schoolId;
+                if (mode === 'superadmin' && !effectiveSchoolId) {
+                  setError('Please select a school');
+                  return;
+                }
+                setError(null);
+                setStep('upload');
+              }}
+            >
+              Continue
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 2: Upload ─────────────────────────────────────────────── */}
       {step === 'upload' && (
         <div className="space-y-6">
           <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Add Email Addresses</h2>
-            <p className="mb-4 text-sm text-gray-500">
-              Upload a CSV file with email addresses or type/paste them below (one per line, or comma/semicolon separated).
+            <h2 className="mb-1 text-lg font-semibold text-gray-900">Add Email Addresses</h2>
+            <p className="mb-5 text-sm text-gray-500">
+              Upload a CSV file or paste email addresses below.
             </p>
 
-            {/* CSV Upload */}
-            <div className="mb-4">
-              <label className="mb-2 block text-sm font-medium text-gray-700">Upload CSV</label>
+            {/* CSV Upload drop zone */}
+            <div
+              className="mb-5 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-8 transition-colors hover:border-purple-400 hover:bg-purple-50"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0];
+                if (file && fileInputRef.current) {
+                  const dt = new DataTransfer();
+                  dt.items.add(file);
+                  fileInputRef.current.files = dt.files;
+                  fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <p className="text-sm font-medium text-gray-700">
+                Drop a CSV here or <span className="text-purple-600 underline underline-offset-2">browse</span>
+              </p>
+              <p className="text-xs text-gray-400">.csv or .txt · email column auto-detected</p>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept=".csv,.txt"
                 onChange={handleFileUpload}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-purple-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-purple-700 hover:file:bg-purple-100"
+                className="hidden"
               />
+            </div>
+
+            {/* Divider */}
+            <div className="mb-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-gray-200" />
+              <span className="text-xs font-medium uppercase tracking-wider text-gray-400">or paste emails</span>
+              <div className="h-px flex-1 bg-gray-200" />
             </div>
 
             {/* Manual input */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Email Addresses
-              </label>
-              <textarea
+              <Textarea
                 value={rawInput}
                 onChange={(e) => setRawInput(e.target.value)}
-                rows={10}
+                rows={8}
                 placeholder={`john@example.com\njane@example.com\nstudent@school.edu`}
-                className="w-full rounded-md border border-gray-300 p-3 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                className="w-full resize-none rounded-lg border border-gray-200 p-3 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
               />
-              <p className="mt-1 text-xs text-gray-400">
-                {parseEmails(rawInput).length} email(s) detected
+              <p className="mt-2 text-xs text-gray-400">
+                One per line, or comma / semicolon separated ·{' '}
+                <span className="font-medium text-gray-600">{parseEmails(rawInput).length} email(s) detected</span>
               </p>
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-between">
+            <Button
+              onClick={() => setStep('configure')}
+              variant="outline"
+            >
+              Back
+            </Button>
             <Button
               onClick={handleValidate}
               disabled={isValidating || parseEmails(rawInput).length === 0}
@@ -327,15 +513,15 @@ export default function BulkImportUsers({
         </div>
       )}
 
-      {/* ── Step 2: Review ─────────────────────────────────────────────── */}
+      {/* ── Step 3: Review ─────────────────────────────────────────────── */}
       {step === 'review' && (
         <div className="space-y-6">
           {/* Valid emails table */}
           <div className="rounded-lg border border-gray-200 bg-white p-6">
             <h2 className="mb-1 text-lg font-semibold text-gray-900">
-              Valid Emails ({validEmails.length})
+              Emails to be imported ({validEmails.length})
             </h2>
-            <p className="mb-4 text-sm text-gray-500">These emails will be imported.</p>
+            <p className="mb-4 text-sm text-gray-500">These emails will be imported. Please confirm the details</p>
             {validEmails.length === 0 ? (
               <p className="text-sm text-gray-400">No valid emails found.</p>
             ) : (
@@ -378,7 +564,7 @@ export default function BulkImportUsers({
                 Invalid Emails ({invalidEmails.length})
               </h2>
               <p className="mb-4 text-sm text-red-600">
-                These emails have issues. You can correct them or remove them.
+                These emails have issues. You can correct them or remove them. Click on "Re-validate" after making corrections.
               </p>
               <div className="max-h-64 overflow-auto rounded border border-red-100">
                 <table className="w-full text-sm">
@@ -395,11 +581,10 @@ export default function BulkImportUsers({
                       <tr key={`${item.email}-${idx}`} className="border-t border-red-50 hover:bg-red-50">
                         <td className="px-4 py-2 text-gray-400">{idx + 1}</td>
                         <td className="px-4 py-2">
-                          <input
-                            type="text"
+                          <Input
                             value={item.email}
                             onChange={(e) => handleFixInvalid(item.email, e.target.value)}
-                            className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-purple-500 focus:outline-none"
+                            className="h-7 px-2 py-1 text-sm"
                           />
                         </td>
                         <td className="px-4 py-2 text-xs text-red-600">{item.reason}</td>
@@ -439,204 +624,17 @@ export default function BulkImportUsers({
               Back
             </Button>
             <Button
-              onClick={handleProceedToConfigure}
-              disabled={validEmails.length === 0}
-            >
-              Continue ({validEmails.length} emails)
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Step 3: Configure ──────────────────────────────────────────── */}
-      {step === 'configure' && (
-        <div className="space-y-6">
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Configure Import</h2>
-
-            {/* School selector (superadmin only) */}
-            {mode === 'superadmin' && (
-              <div className="mb-4">
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  School <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={schoolId ?? ''}
-                  onChange={(e) => setSchoolId(e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                >
-                  <option value="">Select a school...</option>
-                  {schools.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* School display (schooladmin) */}
-            {mode === 'schooladmin' && currentSchoolName && (
-              <div className="mb-4">
-                <label className="mb-1 block text-sm font-medium text-gray-700">School</label>
-                <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                  {currentSchoolName}
-                </div>
-              </div>
-            )}
-
-            {/* Role selector */}
-            {!hideRoleSelector && (
-            <div className="mb-4">
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                User Role <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={role}
-                onChange={(e) => {
-                  setRole(e.target.value);
-                  if (e.target.value === 'schooladmin') {
-                    setAcademicLevel('');
-                    setGradeLevel('');
-                  }
-                }}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-              >
-                <option value="student">Student</option>
-                <option value="schooladmin">School Admin</option>
-              </select>
-            </div>
-            )}
-
-            {/* Academic Level selector (not applicable for schooladmin) */}
-            {role !== 'schooladmin' && (<div className="mb-4">
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Academic Level
-              </label>
-              <select
-                value={academicLevel}
-                onChange={(e) => {
-                  setAcademicLevel(e.target.value);
-                  setGradeLevel('');
-                }}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-              >
-                <option value="">None</option>
-                {(mode === 'schooladmin'
-                  ? ACADEMIC_LEVELS.filter((al) => al.value === 'high_school')
-                  : ACADEMIC_LEVELS
-                ).map((al) => (
-                  <option key={al.value} value={al.value}>
-                    {al.label}
-                  </option>
-                ))}
-              </select>
-            </div>)}
-
-            {/* Grade Level selector */}
-            {role !== 'schooladmin' && academicLevel && (GRADE_LEVELS[academicLevel] ?? []).length > 0 && (
-              <div className="mb-4">
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Grade Level
-                </label>
-                <select
-                  value={gradeLevel}
-                  onChange={(e) => setGradeLevel(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                >
-                  <option value="">Select grade level</option>
-                  {(GRADE_LEVELS[academicLevel] ?? []).map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Send password email toggle */}
-            <div className="mb-4 flex items-start gap-3">
-              <input
-                id="send-password-email"
-                type="checkbox"
-                checked={sendPasswordEmail}
-                onChange={(e) => setSendPasswordEmail(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-              />
-              <div>
-                <label htmlFor="send-password-email" className="block text-sm font-medium text-gray-700 cursor-pointer">
-                  Send temporary password email
-                </label>
-                <p className="text-xs text-gray-500">
-                  {sendPasswordEmail
-                    ? 'Each user will receive an email with their temporary password.'
-                    : 'Users will be created without receiving a password email. You can share credentials manually.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Summary */}
-            <div className="mt-6 rounded-md border border-purple-100 bg-purple-50 p-4">
-              <h3 className="mb-2 text-sm font-semibold text-purple-900">Import Summary</h3>
-              <ul className="space-y-1 text-sm text-purple-800">
-                <li>
-                  <span className="font-medium">{validEmails.length}</span> user(s) will be created
-                </li>
-                <li>
-                  Role: <span className="font-medium capitalize">{role}</span>
-                </li>
-                {mode === 'superadmin' && schoolId && (
-                  <li>
-                    School:{' '}
-                    <span className="font-medium">
-                      {schools.find((s) => s.id === schoolId)?.name ?? `ID: ${schoolId}`}
-                    </span>
-                  </li>
-                )}
-                {mode === 'schooladmin' && currentSchoolName && (
-                  <li>
-                    School: <span className="font-medium">{currentSchoolName}</span>
-                  </li>
-                )}
-                {academicLevel && (
-                  <li>
-                    Academic Level:{' '}
-                    <span className="font-medium">
-                      {ACADEMIC_LEVELS.find((al) => al.value === academicLevel)?.label ?? academicLevel}
-                    </span>
-                  </li>
-                )}
-                {gradeLevel && (
-                  <li>
-                    Grade Level: <span className="font-medium">{gradeLevel}</span>
-                  </li>
-                )}
-                <li>
-                  Password email:{' '}
-                  <span className={`font-medium ${sendPasswordEmail ? 'text-purple-900' : 'text-gray-500'}`}>
-                    {sendPasswordEmail ? 'Will be sent' : 'Will not be sent'}
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="flex justify-between">
-            <Button
-              onClick={() => setStep('review')}
-              variant="outline"
-            >
-              Back
-            </Button>
-            <Button
-              onClick={handleImport}
-              disabled={isImporting || (mode === 'superadmin' && !schoolId)}
+              onClick={handleProceedToImport}
+              disabled={isImporting || validEmails.length === 0 || invalidEmails.length > 0}
+              title={invalidEmails.length > 0 ? 'Fix or remove all invalid emails before continuing' : undefined}
             >
               {isImporting ? 'Importing...' : `Import ${validEmails.length} Users`}
             </Button>
           </div>
         </div>
       )}
+
+
 
       {/* ── Step 4: Results ────────────────────────────────────────────── */}
       {step === 'result' && importResult && (

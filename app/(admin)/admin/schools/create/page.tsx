@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 function extractApiError(err: unknown, fallback: string): string {
   if (err instanceof Error) {
@@ -124,12 +125,11 @@ export default function CreateSchoolPage() {
           <label className="mb-1 block text-sm font-medium text-gray-700">
             School Name *
           </label>
-          <input
+          <Input
             type="text"
             name="name"
             value={form.name}
             onChange={handleChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             required
           />
         </div>
@@ -183,36 +183,33 @@ export default function CreateSchoolPage() {
             <label className="mb-1 block text-sm font-medium text-gray-700">
               City
             </label>
-            <input
+            <Input
               type="text"
               name="city"
               value={form.city}
               onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
               State
             </label>
-            <input
+            <Input
               type="text"
               name="state"
               value={form.state}
               onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Country
             </label>
-            <input
+            <Input
               type="text"
               name="country"
               value={form.country}
               onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
         </div>
@@ -221,12 +218,11 @@ export default function CreateSchoolPage() {
           <label className="mb-1 block text-sm font-medium text-gray-700">
             Website
           </label>
-          <input
+          <Input
             type="url"
             name="website"
             value={form.website}
             onChange={handleChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
           />
         </div>
 
@@ -235,24 +231,22 @@ export default function CreateSchoolPage() {
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Contact Email
             </label>
-            <input
+            <Input
               type="email"
               name="contact_email"
               value={form.contact_email}
               onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Contact Phone
             </label>
-            <input
+            <Input
               type="text"
               name="contact_phone"
               value={form.contact_phone}
               onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
         </div>

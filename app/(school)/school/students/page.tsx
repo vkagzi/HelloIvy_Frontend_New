@@ -8,6 +8,8 @@ import api from '@/lib/api-client';
 import UserTable, { StatusBadge, Column } from '@/components/admin/UserTable';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 
 interface StudentItem {
   id: number;
@@ -228,21 +230,17 @@ export default function SchoolStudentsPage() {
           >
             + Add Student
           </Button>
-          <select
-            value={gradeFilter}
-            onChange={(e) => {
-              setGradeFilter(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-          >
-            <option value="">All Grades</option>
-            {grades.map((g) => (
-              <option key={g} value={g}>
-                Grade {g}
-              </option>
-            ))}
-          </select>
+          <Select value={gradeFilter || '__all__'} onValueChange={(v) => { setGradeFilter(v === '__all__' ? '' : v); setPage(1); }}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="All Grades" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All Grades</SelectItem>
+              {grades.map((g) => (
+                <SelectItem key={g} value={g}>Grade {g}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       }
       pagination={{
@@ -265,65 +263,61 @@ export default function SchoolStudentsPage() {
             <div className="space-y-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Email *</label>
-                <input
+                <Input
                   type="email"
                   value={addEmail}
                   onChange={(e) => setAddEmail(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                   placeholder="student@example.com"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">First Name</label>
-                  <input
+                  <Input
                     type="text"
                     value={addFirstName}
                     onChange={(e) => setAddFirstName(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Last Name</label>
-                  <input
+                  <Input
                     type="text"
                     value={addLastName}
                     onChange={(e) => setAddLastName(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Grade</label>
-                  <select
-                    value={addGrade}
-                    onChange={(e) => setAddGrade(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  >
-                    <option value="">Select</option>
-                    {grades.map((g) => (
-                      <option key={g} value={g}>Grade {g}</option>
-                    ))}
-                  </select>
+                  <Select value={addGrade || '__none__'} onValueChange={(v) => setAddGrade(v === '__none__' ? '' : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Select</SelectItem>
+                      {grades.map((g) => (
+                        <SelectItem key={g} value={g}>Grade {g}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Section</label>
-                  <input
+                  <Input
                     type="text"
                     value={addSection}
                     onChange={(e) => setAddSection(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                     placeholder="e.g., A"
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Board</label>
-                  <input
+                  <Input
                     type="text"
                     value={addBoard}
                     onChange={(e) => setAddBoard(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                     placeholder="e.g., CBSE"
                   />
                 </div>

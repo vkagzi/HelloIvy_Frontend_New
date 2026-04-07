@@ -7,11 +7,9 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
-
-const SELECT_CN =
-  'h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-neutral-400 disabled:opacity-50';
 
 const STATUS_CHOICES = ['pending', 'completed', 'failed', 'refunded'];
 
@@ -187,14 +185,24 @@ export default function SchoolPaymentsPage() {
 
       {/* Filters */}
       <div className="flex gap-3">
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className={`${SELECT_CN} w-40`}>
-          <option value="">All Statuses</option>
-          {STATUS_CHOICES.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-        </select>
-        <select value={filterSchool} onChange={(e) => setFilterSchool(e.target.value)} className={`${SELECT_CN} w-56`}>
-          <option value="">All Schools</option>
-          {schools.map((s) => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
-        </select>
+        <Select value={filterStatus || '__all__'} onValueChange={(v) => setFilterStatus(v === '__all__' ? '' : v)}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Statuses</SelectItem>
+            {STATUS_CHOICES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterSchool || '__all__'} onValueChange={(v) => setFilterSchool(v === '__all__' ? '' : v)}>
+          <SelectTrigger className="w-56">
+            <SelectValue placeholder="All Schools" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Schools</SelectItem>
+            {schools.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -268,12 +276,12 @@ export default function SchoolPaymentsPage() {
           <DialogTitle>Record School Payment</DialogTitle>
           {addError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{addError}</p>}
           <div className="space-y-3">
-            <div className="space-y-1"><Label>School</Label><select value={addForm.school} onChange={(e) => setAddForm({ ...addForm, school: e.target.value })} className={SELECT_CN}><option value="">Select school...</option>{schools.map((s) => <option key={s.id} value={String(s.id)}>{s.name}</option>)}</select></div>
+            <div className="space-y-1"><Label>School</Label><Select value={addForm.school || '__none__'} onValueChange={(v) => setAddForm({ ...addForm, school: v === '__none__' ? '' : v })}><SelectTrigger><SelectValue placeholder="Select school..." /></SelectTrigger><SelectContent><SelectItem value="__none__">Select school...</SelectItem>{schools.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent></Select></div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><Label htmlFor="s-add-amount">Amount</Label><Input id="s-add-amount" type="number" step="0.01" placeholder="0.00" value={addForm.amount} onChange={(e) => setAddForm({ ...addForm, amount: e.target.value })} /></div>
-              <div className="space-y-1"><Label htmlFor="s-add-currency">Currency</Label><select id="s-add-currency" value={addForm.currency} onChange={(e) => setAddForm({ ...addForm, currency: e.target.value })} className={SELECT_CN}>{CURRENCY_CHOICES.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
+              <div className="space-y-1"><Label htmlFor="s-add-currency">Currency</Label><Select value={addForm.currency} onValueChange={(v) => setAddForm({ ...addForm, currency: v })}><SelectTrigger id="s-add-currency"><SelectValue /></SelectTrigger><SelectContent>{CURRENCY_CHOICES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
             </div>
-            <div className="space-y-1"><Label>Status</Label><select value={addForm.status} onChange={(e) => setAddForm({ ...addForm, status: e.target.value })} className={SELECT_CN}>{STATUS_CHOICES.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}</select></div>
+            <div className="space-y-1"><Label>Status</Label><Select value={addForm.status} onValueChange={(v) => setAddForm({ ...addForm, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{STATUS_CHOICES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1">
               <Label>Modules Purchased</Label>
               <div className="flex flex-wrap gap-2">
@@ -312,7 +320,7 @@ export default function SchoolPaymentsPage() {
           <DialogTitle>Edit Payment #{editPayment?.id}</DialogTitle>
           {editError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{editError}</p>}
           <div className="space-y-3">
-            <div className="space-y-1"><Label>Status</Label><select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} className={SELECT_CN}>{STATUS_CHOICES.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}</select></div>
+            <div className="space-y-1"><Label>Status</Label><Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{STATUS_CHOICES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1"><Label htmlFor="s-edit-gateway">Payment Gateway</Label><Input id="s-edit-gateway" value={editForm.payment_gateway} onChange={(e) => setEditForm({ ...editForm, payment_gateway: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="s-edit-txn">Transaction ID</Label><Input id="s-edit-txn" value={editForm.gateway_transaction_id} onChange={(e) => setEditForm({ ...editForm, gateway_transaction_id: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="s-edit-notes">Notes</Label><Input id="s-edit-notes" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></div>

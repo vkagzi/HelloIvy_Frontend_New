@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 import api from '@/lib/api-client';
 import { FiIcon } from '@/app/_components/Icons';
+import { Input } from '@/components/ui/input';
 
 const MODULE_PRICE_INR = 999;
 
@@ -253,12 +254,12 @@ export default function SchoolPaymentPage() {
           Number of Students
         </label>
         <div className="flex items-center gap-3">
-          <input
+          <Input
             type="number"
             min={1}
             value={numStudents}
             onChange={(e) => setNumStudents(Math.max(1, parseInt(e.target.value) || 1))}
-            className="h-10 w-40 rounded-lg border border-neutral-300 bg-white px-3 text-sm shadow-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+            className="w-40"
           />
           <span className="text-xs text-gray-400">
             (Your school currently has {totalStudents} student{totalStudents !== 1 ? 's' : ''})

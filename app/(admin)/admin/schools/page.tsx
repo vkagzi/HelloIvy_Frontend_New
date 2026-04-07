@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api-client';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
@@ -23,6 +23,18 @@ export default function SchoolsListPage() {
   const [schools, setSchools] = useState<SchoolItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [popover, setPopover] = useState<{ schoolId: number; x: number; y: number } | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setPopover(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   useEffect(() => {
     const fetchSchools = async () => {
@@ -113,7 +125,25 @@ export default function SchoolsListPage() {
                   {school.student_count}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                  {school.subscriptions.filter((s) => s.is_active).length}
+                  {(() => {
+                    const activeModules = school.subscriptions.filter((s) => s.is_active);
+                    if (activeModules.length === 0) return <span>0</span>;
+                    return (
+                      <button
+                        className="font-medium text-purple-600 hover:underline"
+                        onClick={(e) => {
+                          const rect = (e.target as HTMLElement).getBoundingClientRect();
+                          setPopover(
+                            popover?.schoolId === school.id
+                              ? null
+                              : { schoolId: school.id, x: rect.left, y: rect.bottom + window.scrollY + 4 }
+                          );
+                        }}
+                      >
+                        {activeModules.length}
+                      </button>
+                    );
+                  })()}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
                   <span
@@ -139,6 +169,23 @@ export default function SchoolsListPage() {
           </tbody>
         </table>
       </div>
+
+      {popover && (() => {
+        const school = schools.find((s) => s.id === popover.schoolId);
+        const activeModules = school?.subscriptions.filter((s) => s.is_active) ?? [];
+        return (
+          <div
+            ref={popoverRef}
+            style={{ position: 'absolute', top: popover.y, left: popover.x, zIndex: 50 }}
+            className="w-52 rounded-lg border border-gray-200 bg-white py-2 shadow-lg"
+          >
+            <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Active Modules</p>
+            {activeModules.map((m) => (
+              <p key={m.module_display} className="px-3 py-1 text-sm text-gray-700">{m.module_display}</p>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -7,6 +7,8 @@ import api from '@/lib/api-client';
 import { FiIcon } from '@/app/_components/Icons';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 
 interface ModuleInfo {
   module_name: string;
@@ -428,18 +430,17 @@ export default function SchoolDashboardPage() {
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                   Select Grade
                 </label>
-                <select
-                  value={notifGrade}
-                  onChange={(e) => setNotifGrade(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">All Grades</option>
-                  {grades.map((g) => (
-                    <option key={g} value={g}>
-                      Grade {g}
-                    </option>
-                  ))}
-                </select>
+                <Select value={notifGrade || '__all__'} onValueChange={(v) => setNotifGrade(v === '__all__' ? '' : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Grades" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All Grades</SelectItem>
+                    {grades.map((g) => (
+                      <SelectItem key={g} value={g}>Grade {g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -482,11 +483,10 @@ export default function SchoolDashboardPage() {
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                   Title
                 </label>
-                <input
+                <Input
                   type="text"
                   value={dlTitle}
                   onChange={(e) => setDlTitle(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                   placeholder="e.g., Essay 1 Deadline"
                 />
               </div>
@@ -494,41 +494,38 @@ export default function SchoolDashboardPage() {
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                   Date
                 </label>
-                <input
+                <Input
                   type="date"
                   value={dlDate}
                   onChange={(e) => setDlDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                 />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                   Time (optional)
                 </label>
-                <input
+                <Input
                   type="time"
                   value={dlTime}
                   onChange={(e) => setDlTime(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                 />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                   Grade (optional)
                 </label>
-                <select
-                  value={dlGrade}
-                  onChange={(e) => setDlGrade(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">All Grades</option>
-                  {grades.map((g) => (
-                    <option key={g} value={g}>
-                      Grade {g}
-                    </option>
-                  ))}
-                </select>
+                <Select value={dlGrade || '__all__'} onValueChange={(v) => setDlGrade(v === '__all__' ? '' : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Grades" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All Grades</SelectItem>
+                    {grades.map((g) => (
+                      <SelectItem key={g} value={g}>Grade {g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex justify-end gap-2">
                 <Button

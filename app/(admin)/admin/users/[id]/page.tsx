@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import ModuleAssignDialog from '@/components/admin/ModuleAssignDialog';
 import { ALL_ROLES, ADMIN_ROLES } from '@/lib/constants/roles';
 
@@ -87,7 +88,6 @@ const GRADE_LEVELS: Record<string, string[]> = {
   professional: ['1-3 years', '3-5 years', '5+ years'],
 };
 
-const SELECT_CN = 'h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-neutral-400 disabled:opacity-50';
 
 const ROLES = ALL_ROLES;
 
@@ -604,39 +604,59 @@ export default function AdminUserDetailPage() {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label htmlFor="edit-role">Role</Label>
-              <select id="edit-role" value={editRole} onChange={(e) => setEditRole(e.target.value)} className={SELECT_CN}>
-                {ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
-              </select>
+              <Select value={editRole} onValueChange={setEditRole}>
+                <SelectTrigger id="edit-role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="edit-school">School</Label>
-              <select id="edit-school" value={editSchoolId} onChange={(e) => setEditSchoolId(e.target.value)} className={SELECT_CN}>
-                <option value="">No School</option>
-                {schools.map((s) => (
-                  <option key={s.id} value={String(s.id)}>{s.name}</option>
-                ))}
-              </select>
+              <Select value={editSchoolId || '__none__'} onValueChange={(v) => setEditSchoolId(v === '__none__' ? '' : v)}>
+                <SelectTrigger id="edit-school">
+                  <SelectValue placeholder="No School" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No School</SelectItem>
+                  {schools.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="edit-academic-level">Academic Level</Label>
-              <select id="edit-academic-level" value={editAcademicLevel} onChange={(e) => { setEditAcademicLevel(e.target.value); setEditGradeLevel(''); }} className={SELECT_CN}>
-                <option value="">None</option>
-                {ACADEMIC_LEVELS.map((al) => (
-                  <option key={al.value} value={al.value}>{al.label}</option>
-                ))}
-              </select>
+              <Select value={editAcademicLevel || '__none__'} onValueChange={(v) => { setEditAcademicLevel(v === '__none__' ? '' : v); setEditGradeLevel(''); }}>
+                <SelectTrigger id="edit-academic-level">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None</SelectItem>
+                  {ACADEMIC_LEVELS.map((al) => (
+                    <SelectItem key={al.value} value={al.value}>{al.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             {editAcademicLevel && (GRADE_LEVELS[editAcademicLevel] ?? []).length > 0 && (
               <div className="space-y-1">
                 <Label htmlFor="edit-grade-level">Grade Level</Label>
-                <select id="edit-grade-level" value={editGradeLevel} onChange={(e) => setEditGradeLevel(e.target.value)} className={SELECT_CN}>
-                  <option value="">Select grade level</option>
-                  {(GRADE_LEVELS[editAcademicLevel] ?? []).map((g) => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
+                <Select value={editGradeLevel || '__none__'} onValueChange={(v) => setEditGradeLevel(v === '__none__' ? '' : v)}>
+                  <SelectTrigger id="edit-grade-level">
+                    <SelectValue placeholder="Select grade level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Select grade level</SelectItem>
+                    {(GRADE_LEVELS[editAcademicLevel] ?? []).map((g) => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
