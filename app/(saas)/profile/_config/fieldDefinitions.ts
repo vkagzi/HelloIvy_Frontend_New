@@ -822,7 +822,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Institution Name',
     placeholder: 'Enter institution name',
-    required: true,
+    required: false,
   },
   {
     id: 'degree',
@@ -850,24 +850,15 @@ export const educationalFieldDefs: FieldDefinition[] = [
         'Diploma',
       ],
     },
-    required: true,
+    required: false,
   },
   {
     id: 'major',
     type: 'text',
     label: 'Major',
     placeholder: 'Enter major',
-    required: true,
+    required: false,
   },
-  // {
-  //   id: 'durationOfDegree',
-  //   type: 'select',
-  //   options: ['Select duration', '3 Year Course', '4 Year Course'],
-  //   label: 'Duration of Degree',
-  //   placeholder: 'Select duration',
-  //   required: true,
-  // },
-
   {
     id: 'startYear',
     type: 'select_autofill',
@@ -910,7 +901,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score / GPA / Percentage',
     placeholder: 'Enter your score, GPA, or percentage',
-    required: true,
+    required: false,
   },
   {
     id: 'maximumPossibleGPA',
@@ -932,7 +923,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score/ GPA/ Percentage',
     placeholder: 'Enter your score, GPA, or percentage',
-    required: true,
+    required: false,
   },
 
   {

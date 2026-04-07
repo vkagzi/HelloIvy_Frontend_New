@@ -14,14 +14,17 @@ interface LineItem {
 interface CheckoutSession {
   payment_id: number;
   line_items: LineItem[];
+  num_students: number;
+  price_per_student: number;
   total: number;
   currency: string;
 }
 
-function CheckoutForm() {
+function SchoolCheckoutForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const modulesParam = searchParams?.get('modules') ?? '';
+  const numStudentsParam = parseInt(searchParams?.get('num_students') ?? '1', 10) || 1;
 
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
@@ -38,37 +41,34 @@ function CheckoutForm() {
   const [success, setSuccess] = useState(false);
   const initRef = useRef(false);
 
-  // Create pending payment on load
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
 
     if (!modulesParam) {
-      router.replace('/pay-as-student');
+      router.replace('/school/payment');
       return;
     }
     const modules = modulesParam.split(',').filter(Boolean);
     if (modules.length === 0) {
-      router.replace('/pay-as-student');
+      router.replace('/school/payment');
       return;
     }
-    api<CheckoutSession>('/api/accounts/me/checkout/', {
+    api<CheckoutSession>('/api/accounts/school/checkout/', {
       method: 'POST',
-      body: { modules },
+      body: { modules, num_students: numStudentsParam },
     })
       .then((data) => setSession(data))
       .catch((err: unknown) =>
         setInitError(err instanceof Error ? err.message : 'Failed to initialise checkout')
       )
       .finally(() => setInitLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Format card number with spaces every 4 digits
   const formatCard = (v: string) =>
     v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
 
-  // Format expiry MM/YY
   const formatExpiry = (v: string) => {
     const d = v.replace(/\D/g, '').slice(0, 4);
     return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
@@ -85,13 +85,12 @@ function CheckoutForm() {
     setProcessing(true);
     setPayError(null);
     try {
-      // Simulate processing delay
       await new Promise((res) => setTimeout(res, 1800));
-      await api(`/api/accounts/me/checkout/${session.payment_id}/confirm/`, {
+      await api(`/api/accounts/school/checkout/${session.payment_id}/confirm/`, {
         method: 'POST',
       });
       setSuccess(true);
-      setTimeout(() => router.push('/subscription'), 1500);
+      setTimeout(() => router.push('/school/dashboard'), 1500);
     } catch (err: unknown) {
       setPayError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
     } finally {
@@ -111,7 +110,7 @@ function CheckoutForm() {
     return (
       <div className="mx-auto max-w-lg rounded-xl border border-red-200 bg-red-50 p-6 text-center">
         <p className="text-sm text-red-700">{initError}</p>
-        <button onClick={() => router.push('/pay-as-student')} className="mt-4 cursor-pointer text-sm text-purple-600 hover:underline">
+        <button onClick={() => router.push('/school/payment')} className="mt-4 cursor-pointer text-sm text-purple-600 hover:underline">
           ← Back to modules
         </button>
       </div>
@@ -125,7 +124,7 @@ function CheckoutForm() {
           <FiIcon name="check" className="h-6 w-6 text-green-600" />
         </div>
         <h2 className="text-lg font-bold text-gray-900">Payment Successful!</h2>
-        <p className="mt-1 text-sm text-gray-500">Redirecting to your subscriptions…</p>
+        <p className="mt-1 text-sm text-gray-500">Your school&apos;s modules are now active. Redirecting…</p>
       </div>
     );
   }
@@ -190,7 +189,7 @@ function CheckoutForm() {
         </div>
 
         <p className="mt-4 text-xs text-gray-400">
-          🔒 This is a demo checkout. No real payment is processed.
+          This is a demo checkout. No real payment is processed.
         </p>
 
         <button
@@ -204,7 +203,7 @@ function CheckoutForm() {
               Processing…
             </span>
           ) : (
-            `Pay ₹${session?.total ?? 0}`
+            `Pay ₹${session?.total?.toLocaleString('en-IN') ?? 0}`
           )}
         </button>
       </div>
@@ -220,12 +219,22 @@ function CheckoutForm() {
             </div>
           ))}
         </div>
-        <div className="mt-4 border-t border-neutral-100 pt-4 flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-900">Total</span>
-          <span className="text-lg font-bold text-purple-700">₹{session?.total}</span>
+        <div className="mt-4 border-t border-neutral-100 pt-4 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">Price per student</span>
+            <span className="font-medium text-gray-700">₹{session?.price_per_student?.toLocaleString('en-IN')}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">Number of students</span>
+            <span className="font-medium text-gray-700">{session?.num_students}</span>
+          </div>
+          <div className="mt-2 border-t border-neutral-100 pt-3 flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-900">Total</span>
+            <span className="text-lg font-bold text-purple-700">₹{session?.total?.toLocaleString('en-IN')}</span>
+          </div>
         </div>
         <button
-          onClick={() => router.push('/pay-as-student')}
+          onClick={() => router.push('/school/payment')}
           className="mt-4 cursor-pointer text-xs text-gray-400 hover:text-gray-600 hover:underline"
         >
           ← Edit cart
@@ -235,12 +244,12 @@ function CheckoutForm() {
   );
 }
 
-export default function CheckoutPage() {
+export default function SchoolCheckoutPage() {
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Checkout</h1>
+      <h1 className="text-xl font-bold text-gray-900">School Checkout</h1>
       <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-neutral-100" />}>
-        <CheckoutForm />
+        <SchoolCheckoutForm />
       </Suspense>
     </div>
   );

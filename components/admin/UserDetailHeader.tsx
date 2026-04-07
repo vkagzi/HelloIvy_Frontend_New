@@ -13,6 +13,7 @@ interface UserDetailHeaderProps {
   backLabel: string;
   email: string;
   role?: string;
+  roleLabel?: string;
   isActive: boolean;
   userId?: number;
   infoFields: InfoField[];
@@ -24,6 +25,7 @@ export default function UserDetailHeader({
   backLabel,
   email,
   role,
+  roleLabel,
   isActive,
   userId,
   infoFields,
@@ -42,7 +44,7 @@ export default function UserDetailHeader({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-bold text-gray-900">{email}</h1>
-            {role && <RoleBadge role={role} />}
+            {role && <RoleBadge role={role} label={roleLabel ?? role} />}
             <StatusBadge active={isActive} />
             {userId !== undefined && (
               <span className="text-xs text-gray-400">
@@ -53,7 +55,7 @@ export default function UserDetailHeader({
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {infoFields.map((field) => (
             <InfoItem key={field.label} label={field.label} value={field.value} />
           ))}

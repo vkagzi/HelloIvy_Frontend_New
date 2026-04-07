@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
+import { Button } from '@/components/ui/button';
 
 function extractApiError(err: unknown, fallback: string): string {
   if (err instanceof Error) {
@@ -257,20 +258,19 @@ export default function CreateSchoolPage() {
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <button
+          <Button
             type="button"
             onClick={() => router.push('/admin/schools')}
-            className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
+            variant="outline"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             disabled={saving}
-            className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
           >
             {saving ? 'Creating...' : 'Create School'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
 
-// TODO: Re-enable paywall when ready
-const PAYWALL_DISABLED = true;
+const PAYWALL_DISABLED = false;
 
 interface ModuleAccessGuardProps {
   moduleName: string;

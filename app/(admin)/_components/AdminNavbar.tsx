@@ -26,11 +26,18 @@ const adminNavItems: NavItem[] = [
     children: [
       { label: 'All Users', href: '/admin/users' },
       { label: 'B2C Users', href: '/admin/users?type=b2c' },
-      { label: 'School Users', href: '/admin/users?type=schoolusers' },
       { label: 'Admin Users', href: '/admin/users?type=admin' },
     ],
   },
-  { label: 'Schools', icon: 'building', href: '/admin/schools' },
+  {
+    label: 'Schools',
+    icon: 'building',
+    href: '/admin/schools',
+    children: [
+      { label: 'List Schools', href: '/admin/schools' },
+      { label: 'School Users', href: '/admin/users?type=schoolusers' },
+    ],
+  },
   {
     label: 'Payments',
     icon: 'credit-card',
@@ -54,7 +61,13 @@ const AdminNavbar: React.FC = () => {
   useEffect(() => {
     const typeParam = searchParams?.get('type') ?? null;
     if (pathname === '/admin/users' && typeParam) {
-      setExpandedItem('/admin/users');
+      if (typeParam === 'schoolusers') {
+        setExpandedItem('/admin/schools');
+      } else {
+        setExpandedItem('/admin/users');
+      }
+    } else if (pathname?.startsWith('/admin/schools')) {
+      setExpandedItem('/admin/schools');
     } else if (pathname?.startsWith('/admin/payments')) {
       setExpandedItem('/admin/payments/b2c');
     }

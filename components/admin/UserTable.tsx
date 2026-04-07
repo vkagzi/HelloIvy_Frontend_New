@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { ROLE_BADGE_COLORS } from '@/lib/constants/roles';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -300,22 +301,14 @@ export default function UserTable<T extends { id: number; email: string }>({
 
 // ---------- shared badge helpers ----------
 
-export function RoleBadge({ role }: { role: string }) {
-  const colors: Record<string, string> = {
-    superadmin: 'bg-purple-100 text-purple-800',
-    operationadmin: 'bg-orange-100 text-orange-800',
-    schooladmin: 'bg-emerald-100 text-emerald-800',
-    school: 'bg-blue-100 text-blue-800',
-    student: 'bg-gray-100 text-gray-800',
-  };
-
+export function RoleBadge({ role, label }: { role: string; label?: string }) {
   return (
     <span
       className={`inline-flex rounded-full px-2 text-xs font-semibold capitalize leading-5 ${
-        colors[role] || 'bg-gray-100 text-gray-800'
+        ROLE_BADGE_COLORS[role] || 'bg-gray-100 text-gray-800'
       }`}
     >
-      {role}
+      {label ?? role}
     </span>
   );
 }

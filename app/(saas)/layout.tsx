@@ -3,6 +3,7 @@ import React from 'react';
 import Navbar from '@/app/_components/Navbar';
 import AppHead from '@/app/_components/AppHead';
 import SessionGuard from '@/app/_components/SessionGuard';
+import TermsGuard from '@/app/_components/TermsGuard';
 import { auth } from '@/auth';
 import { SessionProvider } from 'next-auth/react';
 import { ProfileProvider } from '@/app/(saas)/profile/_context/ProfileContext';
@@ -32,13 +33,15 @@ export default async function RootLayout({
           <NavbarProvider>
             <ModuleAccessProvider>
               <SessionGuard>
-                <Navbar />
-                <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-                  <AppHead session={session} />
-                  <main className="flex-1 overflow-auto px-4 py-5 md:px-8 lg:px-15">
-                    {children}
-                  </main>
-                </div>
+                <TermsGuard>
+                  <Navbar />
+                  <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                    <AppHead session={session} />
+                    <main className="flex-1 overflow-auto px-4 py-5 md:px-8 lg:px-15">
+                      {children}
+                    </main>
+                  </div>
+                </TermsGuard>
               </SessionGuard>
             </ModuleAccessProvider>
           </NavbarProvider>

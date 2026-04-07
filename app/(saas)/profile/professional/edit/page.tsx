@@ -16,10 +16,6 @@ import {
   professionalFieldDefs as fieldDefs,
   professionalLayout as layout,
 } from '@/app/(saas)/profile/_config/fieldDefinitions';
-import {
-  // getSectionCompletionStatus,
-  hasProfileSection,
-} from '@/app/(saas)/profile/utils/utils';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 const ProfessionalFormDetails: React.FC = () => {
@@ -92,6 +88,27 @@ const ProfessionalFormDetails: React.FC = () => {
     }
   };
 
+  
+
+  useEffect(() => {
+    if (!parsedResumeData?.professional?.length) return;
+
+    const exp = parsedResumeData.professional[0];
+
+    setFormDefaults((prev) => ({
+      ...prev,
+      experienceType: exp.experience_type ?? prev.experienceType,
+      industry: exp.industry ?? prev.industry,
+      employerName: exp.company ?? prev.employerName,
+      city: exp.city ?? prev.city,
+      duration: exp.duration ?? prev.duration,
+      title: exp.title ?? prev.title,
+      responsibilities: exp.responsibilities ?? prev.responsibilities,
+      achievements: exp.achievements ?? prev.achievements,
+    }));
+  }, [parsedResumeData]);
+
+
 
   // Extract professional details from the nested structure
   let professionalDetails: Record<string, unknown> = {};
@@ -126,7 +143,11 @@ const ProfessionalFormDetails: React.FC = () => {
       <ResumeUploader onParsed={setParsedResumeData} />
       <Tabs />
       <DynamicForm
-        defaultValues={professionalDetails}
+        key={JSON.stringify(formDefaults)}
+        defaultValues={{
+          ...professionalDetails,
+          ...formDefaults,
+        }}
         fieldDefs={fieldDefs}
         layout={layout}
         onSubmit={(values) => {

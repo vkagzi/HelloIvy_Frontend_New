@@ -15,7 +15,6 @@ import {
   personalLayout as layout,
 } from '@/app/(saas)/profile/_config/fieldDefinitions';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
-import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
 import ResumeUploader from '@/app/_components/ResumeUploader';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
@@ -102,13 +101,20 @@ const PersonalDetailsForm: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!parsedResumeData) return;
+    if (!parsedResumeData?.personal) return;
+
+    const p = parsedResumeData.personal;
 
     setFormDefaults((prev) => ({
       ...prev,
-      firstName: parsedResumeData.first_name ?? prev.firstName,
-      lastName: parsedResumeData.last_name ?? prev.lastName,
-      phoneNumber: parsedResumeData.phone ?? prev.phoneNumber,
+      firstName: p.first_name ?? prev.firstName,
+      lastName: p.last_name ?? prev.lastName,
+      phoneNumber: p.phone ?? prev.phoneNumber,
+      city: p.city ?? prev.city,
+      citizenship: p.citizenship ?? prev.citizenship,
+      gender: p.gender ?? prev.gender,
+      dob: p.dob ?? prev.dob,
+      addressLine: p.address ?? prev.addressLine,
     }));
   }, [parsedResumeData]);
 
@@ -131,7 +137,6 @@ const PersonalDetailsForm: React.FC = () => {
     return (
       <div className="flex flex-col gap-4">
         <Instructions />
-        {/* <ResumeUploader /> */}
         <Tabs />
         <div className="flex min-h-[400px] items-center justify-center">
           <div className="max-w-md rounded-lg border border-red-200 bg-red-50 p-6 text-center">

@@ -52,6 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             role: user.role || 'student',
             school_id: user.school_id || undefined,
             school_name: user.school_name || undefined,
+            terms_accepted: user.terms_accepted ?? false,
             accessToken: data.token,
           };
         } catch {
@@ -61,7 +62,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -69,7 +70,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = user.role;
         token.school_id = user.school_id;
         token.school_name = user.school_name;
+        token.terms_accepted = user.terms_accepted;
         token.accessToken = user.accessToken;
+      }
+      if (trigger === 'update' && session?.terms_accepted !== undefined) {
+        token.terms_accepted = session.terms_accepted;
       }
       return token;
     },
@@ -81,6 +86,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role as string;
         session.user.school_id = token.school_id as number | undefined;
         session.user.school_name = token.school_name as string | undefined;
+        session.user.terms_accepted = token.terms_accepted as boolean | undefined;
         session.accessToken = token.accessToken as string;
       }
       return session;

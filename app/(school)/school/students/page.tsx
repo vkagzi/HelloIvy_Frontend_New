@@ -7,6 +7,7 @@ import Link from 'next/link';
 import api from '@/lib/api-client';
 import UserTable, { StatusBadge, Column } from '@/components/admin/UserTable';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
+import { Button } from '@/components/ui/button';
 
 interface StudentItem {
   id: number;
@@ -214,12 +215,19 @@ export default function SchoolStudentsPage() {
       }}
       headerRight={
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            asChild
+            variant="outline"
+          >
+            <Link href="/school/users/bulk-import">
+              Bulk Import
+            </Link>
+          </Button>
+          <Button
             onClick={() => setAddOpen(true)}
-            className="rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-purple-700"
           >
             + Add Student
-          </button>
+          </Button>
           <select
             value={gradeFilter}
             onChange={(e) => {
@@ -321,19 +329,18 @@ export default function SchoolStudentsPage() {
                 </div>
               </div>
               <div className="flex justify-end gap-2">
-                <button
+                <Button
                   onClick={() => { setAddOpen(false); setAddError(null); }}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+                  variant="outline"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleAddStudent}
                   disabled={addSaving || !addEmail.trim()}
-                  className="rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
                   {addSaving ? 'Adding...' : 'Add Student'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

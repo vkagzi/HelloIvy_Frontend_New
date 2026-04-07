@@ -38,17 +38,17 @@ export default function ResumeUploader({ onParsed }: any) {
   };
 
   return (
-    <div className="rounded-2xl border bg-white p-5 shadow-sm">
+    <div className=" bg-white p-2">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         {/* LEFT SIDE */}
         <div className="max-w-lg">
-          <h3 className="--text-product-h5 font-bold text-neutral-900">
-            Upload Resume / Transcript
+          <h3 className="--text-product-h5 font-bold text-neutral-800">
+            Auto-fill your profile using your resume
           </h3>
 
-          <p className="text-para-sm mt-1 text-neutral-600">
-            Auto-fill your profile using resume or report card
-          </p>
+          {/* <p className="text-para-sm mt-1 text-neutral-600">
+             or report card
+          </p> */}
 
           {loading && (
             <p className="mt-2 text-sm text-blue-500">

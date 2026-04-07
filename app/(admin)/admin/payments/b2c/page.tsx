@@ -236,8 +236,22 @@ export default function B2CPaymentsPage() {
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(p)} className="cursor-pointer text-xs text-blue-600 hover:underline">Edit</button>
-                    <button onClick={() => setDeleteId(p.id)} className="cursor-pointer text-xs text-red-600 hover:underline">Delete</button>
+                    <Button
+                      onClick={() => openEdit(p)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-transparent underline"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => setDeleteId(p.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-transparent underline"
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </td>
               </tr>
@@ -276,8 +290,9 @@ export default function B2CPaymentsPage() {
                 {userDropdownOpen && filteredUsers.length > 0 && (
                   <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-md">
                     {filteredUsers.map((u) => (
-                      <button
+                      <Button
                         key={u.id}
+                        variant="ghost"
                         type="button"
                         onMouseDown={() => {
                           setSelectedUser(u);
@@ -295,7 +310,7 @@ export default function B2CPaymentsPage() {
                       >
                         <span className="font-medium">{[u.first_name, u.last_name].filter(Boolean).join(' ') || u.email}</span>
                         <span className="text-xs text-gray-500">{u.email} · ID: {u.id}</span>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 )}

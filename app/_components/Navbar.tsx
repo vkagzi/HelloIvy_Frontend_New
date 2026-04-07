@@ -103,7 +103,7 @@ const Navbar: React.FC = () => {
                   } ${
                     active
                       ? 'text-white'
-                      : 'from-action-gradient-800-left to-action-gradient-800-right bg-gradient-to-r bg-clip-text text-transparent'
+                      : 'from-action-gradient-800-left to-action-gradient-800-right bg-linear-to-r bg-clip-text text-transparent'
                   }`}
                 />
 

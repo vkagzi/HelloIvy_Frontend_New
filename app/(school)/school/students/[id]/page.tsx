@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import api from '@/lib/api-client';
+import { formatDate, formatDateTime } from '@/lib/utils/date-formatter';
 import UserDetailHeader from '@/components/admin/UserDetailHeader';
 import ModuleCard from '@/components/admin/ModuleCard';
 import type { ModuleStats } from '@/components/admin/ModuleCard';
@@ -70,8 +71,8 @@ export default function SchoolStudentDetailPage() {
         isActive={user.is_active}
         infoFields={[
           { label: 'Name', value: studentName },
-          { label: 'Created', value: new Date(user.created_at).toLocaleDateString() },
-          { label: 'Last Login', value: user.last_login ? new Date(user.last_login).toLocaleString() : 'Never' },
+          { label: 'Created', value: formatDate(user.created_at) },
+          { label: 'Last Login', value: user.last_login ? formatDateTime(user.last_login) : 'Never' },
           { label: 'School', value: user.school_name || 'N/A' },
         ]}
       />

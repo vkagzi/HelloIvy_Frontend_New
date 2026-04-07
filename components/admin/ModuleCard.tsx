@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import api from '@/lib/api-client';
+import { formatDate, formatTime } from '@/lib/utils/date-formatter';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { downloadPDF } from '@/lib/pdf-from-component';
 import DomainResultsPDF from '@/components/pdf/DomainResultsPDF';
 import CareerResultsPDF from '@/components/pdf/CareerResultsPDF';
@@ -279,7 +281,7 @@ export default function ModuleCard({
               {sortedSessions.map((s) => (
                 <tr key={s.session_id}>
                   <td className="py-2 text-gray-600">
-                    {new Date(s.created_at).toLocaleDateString()}
+                    {formatDate(s.created_at)}
                   </td>
                   <td className="py-2 text-gray-600">
                     {s.current_step}/{s.total_steps}
@@ -305,36 +307,42 @@ export default function ModuleCard({
                     )}
                   </td>
                   <td className="py-2 text-center">
-                    <button
+                    <Button
                       onClick={() => openConversation(s.session_id)}
-                      className="cursor-pointer rounded-md p-1.5 text-indigo-600 transition hover:bg-indigo-50"
+                      variant="ghost"
+                      size="icon"
+                      className="text-indigo-600 hover:bg-indigo-50"
                       title="View Conversation"
                     >
                       <MessageSquareText className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </td>
                   <td className="py-2 text-center">
                     {s.is_completed ? (
-                      <button
+                      <Button
                         onClick={() => downloadTranscript(s.session_id)}
-                        className="cursor-pointer rounded-md p-1.5 text-emerald-600 transition hover:bg-emerald-50"
+                        variant="ghost"
+                        size="icon"
+                        className="text-emerald-600 hover:bg-emerald-50"
                         title="Download Transcript PDF"
                       >
                         <FileDown className="h-4 w-4" />
-                      </button>
+                      </Button>
                     ) : (
                       <span className="text-xs text-gray-300">—</span>
                     )}
                   </td>
                   <td className="py-2 text-center">
                     {s.is_completed ? (
-                      <button
+                      <Button
                         onClick={() => downloadReport(s.session_id)}
-                        className="cursor-pointer rounded-md p-1.5 text-purple-600 transition hover:bg-purple-50"
+                        variant="ghost"
+                        size="icon"
+                        className="text-purple-600 hover:bg-purple-50"
                         title="Download Results PDF"
                       >
                         <Award className="h-4 w-4" />
-                      </button>
+                      </Button>
                     ) : (
                       <span className="text-xs text-gray-300">—</span>
                     )}
@@ -401,7 +409,7 @@ export default function ModuleCard({
                       <p className="whitespace-pre-wrap">{m.content}</p>
                     </div>
                     <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400">
-                      <span>{new Date(m.timestamp).toLocaleTimeString()}</span>
+                      <span>{formatTime(m.timestamp)}</span>
                       {m.question_type && (
                         <span className="capitalize">({m.question_type})</span>
                       )}

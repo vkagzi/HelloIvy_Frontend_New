@@ -238,8 +238,22 @@ export default function SchoolPaymentsPage() {
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(p)} className="cursor-pointer text-xs text-blue-600 hover:underline">Edit</button>
-                    <button onClick={() => setDeleteId(p.id)} className="cursor-pointer text-xs text-red-600 hover:underline">Delete</button>
+                    <Button
+                      onClick={() => openEdit(p)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-transparent underline"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => setDeleteId(p.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-transparent underline"
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </td>
               </tr>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import DynamicForm from '@/app/_components/dynamic-form/DynamicForm';
 import Tabs from '@/app/(saas)/profile/_components/Tabs';
@@ -13,6 +13,7 @@ import { parseFormLocationData } from '@/lib/utils/location-parser';
 import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
 import { transformEducationalData } from '@/lib/utils/educational-data-transformer';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
+import ResumeUploader from '@/app/_components/ResumeUploader';
 import {
   educationalFieldDefs as fieldDefss,
   educationalLayout as layout,
@@ -32,17 +33,23 @@ const EducationalDetailsForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
-    () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
+    () =>
+      reconstructFormLocationData(
+        (rawApiResponse ?? {}) as Record<string, unknown>
+      ),
     [rawApiResponse]
   );
   const defaultValues = transformedResponse as Record<string, unknown>;
-
+  const [parsedResumeData, setParsedResumeData] = useState<any>(null);
+  const [formDefaults, setFormDefaults] = useState<Record<string, unknown>>({});
   const [fieldDefs, setFieldDefs] = useState<FieldDefinition[]>(fieldDefss);
   const prevAcademicLevelRef = useRef<string | undefined>(undefined);
 
   // Extract birth year from personalDetails.dob to constrain startYear options
   const birthYear = React.useMemo(() => {
-    const dob = (personalDetails as Record<string, unknown>)?.dob as string | undefined;
+    const dob = (personalDetails as Record<string, unknown>)?.dob as
+      | string
+      | undefined;
     if (!dob) return null;
     // DD/MM/YYYY format
     const ddmmyyyy = dob.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -55,13 +62,53 @@ const EducationalDetailsForm: React.FC = () => {
     return isNaN(parsed.getTime()) ? null : parsed.getFullYear();
   }, [personalDetails]);
 
+  useEffect(() => {
+    if (!parsedResumeData?.education) return;
+
+    setFormDefaults((prev) => ({
+      ...prev,
+      academicLevel:
+        parsedResumeData.education.education_level ?? prev.academicLevel,
+    }));
+  }, [parsedResumeData]);
+
+  useEffect(() => {
+    if (!parsedResumeData?.education) return;
+    if (!formDefaults.academicLevel) return;
+
+    setFormDefaults((prev) => ({
+      ...prev,
+      year: parsedResumeData.education.current_year ?? prev.year,
+    }));
+  }, [parsedResumeData, formDefaults.academicLevel]);
+
+  useEffect(() => {
+    if (!parsedResumeData?.education) return;
+    if (formDefaults.academicLevel !== 'College/Undergraduate') return;
+
+    const e = parsedResumeData.education;
+
+    setFormDefaults((prev) => ({
+      ...prev,
+      institutionName: e.institution ?? prev.institutionName,
+      degree: e.degree ?? prev.degree,
+      major: e.major ?? prev.major,
+      startYear: e.start_year ?? prev.startYear,
+      endYear: e.end_year ?? prev.endYear,
+      score: e.cgpa ?? prev.score,
+      estimatedRank: e.rank ?? prev.estimatedRank,
+    }));
+  }, [parsedResumeData, formDefaults.academicLevel]);
+
   // Apply DOB-based year lower bounds: school yearOfCompletion >= DOB+1, college startYear >= DOB+10
   React.useEffect(() => {
     if (!birthYear) return;
     setFieldDefs((prev) =>
       prev.map((field) => {
         if (field.id === 'yearOfCompletion') {
-          console.log(`Applying DOB-based constraint to yearOfCompletion: birthYear=${birthYear}, minYear=${birthYear + 1}`);
+          console.log(
+            `Applying DOB-based constraint to yearOfCompletion: birthYear=${birthYear}, minYear=${birthYear + 1}`
+          );
           return { ...field, minYear: birthYear + 1 };
         }
         if (field.id === 'startYear') {
@@ -83,9 +130,7 @@ const EducationalDetailsForm: React.FC = () => {
     'Working/Completed College',
   ];
 
-  const SCHOOL_LEVELS = [
-    'High School (9th–12th grade)',
-  ];
+  const SCHOOL_LEVELS = ['High School (9th–12th grade)'];
 
   // Helper to get options based on academic level selected in the form
   const getTestTypeOptions = (academicLevel: string | undefined): string[] => {
@@ -105,41 +150,49 @@ const EducationalDetailsForm: React.FC = () => {
   };
 
   // Helper to update testType options based on academic level
-  const updateTestTypeOptions = useCallback((academicLevel: string | undefined): void => {
-    // Only update if the academic level actually changed
-    if (prevAcademicLevelRef.current === academicLevel) {
-      return;
-    }
-    prevAcademicLevelRef.current = academicLevel;
+  const updateTestTypeOptions = useCallback(
+    (academicLevel: string | undefined): void => {
+      // Only update if the academic level actually changed
+      if (prevAcademicLevelRef.current === academicLevel) {
+        return;
+      }
+      prevAcademicLevelRef.current = academicLevel;
 
-    const options = getTestTypeOptions(academicLevel);
-    setFieldDefs((prev) =>
-      prev.map((field) =>
-        field.id === 'testType' ? { ...field, options } : field
-      )
-    );
-  }, []);
+      const options = getTestTypeOptions(academicLevel);
+      setFieldDefs((prev) =>
+        prev.map((field) =>
+          field.id === 'testType' ? { ...field, options } : field
+        )
+      );
+    },
+    []
+  );
 
-  const handleFormInit = useCallback((
-    form: import('react-hook-form').UseFormReturn<Record<string, unknown>>
-  ): void => {
-    // Initialize options based on existing academicLevel value
-    const initialAcademicLevel = form.getValues('academicLevel') as string | undefined;
-    updateTestTypeOptions(initialAcademicLevel);
+  const handleFormInit = useCallback(
+    (
+      form: import('react-hook-form').UseFormReturn<Record<string, unknown>>
+    ): void => {
+      // Initialize options based on existing academicLevel value
+      const initialAcademicLevel = form.getValues('academicLevel') as
+        | string
+        | undefined;
+      updateTestTypeOptions(initialAcademicLevel);
 
-    // Watch for changes
-    form.watch((values) => {
-      const academicLevel = values.academicLevel as string | undefined;
-      updateTestTypeOptions(academicLevel);
-    });
-  }, [updateTestTypeOptions]);
+      // Watch for changes
+      form.watch((values) => {
+        const academicLevel = values.academicLevel as string | undefined;
+        updateTestTypeOptions(academicLevel);
+      });
+    },
+    [updateTestTypeOptions]
+  );
 
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     try {
       setIsSubmitting(true);
       // Parse formatted city strings to extract city, state, country
       const parsedData = parseFormLocationData(_data);
-      
+
       // Transform educational data to proper structure with year identifiers
       const transformedData = transformEducationalData(parsedData);
 
@@ -153,7 +206,9 @@ const EducationalDetailsForm: React.FC = () => {
         Postgraduate: 'postgraduate',
         'Working/Completed College': 'tenPlus',
       };
-      const relevantSection = academicLevel ? sectionKey[academicLevel] : undefined;
+      const relevantSection = academicLevel
+        ? sectionKey[academicLevel]
+        : undefined;
 
       const cleanEducational: Record<string, unknown> = {
         academicLevel,
@@ -174,13 +229,15 @@ const EducationalDetailsForm: React.FC = () => {
       // High-school-only fields
       if (academicLevel === 'High School (9th–12th grade)') {
         if (transformedData.hasCurrentGradeScores !== undefined) {
-          cleanEducational.hasCurrentGradeScores = transformedData.hasCurrentGradeScores;
+          cleanEducational.hasCurrentGradeScores =
+            transformedData.hasCurrentGradeScores;
         }
       }
 
       // Build the section object: academic entries + courses/awards/testScores
       if (relevantSection) {
-        const arrayKey = relevantSection === 'highSchool' ? 'grades' : 'degrees';
+        const arrayKey =
+          relevantSection === 'highSchool' ? 'grades' : 'degrees';
         const sectionObj: Record<string, unknown> = {};
 
         if (transformedData[relevantSection] !== undefined) {
@@ -266,10 +323,19 @@ const EducationalDetailsForm: React.FC = () => {
   }
 
   // Un-nest shared data from section object for form compatibility
-  const sectionEntries = ['highSchool', 'undergraduate', 'postgraduate', 'tenPlus'] as const;
+  const sectionEntries = [
+    'highSchool',
+    'undergraduate',
+    'postgraduate',
+    'tenPlus',
+  ] as const;
   for (const key of sectionEntries) {
     const sectionData = educationalDetails[key];
-    if (sectionData && typeof sectionData === 'object' && !Array.isArray(sectionData)) {
+    if (
+      sectionData &&
+      typeof sectionData === 'object' &&
+      !Array.isArray(sectionData)
+    ) {
       const section = sectionData as Record<string, unknown>;
       const arrayKey = key === 'highSchool' ? 'grades' : 'degrees';
       if (section[arrayKey]) {
@@ -288,9 +354,14 @@ const EducationalDetailsForm: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
+      <ResumeUploader onParsed={setParsedResumeData} />
       <Tabs />
       <DynamicForm
-        defaultValues={educationalDetails}
+        key={JSON.stringify(formDefaults)}
+        defaultValues={{
+          ...educationalDetails,
+          ...formDefaults,
+        }}
         fieldDefs={fieldDefs}
         layout={layout}
         onSubmit={onSubmit}
@@ -300,10 +371,15 @@ const EducationalDetailsForm: React.FC = () => {
         showSaveButton={{ showSave: true, href: '/profile/professional/edit' }}
         isSubmitting={isSubmitting}
         onSaveOnly={() => {
-          addToast('Educational details saved successfully!', { type: 'success' });
+          addToast('Educational details saved successfully!', {
+            type: 'success',
+          });
         }}
         onSaveAndNavigate={() => {
-          addToast('Educational details saved! Navigating to professional details...', { type: 'success' });
+          addToast(
+            'Educational details saved! Navigating to professional details...',
+            { type: 'success' }
+          );
           router.push('/profile/professional/edit');
         }}
       />

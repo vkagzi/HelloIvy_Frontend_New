@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
+import { Button } from '@/components/ui/button';
+import { ADMIN_CREATE_ROLES } from '@/lib/constants/roles';
 
 function extractApiError(err: unknown, fallback: string): string {
   if (err instanceof Error) {
@@ -25,22 +28,93 @@ interface SchoolOption {
   name: string;
 }
 
-const ROLES = [
-  { value: 'student', label: 'Student' },
-  { value: 'schooladmin', label: 'School Admin' },
-  { value: 'operationadmin', label: 'Operation Admin' },
-  { value: 'superadmin', label: 'Superadmin' },
+const ACADEMIC_LEVELS = [
+  { value: 'high_school', label: 'High School (9th–12th grade)' },
+  { value: 'undergraduate', label: 'College/Undergraduate' },
+  { value: 'postgraduate', label: "Postgraduate/Master's" },
+  { value: 'professional', label: 'Working Professional' },
 ];
+
+const GRADE_LEVELS: Record<string, string[]> = {
+  high_school: ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+  undergraduate: ['Year 1', 'Year 2', 'Year 3', 'Year 4'],
+  postgraduate: ['Year 1', 'Year 2'],
+  professional: ['1-3 years', '3-5 years', '5+ years'],
+};
+
+type PageType = 'b2c' | 'schoolusers' | 'admin' | 'schooladmin' | null;
+
+function getPageConfig(type: PageType) {
+  switch (type) {
+    case 'b2c':
+      return {
+        title: 'Create B2C Student',
+        showBulkImport: false,
+        fixedRole: 'student' as const,
+        showSchool: false,
+        showAcademic: true,
+        backUrl: '/admin/users?type=b2c',
+      };
+    case 'schoolusers':
+      return {
+        title: 'Create School Student',
+        showBulkImport: true,
+        fixedRole: 'student' as const,
+        showSchool: true,
+        showAcademic: true,
+        backUrl: '/admin/users?type=schoolusers',
+      };
+    case 'admin':
+      return {
+        title: 'Create Admin User',
+        showBulkImport: false,
+        fixedRole: null,
+        showSchool: false, // conditionally shown based on role
+        showAcademic: false,
+        backUrl: '/admin/users?type=admin',
+      };
+    case 'schooladmin':
+      return {
+        title: 'Add School Admin',
+        showBulkImport: false,
+        fixedRole: 'schooladmin' as const,
+        showSchool: true,
+        showAcademic: false,
+        backUrl: '/admin/users?type=admin',
+      };
+    default:
+      return {
+        title: 'Add User',
+        showBulkImport: true,
+        fixedRole: null,
+        showSchool: true,
+        showAcademic: true,
+        backUrl: '/admin/users',
+      };
+  }
+}
 
 export default function CreateUserPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const typeParam = (searchParams?.get('type') ?? null) as PageType;
+  const schoolIdParam = searchParams?.get('schoolId') ?? '';
+  const config = getPageConfig(typeParam);
+
+  // If coming from a school detail page, go back there after creation
+  const backUrl = schoolIdParam && (typeParam === 'schooladmin' || typeParam === 'schoolusers')
+    ? `/admin/schools/${schoolIdParam}`
+    : config.backUrl;
+
   const { addToast } = useToast();
   const [form, setForm] = useState({
     email: '',
-    password: '',
-    role: 'student',
-    school_id: '',
+    role: config.fixedRole ?? 'superadmin',
+    school_id: schoolIdParam,
     is_active: true,
+    send_password_email: true,
+    academic_level: '',
+    grade_level: '',
   });
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [saving, setSaving] = useState(false);
@@ -65,29 +139,36 @@ export default function CreateUserPage() {
     setForm((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+      // Clear school when role changes away from school-related roles
+      ...(name === 'role' && !['schooladmin', 'schoolopsadmin'].includes(value)
+        ? { school_id: '' }
+        : {}),
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email.trim() || !form.password.trim()) {
-      setError('Email and password are required');
+    if (!form.email.trim()) {
+      setError('Email is required');
       return;
     }
     setSaving(true);
     setError(null);
     try {
+      const role = config.fixedRole ?? form.role;
       await api('/api/accounts/admin/users/', {
         method: 'POST',
         body: {
           email: form.email,
-          password: form.password,
-          role: form.role,
+          role,
           school_id: form.school_id ? parseInt(form.school_id) : null,
           is_active: form.is_active,
+          send_password_email: form.send_password_email,
+          academic_level: config.showAcademic ? form.academic_level || null : null,
+          grade_level: config.showAcademic ? form.grade_level || null : null,
         },
       });
-      router.push('/admin/users');
+      router.push(backUrl);
     } catch (err: unknown) {
       const message = extractApiError(err, 'Failed to create user');
       setError(message);
@@ -97,11 +178,32 @@ export default function CreateUserPage() {
     }
   };
 
-  const showSchoolField = ['student', 'schooladmin'].includes(form.role);
+  // For admin type, show school field only when the selected role is schooladmin or schoolopsadmin
+  const showSchoolField =
+    typeParam === 'admin'
+      ? ['schooladmin', 'schoolopsadmin'].includes(form.role)
+      : config.showSchool;
+
+  const gradeOptions = form.academic_level ? (GRADE_LEVELS[form.academic_level] ?? []) : [];
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Add User</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link
+            href={backUrl}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            ← Back
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900">{config.title}</h1>
+        </div>
+        {config.showBulkImport && (
+          <Button asChild variant="outline">
+            <Link href="/admin/users/bulk-import">Bulk Import</Link>
+          </Button>
+        )}
+      </div>
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
@@ -123,52 +225,41 @@ export default function CreateUserPage() {
           />
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            Password *
-          </label>
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-            required
-            minLength={8}
-            placeholder="Minimum 8 characters"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            Role *
-          </label>
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-          >
-            {ROLES.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Role selector — hidden when role is fixed (b2c / schoolusers) */}
+        {!config.fixedRole && (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Role *
+            </label>
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            >
+              {(typeParam === 'admin' ? ADMIN_CREATE_ROLES : ADMIN_CREATE_ROLES).map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {showSchoolField && (
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              School
+              School{typeParam === 'schoolusers' || typeParam === 'schooladmin' ? ' *' : ''}
             </label>
             <select
               name="school_id"
               value={form.school_id}
               onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-500"
+              required={typeParam === 'schoolusers' || typeParam === 'schooladmin'}
+              disabled={!!schoolIdParam}
             >
-              <option value="">No school</option>
+              <option value="">Select a school...</option>
               {schools.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -177,6 +268,77 @@ export default function CreateUserPage() {
             </select>
           </div>
         )}
+
+        {config.showAcademic && (
+          <>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Academic Level
+              </label>
+              <select
+                name="academic_level"
+                value={form.academic_level}
+                onChange={(e) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    academic_level: e.target.value,
+                    grade_level: '',
+                  }));
+                }}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              >
+                <option value="">None</option>
+                {ACADEMIC_LEVELS.map((al) => (
+                  <option key={al.value} value={al.value}>
+                    {al.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {gradeOptions.length > 0 && (
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Grade Level
+                </label>
+                <select
+                  name="grade_level"
+                  value={form.grade_level}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="">Select grade level</option>
+                  {gradeOptions.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        )}
+
+        <div className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            name="send_password_email"
+            id="send_password_email"
+            checked={form.send_password_email}
+            onChange={handleChange}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600"
+          />
+          <div>
+            <label htmlFor="send_password_email" className="block text-sm font-medium text-gray-700 cursor-pointer">
+              Send temporary password email
+            </label>
+            <p className="text-xs text-gray-500">
+              {form.send_password_email
+                ? 'User will receive an email with their temporary password.'
+                : 'User will be created without receiving a password email. You can share credentials manually.'}
+            </p>
+          </div>
+        </div>
 
         <div className="flex items-center gap-2">
           <input
@@ -193,20 +355,12 @@ export default function CreateUserPage() {
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <button
-            type="button"
-            onClick={() => router.push('/admin/users')}
-            className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
-          >
+          <Button type="button" variant="outline" onClick={() => router.push(backUrl)}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="cursor-pointer rounded-md bg-purple-600 px-4 py-2 text-sm text-white disabled:opacity-50"
-          >
+          </Button>
+          <Button type="submit" disabled={saving}>
             {saving ? 'Creating...' : 'Add User'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
