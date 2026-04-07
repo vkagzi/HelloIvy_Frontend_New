@@ -24,7 +24,7 @@ const PersonalDetailsForm: React.FC = () => {
   const router = useRouter();
   const { rawApiResponse, loading, error, refetch } = useProfile();
   const [parsedResumeData, setParsedResumeData] = useState<any>(null);
-  const [formDefaults, setFormDefaults] = useState<Record<string, unknown>>({});
+  const [resumeFormDefaults, setResumeFormDefaults] = useState<Record<string, unknown>>({});
   const { userDetails } = useUserAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -123,7 +123,7 @@ const PersonalDetailsForm: React.FC = () => {
 
     const p = parsedResumeData.personal;
 
-    setFormDefaults((prev) => ({
+    setResumeFormDefaults((prev) => ({
       ...prev,
       firstName: p.first_name ?? prev.firstName,
       lastName: p.last_name ?? prev.lastName,
@@ -215,10 +215,12 @@ const PersonalDetailsForm: React.FC = () => {
   console.log('Personal details for form:', personalDetails); // Debug log
 
   // Inject firstName/lastName from user session (source of truth is users table)
+  // Also merge in any resume-parsed data
   const formDefaults = {
     ...personalDetails,
-    firstName: userDetails.first_name || (personalDetails.firstName as string) || '',
-    lastName: userDetails.last_name || (personalDetails.lastName as string) || '',
+    ...resumeFormDefaults,
+    firstName: userDetails.first_name || (resumeFormDefaults.firstName as string) || (personalDetails.firstName as string) || '',
+    lastName: userDetails.last_name || (resumeFormDefaults.lastName as string) || (personalDetails.lastName as string) || '',
   };
 
   return (
@@ -231,10 +233,6 @@ const PersonalDetailsForm: React.FC = () => {
         fieldDefs={fieldDefs}
         layout={layout}
         onSubmit={onSubmit}
-        defaultValues={{
-          ...personalDetails,
-          ...formDefaults,
-        }}
         defaultValues={formDefaults}
         formClassName="space-y-6"
         buttonName="Add Educational Details"
