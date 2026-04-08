@@ -15,6 +15,7 @@ export default function CreateOpsAdminPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const schoolId = session?.user?.school_id;
+  const schoolName = session?.user?.school_name;
   const { addToast } = useToast();
 
   // Redirect schoolopsadmin away from this page
@@ -26,6 +27,8 @@ export default function CreateOpsAdminPage() {
 
   const [form, setForm] = useState({
     email: '',
+    first_name: '',
+    last_name: '',
     send_password_email: true,
   });
   const [saving, setSaving] = useState(false);
@@ -58,6 +61,8 @@ export default function CreateOpsAdminPage() {
         method: 'POST',
         body: {
           email: form.email.trim(),
+          first_name: form.first_name || undefined,
+          last_name: form.last_name || undefined,
           send_password_email: form.send_password_email,
         },
       });
@@ -89,8 +94,42 @@ export default function CreateOpsAdminPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader backUrl="/school/operations-admin" title="Add Operations Admin" />
+      {schoolName && (
+        <div className="mb-4 rounded-md bg-blue-50 border border-blue-200 px-4 py-3">
+          <p className="text-sm text-blue-700">
+            This operations admin will be added under <span className="font-semibold">{schoolName}</span>.
+          </p>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-5">
         <ErrorAlert error={error} />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              First Name
+            </label>
+            <Input
+              type="text"
+              name="first_name"
+              value={form.first_name}
+              onChange={handleChange}
+              placeholder="First name"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Last Name
+            </label>
+            <Input
+              type="text"
+              name="last_name"
+              value={form.last_name}
+              onChange={handleChange}
+              placeholder="Last name"
+            />
+          </div>
+        </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import api from '@/lib/api-client';
 import { formatDate, formatDateTime } from '@/lib/utils/date-formatter';
 import UserDetailHeader from '@/components/admin/UserDetailHeader';
@@ -75,6 +76,14 @@ export default function SchoolStudentDetailPage() {
           { label: 'Last Login', value: user.last_login ? formatDateTime(user.last_login) : 'Never' },
           { label: 'School', value: user.school_name || 'N/A' },
         ]}
+        actions={
+          <Link
+            href={`/school/students/${userId}/edit`}
+            className="inline-flex items-center gap-1 rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-purple-700"
+          >
+            Edit Student
+          </Link>
+        }
       />
 
       {/* Module Stats Cards */}

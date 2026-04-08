@@ -90,9 +90,7 @@ export default function SchoolsListPage() {
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Actions
-              </th>
+
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
@@ -111,9 +109,12 @@ export default function SchoolsListPage() {
                         {school.name.charAt(0)}
                       </div>
                     )}
-                    <span className="text-sm font-medium text-gray-900">
+                    <Link
+                      href={`/admin/schools/${school.id}`}
+                      className="text-sm font-medium text-purple-700 hover:underline"
+                    >
                       {school.name}
-                    </span>
+                    </Link>
                   </div>
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
@@ -156,14 +157,7 @@ export default function SchoolsListPage() {
                     {school.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm">
-                  <Link
-                    href={`/admin/schools/${school.id}`}
-                    className="inline-flex cursor-pointer rounded-md bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 transition hover:bg-purple-100"
-                  >
-                    Manage
-                  </Link>
-                </td>
+
               </tr>
             ))}
           </tbody>

@@ -95,6 +95,8 @@ export default function CreateUserPage() {
   const { addToast } = useToast();
   const [form, setForm] = useState({
     email: '',
+    first_name: '',
+    last_name: '',
     role: config.fixedRole ?? 'superadmin',
     school_id: schoolIdParam,
     is_active: true,
@@ -146,6 +148,8 @@ export default function CreateUserPage() {
         method: 'POST',
         body: {
           email: form.email,
+          first_name: form.first_name || undefined,
+          last_name: form.last_name || undefined,
           role,
           school_id: form.school_id ? parseInt(form.school_id) : null,
           is_active: form.is_active,
@@ -192,6 +196,33 @@ export default function CreateUserPage() {
       </div>
       <form onSubmit={handleSubmit} className="space-y-5">
         <ErrorAlert error={error} />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              First Name
+            </label>
+            <Input
+              type="text"
+              name="first_name"
+              value={form.first_name}
+              onChange={handleChange}
+              placeholder="First name"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Last Name
+            </label>
+            <Input
+              type="text"
+              name="last_name"
+              value={form.last_name}
+              onChange={handleChange}
+              placeholder="Last name"
+            />
+          </div>
+        </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">

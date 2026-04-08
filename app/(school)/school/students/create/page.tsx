@@ -6,24 +6,27 @@ import { useSession } from 'next-auth/react';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
 import { extractApiError } from '@/lib/utils/api-error';
-import { ACADEMIC_LEVELS, GRADE_LEVELS } from '@/lib/constants/academic';
+import { GRADE_LEVELS } from '@/lib/constants/academic';
 import { ErrorAlert } from '@/components/form/ErrorAlert';
 import { PageHeader } from '@/components/form/PageHeader';
 import { FormActions } from '@/components/form/FormActions';
-import { AcademicLevelSelector } from '@/components/form/AcademicLevelSelector';
 import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 
 export default function CreateStudentPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const schoolId = session?.user?.school_id;
+  const schoolName = session?.user?.school_name;
   const { addToast } = useToast();
 
   const [form, setForm] = useState({
     email: '',
+    first_name: '',
+    last_name: '',
     is_active: true,
     send_password_email: true,
-    academic_level: '',
+    academic_level: 'high_school',
     grade_level: '',
   });
   const [saving, setSaving] = useState(false);
@@ -58,6 +61,8 @@ export default function CreateStudentPage() {
           email: form.email,
           role: 'student',
           school_id: schoolId,
+          first_name: form.first_name || undefined,
+          last_name: form.last_name || undefined,
           is_active: form.is_active,
           send_password_email: form.send_password_email,
           academic_level: form.academic_level || null,
@@ -73,8 +78,6 @@ export default function CreateStudentPage() {
       setSaving(false);
     }
   };
-
-  const gradeOptions = form.academic_level ? (GRADE_LEVELS[form.academic_level] ?? []) : [];
 
   if (status === 'loading') {
     return <div className="text-center py-8">Loading...</div>;
@@ -93,8 +96,42 @@ export default function CreateStudentPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader backUrl="/school/students" title="Create Student" />
+      {schoolName && (
+        <div className="mb-4 rounded-md bg-blue-50 border border-blue-200 px-4 py-3">
+          <p className="text-sm text-blue-700">
+            This student will be added under <span className="font-semibold">{schoolName}</span>.
+          </p>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-5">
         <ErrorAlert error={error} />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              First Name
+            </label>
+            <Input
+              type="text"
+              name="first_name"
+              value={form.first_name}
+              onChange={handleChange}
+              placeholder="First name"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Last Name
+            </label>
+            <Input
+              type="text"
+              name="last_name"
+              value={form.last_name}
+              onChange={handleChange}
+              placeholder="Last name"
+            />
+          </div>
+        </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -111,16 +148,19 @@ export default function CreateStudentPage() {
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
-            Academic Level
+            Grade Level
           </label>
+          <Select value={form.grade_level} onValueChange={(v) => setForm((prev) => ({ ...prev, grade_level: v }))}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select grade level" />
+            </SelectTrigger>
+            <SelectContent>
+              {(GRADE_LEVELS['high_school'] ?? []).map((grade) => (
+                <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-
-        <AcademicLevelSelector 
-          academicLevel={form.academic_level} 
-          gradeLevel={form.grade_level}
-          onAcademicLevelChange={(v) => setForm((prev) => ({ ...prev, academic_level: v, grade_level: '' }))}
-          onGradeLevelChange={(v) => setForm((prev) => ({ ...prev, grade_level: v }))}
-        />
 
         <div className="flex items-start gap-2">
           <input

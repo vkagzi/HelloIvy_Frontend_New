@@ -135,7 +135,7 @@ export default function SchoolPaymentPage() {
       </div>
 
       {subscriptions.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
           {subscriptions.map((sub) => {
             const icon = MODULE_ICONS[sub.module_name] ?? 'star';
             const expired = new Date(sub.expiry_date) < new Date();

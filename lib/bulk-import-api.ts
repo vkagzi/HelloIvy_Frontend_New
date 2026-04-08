@@ -5,6 +5,12 @@ export interface ValidateEmailsResponse {
   invalid: { email: string; reason: string }[];
 }
 
+export interface BulkImportUser {
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 export interface BulkImportResult {
   total_submitted: number;
   total_created: number;
@@ -22,7 +28,7 @@ export const bulkImportApi = {
   },
 
   import: async (
-    emails: string[],
+    users: BulkImportUser[],
     role: string,
     schoolId: number | null,
     academicLevel?: string | null,
@@ -32,7 +38,7 @@ export const bulkImportApi = {
     return api<BulkImportResult>('/api/accounts/admin/users/bulk-import/', {
       method: 'POST',
       body: {
-        emails,
+        users,
         role,
         school_id: schoolId,
         academic_level: academicLevel || null,

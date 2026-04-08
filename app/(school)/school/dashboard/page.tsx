@@ -161,14 +161,24 @@ export default function SchoolDashboardPage() {
             className="h-12 w-12 rounded-lg object-cover"
           />
         )}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {dashboard.school.name}
-          </h1>
-          <p className="text-sm text-gray-500">
-            {dashboard.total_students} students ({dashboard.active_students}{' '}
-            active)
-          </p>
+        <div className="flex flex-1 items-center gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {dashboard.school.name}
+              </h1>
+              <Link
+                href="/school/edit"
+                className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-500 transition hover:border-purple-300 hover:text-purple-700"
+              >
+                Edit
+              </Link>
+            </div>
+            <p className="text-sm text-gray-500">
+              {dashboard.total_students} students ({dashboard.active_students}{' '}
+              active)
+            </p>
+          </div>
         </div>
       </div>
 

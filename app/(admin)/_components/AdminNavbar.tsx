@@ -29,15 +29,7 @@ const adminNavItems: NavItem[] = [
       { label: 'Admin Users', href: '/admin/users?type=admin' },
     ],
   },
-  {
-    label: 'Schools',
-    icon: 'building',
-    href: '/admin/schools',
-    children: [
-      { label: 'List Schools', href: '/admin/schools' },
-      { label: 'School Users', href: '/admin/users?type=schoolusers' },
-    ],
-  },
+  { label: 'Schools', icon: 'building', href: '/admin/schools' },
   {
     label: 'Payments',
     icon: 'credit-card',

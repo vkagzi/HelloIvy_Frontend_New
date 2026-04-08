@@ -5,11 +5,9 @@ import { useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api-client';
-import UserTable, { StatusBadge, Column } from '@/components/admin/UserTable';
+import { StatusBadge } from '@/components/admin/UserTable';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 
 interface StudentItem {
   id: number;
@@ -24,125 +22,57 @@ interface StudentItem {
   created_at: string;
 }
 
-const columns: Column<StudentItem>[] = [
-  {
-    key: 'name',
-    label: 'Name',
-    sortable: true,
-    render: (s) => (
-      <Link href={`/school/students/${s.id}`} className="font-medium text-purple-600 hover:text-purple-800">
-        {s.first_name || s.last_name ? `${s.first_name} ${s.last_name}`.trim() : s.email}
-      </Link>
-    ),
-  },
-  {
-    key: 'email',
-    label: 'Email',
-    sortable: true,
-    render: (s) => <span className="text-gray-500">{s.email}</span>,
-  },
-  {
-    key: 'grade',
-    label: 'Grade',
-    sortable: true,
-    render: (s) => <span className="text-gray-500">{s.grade || '-'}</span>,
-  },
-  {
-    key: 'section',
-    label: 'Section',
-    sortable: true,
-    render: (s) => <span className="text-gray-500">{s.section || '-'}</span>,
-  },
-  {
-    key: 'board',
-    label: 'Board',
-    sortable: true,
-    render: (s) => <span className="text-gray-500">{s.board || '-'}</span>,
-  },
-  {
-    key: 'status',
-    label: 'Status',
-    sortable: true,
-    render: (s) => <StatusBadge active={s.is_active} />,
-  },
-  {
-    key: 'last_login',
-    label: 'Last Login',
-    sortable: true,
-    render: (s) => (
-      <span className="text-gray-500">{s.last_login ? new Date(s.last_login).toLocaleString() : 'Never'}</span>
-    ),
-  },
-  {
-    key: 'actions',
-    label: 'Actions',
-    render: (s) => (
-      <Link
-        href={`/school/students/${s.id}`}
-        className="inline-flex rounded-md bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 transition hover:bg-purple-100"
-      >
-        View Details
-      </Link>
-    ),
-  },
-];
-
 export default function SchoolStudentsPage() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const schoolId = session?.user?.school_id;
   const initialGrade = searchParams?.get('grade') ?? '';
 
-  const [students, setStudents] = useState<StudentItem[]>([]);
   const [groupedStudents, setGroupedStudents] = useState<Record<string, StudentItem[]>>({});
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
-  const [gradeFilter, setGradeFilter] = useState(initialGrade);
-  const [isGrouped, setIsGrouped] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('');
 
   const fetchStudents = useCallback(async () => {
     if (!schoolId) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        page_size: pageSize.toString(),
-      });
-      if (gradeFilter) params.set('grade', gradeFilter);
-      if (isGrouped) params.set('group_by', 'grade');
+      const params = new URLSearchParams({ group_by: 'grade' });
 
       const data = await api<{
-        students?: StudentItem[];
         grouped_students?: Record<string, StudentItem[]>;
         total: number;
-        page?: number;
-        page_size?: number;
       }>(`/api/schools/${schoolId}/students/?${params.toString()}`);
-      
-      if (isGrouped && data.grouped_students) {
-        setGroupedStudents(data.grouped_students);
-        setStudents([]);
-      } else if (data.students) {
-        setStudents(data.students);
-        setGroupedStudents({});
-      }
+
+      const grouped = data.grouped_students ?? {};
+      setGroupedStudents(grouped);
       setTotal(data.total);
+
+      // Set initial active tab
+      const gradeKeys = Object.keys(grouped).sort((a, b) => {
+        if (a === 'No Grade') return 1;
+        if (b === 'No Grade') return -1;
+        return a.localeCompare(b, undefined, { numeric: true });
+      });
+
+      if (gradeKeys.length > 0) {
+        setActiveTab((prev) => {
+          if (prev && gradeKeys.includes(prev)) return prev;
+          if (initialGrade && gradeKeys.includes(initialGrade)) return initialGrade;
+          return gradeKeys[0];
+        });
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load students');
     } finally {
       setLoading(false);
     }
-  }, [schoolId, page, pageSize, gradeFilter, isGrouped]);
+  }, [schoolId, initialGrade]);
 
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
-
-  const totalPages = Math.ceil(total / pageSize);
-  const grades = ['8', '9', '10', '11', '12'];
 
   if (status === 'loading') return <LoadingState />;
 
@@ -160,154 +90,125 @@ export default function SchoolStudentsPage() {
 
   if (error) return <ErrorState message={error} />;
 
-  return (
-    <>
-      {isGrouped ? (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Students</h1>
-              <p className="text-sm text-gray-500">{total} total students</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={isGrouped ? "default" : "outline"}
-                onClick={() => setIsGrouped(!isGrouped)}
-                className="text-sm"
-              >
-                {isGrouped ? 'Grouped View' : 'List View'}
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/school/users/bulk-import">Bulk Import</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/school/students/create">+ Add Student</Link>
-              </Button>
-            </div>
-          </div>
+  const sortedGrades = Object.keys(groupedStudents).sort((a, b) => {
+    if (a === 'No Grade') return 1;
+    if (b === 'No Grade') return -1;
+    return a.localeCompare(b, undefined, { numeric: true });
+  });
 
-          {Object.entries(groupedStudents).length > 0 ? (
-            Object.entries(groupedStudents).map(([grade, gradeStudents]) => (
-              <div key={grade} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-                <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    {grade} ({gradeStudents.length} students)
-                  </h2>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Email</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Section</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Board</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Last Login</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {gradeStudents.map((s) => (
-                        <tr key={s.id} className="hover:bg-gray-50 transition">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Link
-                              href={`/school/students/${s.id}`}
-                              className="font-medium text-purple-600 hover:text-purple-800"
-                            >
-                              {s.first_name || s.last_name ? `${s.first_name} ${s.last_name}`.trim() : s.email}
-                            </Link>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.email}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.section || '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.board || '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <StatusBadge active={s.is_active} />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {s.last_login ? new Date(s.last_login).toLocaleString() : 'Never'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Link
-                              href={`/school/students/${s.id}`}
-                              className="inline-flex rounded-md bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 transition hover:bg-purple-100"
-                            >
-                              View Details
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="rounded-md bg-yellow-50 p-4">
-              <p className="text-sm text-yellow-700">No students found.</p>
-            </div>
-          )}
+  const activeStudents = activeTab ? (groupedStudents[activeTab] ?? []) : [];
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Students</h1>
+          <p className="text-sm text-gray-500">{total} total students</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button asChild className="">
+            <Link href="/school/users/bulk-import">Bulk Import</Link>
+          </Button>
+          <Button asChild className="">
+            <Link href="/school/students/create">+ Add Student</Link>
+          </Button>
+        </div>
+      </div>
+
+      {sortedGrades.length === 0 ? (
+        <div className="rounded-md bg-yellow-50 p-4">
+          <p className="text-sm text-yellow-700">No students found.</p>
         </div>
       ) : (
-        <>
-          <UserTable
-            data={students}
-            columns={columns}
-            title="Students"
-            totalLabel={`${total} total students`}
-            filters={{
-              showNameSearch: true,
-              showEmailSearch: true,
-              roleOptions: grades.map((g) => ({ value: g, label: `Grade ${g}` })),
-            }}
-            getNameValue={(s) => [s.first_name, s.last_name, s.email].filter(Boolean).join(' ')}
-            getRoleValue={(s) => s.grade}
-            getSortValue={(s, key) => {
-              switch (key) {
-                case 'name': return [s.first_name, s.last_name].filter(Boolean).join(' ').toLowerCase() || s.email.toLowerCase();
-                case 'email': return s.email.toLowerCase();
-                case 'grade': return s.grade || '';
-                case 'section': return s.section || '';
-                case 'board': return s.board || '';
-                case 'status': return s.is_active ? 'active' : 'inactive';
-                case 'last_login': return s.last_login ?? '';
-                default: return null;
-              }
-            }}
-            headerRight={
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={isGrouped ? "default" : "outline"}
-                  onClick={() => setIsGrouped(!isGrouped)}
-                  className="text-sm"
+        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+          {/* Grade Tabs */}
+          <div className="flex border-b border-gray-200 overflow-x-auto">
+            {sortedGrades.map((grade) => {
+              const count = groupedStudents[grade]?.length ?? 0;
+              const isActive = activeTab === grade;
+              return (
+                <button
+                  key={grade}
+                  onClick={() => setActiveTab(grade)}
+                  className={`flex items-center gap-2 whitespace-nowrap px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    isActive
+                      ? 'border-purple-600 text-purple-600 bg-white'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
                 >
-                  {isGrouped ? 'Grouped View' : 'List View'}
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                >
-                  <Link href="/school/users/bulk-import">
-                    Bulk Import
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                >
-                  <Link href="/school/students/create">
-                    + Add Student
-                  </Link>
-                </Button>
-              </div>
-            }
-            pagination={{
-              page,
-              totalPages,
-              onPageChange: setPage,
-            }}
-          />
-        </>
+                  {grade}
+                  <span
+                    className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      isActive
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Students Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Section</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Board</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Last Login</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {activeStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-400">
+                      No students in this grade.
+                    </td>
+                  </tr>
+                ) : (
+                  activeStudents.map((s) => (
+                    <tr key={s.id} className="hover:bg-gray-50 transition">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Link
+                          href={`/school/students/${s.id}`}
+                          className="font-medium text-purple-600 hover:text-purple-800"
+                        >
+                          {s.first_name || s.last_name ? `${s.first_name} ${s.last_name}`.trim() : s.email}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.section || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.board || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge active={s.is_active} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {s.last_login ? new Date(s.last_login).toLocaleString() : 'Never'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Link
+                          href={`/school/students/${s.id}`}
+                          className="inline-flex rounded-md bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 transition hover:bg-purple-100"
+                        >
+                          View Details
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
-    </>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { bulkImportApi, ValidateEmailsResponse, BulkImportResult } from '@/lib/bulk-import-api';
+import { bulkImportApi, ValidateEmailsResponse, BulkImportResult, BulkImportUser } from '@/lib/bulk-import-api';
 import api from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,6 +60,7 @@ export default function BulkImportUsers({
 
   // Upload step
   const [rawInput, setRawInput] = useState('');
+  const [nameLookup, setNameLookup] = useState<Record<string, { first_name: string; last_name: string }>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Review step
@@ -119,24 +120,35 @@ export default function BulkImportUsers({
       // Try to extract email column from CSV
       const lines = content.split('\n');
       const emails: string[] = [];
+      const newNames: Record<string, { first_name: string; last_name: string }> = {};
 
       // Check if first line is a header
       const firstLine = lines[0]?.toLowerCase() ?? '';
       const hasHeader = firstLine.includes('email') || firstLine.includes('mail');
       const startIdx = hasHeader ? 1 : 0;
 
-      // Find email column index
+      // Find column indices
       let emailColIdx = 0;
+      let firstNameColIdx = -1;
+      let lastNameColIdx = -1;
       if (hasHeader) {
         const headers = firstLine.split(',').map((h) => h.trim());
         emailColIdx = headers.findIndex((h) => h.includes('email') || h.includes('mail'));
         if (emailColIdx === -1) emailColIdx = 0;
+        firstNameColIdx = headers.findIndex((h) => h.includes('first') || h === 'firstname');
+        lastNameColIdx = headers.findIndex((h) => h.includes('last') || h === 'lastname');
       }
 
       for (let i = startIdx; i < lines.length; i++) {
         const cols = lines[i].split(',').map((c) => c.trim().replace(/^["']|["']$/g, ''));
         const val = cols[emailColIdx]?.trim();
-        if (val) emails.push(val);
+        if (val) {
+          emails.push(val);
+          newNames[val.toLowerCase()] = {
+            first_name: firstNameColIdx >= 0 ? (cols[firstNameColIdx] ?? '') : '',
+            last_name: lastNameColIdx >= 0 ? (cols[lastNameColIdx] ?? '') : '',
+          };
+        }
       }
 
       setRawInput((prev) => {
@@ -144,6 +156,7 @@ export default function BulkImportUsers({
         const joined = emails.join('\n');
         return existing ? `${existing}\n${joined}` : joined;
       });
+      setNameLookup((prev) => ({ ...prev, ...newNames }));
     };
     reader.readAsText(file);
     // Reset file input
@@ -234,7 +247,12 @@ export default function BulkImportUsers({
     setError(null);
     setIsImporting(true);
     try {
-      const result = await bulkImportApi.import(validEmails, role, effectiveSchoolId, academicLevel || null, gradeLevel || null, sendPasswordEmail);
+      const users: BulkImportUser[] = validEmails.map((email) => ({
+        email,
+        first_name: nameLookup[email.toLowerCase()]?.first_name || undefined,
+        last_name: nameLookup[email.toLowerCase()]?.last_name || undefined,
+      }));
+      const result = await bulkImportApi.import(users, role, effectiveSchoolId, academicLevel || null, gradeLevel || null, sendPasswordEmail);
       setImportResult(result);
       setStep('result');
     } catch (err: any) {
@@ -463,7 +481,7 @@ export default function BulkImportUsers({
               <p className="text-sm font-medium text-gray-700">
                 Drop a CSV here or <span className="text-purple-600 underline underline-offset-2">browse</span>
               </p>
-              <p className="text-xs text-gray-400">.csv or .txt · email column auto-detected</p>
+              <p className="text-xs text-gray-400">.csv or .txt · columns auto-detected: <span className="font-medium">first_name, last_name, email</span></p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -531,6 +549,8 @@ export default function BulkImportUsers({
                     <tr>
                       <th className="px-4 py-2 text-left font-medium text-gray-600">#</th>
                       <th className="px-4 py-2 text-left font-medium text-gray-600">Email</th>
+                      <th className="px-4 py-2 text-left font-medium text-gray-600">First Name</th>
+                      <th className="px-4 py-2 text-left font-medium text-gray-600">Last Name</th>
                       <th className="px-4 py-2 text-right font-medium text-gray-600">Action</th>
                     </tr>
                   </thead>
@@ -539,6 +559,8 @@ export default function BulkImportUsers({
                       <tr key={email} className="border-t border-gray-50 hover:bg-gray-50">
                         <td className="px-4 py-2 text-gray-400">{idx + 1}</td>
                         <td className="px-4 py-2 text-gray-900">{email}</td>
+                        <td className="px-4 py-2 text-gray-500">{nameLookup[email.toLowerCase()]?.first_name || <span className="text-gray-300">—</span>}</td>
+                        <td className="px-4 py-2 text-gray-500">{nameLookup[email.toLowerCase()]?.last_name || <span className="text-gray-300">—</span>}</td>
                         <td className="px-4 py-2 text-right">
                           <Button
                             onClick={() => handleRemoveValid(email)}
