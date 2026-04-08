@@ -7,13 +7,13 @@ import Link from 'next/link';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
 import { extractApiError } from '@/lib/utils/api-error';
-import { ACADEMIC_LEVELS, GRADE_LEVELS } from '@/lib/constants/academic';
+import { ADMIN_CREATE_ROLES } from '@/lib/constants/roles';
+import { useAcademicLevels } from '@/lib/hooks/useAcademicLevels';
 import { ErrorAlert } from '@/components/form/ErrorAlert';
 import { FormActions } from '@/components/form/FormActions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
-import { ADMIN_CREATE_ROLES } from '@/lib/constants/roles';
 
 interface SchoolOption {
   id: number;
@@ -168,13 +168,15 @@ export default function CreateUserPage() {
     }
   };
 
+  const { academicLevels, gradeLevels } = useAcademicLevels();
+
   // For admin type, show school field only when the selected role is schooladmin or schoolopsadmin
   const showSchoolField =
     typeParam === 'admin'
       ? ['schooladmin', 'schoolopsadmin'].includes(form.role)
       : config.showSchool;
 
-  const gradeOptions = form.academic_level ? (GRADE_LEVELS[form.academic_level] ?? []) : [];
+  const gradeOptions = form.academic_level ? (gradeLevels[form.academic_level] ?? []) : [];
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -286,7 +288,7 @@ export default function CreateUserPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">None</SelectItem>
-                  {ACADEMIC_LEVELS.map((al) => (
+                  {academicLevels.map((al) => (
                     <SelectItem key={al.value} value={al.value}>{al.label}</SelectItem>
                   ))}
                 </SelectContent>

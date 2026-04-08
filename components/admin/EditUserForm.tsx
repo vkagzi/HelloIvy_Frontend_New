@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import { ErrorAlert } from '@/components/form/ErrorAlert';
 import { FormActions } from '@/components/form/FormActions';
-import { ACADEMIC_LEVELS, GRADE_LEVELS } from '@/lib/constants/academic';
+import { useAcademicLevels } from '@/lib/hooks/useAcademicLevels';
 
 export interface EditUserFormValues {
   first_name: string;
@@ -74,10 +74,12 @@ export default function EditUserForm({
     await onSubmit(form);
   };
 
+  const { academicLevels, gradeLevels } = useAcademicLevels();
+
   const effectiveAcademicLevel = fixedAcademicLevel ?? form.academic_level;
   const gradeLevelOptions =
     (showAcademicFields || fixedAcademicLevel) && effectiveAcademicLevel
-      ? (GRADE_LEVELS[effectiveAcademicLevel] ?? [])
+      ? (gradeLevels[effectiveAcademicLevel] ?? [])
       : [];
 
   return (
@@ -129,7 +131,7 @@ export default function EditUserForm({
                   <SelectValue placeholder="Select academic level" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ACADEMIC_LEVELS.map((level) => (
+                  {academicLevels.map((level) => (
                     <SelectItem key={level.value} value={level.value}>
                       {level.label}
                     </SelectItem>

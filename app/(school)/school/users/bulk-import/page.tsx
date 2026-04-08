@@ -31,6 +31,7 @@ export default function SchoolBulkImportPage() {
       currentSchoolName={schoolName}
       backUrl="/school/students"
       onComplete={() => router.push('/school/students')}
+      hideRoleSelector
     />
   );
 }

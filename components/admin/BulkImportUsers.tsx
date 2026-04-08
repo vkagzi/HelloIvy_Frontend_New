@@ -6,8 +6,8 @@ import api from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
+import { useAcademicLevels } from '@/lib/hooks/useAcademicLevels';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -32,19 +32,19 @@ interface BulkImportUsersProps {
 
 type Step = 'configure' | 'upload' | 'review' | 'result';
 
-const ACADEMIC_LEVELS = [
-  { value: 'high_school', label: 'High School (9th–12th grade)' },
-  { value: 'undergraduate', label: 'College/Undergraduate' },
-  { value: 'postgraduate', label: "Postgraduate/Master's" },
-  { value: 'professional', label: 'Working Professional' },
-];
+interface GridRow {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
 
-const GRADE_LEVELS: Record<string, string[]> = {
-  high_school: ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-  undergraduate: ['Year 1', 'Year 2', 'Year 3', 'Year 4'],
-  postgraduate: ['Year 1', 'Year 2'],
-  professional: ['1-3 years', '3-5 years', '5+ years'],
-};
+const createEmptyRow = (): GridRow => ({
+  id: Math.random().toString(36).slice(2),
+  first_name: '',
+  last_name: '',
+  email: '',
+});
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -56,16 +56,17 @@ export default function BulkImportUsers({
   backUrl,
   hideRoleSelector = false,
 }: BulkImportUsersProps) {
+  const { academicLevels, gradeLevels } = useAcademicLevels();
   const [step, setStep] = useState<Step>('configure');
 
   // Upload step
-  const [rawInput, setRawInput] = useState('');
+  const [gridRows, setGridRows] = useState<GridRow[]>(() => Array.from({ length: 5 }, createEmptyRow));
   const [nameLookup, setNameLookup] = useState<Record<string, { first_name: string; last_name: string }>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Review step
   const [validEmails, setValidEmails] = useState<string[]>([]);
-  const [invalidEmails, setInvalidEmails] = useState<{ email: string; reason: string }[]>([]);
+  const [invalidEmails, setInvalidEmails] = useState<{ id: string; email: string; reason: string; first_name: string; last_name: string }[]>([]);
   const [isValidating, setIsValidating] = useState(false);
 
   // Configure step
@@ -103,11 +104,32 @@ export default function BulkImportUsers({
 
   // ─── Upload helpers ──────────────────────────────────────────────────────
 
-  const parseEmails = (text: string): string[] => {
-    return text
-      .split(/[\n,;]+/)
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
+  const getEmailsFromGrid = () =>
+    gridRows.map((r) => r.email.trim().toLowerCase()).filter(Boolean);
+
+  const handleUpdateGridRow = (id: string, field: keyof Omit<GridRow, 'id'>, value: string) => {
+    setGridRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  };
+
+  const handleRemoveGridRow = (id: string) => {
+    setGridRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const handleAddGridRow = () => {
+    setGridRows((prev) => [...prev, createEmptyRow()]);
+  };
+
+  const handleDownloadSample = () => {
+    const csv = `first_name,last_name,email\nJohn,Doe,john.doe@example.com\nJane,Smith,jane.smith@example.com\n`;
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bulk_import_sample.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,17 +139,13 @@ export default function BulkImportUsers({
     const reader = new FileReader();
     reader.onload = (ev) => {
       const content = ev.target?.result as string;
-      // Try to extract email column from CSV
       const lines = content.split('\n');
-      const emails: string[] = [];
-      const newNames: Record<string, { first_name: string; last_name: string }> = {};
+      const newRows: GridRow[] = [];
 
-      // Check if first line is a header
       const firstLine = lines[0]?.toLowerCase() ?? '';
       const hasHeader = firstLine.includes('email') || firstLine.includes('mail');
       const startIdx = hasHeader ? 1 : 0;
 
-      // Find column indices
       let emailColIdx = 0;
       let firstNameColIdx = -1;
       let lastNameColIdx = -1;
@@ -141,47 +159,63 @@ export default function BulkImportUsers({
 
       for (let i = startIdx; i < lines.length; i++) {
         const cols = lines[i].split(',').map((c) => c.trim().replace(/^["']|["']$/g, ''));
-        const val = cols[emailColIdx]?.trim();
-        if (val) {
-          emails.push(val);
-          newNames[val.toLowerCase()] = {
+        const email = cols[emailColIdx]?.trim();
+        if (email) {
+          newRows.push({
+            id: Math.random().toString(36).slice(2),
+            email,
             first_name: firstNameColIdx >= 0 ? (cols[firstNameColIdx] ?? '') : '',
             last_name: lastNameColIdx >= 0 ? (cols[lastNameColIdx] ?? '') : '',
-          };
+          });
         }
       }
 
-      setRawInput((prev) => {
-        const existing = prev.trim();
-        const joined = emails.join('\n');
-        return existing ? `${existing}\n${joined}` : joined;
+      setGridRows((prev) => {
+        const nonEmpty = prev.filter((r) => r.email.trim() || r.first_name.trim() || r.last_name.trim());
+        const merged = [...nonEmpty, ...newRows];
+        // Always keep at least a few empty rows at the end for more input
+        return merged;
       });
-      setNameLookup((prev) => ({ ...prev, ...newNames }));
     };
     reader.readAsText(file);
-    // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleValidate = useCallback(async () => {
-    const emails = parseEmails(rawInput);
+    const emails = getEmailsFromGrid();
     if (emails.length === 0) {
       setError('Please enter at least one email address');
       return;
     }
+    // Sync nameLookup from grid
+    const lookup: Record<string, { first_name: string; last_name: string }> = {};
+    gridRows.forEach((r) => {
+      if (r.email.trim()) {
+        lookup[r.email.trim().toLowerCase()] = { first_name: r.first_name, last_name: r.last_name };
+      }
+    });
+    setNameLookup(lookup);
     setError(null);
     setIsValidating(true);
     try {
       const result: ValidateEmailsResponse = await bulkImportApi.validate(emails);
       setValidEmails(result.valid);
-      setInvalidEmails(result.invalid);
+      setInvalidEmails(
+        result.invalid.map((item) => ({
+          id: Math.random().toString(36).slice(2),
+          email: item.email,
+          reason: item.reason,
+          first_name: lookup[item.email.toLowerCase()]?.first_name ?? '',
+          last_name: lookup[item.email.toLowerCase()]?.last_name ?? '',
+        }))
+      );
       setStep('review');
     } catch (err: any) {
       setError(err?.message || 'Validation failed');
     } finally {
       setIsValidating(false);
     }
-  }, [rawInput]);
+  }, [gridRows]);
 
   // ─── Review helpers ──────────────────────────────────────────────────────
 
@@ -189,8 +223,18 @@ export default function BulkImportUsers({
     setValidEmails((prev) => prev.filter((e) => e !== email));
   };
 
-  const handleRemoveInvalid = (email: string) => {
-    setInvalidEmails((prev) => prev.filter((e) => e.email !== email));
+  const handleRemoveInvalid = (id: string) => {
+    setInvalidEmails((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const handleFixInvalidField = (id: string, field: 'email' | 'first_name' | 'last_name', value: string) => {
+    setInvalidEmails((prev) =>
+      prev.map((e) =>
+        e.id === id
+          ? { ...e, [field]: value, ...(field === 'email' ? { reason: 'Corrected – will re-validate' } : {}) }
+          : e
+      )
+    );
   };
 
   const handleFixInvalid = (oldEmail: string, newEmail: string) => {
@@ -210,9 +254,29 @@ export default function BulkImportUsers({
     setIsValidating(true);
     try {
       const result = await bulkImportApi.validate(corrected);
+      // Sync corrected names into nameLookup before moving to valid
+      setNameLookup((prev) => {
+        const next = { ...prev };
+        invalidEmails
+          .filter((e) => e.reason === 'Corrected – will re-validate')
+          .forEach((e) => {
+            next[e.email.toLowerCase()] = { first_name: e.first_name, last_name: e.last_name };
+          });
+        return next;
+      });
       setValidEmails((prev) => [...prev, ...result.valid]);
       setInvalidEmails((prev) =>
-        prev.filter((e) => e.reason !== 'Corrected – will re-validate').concat(result.invalid)
+        prev
+          .filter((e) => e.reason !== 'Corrected – will re-validate')
+          .concat(
+            result.invalid.map((item) => ({
+              id: Math.random().toString(36).slice(2),
+              email: item.email,
+              reason: item.reason,
+              first_name: invalidEmails.find((e) => e.email === item.email)?.first_name ?? '',
+              last_name: invalidEmails.find((e) => e.email === item.email)?.last_name ?? '',
+            }))
+          )
       );
     } catch {
       // keep as-is
@@ -301,7 +365,7 @@ export default function BulkImportUsers({
         <div className="ml-2 text-sm text-gray-500">
           {step === 'configure' && 'Configure'}
           {step === 'upload' && 'Add Emails'}
-          {step === 'review' && 'Review Emails'}
+          {step === 'review' && 'Review Records'}
           {step === 'result' && 'Results'}
         </div>
       </div>
@@ -369,8 +433,8 @@ export default function BulkImportUsers({
             </div>
             )}
 
-            {/* Academic Level selector (not applicable for schooladmin) */}
-            {role !== 'schooladmin' && (<div className="mb-4">
+            {/* Academic Level selector (not applicable for schooladmin or when role is schooladmin) */}
+            {mode !== 'schooladmin' && role !== 'schooladmin' && (<div className="mb-4">
               <Label className="mb-2 block">
                 Academic Level
               </Label>
@@ -380,10 +444,7 @@ export default function BulkImportUsers({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">None</SelectItem>
-                  {(mode === 'schooladmin'
-                    ? ACADEMIC_LEVELS.filter((al) => al.value === 'high_school')
-                    : ACADEMIC_LEVELS
-                  ).map((al) => (
+                  {academicLevels.map((al) => (
                     <SelectItem key={al.value} value={al.value}>{al.label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -391,7 +452,7 @@ export default function BulkImportUsers({
             </div>)}
 
             {/* Grade Level selector */}
-            {role !== 'schooladmin' && academicLevel && (GRADE_LEVELS[academicLevel] ?? []).length > 0 && (
+            {role !== 'schooladmin' && academicLevel && (gradeLevels[academicLevel] ?? []).length > 0 && (
               <div className="mb-4">
                 <Label className="mb-2 block">
                   Grade Level
@@ -402,7 +463,7 @@ export default function BulkImportUsers({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">Select grade level</SelectItem>
-                    {(GRADE_LEVELS[academicLevel] ?? []).map((g) => (
+                    {(gradeLevels[academicLevel] ?? []).map((g) => (
                       <SelectItem key={g} value={g}>{g}</SelectItem>
                     ))}
                   </SelectContent>
@@ -461,7 +522,7 @@ export default function BulkImportUsers({
 
             {/* CSV Upload drop zone */}
             <div
-              className="mb-5 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-8 transition-colors hover:border-purple-400 hover:bg-purple-50"
+              className="mb-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-8 transition-colors hover:border-purple-400 hover:bg-purple-50"
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
@@ -491,26 +552,106 @@ export default function BulkImportUsers({
               />
             </div>
 
+            {/* Sample CSV download */}
+            <div className="mb-5 flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+              <button
+                type="button"
+                onClick={handleDownloadSample}
+                className="text-xs text-purple-600 underline underline-offset-2 hover:text-purple-800"
+              >
+                Download sample CSV
+              </button>
+              <span className="text-xs text-gray-400">— use this as a template (header row is ignored on import)</span>
+            </div>
+
             {/* Divider */}
             <div className="mb-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-gray-200" />
-              <span className="text-xs font-medium uppercase tracking-wider text-gray-400">or paste emails</span>
+              <span className="text-xs font-medium uppercase tracking-wider text-gray-400">or fill in directly</span>
               <div className="h-px flex-1 bg-gray-200" />
             </div>
 
-            {/* Manual input */}
+            {/* Spreadsheet grid */}
             <div>
-              <Textarea
-                value={rawInput}
-                onChange={(e) => setRawInput(e.target.value)}
-                rows={8}
-                placeholder={`john@example.com\njane@example.com\nstudent@school.edu`}
-                className="w-full resize-none rounded-lg border border-gray-200 p-3 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-              />
-              <p className="mt-2 text-xs text-gray-400">
-                One per line, or comma / semicolon separated ·{' '}
-                <span className="font-medium text-gray-600">{parseEmails(rawInput).length} email(s) detected</span>
-              </p>
+              <div className="overflow-auto rounded-lg border border-gray-200">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="w-8 border-b border-gray-200 px-3 py-2 text-center text-xs font-medium text-gray-400">#</th>
+                      <th className="border-b border-l border-gray-200 px-3 py-2 text-left text-xs font-medium text-gray-600">First Name</th>
+                      <th className="border-b border-l border-gray-200 px-3 py-2 text-left text-xs font-medium text-gray-600">Last Name</th>
+                      <th className="border-b border-l border-gray-200 px-3 py-2 text-left text-xs font-medium text-gray-600">
+                        Email <span className="text-red-500">*</span>
+                      </th>
+                      <th className="w-8 border-b border-l border-gray-200 px-2 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gridRows.map((row, idx) => (
+                      <tr key={row.id} className="group border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                        <td className="px-3 py-1.5 text-center text-xs text-gray-400">{idx + 1}</td>
+                        <td className="border-l border-gray-100 px-1.5 py-1.5">
+                          <input
+                            type="text"
+                            value={row.first_name}
+                            onChange={(e) => handleUpdateGridRow(row.id, 'first_name', e.target.value)}
+                            placeholder="John"
+                            className="w-full rounded border-0 bg-transparent px-1.5 py-0.5 text-sm text-gray-900 placeholder-gray-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-400"
+                          />
+                        </td>
+                        <td className="border-l border-gray-100 px-1.5 py-1.5">
+                          <input
+                            type="text"
+                            value={row.last_name}
+                            onChange={(e) => handleUpdateGridRow(row.id, 'last_name', e.target.value)}
+                            placeholder="Doe"
+                            className="w-full rounded border-0 bg-transparent px-1.5 py-0.5 text-sm text-gray-900 placeholder-gray-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-400"
+                          />
+                        </td>
+                        <td className="border-l border-gray-100 px-1.5 py-1.5">
+                          <input
+                            type="email"
+                            value={row.email}
+                            onChange={(e) => handleUpdateGridRow(row.id, 'email', e.target.value)}
+                            placeholder="john@example.com"
+                            className="w-full rounded border-0 bg-transparent px-1.5 py-0.5 text-sm text-gray-900 placeholder-gray-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-400"
+                          />
+                        </td>
+                        <td className="border-l border-gray-100 px-2 py-1.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveGridRow(row.id)}
+                            className="invisible text-gray-300 hover:text-red-500 group-hover:visible"
+                            aria-label="Remove row"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={handleAddGridRow}
+                  className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add row
+                </button>
+                <p className="text-xs text-gray-400">
+                  <span className="font-medium text-gray-600">{getEmailsFromGrid().length} email(s)</span> filled in
+                </p>
+              </div>
             </div>
           </div>
 
@@ -523,7 +664,7 @@ export default function BulkImportUsers({
             </Button>
             <Button
               onClick={handleValidate}
-              disabled={isValidating || parseEmails(rawInput).length === 0}
+              disabled={isValidating || getEmailsFromGrid().length === 0}
             >
               {isValidating ? 'Validating...' : 'Validate & Continue'}
             </Button>
@@ -534,14 +675,14 @@ export default function BulkImportUsers({
       {/* ── Step 3: Review ─────────────────────────────────────────────── */}
       {step === 'review' && (
         <div className="space-y-6">
-          {/* Valid emails table */}
+          {/* Valid records table */}
           <div className="rounded-lg border border-gray-200 bg-white p-6">
             <h2 className="mb-1 text-lg font-semibold text-gray-900">
-              Emails to be imported ({validEmails.length})
+              Records to be imported ({validEmails.length})
             </h2>
-            <p className="mb-4 text-sm text-gray-500">These emails will be imported. Please confirm the details</p>
+            <p className="mb-4 text-sm text-gray-500">These records will be imported. Please confirm the details</p>
             {validEmails.length === 0 ? (
-              <p className="text-sm text-gray-400">No valid emails found.</p>
+              <p className="text-sm text-gray-400">No valid records found.</p>
             ) : (
               <div className="max-h-64 overflow-auto rounded border border-gray-100">
                 <table className="w-full text-sm">
@@ -579,40 +720,58 @@ export default function BulkImportUsers({
             )}
           </div>
 
-          {/* Invalid emails table */}
+          {/* Invalid records table */}
           {invalidEmails.length > 0 && (
             <div className="rounded-lg border border-red-200 bg-white p-6">
               <h2 className="mb-1 text-lg font-semibold text-red-800">
-                Invalid Emails ({invalidEmails.length})
+                Invalid Records ({invalidEmails.length})
               </h2>
               <p className="mb-4 text-sm text-red-600">
-                These emails have issues. You can correct them or remove them. Click on "Re-validate" after making corrections.
+                These records have issues. You can correct the email or remove the record. Click &ldquo;Re-validate&rdquo; after making corrections.
               </p>
               <div className="max-h-64 overflow-auto rounded border border-red-100">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-red-50">
                     <tr>
                       <th className="px-4 py-2 text-left font-medium text-red-700">#</th>
+                      <th className="px-4 py-2 text-left font-medium text-red-700">First Name</th>
+                      <th className="px-4 py-2 text-left font-medium text-red-700">Last Name</th>
                       <th className="px-4 py-2 text-left font-medium text-red-700">Email</th>
-                      <th className="px-4 py-2 text-left font-medium text-red-700">Reason</th>
+                      <th className="px-4 py-2 text-left font-medium text-red-700">Issue</th>
                       <th className="px-4 py-2 text-right font-medium text-red-700">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {invalidEmails.map((item, idx) => (
-                      <tr key={`${item.email}-${idx}`} className="border-t border-red-50 hover:bg-red-50">
+                      <tr key={item.id} className="border-t border-red-50 hover:bg-red-50">
                         <td className="px-4 py-2 text-gray-400">{idx + 1}</td>
                         <td className="px-4 py-2">
                           <Input
+                            value={item.first_name}
+                            onChange={(e) => handleFixInvalidField(item.id, 'first_name', e.target.value)}
+                            placeholder="First name"
+                            className="h-7 px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <Input
+                            value={item.last_name}
+                            onChange={(e) => handleFixInvalidField(item.id, 'last_name', e.target.value)}
+                            placeholder="Last name"
+                            className="h-7 px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <Input
                             value={item.email}
-                            onChange={(e) => handleFixInvalid(item.email, e.target.value)}
+                            onChange={(e) => handleFixInvalidField(item.id, 'email', e.target.value)}
                             className="h-7 px-2 py-1 text-sm"
                           />
                         </td>
                         <td className="px-4 py-2 text-xs text-red-600">{item.reason}</td>
                         <td className="px-4 py-2 text-right">
                           <Button
-                            onClick={() => handleRemoveInvalid(item.email)}
+                            onClick={() => handleRemoveInvalid(item.id)}
                             variant="ghost"
                             size="sm"
                             className="text-red-500 hover:text-red-700 hover:bg-transparent"
@@ -648,9 +807,9 @@ export default function BulkImportUsers({
             <Button
               onClick={handleProceedToImport}
               disabled={isImporting || validEmails.length === 0 || invalidEmails.length > 0}
-              title={invalidEmails.length > 0 ? 'Fix or remove all invalid emails before continuing' : undefined}
+              title={invalidEmails.length > 0 ? 'Fix or remove all invalid records before continuing' : undefined}
             >
-              {isImporting ? 'Importing...' : `Import ${validEmails.length} Users`}
+              {isImporting ? 'Importing...' : `Import ${validEmails.length} Records`}
             </Button>
           </div>
         </div>

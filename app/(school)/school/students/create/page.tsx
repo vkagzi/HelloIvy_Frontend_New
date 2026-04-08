@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import api from '@/lib/api-client';
 import { useToast } from '@/app/_components/Toast';
 import { extractApiError } from '@/lib/utils/api-error';
-import { GRADE_LEVELS } from '@/lib/constants/academic';
+import { useAcademicLevels } from '@/lib/hooks/useAcademicLevels';
 import { ErrorAlert } from '@/components/form/ErrorAlert';
 import { PageHeader } from '@/components/form/PageHeader';
 import { FormActions } from '@/components/form/FormActions';
@@ -19,6 +19,7 @@ export default function CreateStudentPage() {
   const schoolId = session?.user?.school_id;
   const schoolName = session?.user?.school_name;
   const { addToast } = useToast();
+  const { gradeLevels } = useAcademicLevels();
 
   const [form, setForm] = useState({
     email: '',
@@ -155,7 +156,7 @@ export default function CreateStudentPage() {
               <SelectValue placeholder="Select grade level" />
             </SelectTrigger>
             <SelectContent>
-              {(GRADE_LEVELS['high_school'] ?? []).map((grade) => (
+              {(gradeLevels['high_school'] ?? []).map((grade) => (
                 <SelectItem key={grade} value={grade}>{grade}</SelectItem>
               ))}
             </SelectContent>

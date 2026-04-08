@@ -4,6 +4,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api-client';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface SchoolItem {
   id: number;
@@ -71,32 +79,31 @@ export default function SchoolsListPage() {
         </Link>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+      <div className="rounded-lg border border-gray-200 bg-white">
+        <Table>
+          <TableHeader className="bg-gray-50">
+            <TableRow>
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-gray-500">
                 School
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              </TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-gray-500">
                 Location
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              </TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-gray-500">
                 Students
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              </TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-gray-500">
                 Active Modules
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              </TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-gray-500">
                 Status
-              </th>
-
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {schools.map((school) => (
-              <tr key={school.id} className="hover:bg-gray-50">
-                <td className="whitespace-nowrap px-6 py-4">
+              <TableRow key={school.id} className="hover:bg-gray-50">
+                <TableCell className="whitespace-nowrap">
                   <div className="flex items-center gap-3">
                     {school.logo_url ? (
                       <img
@@ -116,16 +123,16 @@ export default function SchoolsListPage() {
                       {school.name}
                     </Link>
                   </div>
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-gray-500">
                   {[school.city, school.state, school.country]
                     .filter(Boolean)
                     .join(', ') || '-'}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-gray-500">
                   {school.student_count}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-gray-500">
                   {(() => {
                     const activeModules = school.subscriptions.filter((s) => s.is_active);
                     if (activeModules.length === 0) return <span>0</span>;
@@ -145,8 +152,8 @@ export default function SchoolsListPage() {
                       </button>
                     );
                   })()}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4">
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
                   <span
                     className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
                       school.is_active
@@ -156,12 +163,11 @@ export default function SchoolsListPage() {
                   >
                     {school.is_active ? 'Active' : 'Inactive'}
                   </span>
-                </td>
-
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {popover && (() => {

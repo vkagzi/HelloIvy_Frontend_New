@@ -1,7 +1,7 @@
 'use client';
 
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
-import { ACADEMIC_LEVELS, GRADE_LEVELS } from '@/lib/constants/academic';
+import { useAcademicLevels } from '@/lib/hooks/useAcademicLevels';
 
 interface AcademicLevelSelectorProps {
   academicLevel: string;
@@ -16,7 +16,8 @@ export function AcademicLevelSelector({
   onAcademicLevelChange,
   onGradeLevelChange,
 }: AcademicLevelSelectorProps) {
-  const gradeOptions = academicLevel ? (GRADE_LEVELS[academicLevel] ?? []) : [];
+  const { academicLevels, gradeLevels } = useAcademicLevels();
+  const gradeOptions = academicLevel ? (gradeLevels[academicLevel] ?? []) : [];
 
   return (
     <>
@@ -29,7 +30,7 @@ export function AcademicLevelSelector({
             <SelectValue placeholder="Select academic level" />
           </SelectTrigger>
           <SelectContent>
-            {ACADEMIC_LEVELS.map((level) => (
+            {academicLevels.map((level) => (
               <SelectItem key={level.value} value={level.value}>
                 {level.label}
               </SelectItem>

@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import ModuleAssignDialog from '@/components/admin/ModuleAssignDialog';
 import { ALL_ROLES, ADMIN_ROLES } from '@/lib/constants/roles';
+import { useAcademicLevels } from '@/lib/hooks/useAcademicLevels';
 
 interface SchoolOption {
   id: number;
@@ -69,28 +70,6 @@ const PROFILE_SECTIONS = [
   { key: 'additional', label: 'Additional Information', contextKey: 'additional' },
 ] as const;
 
-const ACADEMIC_LEVEL_LABELS: Record<string, string> = {
-  high_school: 'High School (9th–12th grade)',
-  undergraduate: 'College/Undergraduate',
-  postgraduate: "Postgraduate/Master's",
-  professional: 'Working Professional',
-};
-
-const ACADEMIC_LEVELS = [
-  { value: 'high_school', label: 'High School (9th–12th grade)' },
-  { value: 'undergraduate', label: 'College/Undergraduate' },
-  { value: 'postgraduate', label: "Postgraduate/Master's" },
-  { value: 'professional', label: 'Working Professional' },
-];
-
-const GRADE_LEVELS: Record<string, string[]> = {
-  high_school: ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-  undergraduate: ['Year 1', 'Year 2', 'Year 3', 'Year 4'],
-  postgraduate: ['Year 1', 'Year 2'],
-  professional: ['1-3 years', '3-5 years', '5+ years'],
-};
-
-
 const ROLES = ALL_ROLES;
 
 export default function AdminUserDetailPage() {
@@ -106,6 +85,9 @@ export default function AdminUserDetailPage() {
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = useState(false);
+
+  const { academicLevels, gradeLevels } = useAcademicLevels();
+  const academicLevelLabels = Object.fromEntries(academicLevels.map((al) => [al.value, al.label]));
 
   // Edit Details modal state
   const [editOpen, setEditOpen] = useState(false);
@@ -330,7 +312,7 @@ export default function AdminUserDetailPage() {
         infoFields={[
           ...(!ADMIN_ROLES.includes(user.role as typeof ADMIN_ROLES[number]) ? [
             { label: 'School', value: user.school_name || (user.school_id ? String(user.school_id) : 'No School') },
-            { label: 'Academic Level', value: (user.academic_level && ACADEMIC_LEVEL_LABELS[user.academic_level]) || '—' },
+            { label: 'Academic Level', value: (user.academic_level && academicLevelLabels[user.academic_level]) || '—' },
             { label: 'Grade Level', value: user.grade_level || '—' },
           ] : []),
           { label: 'Created', value: formatDate(user.created_at) },
@@ -616,13 +598,13 @@ export default function AdminUserDetailPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">None</SelectItem>
-                  {ACADEMIC_LEVELS.map((al) => (
+                  {academicLevels.map((al) => (
                     <SelectItem key={al.value} value={al.value}>{al.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            {editAcademicLevel && (GRADE_LEVELS[editAcademicLevel] ?? []).length > 0 && (
+            {editAcademicLevel && (gradeLevels[editAcademicLevel] ?? []).length > 0 && (
               <div className="space-y-1">
                 <Label htmlFor="edit-grade-level">Grade Level</Label>
                 <Select value={editGradeLevel || '__none__'} onValueChange={(v) => setEditGradeLevel(v === '__none__' ? '' : v)}>
@@ -631,7 +613,7 @@ export default function AdminUserDetailPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">Select grade level</SelectItem>
-                    {(GRADE_LEVELS[editAcademicLevel] ?? []).map((g) => (
+                    {(gradeLevels[editAcademicLevel] ?? []).map((g) => (
                       <SelectItem key={g} value={g}>{g}</SelectItem>
                     ))}
                   </SelectContent>
