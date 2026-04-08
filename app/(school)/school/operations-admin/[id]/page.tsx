@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import api from '@/lib/api-client';
 import { formatDate, formatDateTime } from '@/lib/utils/date-formatter';
 import UserDetailHeader from '@/components/admin/UserDetailHeader';
@@ -16,6 +17,8 @@ import { Button } from '@/components/ui/button';
 interface OpsAdminDetail {
   id: number;
   email: string;
+  first_name?: string;
+  last_name?: string;
   is_active: boolean;
   last_login: string | null;
   created_at: string;
@@ -117,12 +120,18 @@ export default function OpsAdminDetailPage() {
   if (loading) return <LoadingState message="Loading operations admin details..." />;
   if (error || !opsAdmin) return <ErrorState message={error || 'Operations admin not found'} />;
 
+  const opsAdminName =
+    opsAdmin.first_name && opsAdmin.last_name
+      ? `${opsAdmin.first_name} ${opsAdmin.last_name}`
+      : opsAdmin.first_name || opsAdmin.last_name || undefined;
+
   return (
     <div>
       <UserDetailHeader
         backHref="/school/operations-admin"
         backLabel="Back to Operations Admins"
         email={opsAdmin.email}
+        name={opsAdminName}
         isActive={opsAdmin.is_active}
         userId={opsAdmin.id}
         infoFields={[
@@ -132,6 +141,12 @@ export default function OpsAdminDetailPage() {
         ]}
         actions={
           <>
+            <Link
+              href={`/school/operations-admin/${opsAdminId}/edit`}
+              className="inline-flex items-center gap-1 rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-purple-700"
+            >
+              Edit
+            </Link>
             <Button
               onClick={() => {
                 setPwError(null);

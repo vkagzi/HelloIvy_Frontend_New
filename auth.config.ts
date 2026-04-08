@@ -1,7 +1,7 @@
 import type { NextAuthConfig } from 'next-auth';
 
 // Public routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/signup', '/', '/essay-evaluator', '/logout'];
+const PUBLIC_ROUTES = ['/login', '/signup', '/', '/essay-evaluator', '/logout', '/pay-as-student', '/pay-as-student/checkout'];
 
 export const authConfig = {
   pages: {

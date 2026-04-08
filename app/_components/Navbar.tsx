@@ -15,7 +15,7 @@ const Navbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const pathname = usePathname();
   const { isDrawerOpen, closeDrawer } = useNavbar();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const userRole = session?.user?.role ?? 'student';
   const isAdmin = ['superadmin', 'operationadmin'].includes(userRole);
 
@@ -136,6 +136,10 @@ const Navbar: React.FC = () => {
       )}
     </>
   );
+
+  if (status === 'unauthenticated') {
+    return null;
+  }
 
   return (
     <>

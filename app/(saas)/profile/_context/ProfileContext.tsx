@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { getProfileData } from '@/app/(saas)/profile/lib/api';
 import { getToken } from '@/lib/api';
+import { useSession } from 'next-auth/react';
 
 type ProfileData = Record<string, unknown>;
 
@@ -25,6 +26,7 @@ type ProfileContextType = {
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { status } = useSession();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [rawApiResponse, setRawApiResponse] = useState<{ profile: Record<string, unknown> } | null>(null);
   const [personalDetails, setPersonalDetails] = useState<ProfileData>({});
@@ -116,10 +118,11 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   useEffect(() => {
+    if (status !== 'authenticated') return;
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
     fetchProfileData();
-  }, [fetchProfileData]);
+  }, [status, fetchProfileData]);
 
   return (
     <ProfileContext.Provider

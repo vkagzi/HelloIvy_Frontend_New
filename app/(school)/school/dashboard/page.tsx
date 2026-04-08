@@ -21,8 +21,6 @@ interface ModuleInfo {
 
 interface GradeInfo {
   grade: string;
-  sections: string[];
-  boards: string[];
   student_count: number;
   domain_discovery_count: number;
   career_discovery_count: number;
@@ -289,12 +287,6 @@ export default function SchoolDashboardPage() {
                   Grade
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Sections
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Board
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Students
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -313,12 +305,6 @@ export default function SchoolDashboardPage() {
                 <tr key={g.grade} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                     {g.grade}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {g.sections.join(', ') || '-'}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {g.boards.join(', ') || '-'}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {g.student_count}
@@ -342,7 +328,7 @@ export default function SchoolDashboardPage() {
               {dashboard.grade_overview.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={5}
                     className="px-6 py-8 text-center text-sm text-gray-400"
                   >
                     No grade data available yet.
@@ -351,82 +337,6 @@ export default function SchoolDashboardPage() {
               )}
             </tbody>
           </table>
-        </div>
-      </section>
-
-      {/* Section 3: Application Overview (Placeholder) */}
-      <section>
-        <h2 className="mb-4 text-lg font-semibold text-gray-800">
-          Application Overview
-        </h2>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h3 className="mb-4 text-sm font-semibold uppercase text-gray-500">
-              Quick Stats
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">
-                  Applications Submitted
-                </span>
-                <span className="text-xl font-bold text-gray-900">—</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">
-                  Avg. per Student
-                </span>
-                <span className="text-xl font-bold text-gray-900">—</span>
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-gray-400">
-              Application tracking coming soon
-            </p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h3 className="mb-4 text-sm font-semibold uppercase text-gray-500">
-              Top 5 Colleges
-            </h3>
-            <div className="flex h-40 items-center justify-center text-sm text-gray-400">
-              Chart placeholder — coming soon
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 4: Calendar & Milestones */}
-      <section>
-        <h2 className="mb-4 text-lg font-semibold text-gray-800">
-          Calendar & Milestones
-        </h2>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          {deadlines.length > 0 ? (
-            <div className="space-y-3">
-              {deadlines.map((dl) => (
-                <div
-                  key={dl.id}
-                  className="flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 px-4 py-3"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">{dl.title}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(dl.date).toLocaleDateString()}
-                      {dl.time ? ` at ${dl.time}` : ''}
-                      {dl.target_grade
-                        ? ` · Grade ${dl.target_grade}`
-                        : ' · All grades'}
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-400">
-                    by {dl.created_by_email}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="py-8 text-center text-sm text-gray-400">
-              No deadlines set yet.
-            </p>
-          )}
         </div>
       </section>
 

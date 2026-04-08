@@ -40,10 +40,11 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
   }, []);
 
   useEffect(() => {
+    if (!session) return;
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 60_000);
     return () => clearInterval(interval);
-  }, [fetchUnreadCount]);
+  }, [session, fetchUnreadCount]);
 
   // Calculate user initials from name
   const getUserInitials = (name: string): string => {

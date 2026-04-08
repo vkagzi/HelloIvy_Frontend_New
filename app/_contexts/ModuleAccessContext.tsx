@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import api from '@/lib/api-client';
+import { useSession } from 'next-auth/react';
 
 type ModuleAccessContextType = {
   modules: string[];
@@ -12,6 +13,7 @@ type ModuleAccessContextType = {
 const ModuleAccessContext = createContext<ModuleAccessContextType | undefined>(undefined);
 
 export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { status } = useSession();
   const [modules, setModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const hasFetchedRef = useRef(false);
@@ -28,10 +30,15 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   useEffect(() => {
+    if (status === 'loading') return;
+    if (status === 'unauthenticated') {
+      setLoading(false);
+      return;
+    }
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
     fetchModules();
-  }, [fetchModules]);
+  }, [status, fetchModules]);
 
   const hasAccess = useCallback(
     (moduleName: string): boolean => modules.includes(moduleName),
