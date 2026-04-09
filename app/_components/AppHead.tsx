@@ -4,6 +4,8 @@ import { Heading, Label } from '@/app/_components/Typography';
 import { FiIcon } from '@/app/_components/Icons';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import imgLogoApp from '@/assets/images/logo-app.png';
 import { useUserAuth } from '@/app/_hooks/useUserAuth';
 import {
   DropdownMenu,
@@ -29,6 +31,7 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
   const pathname = usePathname();
   const currentNavItem = navItems.find((item) => pathname === item.href);
   const heading = currentNavItem ? currentNavItem.label : 'Dashboard';
+  const isPayAsStudent = pathname?.startsWith('/pay-as-student');
 
   const fetchUnreadCount = useCallback(async () => {
     try {
@@ -73,18 +76,32 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
       {pathname == '/app' && <div className="dashboard-bg"></div>}
       <header className="flex h-12 items-center justify-between border-b border-neutral-200 px-4">
         <div className="flex items-center gap-3">
-          {/* Hamburger menu — visible below lg */}
-          <button
-            aria-label="Open menu"
-            className="rounded-md p-1 transition hover:bg-neutral-100 lg:hidden"
-            onClick={openDrawer}
-          >
-            <FiIcon name="menu-burger" className="block h-5 w-5 text-neutral-700" />
-          </button>
-          <Heading level={3} className="font-extrabold bg-linear-to-r from-teal-500 via-emerald-500 to-blue-400 bg-clip-text text-2xl text-transparent md:text-2xl">
-            {heading}
-          </Heading>
+          {isPayAsStudent && !session ? (
+            <Link href="/dashboard">
+              <Image
+                src={imgLogoApp}
+                alt="HelloIvy Logo"
+                className="h-6 w-auto"
+                priority
+              />
+            </Link>
+          ) : (
+            <>
+              {/* Hamburger menu — visible below lg */}
+              <button
+                aria-label="Open menu"
+                className="rounded-md p-1 transition hover:bg-neutral-100 lg:hidden"
+                onClick={openDrawer}
+              >
+                <FiIcon name="menu-burger" className="block h-5 w-5 text-neutral-700" />
+              </button>
+              <Heading level={3} className="font-extrabold bg-linear-to-r from-teal-500 via-emerald-500 to-blue-400 bg-clip-text text-2xl text-transparent md:text-2xl">
+                {heading}
+              </Heading>
+            </>
+          )}
         </div>
+        {!isPayAsStudent && (
         <div className="flex items-center gap-4">
           <Link
             href="/documents"
@@ -157,6 +174,7 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        )}
       </header>
     </>
   );

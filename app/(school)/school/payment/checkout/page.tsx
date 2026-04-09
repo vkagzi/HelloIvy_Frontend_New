@@ -25,7 +25,18 @@ function SchoolCheckoutForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const modulesParam = searchParams?.get('modules') ?? '';
-  const numStudentsParam = parseInt(searchParams?.get('num_students') ?? '1', 10) || 1;
+  const stateParam = searchParams?.get('state') ?? '';
+  const discountAmount = parseInt(searchParams?.get('discount') ?? '0', 10);
+  const taxAmount = parseInt(searchParams?.get('tax') ?? '0', 10);
+  const grandTotalParam = parseInt(searchParams?.get('total') ?? '0', 10);
+
+  // Parse per-module quantities from "mod:qty,mod2:qty2" format
+  const moduleQuantities: Record<string, number> = {};
+  modulesParam.split(',').filter(Boolean).forEach((entry) => {
+    const [mod, qtyStr] = entry.split(':');
+    moduleQuantities[mod] = Math.max(1, parseInt(qtyStr ?? '1', 10) || 1);
+  });
+  const moduleNames = Object.keys(moduleQuantities);
 
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
@@ -50,14 +61,13 @@ function SchoolCheckoutForm() {
       router.replace('/school/payment');
       return;
     }
-    const modules = modulesParam.split(',').filter(Boolean);
-    if (modules.length === 0) {
+    if (moduleNames.length === 0) {
       router.replace('/school/payment');
       return;
     }
     api<CheckoutSession>('/api/accounts/school/checkout/', {
       method: 'POST',
-      body: { modules, num_students: numStudentsParam },
+      body: { module_quantities: moduleQuantities },
     })
       .then((data) => setSession(data))
       .catch((err: unknown) =>
@@ -203,7 +213,7 @@ function SchoolCheckoutForm() {
               Processing…
             </span>
           ) : (
-            `Pay ₹${session?.total?.toLocaleString('en-IN') ?? 0}`
+            `Pay ₹${(grandTotalParam || session?.total)?.toLocaleString('en-IN') ?? 0}`
           )}
         </button>
       </div>
@@ -215,22 +225,26 @@ function SchoolCheckoutForm() {
           {session?.line_items.map((item) => (
             <div key={item.module} className="flex items-center justify-between text-sm">
               <span className="text-gray-700">{item.label}</span>
-              <span className="font-medium text-gray-900">₹{item.price}</span>
+              <span className="font-medium text-gray-900">₹{item.price} × {moduleQuantities[item.module] ?? 1}</span>
             </div>
           ))}
         </div>
         <div className="mt-4 border-t border-neutral-100 pt-4 space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Price per student</span>
-            <span className="font-medium text-gray-700">₹{session?.price_per_student?.toLocaleString('en-IN')}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Number of students</span>
-            <span className="font-medium text-gray-700">{session?.num_students}</span>
-          </div>
+          {discountAmount > 0 && (
+            <div className="flex items-center justify-between text-sm text-green-600">
+              <span>Discount</span>
+              <span>−₹{discountAmount}</span>
+            </div>
+          )}
+          {taxAmount > 0 && (
+            <div className="flex items-center justify-between text-sm text-gray-500">
+              <span>Tax ({stateParam === 'maharashtra' ? 'CGST+SGST' : 'IGST'} 18%)</span>
+              <span>₹{taxAmount}</span>
+            </div>
+          )}
           <div className="mt-2 border-t border-neutral-100 pt-3 flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-900">Total</span>
-            <span className="text-lg font-bold text-purple-700">₹{session?.total?.toLocaleString('en-IN')}</span>
+            <span className="text-lg font-bold text-purple-700">₹{(grandTotalParam || session?.total)?.toLocaleString('en-IN')}</span>
           </div>
         </div>
         <button

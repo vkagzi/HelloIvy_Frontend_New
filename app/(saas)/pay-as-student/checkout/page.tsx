@@ -1,15 +1,19 @@
 'use client';
 
-import React, { useEffect, useState, useRef, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api-client';
 import { FiIcon } from '@/app/_components/Icons';
 import { Input } from '@/components/ui/input';
 
+const MODULE_PRICE = 999;
+
 interface LineItem {
   module: string;
   label: string;
+  quantity: number;
   price: number;
+  lineTotal: number;
 }
 
 interface CheckoutSession {
@@ -19,14 +23,33 @@ interface CheckoutSession {
   currency: string;
 }
 
+function parseLineItems(modulesParam: string): LineItem[] {
+  // Supports both "module_key:qty" (new) and bare "module_key" (legacy)
+  return modulesParam
+    .split(',')
+    .filter(Boolean)
+    .map((entry) => {
+      const [mod, qtyStr] = entry.split(':');
+      const quantity = qtyStr ? Math.max(1, Math.min(10, parseInt(qtyStr, 10) || 1)) : 1;
+      return {
+        module: mod,
+        label: mod.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        quantity,
+        price: MODULE_PRICE,
+        lineTotal: MODULE_PRICE * quantity,
+      };
+    });
+}
+
 function CheckoutForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const modulesParam = searchParams?.get('modules') ?? '';
-
-  const [session, setSession] = useState<CheckoutSession | null>(null);
-  const [initError, setInitError] = useState<string | null>(null);
-  const [initLoading, setInitLoading] = useState(true);
+  const stateParam = searchParams?.get('state') ?? '';
+  const couponCode = searchParams?.get('coupon') ?? '';
+  const discountAmount = parseInt(searchParams?.get('discount') ?? '0', 10);
+  const taxAmount = parseInt(searchParams?.get('tax') ?? '0', 10);
+  const grandTotal = parseInt(searchParams?.get('total') ?? '0', 10);
 
   // Card form state
   const [cardNumber, setCardNumber] = useState('');
@@ -37,31 +60,12 @@ function CheckoutForm() {
   const [processing, setProcessing] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const initRef = useRef(false);
 
-  // Create pending payment on load
+  // Redirect if no modules selected
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-
-    if (!modulesParam) {
+    if (!modulesParam || modulesParam.split(',').filter(Boolean).length === 0) {
       router.replace('/pay-as-student');
-      return;
     }
-    const modules = modulesParam.split(',').filter(Boolean);
-    if (modules.length === 0) {
-      router.replace('/pay-as-student');
-      return;
-    }
-    api<CheckoutSession>('/api/accounts/me/checkout/', {
-      method: 'POST',
-      body: { modules },
-    })
-      .then((data) => setSession(data))
-      .catch((err: unknown) =>
-        setInitError(err instanceof Error ? err.message : 'Failed to initialise checkout')
-      )
-      .finally(() => setInitLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -75,6 +79,13 @@ function CheckoutForm() {
     return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
   };
 
+  const lineItems = parseLineItems(modulesParam);
+  const subtotal = lineItems.reduce((s, i) => s + i.lineTotal, 0);
+  const displayTotal = grandTotal || subtotal;
+
+  const stateName = stateParam === 'maharashtra' ? 'Maharashtra' : stateParam === 'rest_of_india' ? 'Rest of India' : '';
+  const taxLabel = stateParam === 'maharashtra' ? 'GST (9% CGST + 9% SGST)' : 'IGST (18%)';
+
   const isFormValid =
     nameOnCard.trim().length > 0 &&
     cardNumber.replace(/\s/g, '').length === 16 &&
@@ -82,10 +93,19 @@ function CheckoutForm() {
     cvv.length >= 3;
 
   const handlePay = async () => {
-    if (!session || !isFormValid) return;
+    if (!isFormValid) return;
     setProcessing(true);
     setPayError(null);
     try {
+      // Expand modules by quantity for the API (one entry per unit)
+      const modules = lineItems.flatMap((item) =>
+        Array.from({ length: item.quantity }, () => item.module)
+      );
+      // Create the pending payment
+      const session = await api<CheckoutSession>('/api/accounts/me/checkout/', {
+        method: 'POST',
+        body: { modules },
+      });
       // Simulate processing delay
       await new Promise((res) => setTimeout(res, 1800));
       await api(`/api/accounts/me/checkout/${session.payment_id}/confirm/`, {
@@ -100,25 +120,6 @@ function CheckoutForm() {
     }
   };
 
-  if (initLoading) {
-    return (
-      <div className="flex min-h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600" />
-      </div>
-    );
-  }
-
-  if (initError) {
-    return (
-      <div className="mx-auto max-w-lg rounded-xl border border-red-200 bg-red-50 p-6 text-center">
-        <p className="text-sm text-red-700">{initError}</p>
-        <button onClick={() => router.push('/pay-as-student')} className="mt-4 cursor-pointer text-sm text-purple-600 hover:underline">
-          ← Back to modules
-        </button>
-      </div>
-    );
-  }
-
   if (success) {
     return (
       <div className="mx-auto max-w-lg rounded-xl border border-green-200 bg-green-50 p-10 text-center">
@@ -132,7 +133,21 @@ function CheckoutForm() {
   }
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[1fr_380px]">
+    <div className="mx-auto max-w-4xl space-y-4">
+      {/* Back button */}
+      <button
+        onClick={() => {
+          const params = new URLSearchParams({ modules: modulesParam });
+          if (stateParam) params.set('state', stateParam);
+          if (couponCode) params.set('coupon', couponCode);
+          router.push(`/pay-as-student?${params.toString()}`);
+        }}
+        className="flex cursor-pointer items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+      >
+        ← Back to order
+      </button>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
       {/* Card form */}
       <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <h2 className="mb-5 text-base font-semibold text-gray-900">Payment Details</h2>
@@ -204,7 +219,7 @@ function CheckoutForm() {
               Processing…
             </span>
           ) : (
-            `Pay ₹${session?.total ?? 0}`
+            `Pay ₹${displayTotal}`
           )}
         </button>
       </div>
@@ -212,24 +227,56 @@ function CheckoutForm() {
       {/* Order summary */}
       <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-base font-semibold text-gray-900">Order Summary</h2>
+
+        {/* Line items */}
         <div className="space-y-3">
-          {session?.line_items.map((item) => (
-            <div key={item.module} className="flex items-center justify-between text-sm">
-              <span className="text-gray-700">{item.label}</span>
-              <span className="font-medium text-gray-900">₹{item.price}</span>
+          {lineItems.map((item) => (
+            <div key={item.module} className="flex items-start justify-between text-sm">
+              <div>
+                <span className="font-medium text-gray-800">{item.label}</span>
+                {item.quantity > 1 && (
+                  <span className="ml-1 text-gray-400">× {item.quantity}</span>
+                )}
+              </div>
+              <span className="font-medium text-gray-900">₹{item.lineTotal}</span>
             </div>
           ))}
         </div>
-        <div className="mt-4 border-t border-neutral-100 pt-4 flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-900">Total</span>
-          <span className="text-lg font-bold text-purple-700">₹{session?.total}</span>
+
+        <div className="mt-4 border-t border-neutral-100 pt-4 space-y-2">
+          {/* Subtotal */}
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <span>Subtotal</span>
+            <span>₹{subtotal}</span>
+          </div>
+
+          {/* Discount */}
+          {discountAmount > 0 && (
+            <div className="flex items-center justify-between text-sm text-green-600">
+              <span>Discount{couponCode ? ` (${couponCode})` : ''}</span>
+              <span>−₹{discountAmount}</span>
+            </div>
+          )}
+
+          {/* Tax */}
+          {taxAmount > 0 && stateParam && (
+            <div className="flex items-center justify-between text-sm text-gray-500">
+              <span>{taxLabel}</span>
+              <span>₹{taxAmount}</span>
+            </div>
+          )}
+
+          {/* State */}
+          {stateName && (
+            <p className="text-xs text-gray-400">State: {stateName}</p>
+          )}
         </div>
-        <button
-          onClick={() => router.push('/pay-as-student')}
-          className="mt-4 cursor-pointer text-xs text-gray-400 hover:text-gray-600 hover:underline"
-        >
-          ← Edit cart
-        </button>
+
+        <div className="mt-3 border-t border-neutral-100 pt-3 flex items-center justify-between">
+          <span className="text-sm font-semibold text-gray-900">Total</span>
+          <span className="text-lg font-bold text-purple-700">₹{displayTotal}</span>
+        </div>
+        </div>
       </div>
     </div>
   );

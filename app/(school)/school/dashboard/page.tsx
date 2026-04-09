@@ -290,10 +290,10 @@ export default function SchoolDashboardPage() {
                   Students
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Domain Discovery
+                  Stream & Subject Selection
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Career Discovery
+                  Career & Degree Selection 
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Actions

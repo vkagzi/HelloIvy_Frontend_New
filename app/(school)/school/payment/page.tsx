@@ -6,9 +6,27 @@ import { useSession } from 'next-auth/react';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 import api from '@/lib/api-client';
 import { FiIcon } from '@/app/_components/Icons';
-import { Input } from '@/components/ui/input';
 
 const MODULE_PRICE_INR = 999;
+
+const VALID_COUPONS: Record<string, number> = {
+  SAVE10: 10,
+  SAVE20: 20,
+  IVY15: 15,
+};
+
+const TAX_CONFIG = {
+  maharashtra: { cgst: 9, sgst: 9, igst: 0 },
+  rest_of_india: { cgst: 0, sgst: 0, igst: 18 },
+} as const;
+
+type StateOption = keyof typeof TAX_CONFIG;
+
+interface ModuleRow {
+  value: string;
+  label: string;
+  quantity: number;
+}
 
 const MODULE_ICONS: Record<string, string> = {
   essay_brainstormer: 'brain-circuit',
@@ -42,6 +60,8 @@ interface ModuleSubscription {
   is_active: boolean;
   source: string;
   created_at: string;
+  used_students: number;
+  remaining_students: number | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -55,25 +75,19 @@ export default function SchoolPaymentPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { modules: moduleChoices, loading: modulesLoading } = useModuleChoices();
-  const [cart, setCart] = useState<Set<string>>(new Set());
-  const [numStudents, setNumStudents] = useState<number>(1);
-  const [totalStudents, setTotalStudents] = useState<number>(1);
-  const [loadingStudents, setLoadingStudents] = useState(true);
+
+  const [rows, setRows] = useState<ModuleRow[]>([]);
+  const [selectedState, setSelectedState] = useState<StateOption | ''>('');
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPct: number } | null>(null);
+  const [couponError, setCouponError] = useState('');
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [payments, setPayments] = useState<SchoolPayment[]>([]);
   const [subscriptions, setSubscriptions] = useState<ModuleSubscription[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(true);
 
   useEffect(() => {
-    api<{ total_students: number }>('/api/accounts/school/checkout/')
-      .then((data) => {
-        const count = data.total_students || 1;
-        setTotalStudents(count);
-        setNumStudents(count);
-      })
-      .catch(() => {})
-      .finally(() => setLoadingStudents(false));
-
     api<{ payments: SchoolPayment[] }>('/api/accounts/school/payments/')
       .then((data) => setPayments(data.payments ?? []))
       .catch(() => {})
@@ -85,27 +99,57 @@ export default function SchoolPaymentPage() {
       .finally(() => setLoadingSubscriptions(false));
   }, []);
 
-  const toggleCart = (value: string) => {
-    setCart((prev) => {
-      const next = new Set(prev);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
+  useEffect(() => {
+    if (moduleChoices.length === 0) return;
+    setRows(moduleChoices.map((m) => ({ value: m.value, label: m.label, quantity: 0 })));
+  }, [moduleChoices]);
+
+  const setQuantity = (value: string, quantity: number) =>
+    setRows((prev) => prev.map((r) => (r.value === value ? { ...r, quantity } : r)));
+
+  const selectedRows = rows.filter((r) => r.quantity > 0);
+  const totalUnits = selectedRows.reduce((s, r) => s + r.quantity, 0);
+  const subtotal = selectedRows.reduce((s, r) => s + MODULE_PRICE_INR * r.quantity, 0);
+  const discountAmount = appliedCoupon ? Math.round((subtotal * appliedCoupon.discountPct) / 100) : 0;
+  const taxableAmount = subtotal - discountAmount;
+  const taxes = selectedState ? TAX_CONFIG[selectedState] : { cgst: 0, sgst: 0, igst: 0 };
+  const cgstAmount = Math.round((taxableAmount * taxes.cgst) / 100);
+  const sgstAmount = Math.round((taxableAmount * taxes.sgst) / 100);
+  const igstAmount = Math.round((taxableAmount * taxes.igst) / 100);
+  const totalTax = cgstAmount + sgstAmount + igstAmount;
+  const grandTotal = taxableAmount + totalTax;
+
+  const handleApplyCoupon = () => {
+    const code = couponInput.trim().toUpperCase();
+    if (VALID_COUPONS[code]) {
+      setAppliedCoupon({ code, discountPct: VALID_COUPONS[code] });
+      setCouponError('');
+    } else {
+      setAppliedCoupon(null);
+      setCouponError('Invalid or expired coupon code.');
+    }
   };
 
-  const cartModules = moduleChoices.filter((m) => cart.has(m.value));
-  const pricePerStudent = cartModules.length * MODULE_PRICE_INR;
-  const total = pricePerStudent * numStudents;
-
-  const handleCheckout = () => {
-    if (cart.size === 0 || numStudents < 1) return;
-    router.push(
-      `/school/payment/checkout?modules=${Array.from(cart).join(',')}&num_students=${numStudents}`
-    );
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError('');
   };
 
-  const loading = modulesLoading || loadingStudents || loadingPayments || loadingSubscriptions || status === 'loading';
+  const canCheckout = selectedRows.length > 0 && selectedState !== '' && agreeTerms;
+
+  const handlePayNow = () => {
+    if (!canCheckout) return;
+    const modulesParam = selectedRows.map((r) => `${r.value}:${r.quantity}`).join(',');
+    const params = new URLSearchParams({ modules: modulesParam, state: selectedState });
+    if (appliedCoupon) params.set('coupon', appliedCoupon.code);
+    params.set('discount', String(discountAmount));
+    params.set('tax', String(totalTax));
+    params.set('total', String(grandTotal));
+    router.push(`/school/payment/checkout?${params.toString()}`);
+  };
+
+  const loading = modulesLoading || loadingPayments || loadingSubscriptions || status === 'loading';
 
   if (status === 'authenticated' && session?.user?.role !== 'schooladmin') {
     return (
@@ -118,9 +162,9 @@ export default function SchoolPaymentPage() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="h-40 animate-pulse rounded-xl bg-neutral-100" />
+      <div className="space-y-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-14 animate-pulse rounded-xl bg-neutral-100" />
         ))}
       </div>
     );
@@ -135,43 +179,60 @@ export default function SchoolPaymentPage() {
       </div>
 
       {subscriptions.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
-          {subscriptions.map((sub) => {
-            const icon = MODULE_ICONS[sub.module_name] ?? 'star';
-            const expired = new Date(sub.expiry_date) < new Date();
-            return (
-              <div
-                key={sub.id}
-                className={`flex flex-col rounded-xl border p-4 ${
-                  sub.is_active && !expired
-                    ? 'border-green-200 bg-green-50'
-                    : 'border-neutral-200 bg-neutral-50 opacity-60'
-                }`}
-              >
-                <div className="mb-2 flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100">
-                    <FiIcon name={icon} className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">{sub.module_display}</span>
-                </div>
-                <div className="space-y-1 text-xs text-gray-500">
-                  <p>
-                    Status:{' '}
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        sub.is_active && !expired ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
-                      }`}
-                    >
-                      {sub.is_active && !expired ? 'Active' : expired ? 'Expired' : 'Inactive'}
-                    </span>
-                  </p>
-                  {sub.max_students && <p>Max Students: {sub.max_students}</p>}
-                  <p>Expires: {new Date(sub.expiry_date).toLocaleDateString()}</p>
-                  <p>Source: {sub.source}</p>
-                </div>
-              </div>
-            );
-          })}
+        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-neutral-200 bg-neutral-50 text-xs font-medium uppercase text-gray-500">
+                <tr>
+                  <th className="px-4 py-3">Module</th>
+                  <th className="px-4 py-3">Expiration Date</th>
+                  <th className="px-4 py-3">Purchased</th>
+                  <th className="px-4 py-3">Used</th>
+                  <th className="px-4 py-3">Remaining</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {subscriptions.map((sub) => {
+                  const icon = MODULE_ICONS[sub.module_name] ?? 'star';
+                  const expired = new Date(sub.expiry_date) < new Date();
+                  return (
+                    <tr key={sub.id} className="hover:bg-neutral-50">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-purple-100">
+                            <FiIcon name={icon} className="h-3.5 w-3.5 text-purple-600" />
+                          </div>
+                          <span className="font-medium text-gray-900">{sub.module_display}</span>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-gray-700">
+                        {new Date(sub.expiry_date).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {sub.max_students !== null ? sub.max_students : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {sub.used_students}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {sub.remaining_students !== null ? sub.remaining_students : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                            sub.is_active && !expired ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                          }`}
+                        >
+                          {sub.is_active && !expired ? 'Active' : expired ? 'Expired' : 'Inactive'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-8 text-center">
@@ -242,98 +303,192 @@ export default function SchoolPaymentPage() {
       <div>
         <h2 className="text-lg font-bold text-gray-900">Purchase New Modules</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Each module is priced at{' '}
-          <span className="font-semibold text-gray-700">₹{MODULE_PRICE_INR}</span> per student.
-          Select modules and specify the number of students.
+          Set the number of students for each module you want to purchase.
         </p>
       </div>
 
-      {/* Number of students input */}
-      <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Number of Students
-        </label>
-        <div className="flex items-center gap-3">
-          <Input
-            type="number"
-            min={1}
-            value={numStudents}
-            onChange={(e) => setNumStudents(Math.max(1, parseInt(e.target.value) || 1))}
-            className="w-40"
-          />
-          <span className="text-xs text-gray-400">
-            (Your school currently has {totalStudents} student{totalStudents !== 1 ? 's' : ''})
-          </span>
-        </div>
-      </div>
-
-      {/* Module grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {moduleChoices.map((m) => {
-          const inCart = cart.has(m.value);
-          const icon = MODULE_ICONS[m.value] ?? 'star';
-
-          return (
-            <div
-              key={m.value}
-              className={`relative flex flex-col rounded-xl border p-4 transition-all ${
-                inCart
-                  ? 'border-purple-400 bg-purple-50 shadow-sm'
-                  : 'border-neutral-200 bg-white hover:border-purple-300 hover:shadow-sm'
-              }`}
-            >
-              {inCart && (
-                <span className="absolute right-3 top-3 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700">
-                  In Cart
+      <div className="space-y-6">
+        {/* Module line-item table */}
+        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+          <div className="grid grid-cols-[1fr_100px_130px_100px] gap-4 border-b border-neutral-200 bg-neutral-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <span>Module</span>
+            <span className="text-right">Price</span>
+            <span className="text-center">Students</span>
+            <span className="text-right">Total</span>
+          </div>
+          {rows.map((row, idx) => {
+            const isSelected = row.quantity > 0;
+            return (
+              <div
+                key={row.value}
+                className={`grid grid-cols-[1fr_100px_130px_100px] gap-4 items-center px-5 py-4 transition-colors ${
+                  idx !== rows.length - 1 ? 'border-b border-neutral-100' : ''
+                } ${isSelected ? 'bg-purple-50' : 'hover:bg-neutral-50'}`}
+              >
+                <span className={`text-sm font-medium ${isSelected ? 'text-gray-900' : 'text-gray-700'}`}>
+                  {row.label}
                 </span>
-              )}
-
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
-                <FiIcon name={icon} className="h-5 w-5 text-purple-600" />
+                <span className="text-right text-sm text-gray-600">₹{MODULE_PRICE_INR}</span>
+                <div className="flex justify-center">
+                  <select
+                    value={row.quantity}
+                    onChange={(e) => setQuantity(row.value, Number(e.target.value))}
+                    className="w-20 cursor-pointer rounded-lg border border-neutral-200 px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  >
+                    {Array.from({ length: 201 }, (_, i) => i).map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+                <span className={`text-right text-sm font-semibold ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {isSelected ? `₹${MODULE_PRICE_INR * row.quantity}` : '—'}
+                </span>
               </div>
+            );
+          })}
+        </div>
 
-              <p className="mb-1 text-sm font-semibold text-gray-900">{m.label}</p>
-              <p className="mb-4 text-sm font-medium text-gray-500">₹{MODULE_PRICE_INR} / student</p>
+        {/* Order summary panel */}
+        <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">
+              Subtotal{totalUnits > 0 ? ` (${totalUnits} student seat${totalUnits !== 1 ? 's' : ''})` : ''}
+            </span>
+            <span className="text-sm font-semibold text-gray-900">₹{subtotal}</span>
+          </div>
 
-              <button
-                onClick={() => toggleCart(m.value)}
-                className={`mt-auto rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                  inCart
-                    ? 'bg-purple-600 text-white hover:bg-purple-700'
-                    : 'bg-neutral-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700'
-                }`}
-              >
-                {inCart ? 'Remove from cart' : 'Add to cart'}
-              </button>
+          <div className="border-t border-neutral-100" />
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Discount Coupon</label>
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-2.5">
+                <span className="text-sm font-medium text-green-700">
+                  ✓ &ldquo;{appliedCoupon.code}&rdquo; — {appliedCoupon.discountPct}% off
+                </span>
+                <button
+                  onClick={handleRemoveCoupon}
+                  className="cursor-pointer text-xs text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter coupon code"
+                  value={couponInput}
+                  onChange={(e) => { setCouponInput(e.target.value); setCouponError(''); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                  className="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                />
+                <button
+                  onClick={handleApplyCoupon}
+                  className="cursor-pointer rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700"
+                >
+                  Apply
+                </button>
+              </div>
+            )}
+            {couponError && <p className="mt-1.5 text-xs text-red-500">{couponError}</p>}
+          </div>
+
+          {appliedCoupon && discountAmount > 0 && (
+            <div className="flex items-center justify-between text-sm text-green-600">
+              <span>Discount ({appliedCoupon.discountPct}%)</span>
+              <span>−₹{discountAmount}</span>
             </div>
-          );
-        })}
-      </div>
+          )}
 
-      {/* Cart summary bar */}
-      {cart.size > 0 && (
-        <div className="sticky bottom-4 z-10 mx-auto max-w-2xl">
-          <div className="flex items-center justify-between rounded-xl border border-purple-200 bg-white px-5 py-4 shadow-lg">
-            <div>
-              <p className="text-sm font-semibold text-gray-900">
-                {cart.size} module{cart.size !== 1 ? 's' : ''} × {numStudents} student{numStudents !== 1 ? 's' : ''}
-              </p>
-              <p className="text-xs text-gray-500">
-                {cartModules.map((m) => m.label).join(', ')}
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <p className="text-base font-bold text-gray-900">₹{total.toLocaleString('en-IN')}</p>
-              <button
-                onClick={handleCheckout}
-                className="cursor-pointer rounded-lg bg-purple-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-purple-700"
-              >
-                Proceed to Checkout →
-              </button>
+          <div className="border-t border-neutral-100" />
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">State (for GST calculation)</label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { value: 'maharashtra' as StateOption, label: 'Maharashtra', sub: '9% CGST + 9% SGST' },
+                { value: 'rest_of_india' as StateOption, label: 'Rest of India', sub: '18% IGST' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setSelectedState(opt.value)}
+                  className={`cursor-pointer rounded-lg border px-4 py-3 text-left transition ${
+                    selectedState === opt.value
+                      ? 'border-purple-400 bg-purple-50'
+                      : 'border-neutral-200 bg-white hover:border-purple-300'
+                  }`}
+                >
+                  <p className={`text-sm font-semibold ${selectedState === opt.value ? 'text-purple-700' : 'text-gray-800'}`}>
+                    {opt.label}
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-400">{opt.sub}</p>
+                </button>
+              ))}
             </div>
           </div>
+
+          {selectedState && taxableAmount > 0 && (
+            <div className="space-y-2 rounded-lg bg-neutral-50 px-4 py-3">
+              {selectedState === 'maharashtra' ? (
+                <>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span>CGST (9%)</span>
+                    <span>₹{cgstAmount}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span>SGST (9%)</span>
+                    <span>₹{sgstAmount}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <span>IGST (18%)</span>
+                  <span>₹{igstAmount}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between border-t border-neutral-200 pt-4">
+            <span className="text-base font-semibold text-gray-900">Total</span>
+            <span className="text-xl font-bold text-purple-700">₹{grandTotal}</span>
+          </div>
+
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={agreeTerms}
+              onChange={(e) => setAgreeTerms(e.target.checked)}
+              className="mt-0.5 h-4 w-4 cursor-pointer rounded border-gray-300 accent-purple-600"
+            />
+            <span className="text-sm text-gray-600">
+              I agree to the{' '}
+              <a href="/terms" target="_blank" className="text-purple-600 underline hover:text-purple-700">
+                Terms and Conditions
+              </a>
+            </span>
+          </label>
+
+          <button
+            onClick={handlePayNow}
+            disabled={!canCheckout}
+            className="w-full cursor-pointer rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Pay Now — ₹{grandTotal}
+          </button>
+
+          {selectedRows.length === 0 && (
+            <p className="text-center text-xs text-gray-400">Select at least one module to continue.</p>
+          )}
+          {selectedRows.length > 0 && !selectedState && (
+            <p className="text-center text-xs text-gray-400">Please select your state for tax calculation.</p>
+          )}
+          {selectedRows.length > 0 && selectedState && !agreeTerms && (
+            <p className="text-center text-xs text-gray-400">Please agree to the Terms and Conditions.</p>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

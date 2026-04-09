@@ -26,6 +26,8 @@ interface UserPayment {
   id: number;
   user: number;
   user_email: string;
+  user_first_name: string;
+  user_last_name: string;
   modules_purchased: string[];
   amount: string;
   currency: string;
@@ -205,24 +207,27 @@ export default function B2CPaymentsPage() {
             <tr>
               <th className="px-4 py-3 text-left">ID</th>
               <th className="px-4 py-3 text-left">User</th>
+              <th className="px-4 py-3 text-left">First Name</th>
+              <th className="px-4 py-3 text-left">Last Name</th>
               <th className="px-4 py-3 text-left">Module</th>
               <th className="px-4 py-3 text-left">Amount</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Gateway</th>
               <th className="px-4 py-3 text-left">Txn ID</th>
               <th className="px-4 py-3 text-left">Date</th>
-              <th className="px-4 py-3 text-left">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {payments.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No payments found.</td></tr>
+              <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No payments found.</td></tr>
             ) : payments.map((p) => (
               <tr key={p.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-500">#{p.id}</td>
                 <td className="px-4 py-3">
                   <Link href={`/admin/users/${p.user}`} className="text-blue-600 hover:underline">{p.user_email}</Link>
                 </td>
+                <td className="px-4 py-3 text-gray-700">{p.user_first_name || '-'}</td>
+                <td className="px-4 py-3 text-gray-700">{p.user_last_name || '-'}</td>
                 <td className="px-4 py-3 text-gray-500 text-xs">
                   {p.modules_purchased.length > 0
                     ? p.modules_purchased.map((m) => m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())).join(', ')
@@ -237,26 +242,6 @@ export default function B2CPaymentsPage() {
                 <td className="px-4 py-3 text-gray-500">{p.payment_gateway || '-'}</td>
                 <td className="px-4 py-3 text-gray-500 font-mono text-xs">{p.gateway_transaction_id || '-'}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => openEdit(p)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-transparent underline"
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      onClick={() => setDeleteId(p.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-transparent underline"
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </td>
               </tr>
             ))}
           </tbody>
