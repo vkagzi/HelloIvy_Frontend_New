@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DynamicForm from '@/app/_components/dynamic-form/DynamicForm';
 import { useRouter } from 'next/navigation';
 import { SubmitHandler } from 'react-hook-form';
@@ -10,12 +10,12 @@ import { getProfileData } from '@/app/(saas)/profile/lib/api';
 import { parseFormLocationData } from '@/lib/utils/location-parser';
 import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
+import ResumeUploader from '@/app/_components/ResumeUploader';
 import Tabs from '@/app/(saas)/profile/_components/Tabs';
-import { professionalFieldDefs as fieldDefs, professionalLayout as layout } from '@/app/(saas)/profile/_config/fieldDefinitions';
 import {
-  // getSectionCompletionStatus,
-  hasProfileSection,
-} from '@/app/(saas)/profile/utils/utils';
+  professionalFieldDefs as fieldDefs,
+  professionalLayout as layout,
+} from '@/app/(saas)/profile/_config/fieldDefinitions';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 const ProfessionalFormDetails: React.FC = () => {
@@ -26,9 +26,15 @@ const ProfessionalFormDetails: React.FC = () => {
   > | null>(null);
   const { rawApiResponse, refetch } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const [parsedResumeData, setParsedResumeData] = useState<any>(null);
+  const [formDefaults, setFormDefaults] = useState<Record<string, unknown>>({});
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
-    () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
+    () =>
+      reconstructFormLocationData(
+        (rawApiResponse ?? {}) as Record<string, unknown>
+      ),
     [rawApiResponse]
   );
   const defaultValues = transformedResponse as Record<string, unknown>;
@@ -82,6 +88,28 @@ const ProfessionalFormDetails: React.FC = () => {
     }
   };
 
+  
+
+  useEffect(() => {
+    if (!parsedResumeData?.professional?.length) return;
+
+    const exp = parsedResumeData.professional[0];
+
+    setFormDefaults((prev) => ({
+      ...prev,
+      experienceType: exp.experience_type ?? prev.experienceType,
+      industry: exp.industry ?? prev.industry,
+      employerName: exp.company ?? prev.employerName,
+      city: exp.city ?? prev.city,
+      duration: exp.duration ?? prev.duration,
+      title: exp.title ?? prev.title,
+      responsibilities: exp.responsibilities ?? prev.responsibilities,
+      achievements: exp.achievements ?? prev.achievements,
+    }));
+  }, [parsedResumeData]);
+
+
+
   // Extract professional details from the nested structure
   let professionalDetails: Record<string, unknown> = {};
 
@@ -112,9 +140,14 @@ const ProfessionalFormDetails: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
+      <ResumeUploader onParsed={setParsedResumeData} />
       <Tabs />
       <DynamicForm
-        defaultValues={professionalDetails}
+        key={JSON.stringify(formDefaults)}
+        defaultValues={{
+          ...professionalDetails,
+          ...formDefaults,
+        }}
         fieldDefs={fieldDefs}
         layout={layout}
         onSubmit={(values) => {
@@ -125,13 +158,21 @@ const ProfessionalFormDetails: React.FC = () => {
         onFormInit={(form) => {
           formRef.current = form;
         }}
-        showSaveButton={{ showSave: true, href: '/profile/extra-curricular/edit' }}
+        showSaveButton={{
+          showSave: true,
+          href: '/profile/extra-curricular/edit',
+        }}
         isSubmitting={isSubmitting}
         onSaveOnly={() => {
-          addToast('Professional details saved successfully!', { type: 'success' });
+          addToast('Professional details saved successfully!', {
+            type: 'success',
+          });
         }}
         onSaveAndNavigate={() => {
-          addToast('Professional details saved! Navigating to extra-curricular details...', { type: 'success' });
+          addToast(
+            'Professional details saved! Navigating to extra-curricular details...',
+            { type: 'success' }
+          );
           router.push('/profile/extra-curricular/edit');
         }}
       />
