@@ -43,7 +43,6 @@ export interface SendMessageResponse {
 export interface CareerRecommendation {
   id?: number;
   career_title: string;
-  salary_range: string;
   match_percentage: number;
   required_skills: string[];
   next_steps: string[];

@@ -143,7 +143,6 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
             <View style={{ flex: 1 }}>
               <Text style={s.cardRank}>#{index + 1}</Text>
               <Text style={s.cardTitle}>{career.career_title}</Text>
-              <Text style={s.cardSalary}>{career.salary_range}</Text>
             </View>
             <View style={[s.badge, { borderColor: matchColor(career.match_percentage), borderWidth: 1.5 }]}>
               <Text style={[s.badgeText, { color: matchColor(career.match_percentage) }]}>

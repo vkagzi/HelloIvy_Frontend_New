@@ -25,6 +25,8 @@ interface SchoolPayment {
   payment_gateway: string;
   gateway_transaction_id: string;
   modules_purchased: string[];
+  expiry_date: string | null;
+  quantity: number | null;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -56,7 +58,7 @@ export default function SchoolPaymentsPage() {
 
   // Add modal
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ school: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+  const [addForm, setAddForm] = useState({ school: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', expiry_date: '', quantity: '', notes: '' });
   const [addModules, setAddModules] = useState<string[]>([]);
   const [activeSchoolModules, setActiveSchoolModules] = useState<string[]>([]);
   const [addSaving, setAddSaving] = useState(false);
@@ -119,10 +121,10 @@ export default function SchoolPaymentsPage() {
     try {
       await api('/api/payments/schools/', {
         method: 'POST',
-        body: { ...addForm, school: Number(addForm.school), amount: parseFloat(addForm.amount), modules_purchased: addModules },
+        body: { ...addForm, school: Number(addForm.school), amount: parseFloat(addForm.amount), modules_purchased: addModules, expiry_date: addForm.expiry_date || null, quantity: addForm.quantity ? Number(addForm.quantity) : null },
       });
       setAddOpen(false);
-      setAddForm({ school: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+      setAddForm({ school: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', expiry_date: '', quantity: '', notes: '' });
       setAddModules([]);
       fetchPayments();
     } catch (err: unknown) {
@@ -215,6 +217,8 @@ export default function SchoolPaymentsPage() {
               <th className="px-4 py-3 text-left">Amount</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Modules</th>
+              <th className="px-4 py-3 text-left">Qty</th>
+              <th className="px-4 py-3 text-left">Expiry</th>
               <th className="px-4 py-3 text-left">Gateway</th>
               <th className="px-4 py-3 text-left">Txn ID</th>
               <th className="px-4 py-3 text-left">Date</th>
@@ -223,7 +227,7 @@ export default function SchoolPaymentsPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {payments.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No payments found.</td></tr>
+              <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">No payments found.</td></tr>
             ) : payments.map((p) => (
               <tr key={p.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-500">#{p.id}</td>
@@ -241,6 +245,8 @@ export default function SchoolPaymentsPage() {
                     ? p.modules_purchased.map((m) => m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())).join(', ')
                     : '-'}
                 </td>
+                <td className="px-4 py-3 text-gray-500">{p.quantity ?? '-'}</td>
+                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{p.expiry_date ? new Date(p.expiry_date).toLocaleDateString() : '-'}</td>
                 <td className="px-4 py-3 text-gray-500">{p.payment_gateway || '-'}</td>
                 <td className="px-4 py-3 text-gray-500 font-mono text-xs">{p.gateway_transaction_id || '-'}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
@@ -305,6 +311,10 @@ export default function SchoolPaymentsPage() {
             </div>
             <div className="space-y-1"><Label htmlFor="s-add-gateway">Payment Gateway</Label><Input id="s-add-gateway" placeholder="e.g. stripe, razorpay" value={addForm.payment_gateway} onChange={(e) => setAddForm({ ...addForm, payment_gateway: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="s-add-txn">Transaction ID</Label><Input id="s-add-txn" placeholder="Gateway transaction ID" value={addForm.gateway_transaction_id} onChange={(e) => setAddForm({ ...addForm, gateway_transaction_id: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label htmlFor="s-add-expiry">Expiry Date</Label><Input id="s-add-expiry" type="date" value={addForm.expiry_date} onChange={(e) => setAddForm({ ...addForm, expiry_date: e.target.value })} /></div>
+              <div className="space-y-1"><Label htmlFor="s-add-quantity">Quantity (Students)</Label><Input id="s-add-quantity" type="number" min="1" placeholder="e.g. 100" value={addForm.quantity} onChange={(e) => setAddForm({ ...addForm, quantity: e.target.value })} /></div>
+            </div>
             <div className="space-y-1"><Label htmlFor="s-add-notes">Notes</Label><Input id="s-add-notes" placeholder="Optional notes" value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} /></div>
           </div>
           <div className="flex justify-end gap-2 pt-2">

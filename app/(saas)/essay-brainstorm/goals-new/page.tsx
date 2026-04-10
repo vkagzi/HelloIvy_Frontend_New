@@ -8,12 +8,13 @@ import { useRouter } from 'next/navigation';
 import { useOpenAITTS } from '@/app/_hooks/useOpenAITTS';
 import { Textarea } from '@/components/ui/textarea';
 import { essayGoalsApi, EssayGoal } from '@/lib/api-services';
-import { me } from '@/lib/api-client';
+import { useSession } from 'next-auth/react';
 
 const GoalsPage: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
   const { speakText, isSpeaking } = useOpenAITTS();
+  const { data: session } = useSession();
 
   // State
   const [goals, setGoals] = useState<EssayGoal[]>([]);
@@ -48,43 +49,25 @@ const GoalsPage: React.FC = () => {
     });
   };
 
-  const getCurrentUserId = async (): Promise<string | null> => {
-    try {
-      const userData = await me();
-      return userData.id?.toString() || null;
-    } catch {
-      return null;
-    }
-  };
-
   // Monitor user authentication changes
   useEffect(() => {
-    let userCheckInterval: NodeJS.Timeout;
+    const userId = session?.user?.id || null;
+    if (!userId) {
+      clearAllUserData();
+      return;
+    }
 
-    const checkUserAuth = async () => {
-      const userId = await getCurrentUserId();
-      if (!userId) {
-        clearAllUserData();
-        return;
-      }
-
-      if (currentUserId && currentUserId !== userId) {
-        console.log('User changed in goals page, clearing data');
-        clearAllUserData();
-        setCurrentUserId(userId);
-        loadGoals();
-      } else if (!currentUserId) {
-        setCurrentUserId(userId);
-      }
-    };
-
-    userCheckInterval = setInterval(checkUserAuth, 30000);
+    if (currentUserId && currentUserId !== userId) {
+      console.log('User changed in goals page, clearing data');
+      clearAllUserData();
+      setCurrentUserId(userId);
+      loadGoals();
+    } else if (!currentUserId) {
+      setCurrentUserId(userId);
+    }
     return () => {
-      if (userCheckInterval) {
-        clearInterval(userCheckInterval);
-      }
     };
-  }, [currentUserId]);
+  }, [session?.user?.id]);
 
   // Component cleanup
   useEffect(() => {

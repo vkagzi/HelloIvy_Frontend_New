@@ -77,8 +77,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.terms_accepted = user.terms_accepted;
         token.accessToken = user.accessToken;
       }
-      if (trigger === 'update' && session?.terms_accepted !== undefined) {
-        token.terms_accepted = session.terms_accepted;
+      if (trigger === 'update') {
+        if (session?.terms_accepted !== undefined) {
+          token.terms_accepted = session.terms_accepted;
+        }
+        if (session?.first_name !== undefined) {
+          token.first_name = session.first_name;
+          token.name = [session.first_name, session.last_name ?? token.last_name].filter(Boolean).join(' ');
+        }
+        if (session?.last_name !== undefined) {
+          token.last_name = session.last_name;
+          token.name = [token.first_name ?? session.first_name, session.last_name].filter(Boolean).join(' ');
+        }
       }
       return token;
     },

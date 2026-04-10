@@ -19,6 +19,7 @@ import {
 } from '@/lib/api-services';
 import UserStorage from '@/lib/user-storage';
 import api from '@/lib/api-client';
+import { useSession } from 'next-auth/react';
 
 type MsgRole = 'bot' | 'user';
 interface Message {
@@ -61,6 +62,7 @@ const CollegeConversationPage: React.FC = () => {
   const router = useRouter();
   const { addToast } = useToast();
   const { speakText, isSpeaking: ttsIsSpeaking } = useOpenAITTS();
+  const { data: session } = useSession();
 
   // UI + state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -351,13 +353,8 @@ ${extrasText}
   };
 
   // ---------- user authentication check ----------
-  const getCurrentUserId = async (): Promise<string | null> => {
-    try {
-      const userData = await api<{ id?: number }>('/api/accounts/me/');
-      return userData.id?.toString() || null;
-    } catch {
-      return null;
-    }
+  const getCurrentUserId = (): string | null => {
+    return session?.user?.id || null;
   };
 
   // ---------- data clearing for user separation ----------
@@ -380,7 +377,7 @@ ${extrasText}
 
   // ---------- profile/story fetch (user-specific, authenticated) ----------
   const fetchProfileAndStories = async () => {
-    const userId = await getCurrentUserId();
+    const userId = getCurrentUserId();
     if (!userId) {
       console.warn('Unable to get current user ID');
       clearAllUserData();
@@ -621,42 +618,23 @@ Output only one question (no preamble).
 
   // ---------- user authentication monitoring ----------
   useEffect(() => {
-    let userCheckInterval: NodeJS.Timeout;
+    const userId = session?.user?.id || null;
+    if (!userId) {
+      clearAllUserData();
+      return;
+    }
 
-    const checkUserAuth = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        clearAllUserData();
-        return;
-      }
-
-      const userId = await getCurrentUserId();
-      if (!userId) {
-        clearAllUserData();
-        return;
-      }
-
-      // If user has changed, clear all data
-      if (currentUserId && currentUserId !== userId) {
-        console.log('User authentication changed, clearing data');
-        clearAllUserData();
-        setCurrentUserId(userId);
-        // Re-fetch data for new user
-        await fetchProfileAndStories();
-      } else if (!currentUserId) {
-        setCurrentUserId(userId);
-      }
-    };
-
-    // Check user authentication every 30 seconds
-    userCheckInterval = setInterval(checkUserAuth, 30000);
-
-    return () => {
-      if (userCheckInterval) {
-        clearInterval(userCheckInterval);
-      }
-    };
-  }, [currentUserId]);
+    // If user has changed, clear all data
+    if (currentUserId && currentUserId !== userId) {
+      console.log('User authentication changed, clearing data');
+      clearAllUserData();
+      setCurrentUserId(userId);
+      // Re-fetch data for new user
+      fetchProfileAndStories();
+    } else if (!currentUserId) {
+      setCurrentUserId(userId);
+    }
+  }, [session?.user?.id]);
 
   // ---------- component cleanup ----------
   useEffect(() => {

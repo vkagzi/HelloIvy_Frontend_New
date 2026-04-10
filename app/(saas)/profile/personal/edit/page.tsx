@@ -17,7 +17,6 @@ import {
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import ResumeUploader from '@/app/_components/ResumeUploader';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
-import { useUserAuth } from '@/app/_hooks/useUserAuth';
 
 const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
@@ -27,7 +26,6 @@ const PersonalDetailsForm: React.FC = () => {
   const [resumeFormDefaults, setResumeFormDefaults] = useState<
     Record<string, unknown>
   >({});
-  const { userDetails } = useUserAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const transformedResponse = React.useMemo(
@@ -218,18 +216,16 @@ const PersonalDetailsForm: React.FC = () => {
 
   console.log('Personal details for form:', personalDetails); // Debug log
 
-  // Inject firstName/lastName from user session (source of truth is users table)
-  // Also merge in any resume-parsed data
+  // firstName/lastName in personalDetails already comes from users table
+  // (overridden by the profile API). Merge with resume-parsed data.
   const formDefaults = {
     ...personalDetails,
     ...resumeFormDefaults,
     firstName:
-      userDetails.first_name ||
       (resumeFormDefaults.firstName as string) ||
       (personalDetails.firstName as string) ||
       '',
     lastName:
-      userDetails.last_name ||
       (resumeFormDefaults.lastName as string) ||
       (personalDetails.lastName as string) ||
       '',

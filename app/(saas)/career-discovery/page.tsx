@@ -416,7 +416,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             <li className="flex gap-3">
               <span className="min-w-5 font-semibold">4</span>
               <span>
-                Receive detailed career matches with salary ranges, next steps,
+                Receive detailed career matches with next steps,
                 and actionable insights to pursue your recommended career paths.
               </span>
             </li>
