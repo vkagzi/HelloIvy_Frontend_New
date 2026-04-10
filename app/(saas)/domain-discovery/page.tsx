@@ -198,9 +198,9 @@ function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
               variant="web"
               className="font-extrabold text-neutral-900"
             >
-              Ready to discover
+              Ready to select your
               <br />
-              your interests?
+              streams and subjects?
             </Heading>
           </div>
 
