@@ -15,7 +15,7 @@ const schoolNavItems = [
   { label: 'Dashboard', icon: 'sr-apps', href: '/school/dashboard' },
   { label: 'Students', icon: 'users', href: '/school/students' },
   { label: 'Operations Admin', icon: 'users', href: '/school/operations-admin' },
-  { label: 'Payment', icon: 'credit-card', href: '/school/payment' },
+  { label: 'Subscription', icon: 'credit-card', href: '/school/subscription' },
 ];
 
 const SchoolNavbar: React.FC = () => {
@@ -92,7 +92,10 @@ const SchoolNavbar: React.FC = () => {
 
       <ul className="mt-2 flex-1">
         {visibleNavItems.map((item) => {
-          const active = pathname === item.href || pathname?.startsWith(item.href + '/');
+          const active =
+            pathname === item.href ||
+            pathname?.startsWith(item.href + '/') ||
+            (item.href === '/school/subscription' && pathname?.startsWith('/school/payment'));
           return (
             <li key={item.href} className="h-10">
               <Link

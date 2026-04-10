@@ -7,6 +7,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
 import { NavbarProvider } from '@/app/_contexts/NavbarContext';
+import { ModuleAccessProvider } from '@/app/_contexts/ModuleAccessContext';
 
 export const metadata: Metadata = {
   title: 'School Admin - HelloIvy',
@@ -37,7 +38,8 @@ export default async function SchoolLayout({
     <div className="flex min-h-screen">
       <SessionProvider session={session}>
         <NavbarProvider>
-          <SessionGuard>
+          <ModuleAccessProvider>
+            <SessionGuard>
             <SchoolNavbar />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <SchoolHead session={session} />
@@ -46,6 +48,7 @@ export default async function SchoolLayout({
               </main>
             </div>
           </SessionGuard>
+          </ModuleAccessProvider>
         </NavbarProvider>
       </SessionProvider>
     </div>

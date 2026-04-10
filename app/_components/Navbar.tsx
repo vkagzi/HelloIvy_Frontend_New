@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiIcon } from '@/app/_components/Icons';
@@ -18,6 +18,18 @@ const Navbar: React.FC = () => {
   const { data: session, status } = useSession();
   const userRole = session?.user?.role ?? 'student';
   const isAdmin = ['superadmin', 'operationadmin'].includes(userRole);
+  const isSchoolAdmin = ['schooladmin', 'schoolopsadmin'].includes(userRole);
+  const isB2BStudent = userRole === 'student' && !!session?.user?.school_id;
+
+  const filteredNavItems = useMemo(() => {
+    return sidebarNavItems
+      .filter((item) => !(isB2BStudent && item.href === '/subscription'))
+      .map((item) =>
+        isSchoolAdmin && item.href === '/subscription'
+          ? { ...item, href: '/school/subscription' }
+          : item
+      );
+  }, [isB2BStudent, isSchoolAdmin]);
 
   // Close drawer on route change
   useEffect(() => {
@@ -83,7 +95,7 @@ const Navbar: React.FC = () => {
 
       {/* NAV ITEMS */}
       <ul className="mt-2 flex-1">
-        {sidebarNavItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const active = pathname === item.href;
 
           return (
