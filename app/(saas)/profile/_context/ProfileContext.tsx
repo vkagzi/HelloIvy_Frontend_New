@@ -55,7 +55,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       const data = await getProfileData();
-      console.log('ProfileContext - Raw API data:', data);
+      // console.log('ProfileContext - Raw API data:', data);
 
       // Store the raw API response for edit pages
       setRawApiResponse(data as { profile: Record<string, unknown> });
@@ -84,7 +84,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
           profile.profile !== null
         ) {
           const fullProfileData = profile.profile as Record<string, unknown>;
-          console.log('ProfileContext - Full profile data:', fullProfileData);
+          // console.log('ProfileContext - Full profile data:', fullProfileData);
           setProfileData(fullProfileData);
 
           // Extract all sections

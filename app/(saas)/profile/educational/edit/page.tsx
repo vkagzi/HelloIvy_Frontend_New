@@ -98,9 +98,9 @@ const EducationalDetailsForm: React.FC = () => {
     setFieldDefs((prev) =>
       prev.map((field) => {
         if (field.id === 'yearOfCompletion') {
-          console.log(
-            `Applying DOB-based constraint to yearOfCompletion: birthYear=${birthYear}, minYear=${birthYear + 1}`
-          );
+          // console.log(
+          //   `Applying DOB-based constraint to yearOfCompletion: birthYear=${birthYear}, minYear=${birthYear + 1}`
+          // );
           return { ...field, minYear: birthYear + 1 };
         }
         if (field.id === 'startYear') {
@@ -122,7 +122,7 @@ const EducationalDetailsForm: React.FC = () => {
     'Working/Completed College',
   ];
 
-  const SCHOOL_LEVELS = ['High School (9th–12th grade)'];
+  const SCHOOL_LEVELS = ['High School (8th–12th grade)'];
 
   // Helper to get options based on academic level selected in the form
   const getTestTypeOptions = (academicLevel: string | undefined): string[] => {
@@ -193,7 +193,7 @@ const EducationalDetailsForm: React.FC = () => {
       // stale sections from a previous academicLevel selection are dropped.
       const academicLevel = transformedData.academicLevel as string | undefined;
       const sectionKey: Record<string, string> = {
-        'High School (9th–12th grade)': 'highSchool',
+        'High School (8th–12th grade)': 'highSchool',
         'College/Undergraduate': 'undergraduate',
         Postgraduate: 'postgraduate',
         'Working/Completed College': 'tenPlus',
@@ -208,7 +208,7 @@ const EducationalDetailsForm: React.FC = () => {
 
       // Include gradeLevel for academic levels that support it
       const gradeLevelLevels = [
-        'High School (9th–12th grade)',
+        'High School (8th–12th grade)',
         'College/Undergraduate',
         'Postgraduate',
       ];
@@ -219,7 +219,7 @@ const EducationalDetailsForm: React.FC = () => {
       }
 
       // High-school-only fields
-      if (academicLevel === 'High School (9th–12th grade)') {
+      if (academicLevel === 'High School (8th–12th grade)') {
         if (transformedData.hasCurrentGradeScores !== undefined) {
           cleanEducational.hasCurrentGradeScores =
             transformedData.hasCurrentGradeScores;
@@ -341,7 +341,7 @@ const EducationalDetailsForm: React.FC = () => {
     }
   }
 
-  console.log('Educational details for form:', educationalDetails); // Debug log
+  // console.log('Educational details for form:', educationalDetails); 
 
   return (
     <div className="flex flex-col gap-4">
