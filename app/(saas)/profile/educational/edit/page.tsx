@@ -341,7 +341,15 @@ const EducationalDetailsForm: React.FC = () => {
     }
   }
 
-  // console.log('Educational details for form:', educationalDetails); 
+  // Populate form defaults from existing educational data
+  useEffect(() => {
+    if (educationalDetails && Object.keys(educationalDetails).length > 0) {
+      setFormDefaults((prev) => ({
+        ...prev,
+        ...educationalDetails,
+      }));
+    }
+  }, [defaultValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col gap-4">

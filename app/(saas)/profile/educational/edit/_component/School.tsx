@@ -346,7 +346,16 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
     if (!prevValues) return;
 
+    const excludeKeys = new Set([
+      'yourTotalScore',
+      'highestTotalScore',
+      'overallPercentage',
+      'maximumPossibleGPA',
+      'subjects',
+      'years',
+    ]);
     Object.entries(prevValues as Record<string, unknown>).forEach(([key, value]) => {
+      if (excludeKeys.has(key)) return;
       form.setValue(`${sectionType}.${schoolIdx}.${key}`, value as undefined, {
         shouldDirty: true,
       });
