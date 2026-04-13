@@ -69,6 +69,7 @@ const seniorSecondarySubjects = [
   'Innovation & Design Thinking',
   'International Mathematics',
   'Japanese',
+  'Language A - Lit&Lang',
   'Leadership Studies',
   'Life Skills Education',
   'Management Studies',
