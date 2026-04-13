@@ -167,14 +167,14 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'First Name',
     placeholder: 'Enter your first name',
-    required: false,
+    required: true,
   },
   {
     id: 'lastName',
     type: 'text',
     label: 'Last Name',
     placeholder: 'Enter your last name',
-    required: false,
+    required: true,
   },
   {
     id: 'dob',
@@ -197,7 +197,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Mobile Number',
     placeholder: 'Enter your phone number',
-    required: false,
+    required: true,
     validation: {
       regex: Regexvalidations.justNumberWithBlank,
       maxLength: 10,
@@ -626,7 +626,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     label: 'Currently I am in ',
     placeholder: 'Select academic level',
     options: [
-      'High School (9th–12th grade)',
+      'High School (8th–12th grade)',
       'College/Undergraduate',
       'Postgraduate',
       'Working/Completed College',
@@ -642,7 +642,8 @@ export const educationalFieldDefs: FieldDefinition[] = [
     optionsDependsOn: {
       fieldId: 'academicLevel',
       map: {
-        'High School (9th–12th grade)': [
+        'High School (8th–12th grade)': [
+          'Grade 8',
           'Grade 9',
           'Grade 10',
           'Grade 11',
@@ -662,7 +663,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
       depends_on: {
         field_id: 'academicLevel',
         value: [
-          'High School (9th–12th grade)',
+          'High School (8th–12th grade)',
           'College/Undergraduate',
           'Postgraduate',
         ],
@@ -678,7 +679,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     visibility: {
       depends_on: {
         field_id: 'gradeLevel',
-        value: ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+        value: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
       },
     },
   },
@@ -823,7 +824,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Institution Name',
     placeholder: 'Enter institution name',
-    required: false,
+    required: true,
   },
   {
     id: 'degree',
@@ -851,14 +852,14 @@ export const educationalFieldDefs: FieldDefinition[] = [
         'Diploma',
       ],
     },
-    required: false,
+    required: true,
   },
   {
     id: 'major',
     type: 'text',
     label: 'Major',
     placeholder: 'Enter major',
-    required: false,
+    required: true,
   },
   {
     id: 'startYear',
@@ -902,7 +903,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score / GPA / Percentage',
     placeholder: 'Enter your score, GPA, or percentage',
-    required: false,
+    required: true,
   },
   {
     id: 'maximumPossibleGPA',
@@ -1355,7 +1356,7 @@ export const educationalLayout: LayoutBlock[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['High School (9th–12th grade)'],
+        value: ['High School (8th–12th grade)'],
       },
     },
     repeatables: {
@@ -2121,7 +2122,7 @@ export const getExtracurricularTitle = (
   ) {
     return 'Extracurriculars during School/Highschool, UG/PG, Work/Internship/Startup Experience';
   }
-  if (levels.includes('High School (9th–12th grade)')) {
+  if (levels.includes('High School (8th–12th grade)')) {
     return 'Extracurriculars during School/Highschool';
   }
   return 'Extra Curricular Activities';
