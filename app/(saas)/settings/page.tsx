@@ -25,7 +25,7 @@ const PERSONAS: PersonaOption[] = [
   {
     id: 'male',
     label: 'Male',
-    description: 'A confident male voice',
+    description: "I'm crisp & confident - choose me!",
     gradient: 'from-blue-500 to-indigo-600',
     playingRing: 'ring-blue-400',
     waveBarClass: 'bg-blue-500',
@@ -34,7 +34,7 @@ const PERSONAS: PersonaOption[] = [
   {
     id: 'female',
     label: 'Female',
-    description: 'A confident female voice',
+    description: "I'm calm & clear - pick me!",
     gradient: 'from-pink-500 to-rose-600',
     playingRing: 'ring-pink-400',
     waveBarClass: 'bg-pink-500',
