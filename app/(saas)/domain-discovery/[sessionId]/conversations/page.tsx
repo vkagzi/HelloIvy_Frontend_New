@@ -42,6 +42,8 @@ const domainApi: ConversationConfig['api'] = {
         choices: m.choices,
         medium: m.medium,
       })),
+      current_step: r.current_step,
+      total_steps: r.total_steps,
       riasec_completed: r.riasec_completed,
       deepdive_completed: r.deepdive_completed,
       is_completed: r.is_completed,
@@ -90,10 +92,12 @@ const domainConversationConfig: ConversationConfig = {
 
       const rq = si?.riasec_completed ?? r.riasec_completed ?? 0;
       const dq = si?.deepdive_completed ?? r.deepdive_completed ?? 0;
+      const currentStep = (r as unknown as { current_step?: number }).current_step ?? 0;
+      const totalSteps = (r as unknown as { total_steps?: number }).total_steps ?? 20;
       const questionsCompleted = rq + dq;
 
-      let progressPercentage = si?.current_step
-        ? Math.min(si.current_step * 10, 90)
+      let progressPercentage = totalSteps > 0
+        ? Math.round((currentStep / totalSteps) * 100)
         : 0;
       let ended = false;
       if (si?.is_completed || r.is_completed) {

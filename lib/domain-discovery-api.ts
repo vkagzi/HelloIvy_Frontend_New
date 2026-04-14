@@ -124,6 +124,7 @@ export interface MessageHistoryResponse {
   session_id: string;
   messages: DomainMessage[];
   current_step: number;
+  total_steps: number;
   riasec_completed: number;
   deepdive_completed: number;
   current_phase: 'riasec' | 'deepdive';
