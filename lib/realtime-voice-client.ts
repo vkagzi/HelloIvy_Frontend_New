@@ -172,7 +172,7 @@ export class RealtimeVoiceClient {
             ` | disconnecting=${this._disconnecting} switching=${this._switchInProgress}`,
           );
           this.stopPingInterval();
-          if (!this._disconnecting) {
+          if (!this._disconnecting && !this._switchInProgress) {
             // Unexpected disconnect — attempt silent reconnection
             this._attemptReconnect();
           } else {
@@ -303,7 +303,36 @@ export class RealtimeVoiceClient {
           content: [
             {
               type: 'input_text',
-              text: `[System: The user has switched from text chat to voice mode. Your last message was: "${lastBotMessage}". Please briefly acknowledge the switch to voice mode and continue the conversation naturally. Do NOT repeat the full message — just smoothly pick up where you left off. Be concise and conversational.]`,
+              text: `[System: The user has switched from text chat to voice mode. Your last message was: "${lastBotMessage}". Please briefly acknowledge the switch to voice mode and continue the conversation naturally. Do NOT repeat the full message — just smoothly pick up where you left off. Be concise and conversational. IMPORTANT: Maintain exactly the same voice style, tone, pacing, and energy level you have been using throughout this conversation. Do not change your speaking style.]`,
+            },
+          ],
+        },
+      }),
+    );
+    this.triggerResponse();
+  }
+
+  /**
+   * Resume a voice session after a pause. Similar to promptContinuation but
+   * explicitly tells the AI this is a pause/resume, not a mode switch.
+   */
+  promptResume(lastBotMessage: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    this.ws.send(JSON.stringify({ type: 'session.skip_logging', count: 1 }));
+    this._skipTranscriptCount += 1;
+    this.config.onHighlightLastBot?.(true);
+
+    this.ws.send(
+      JSON.stringify({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: `[System: The student paused the session and has now resumed. Your last message was: "${lastBotMessage}". Briefly welcome them back and continue the conversation naturally from where you left off. Do NOT repeat your last message — just smoothly pick up. Be concise and conversational. IMPORTANT: Maintain exactly the same voice style, tone, pacing, and energy level you were using before the pause. Your voice should sound like the conversation never stopped.]`,
             },
           ],
         },
@@ -334,7 +363,7 @@ export class RealtimeVoiceClient {
           content: [
             {
               type: 'input_text',
-              text: `[System: A new voice session has started. Please speak the following intro message to the student exactly as written, word for word. Do not add anything else, do not paraphrase, and do not follow up with a question yet. Just speak the intro naturally:\n\n${introMessage}]`,
+              text: `[System: A new voice session has started. Please speak the following intro message to the student exactly as written, word for word. Do not add anything else, do not paraphrase, and do not follow up with a question yet. Just speak the intro naturally. Use a warm, friendly, and conversational tone — this sets the voice style for the entire session:\n\n${introMessage}]`,
             },
           ],
         },
@@ -409,7 +438,7 @@ export class RealtimeVoiceClient {
               content: [
                 {
                   type: 'input_text',
-                  text: '[System: The user is switching from voice to text mode. Say exactly this and nothing else: "Sure, let\'s switch to text"]',
+                  text: '[System: The user is switching from voice to text mode. Maintain your current voice style and tone. Say exactly this and nothing else: "Sure, let\'s switch to text"]',
                 },
               ],
             },
@@ -528,7 +557,8 @@ export class RealtimeVoiceClient {
                 '[System: The voice connection was briefly interrupted and has been restored. ' +
                 'The user did not notice. Continue the conversation naturally from exactly where you left off. ' +
                 'If you were mid-sentence, complete that thought. Do NOT mention any interruption or technical issue. ' +
-                'Do NOT repeat what you already said. Just pick up seamlessly.]',
+                'Do NOT repeat what you already said. Just pick up seamlessly. ' +
+                'IMPORTANT: Maintain exactly the same voice style, tone, pacing, and energy level you were using before the interruption.]',
               );
             }
             // Buffered audio is stale after several seconds — discard it and

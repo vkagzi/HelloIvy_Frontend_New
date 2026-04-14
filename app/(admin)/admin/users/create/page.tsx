@@ -154,8 +154,8 @@ export default function CreateUserPage() {
           school_id: form.school_id ? parseInt(form.school_id) : null,
           is_active: form.is_active,
           send_password_email: form.send_password_email,
-          academic_level: config.showAcademic ? form.academic_level || null : null,
-          grade_level: config.showAcademic ? form.grade_level || null : null,
+          academic_level: showAcademicFields ? form.academic_level || null : null,
+          grade_level: showAcademicFields ? form.grade_level || null : null,
         },
       });
       router.push(backUrl);
@@ -170,11 +170,24 @@ export default function CreateUserPage() {
 
   const { academicLevels, gradeLevels } = useAcademicLevels();
 
-  // For admin type, show school field only when the selected role is schooladmin or schoolopsadmin
+  // Dynamically show/hide school and academic fields based on selected role
+  const selectedRole = config.fixedRole ?? form.role;
+  const isSchoolRole = ['schooladmin', 'schoolopsadmin'].includes(selectedRole);
+  const isAdminRole = ['superadmin', 'operationadmin'].includes(selectedRole);
+
   const showSchoolField =
-    typeParam === 'admin'
-      ? ['schooladmin', 'schoolopsadmin'].includes(form.role)
-      : config.showSchool;
+    config.fixedRole
+      ? config.showSchool
+      : isAdminRole
+        ? false
+        : isSchoolRole || config.showSchool;
+
+  const showAcademicFields =
+    config.fixedRole
+      ? config.showAcademic
+      : isAdminRole || isSchoolRole
+        ? false
+        : config.showAcademic;
 
   const gradeOptions = form.academic_level ? (gradeLevels[form.academic_level] ?? []) : [];
 
@@ -245,7 +258,12 @@ export default function CreateUserPage() {
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Role *
             </label>
-            <Select value={form.role} onValueChange={(v) => setForm((prev) => ({ ...prev, role: v, ...(!['schooladmin', 'schoolopsadmin'].includes(v) ? { school_id: '' } : {}) }))}>
+            <Select value={form.role} onValueChange={(v) => setForm((prev) => ({
+              ...prev,
+              role: v,
+              ...(!['schooladmin', 'schoolopsadmin'].includes(v) ? { school_id: '' } : {}),
+              ...(['superadmin', 'operationadmin', 'schooladmin', 'schoolopsadmin'].includes(v) ? { academic_level: '', grade_level: '' } : {}),
+            }))}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -276,7 +294,7 @@ export default function CreateUserPage() {
           </div>
         )}
 
-        {config.showAcademic && (
+        {showAcademicFields && (
           <>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">

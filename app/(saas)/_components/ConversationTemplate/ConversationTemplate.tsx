@@ -181,7 +181,8 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     }
   }, [sessionEnded, voiceConnected, voiceConnecting, disconnectVoice]);
 
-  const activateVoiceMode = useCallback(async () => {
+  const activateVoiceMode = useCallback(async (options?: { resuming?: boolean }) => {
+    const resuming = options?.resuming ?? false;
     setIsVoiceEnded(false);
     voiceSessionRef.current += 1;
     // Insert a medium-switch indicator
@@ -204,7 +205,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     const nonSystemMessages = messages.filter((m) => m.type !== 'system');
     const isNewSession = !nonSystemMessages.some((m) => m.type === 'user');
     setConversationMode('voice');
-    await connectVoice(isNewSession ? [] : chatHistory, lastBot?.content, isNewSession);
+    await connectVoice(isNewSession ? [] : chatHistory, lastBot?.content, isNewSession, resuming);
   }, [messages, connectVoice]);
 
   const deactivateVoiceMode = useCallback(async () => {
@@ -248,17 +249,19 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     if (voiceConnected || voiceConnecting) {
       await deactivateVoiceMode();
     } else {
+      let wasResuming = false;
       if (isPaused && sessionId) {
         try {
           const resp = await api.togglePause(sessionId);
           setIsPaused(resp.is_paused);
           setTotalPausedSeconds(resp.total_paused_seconds);
+          wasResuming = true;
         } catch {
           addToast('Failed to resume session.', { type: 'error' });
           return;
         }
       }
-      await activateVoiceMode();
+      await activateVoiceMode({ resuming: wasResuming });
     }
   }, [voiceConnected, voiceConnecting, activateVoiceMode, deactivateVoiceMode, isPaused, sessionId, api, addToast]);
 
@@ -398,7 +401,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
           (m) => m.type === 'user' && m.medium,
         );
         if (lastUserMsg?.medium === 'voice') {
-          await activateVoiceMode();
+          await activateVoiceMode({ resuming: true });
         }
         // Otherwise stay in text/chat mode — no modal needed
       }
@@ -911,7 +914,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
           }
           setShowModeModal(false);
           // small delay so the modal closes first
-          setTimeout(() => activateVoiceMode(), 300);
+          setTimeout(() => activateVoiceMode({ resuming: isPaused }), 300);
         }}
       />
 

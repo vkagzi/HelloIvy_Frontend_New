@@ -120,7 +120,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
   // ─── public API ───────────────────────────────────────────
 
   const connectVoice = useCallback(
-    async (chatHistory: { role: 'user' | 'assistant'; content: string }[], lastBotMessage?: string, isNewSession?: boolean) => {
+    async (chatHistory: { role: 'user' | 'assistant'; content: string }[], lastBotMessage?: string, isNewSession?: boolean, resuming?: boolean) => {
       if (clientRef.current || isConnectingRef.current) return;
       isConnectingRef.current = true;
       setIsConnecting(true);
@@ -229,6 +229,8 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
         if (chatHistory.length > 0) client.seedConversationHistory(chatHistory);
         if (isNewSession && lastBotMessage) {
           client.announceIntro(lastBotMessage);
+        } else if (resuming && lastBotMessage) {
+          client.promptResume(lastBotMessage);
         } else if (lastBotMessage) {
           client.promptContinuation(lastBotMessage);
         }
