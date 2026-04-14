@@ -146,6 +146,19 @@ const Navbar: React.FC = () => {
           </Link>
         </div>
       )}
+
+      {/* School Admin link at bottom for school admins */}
+      {isSchoolAdmin && (
+        <div className={`border-t border-neutral-200 pt-3 pb-4 ${collapsed ? 'lg:hidden' : ''}`}>
+          <Link
+            href="/school/dashboard"
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-neutral-500 transition hover:bg-purple-50 hover:text-neutral-700"
+          >
+            <FiIcon name="arrow-small-left" className="h-4 w-4" />
+            <span>Back to School Admin</span>
+          </Link>
+        </div>
+      )}
     </>
   );
 
