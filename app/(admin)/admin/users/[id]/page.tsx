@@ -37,6 +37,13 @@ interface UserModuleSub {
   created_at: string;
 }
 
+interface UserComment {
+  counselor_comment: string;
+  counselor_comment_updated_at: string | null;
+  parent_student_comment: string;
+  parent_student_comment_updated_at: string | null;
+}
+
 interface UserDetail {
   id: number;
   email: string;
@@ -140,6 +147,18 @@ export default function AdminUserDetailPage() {
   const [deleteModuleId, setDeleteModuleId] = useState<number | null>(null);
   const [deleteModuleSaving, setDeleteModuleSaving] = useState(false);
 
+  // Comments tab state
+  const [comments, setComments] = useState<UserComment>({
+    counselor_comment: '',
+    counselor_comment_updated_at: null,
+    parent_student_comment: '',
+    parent_student_comment_updated_at: null,
+  });
+  const [counselorDraft, setCounselorDraft] = useState('');
+  const [parentDraft, setParentDraft] = useState('');
+  const [commentSaving, setCommentSaving] = useState<'counselor' | 'parent' | null>(null);
+  const [commentSuccess, setCommentSuccess] = useState<'counselor' | 'parent' | null>(null);
+
   // Main vertical tab state
   const [activeTab, setActiveTab] = useState<string>('profile');
   // Profile section sub-tab state
@@ -155,11 +174,48 @@ export default function AdminUserDetailPage() {
     }
   }, [userId]);
 
+  const fetchComments = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const data = await api<UserComment>(`/api/accounts/admin/users/${userId}/comments/`);
+      setComments(data);
+      setCounselorDraft(data.counselor_comment);
+      setParentDraft(data.parent_student_comment);
+    } catch {
+      // ignore — endpoint may not exist yet
+    }
+  }, [userId]);
+
+  const handleSaveComment = async (type: 'counselor' | 'parent') => {
+    if (!userId) return;
+    setCommentSaving(type);
+    setCommentSuccess(null);
+    try {
+      const body = type === 'counselor'
+        ? { counselor_comment: counselorDraft }
+        : { parent_student_comment: parentDraft };
+      const data = await api<UserComment>(`/api/accounts/admin/users/${userId}/comments/`, {
+        method: 'PATCH',
+        body,
+      });
+      setComments(data);
+      setCommentSuccess(type);
+      setTimeout(() => setCommentSuccess(null), 2000);
+    } catch {
+      // ignore
+    } finally {
+      setCommentSaving(null);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'modules') {
       fetchUserModules();
     }
-  }, [activeTab, fetchUserModules]);
+    if (activeTab === 'comments') {
+      fetchComments();
+    }
+  }, [activeTab, fetchUserModules, fetchComments]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -413,6 +469,10 @@ export default function AdminUserDetailPage() {
                     label: 'Assigned Modules',
                     badge: String(user.assigned_modules?.length ?? 0),
                   }]),
+                  {
+                    key: 'comments',
+                    label: 'Comments',
+                  },
                 ];
 
               return tabs.map((tab) => (
@@ -427,13 +487,13 @@ export default function AdminUserDetailPage() {
                   }`}
                 >
                   <span className="truncate">{tab.label}</span>
-                  <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                  {'badge' in tab && <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                     activeTab === tab.key
                       ? 'bg-indigo-100 text-indigo-700'
                       : 'bg-gray-100 text-gray-500'
                   }`}>
                     {tab.badge}
-                  </span>
+                  </span>}
                 </Button>
               ));
             })()}
@@ -589,6 +649,85 @@ export default function AdminUserDetailPage() {
               ) : (
                 <p className="text-sm text-gray-400">No module subscriptions assigned yet.</p>
               )}
+            </div>
+          )}
+
+          {/* Comments Tab */}
+          {activeTab === 'comments' && (
+            <div className="rounded-lg border border-gray-200 bg-white px-5 py-4 space-y-6">
+              <h2 className="text-base font-semibold text-gray-900">Comments</h2>
+
+              {/* Counselor Comments */}
+              <div className="space-y-2">
+                <label htmlFor="counselor-comment" className="block text-sm font-medium text-gray-700">
+                  Counselor Comments
+                </label>
+                <textarea
+                  id="counselor-comment"
+                  rows={5}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                  placeholder="Enter counselor comments..."
+                  value={counselorDraft}
+                  onChange={(e) => setCounselorDraft(e.target.value)}
+                />
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-400">
+                    {comments.counselor_comment_updated_at
+                      ? `Last updated: ${formatDateTime(comments.counselor_comment_updated_at)}`
+                      : 'Not yet saved'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {commentSuccess === 'counselor' && (
+                      <span className="text-xs text-green-600 font-medium">Saved ✓</span>
+                    )}
+                    <Button
+                      onClick={() => handleSaveComment('counselor')}
+                      disabled={commentSaving === 'counselor'}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                      size="sm"
+                    >
+                      {commentSaving === 'counselor' ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <hr className="border-gray-200" />
+
+              {/* Student / Parent Comments */}
+              <div className="space-y-2">
+                <label htmlFor="parent-comment" className="block text-sm font-medium text-gray-700">
+                  Student / Parent Comments
+                </label>
+                <textarea
+                  id="parent-comment"
+                  rows={5}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                  placeholder="Enter student / parent comments..."
+                  value={parentDraft}
+                  onChange={(e) => setParentDraft(e.target.value)}
+                />
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-400">
+                    {comments.parent_student_comment_updated_at
+                      ? `Last updated: ${formatDateTime(comments.parent_student_comment_updated_at)}`
+                      : 'Not yet saved'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {commentSuccess === 'parent' && (
+                      <span className="text-xs text-green-600 font-medium">Saved ✓</span>
+                    )}
+                    <Button
+                      onClick={() => handleSaveComment('parent')}
+                      disabled={commentSaving === 'parent'}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                      size="sm"
+                    >
+                      {commentSaving === 'parent' ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
