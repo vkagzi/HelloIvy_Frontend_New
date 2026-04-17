@@ -135,7 +135,7 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
           <View style={s.chipRow}>
             {interests.map((item, i) => (
               <View key={i} style={s.chipBlue}>
-                <Text style={s.chipBlueText}>{item}</Text>
+                <Text style={s.chipBlueText}>{typeof item === 'string' ? item : (item && typeof item === 'object' && 'subject' in item ? (item as any).subject : String(item))}</Text>
               </View>
             ))}
           </View>
@@ -197,13 +197,33 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
                 {domain.related_subjects?.length > 0 ? (
                   <>
                     <Text style={s.sectionTitle}>Related Subjects</Text>
-                    <View style={s.chipRow}>
-                      {domain.related_subjects.map((item, i) => (
-                        <View key={i} style={s.chip}>
-                          <Text style={s.chipText}>{item}</Text>
+                    {domain.related_subjects.map((subj, i) => {
+                      // Safety: handle both string[] (old data) and RelatedSubject[] (new data)
+                      if (typeof subj === 'string') {
+                        return (
+                          <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
+                            <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{subj}</Text>
+                          </View>
+                        );
+                      }
+                      const subject = subj && typeof subj === 'object' ? subj : { subject: String(subj), relevance: '', importance: 'supporting', importance_reason: '', combination_pathways: [] };
+                      const importanceLabel = { core: 'Core', supporting: 'Supporting', optional: 'Optional' }[subject.importance] || String(subject.importance || '');
+                      const importanceColor = { core: '#dc2626', supporting: '#d97706', optional: '#2563eb' }[subject.importance] || gray;
+                      return (
+                        <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{String(subject.subject || '')}</Text>
+                            <Text style={{ fontSize: 7, color: importanceColor, fontFamily: 'Helvetica-Bold' }}>{importanceLabel}</Text>
+                          </View>
+                          {subject.relevance ? <Text style={{ fontSize: 8, color: gray, marginTop: 2 }}>{String(subject.relevance)}</Text> : null}
+                          {Array.isArray(subject.combination_pathways) && subject.combination_pathways.map((pw, pi) => (
+                            <View key={pi} style={{ marginTop: 2, paddingLeft: 6 }}>
+                              <Text style={{ fontSize: 7, color: '#374151' }}>{String(pw.pathway_name || '')}: {Array.isArray(pw.paired_with) ? pw.paired_with.join(', ') : ''} {'-> '}{Array.isArray(pw.leads_to) ? pw.leads_to.join(', ') : ''}</Text>
+                            </View>
+                          ))}
                         </View>
-                      ))}
-                    </View>
+                      );
+                    })}
                   </>
                 ) : null}
 

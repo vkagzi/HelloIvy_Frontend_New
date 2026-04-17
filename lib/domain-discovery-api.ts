@@ -99,6 +99,21 @@ export interface TranscriptData {
   concluding_message?: string | null;
 }
 
+export interface SubjectCombinationPathway {
+  pathway_name: string;
+  paired_with: string[];
+  leads_to: string[];
+  best_for: string;
+}
+
+export interface RelatedSubject {
+  subject: string;
+  relevance: string;
+  importance: 'core' | 'supporting' | 'optional';
+  importance_reason: string;
+  combination_pathways: SubjectCombinationPathway[];
+}
+
 export interface DomainRecommendation {
   id?: number;
   domain_title: string;
@@ -106,7 +121,7 @@ export interface DomainRecommendation {
   match_percentage: number;
   key_interests: string[];
   sub_domains: string[];
-  related_subjects: string[];
+  related_subjects: RelatedSubject[];
   description: string;
   why_recommended: string;
   exploration_activities: string[];

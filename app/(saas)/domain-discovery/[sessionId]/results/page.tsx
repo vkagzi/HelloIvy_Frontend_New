@@ -568,22 +568,50 @@ const DomainResultsPage: React.FC = () => {
                             </span>
                             Related Subjects
                           </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {domain.related_subjects && domain.related_subjects.length > 0 ? (
-                              domain.related_subjects.map((subject, idx) => (
-                                <span
-                                  key={idx}
-                                  className="rounded-full bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 shadow-sm"
-                                >
-                                  {subject}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-sm text-gray-500 italic">
-                                No specific subjects identified for this domain
-                              </span>
-                            )}
-                          </div>
+                          {domain.related_subjects && domain.related_subjects.length > 0 ? (
+                            <div className="space-y-3">
+                              {domain.related_subjects.map((subj, idx) => {
+                                const subject = typeof subj === 'string' ? { subject: subj, relevance: '', importance: 'supporting' as const, importance_reason: '', combination_pathways: [] } : subj;
+                                const importanceBadge = {
+                                  core: { bg: 'bg-red-100', text: 'text-red-700', label: '🔴 Core' },
+                                  supporting: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: '🟡 Supporting' },
+                                  optional: { bg: 'bg-blue-100', text: 'text-blue-700', label: '🔵 Optional' },
+                                }[subject.importance] || { bg: 'bg-gray-100', text: 'text-gray-700', label: subject.importance };
+                                return (
+                                  <div key={idx} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium text-gray-900">{subject.subject}</span>
+                                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${importanceBadge.bg} ${importanceBadge.text}`}>
+                                        {importanceBadge.label}
+                                      </span>
+                                    </div>
+                                    {subject.relevance && (
+                                      <p className="mt-1 text-sm text-gray-600">{subject.relevance}</p>
+                                    )}
+                                    {subject.combination_pathways && subject.combination_pathways.length > 0 && (
+                                      <div className="mt-2 space-y-2">
+                                        {subject.combination_pathways.map((pathway, pIdx) => (
+                                          <div key={pIdx} className="rounded-md bg-white p-2 text-xs">
+                                            <div className="font-medium text-gray-800">{pathway.pathway_name}</div>
+                                            <div className="mt-1 text-gray-500">
+                                              Pair with: {pathway.paired_with?.join(', ')}
+                                            </div>
+                                            <div className="mt-0.5 text-gray-500">
+                                              Leads to: {pathway.leads_to?.join(', ')}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-500 italic">
+                              No specific subjects identified for this domain
+                            </span>
+                          )}
                         </div>
                       </div>
 

@@ -40,6 +40,24 @@ export interface SendMessageResponse {
   phase: 'profile' | 'explorer';
 }
 
+export interface DegreePathway {
+  rank: 'Core Path' | 'Alternate Path' | 'Differentiated Path';
+  label: string;
+  why: string;
+}
+
+export interface DegreeDecisionFilter {
+  condition: string;
+}
+
+export interface Degree {
+  degree: string;
+  fit_score: number;
+  fit_reason: string;
+  pathway: DegreePathway;
+  decision_filter: DegreeDecisionFilter;
+}
+
 export interface CareerRecommendation {
   id?: number;
   career_title: string;
@@ -50,7 +68,7 @@ export interface CareerRecommendation {
   why_recommended: string;
   alignment_points: string[];
   related_subjects: string[];
-  degrees: string[];
+  degrees: Degree[];
   day_in_life: string;
   pros_and_cons: { pros: string[]; cons: string[] };
   work_life_balance: string;

@@ -587,15 +587,47 @@ const CareerResultsPage: React.FC = () => {
                               </span>
                               Potential Degrees
                             </h4>
-                            <div className="flex flex-wrap gap-2">
-                              {career.degrees.map((degree, degIndex) => (
-                                <span
-                                  key={degIndex}
-                                  className="rounded-full bg-linear-to-r from-[#fef3c7] to-[#fde68a] px-3 py-1.5 text-sm font-medium text-[#92400e] shadow-sm"
-                                >
-                                  {degree}
-                                </span>
-                              ))}
+                            <div className="space-y-3">
+                              {career.degrees.map((deg, degIndex) => {
+                                // Backward compat: handle old string[] data
+                                if (typeof deg === 'string') {
+                                  return (
+                                    <span key={degIndex} className="inline-block rounded-full bg-linear-to-r from-[#fef3c7] to-[#fde68a] px-3 py-1.5 text-sm font-medium text-[#92400e] shadow-sm mr-2">
+                                      {deg}
+                                    </span>
+                                  );
+                                }
+                                const pathwayColor = {
+                                  'Core Path': { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+                                  'Alternate Path': { bg: 'bg-blue-100', text: 'text-blue-700' },
+                                  'Differentiated Path': { bg: 'bg-purple-100', text: 'text-purple-700' },
+                                }[deg.pathway?.rank] || { bg: 'bg-gray-100', text: 'text-gray-700' };
+                                const stars = Array.from({ length: 5 }, (_, i) => i < deg.fit_score ? '★' : '☆').join('');
+                                return (
+                                  <div key={degIndex} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium text-gray-900">{deg.degree}</span>
+                                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${pathwayColor.bg} ${pathwayColor.text}`}>
+                                        {deg.pathway?.rank}
+                                      </span>
+                                    </div>
+                                    <div className="mt-1 flex items-center gap-2">
+                                      <span className="text-amber-500 text-sm">{stars}</span>
+                                      <span className="text-xs text-gray-500">{deg.fit_reason}</span>
+                                    </div>
+                                    {deg.pathway?.label && (
+                                      <p className="mt-1 text-xs text-gray-500">
+                                        <span className="font-medium">{deg.pathway.label}:</span> {deg.pathway.why}
+                                      </p>
+                                    )}
+                                    {deg.decision_filter?.condition && (
+                                      <p className="mt-1 text-xs italic text-gray-400">
+                                        If {deg.decision_filter.condition}
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}

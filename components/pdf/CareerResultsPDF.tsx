@@ -217,13 +217,37 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                 {career.degrees?.length > 0 ? (
                   <View wrap={false}>
                     <Text style={s.sectionTitle}>Potential Degrees</Text>
-                    <View style={s.chipRow}>
-                      {career.degrees.map((deg, i) => (
-                        <View key={i} style={[s.chip, { backgroundColor: '#fef3c7' }]}>
-                          <Text style={[s.chipText, { color: '#92400e' }]}>{deg}</Text>
+                    {career.degrees.map((deg, i) => {
+                      // Backward compat: handle old string[] data
+                      if (typeof deg === 'string') {
+                        return (
+                          <View key={i} style={[s.chip, { backgroundColor: '#fef3c7', marginBottom: 3 }]}>
+                            <Text style={[s.chipText, { color: '#92400e' }]}>{deg}</Text>
+                          </View>
+                        );
+                      }
+                      const pathwayLabel = String(deg.pathway?.rank || '');
+                      const pathwayColor = { 'Core Path': '#059669', 'Alternate Path': '#2563eb', 'Differentiated Path': '#7c3aed' }[pathwayLabel] || gray;
+                      const stars = Array.from({ length: 5 }, (_, si) => si < (deg.fit_score || 0) ? '*' : ' ').join('');
+                      return (
+                        <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{String(deg.degree || '')}</Text>
+                            <Text style={{ fontSize: 7, color: pathwayColor, fontFamily: 'Helvetica-Bold' }}>{pathwayLabel}</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', gap: 4, marginTop: 1 }}>
+                            <Text style={{ fontSize: 8, color: '#d97706' }}>{stars}</Text>
+                            <Text style={{ fontSize: 7, color: gray }}>{String(deg.fit_reason || '')}</Text>
+                          </View>
+                          {deg.pathway?.label ? (
+                            <Text style={{ fontSize: 7, color: '#374151', marginTop: 1 }}>{String(deg.pathway.label)}: {String(deg.pathway.why || '')}</Text>
+                          ) : null}
+                          {deg.decision_filter?.condition ? (
+                            <Text style={{ fontSize: 7, color: '#9ca3af', marginTop: 1, fontStyle: 'italic' }}>If {String(deg.decision_filter.condition)}</Text>
+                          ) : null}
                         </View>
-                      ))}
-                    </View>
+                      );
+                    })}
                   </View>
                 ) : null}
 
