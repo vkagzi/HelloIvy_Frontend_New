@@ -143,15 +143,13 @@ function SchoolSubscriptionsTable({
               <th className="px-4 py-3">Purchased</th>
               <th className="px-4 py-3">Used</th>
               <th className="px-4 py-3">Remaining</th>
-              <th className="px-4 py-3">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {subscriptions.map((sub) => {
+            {subscriptions.filter((sub) => sub.is_active).map((sub) => {
               const icon = MODULE_ICONS[sub.module_name] ?? 'star';
-              const expired = new Date(sub.expiry_date) < new Date();
               return (
-                <tr key={sub.id} className="hover:bg-neutral-50">
+                <tr key={sub.module_name} className="hover:bg-neutral-50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-purple-100">
@@ -161,7 +159,7 @@ function SchoolSubscriptionsTable({
                     </div>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                    {new Date(sub.expiry_date).toLocaleDateString()}
+                    {new Date(sub.expiry_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </td>
                   <td className="px-4 py-3 text-gray-700">
                     {sub.max_students !== null ? sub.max_students : '—'}
@@ -169,15 +167,6 @@ function SchoolSubscriptionsTable({
                   <td className="px-4 py-3 text-gray-700">{sub.used_students}</td>
                   <td className="px-4 py-3 text-gray-700">
                     {sub.remaining_students !== null ? sub.remaining_students : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        sub.is_active && !expired ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
-                      }`}
-                    >
-                      {sub.is_active && !expired ? 'Active' : expired ? 'Expired' : 'Inactive'}
-                    </span>
                   </td>
                 </tr>
               );
@@ -198,15 +187,6 @@ function SchoolSubscriptionsTable({
                   <td className="px-4 py-3 text-gray-400">—</td>
                   <td className="px-4 py-3 text-gray-400">—</td>
                   <td className="px-4 py-3 text-gray-400">—</td>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={purchaseHref}
-                      className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 transition-colors hover:bg-purple-100 hover:text-purple-700"
-                    >
-                      <LockKeyhole className="h-3 w-3" />
-                      Locked
-                    </Link>
-                  </td>
                 </tr>
               );
             })}
@@ -251,13 +231,11 @@ function B2CSubscriptionsTable({
               <th className="px-4 py-3">Purchased</th>
               <th className="px-4 py-3">Used</th>
               <th className="px-4 py-3">Remaining</th>
-              <th className="px-4 py-3">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {subscriptions.map((sub) => {
+            {subscriptions.filter((sub) => sub.is_active).map((sub) => {
               const icon = MODULE_ICONS[sub.module_name] ?? 'star';
-              const expired = new Date(sub.expiry_date) < new Date();
               return (
                 <tr key={sub.id} className="hover:bg-neutral-50">
                   <td className="px-4 py-3">
@@ -269,20 +247,11 @@ function B2CSubscriptionsTable({
                     </div>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                    {new Date(sub.expiry_date).toLocaleDateString()}
+                    {new Date(sub.expiry_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </td>
                   <td className="px-4 py-3 text-gray-700">—</td>
                   <td className="px-4 py-3 text-gray-700">—</td>
                   <td className="px-4 py-3 text-gray-700">—</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        sub.is_active && !expired ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
-                      }`}
-                    >
-                      {sub.is_active && !expired ? 'Active' : expired ? 'Expired' : 'Inactive'}
-                    </span>
-                  </td>
                 </tr>
               );
             })}
@@ -302,15 +271,6 @@ function B2CSubscriptionsTable({
                   <td className="px-4 py-3 text-gray-400">—</td>
                   <td className="px-4 py-3 text-gray-400">—</td>
                   <td className="px-4 py-3 text-gray-400">—</td>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={purchaseHref}
-                      className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 transition-colors hover:bg-purple-100 hover:text-purple-700"
-                    >
-                      <LockKeyhole className="h-3 w-3" />
-                      Locked
-                    </Link>
-                  </td>
                 </tr>
               );
             })}

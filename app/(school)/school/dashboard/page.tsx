@@ -220,39 +220,47 @@ export default function SchoolDashboardPage() {
         <h2 className="mb-4 text-lg font-semibold text-gray-800">
           Module Overview
         </h2>
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {dashboard.modules.length > 0 ? (
-            dashboard.modules.map((mod) => (
-              <div
-                key={mod.module_name}
-                className="min-w-[250px] rounded-lg border border-gray-200 bg-white p-4"
-              >
-                <h3 className="mb-2 font-semibold text-gray-900">
-                  {mod.module_display}
-                </h3>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <p>
-                    Students: {mod.students_using}
-                    {mod.max_students ? `/${mod.max_students}` : ''}
-                  </p>
-                  {mod.expiry_date && (
-                    <p>
-                      Expires:{' '}
-                      {new Date(mod.expiry_date).toLocaleDateString()}
-                    </p>
-                  )}
-                  <span
-                    className={`inline-flex rounded-full px-2 text-xs font-semibold ${mod.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                  >
-                    {mod.is_active ? 'Active' : 'Expired'}
-                  </span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-gray-400">No modules configured yet.</p>
-          )}
-        </div>
+        {dashboard.modules.length > 0 ? (
+          <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-neutral-200 bg-neutral-50 text-xs font-medium uppercase text-gray-500">
+                  <tr>
+                    <th className="px-4 py-3">Module</th>
+                    <th className="px-4 py-3">Expiration Date</th>
+                    <th className="px-4 py-3">Purchased</th>
+                    <th className="px-4 py-3">Used</th>
+                    <th className="px-4 py-3">Remaining</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {dashboard.modules.filter((mod) => mod.is_active).map((mod) => {
+                    const remaining = mod.max_students !== null ? mod.max_students - mod.students_using : null;
+                    return (
+                      <tr key={mod.module_name} className="hover:bg-neutral-50">
+                        <td className="px-4 py-3">
+                          <span className="font-medium text-gray-900">{mod.module_display}</span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-gray-700">
+                          {mod.expiry_date ? new Date(mod.expiry_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700">
+                          {mod.max_students !== null ? mod.max_students : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700">{mod.students_using}</td>
+                        <td className="px-4 py-3 text-gray-700">
+                          {remaining !== null ? remaining : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">No modules configured yet.</p>
+        )}
       </section>
 
       {/* Section 2: Grade-Wise Overview */}
