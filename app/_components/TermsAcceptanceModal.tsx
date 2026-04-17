@@ -70,7 +70,7 @@ export default function TermsAcceptanceModal({
     >
       <DialogContent
         className="max-w-lg"
-        hideCloseButton
+        showCloseButton={false}
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}

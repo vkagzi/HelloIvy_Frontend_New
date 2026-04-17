@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import ModuleAssignDialog from '@/components/admin/ModuleAssignDialog';
+import { Badge } from '@/components/ui/badge';
 import { ALL_ROLES, ADMIN_ROLES } from '@/lib/constants/roles';
 import { useAcademicLevels } from '@/lib/hooks/useAcademicLevels';
 
@@ -58,6 +59,7 @@ interface UserDetail {
   profile_data?: {
     profile?: Record<string, unknown>;
   };
+  assigned_modules?: { id: number; module_name: string }[];
 }
 
 type ProfileData = Record<string, unknown>;
@@ -71,6 +73,28 @@ const PROFILE_SECTIONS = [
 ] as const;
 
 const ROLES = ALL_ROLES;
+
+const MODULE_LABELS: Record<string, string> = {
+  essay_brainstormer: 'Essay Brainstormer',
+  essay_evaluator: 'Essay Evaluator',
+  college_selector: 'College Selector',
+  degree_selector: 'Degree Selector',
+  interview_prep: 'Interview Prep',
+  resume_builder: 'Resume Builder',
+  career_discovery: 'Career Discovery',
+  domain_discovery: 'Domain Discovery',
+};
+
+const MODULE_COLORS: Record<string, string> = {
+  essay_brainstormer: 'bg-blue-100 text-blue-700',
+  essay_evaluator: 'bg-indigo-100 text-indigo-700',
+  college_selector: 'bg-green-100 text-green-700',
+  degree_selector: 'bg-teal-100 text-teal-700',
+  interview_prep: 'bg-orange-100 text-orange-700',
+  resume_builder: 'bg-pink-100 text-pink-700',
+  career_discovery: 'bg-purple-100 text-purple-700',
+  domain_discovery: 'bg-cyan-100 text-cyan-700',
+};
 
 export default function AdminUserDetailPage() {
   const params = useParams();
@@ -384,7 +408,11 @@ export default function AdminUserDetailPage() {
                     key: 'modules',
                     label: 'Module Access',
                     badge: userModules.length > 0 ? String(userModules.length) : '0',
-                  }] : []),
+                  }] : [{
+                    key: 'assigned',
+                    label: 'Assigned Modules',
+                    badge: String(user.assigned_modules?.length ?? 0),
+                  }]),
                 ];
 
               return tabs.map((tab) => (
@@ -486,6 +514,27 @@ export default function AdminUserDetailPage() {
                   : user.first_name || user.last_name || user.email
               }
             />
+          )}
+
+          {/* Assigned Modules Tab - for school users */}
+          {activeTab === 'assigned' && (
+            <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
+              <h2 className="mb-3 text-base font-semibold text-gray-900">Assigned Modules</h2>
+              {user.assigned_modules && user.assigned_modules.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {user.assigned_modules.map((m) => (
+                    <Badge
+                      key={m.id}
+                      className={`${MODULE_COLORS[m.module_name] ?? 'bg-gray-100 text-gray-700'} border-transparent`}
+                    >
+                      {MODULE_LABELS[m.module_name] ?? m.module_name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 italic">No modules assigned</p>
+              )}
+            </div>
           )}
 
           {/* Module Access Tab - only for users without a school */}

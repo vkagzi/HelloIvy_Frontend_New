@@ -32,7 +32,7 @@ export default function CommunicationModeModal({
         /* non-dismissible — user must pick a mode */
       }}
     >
-      <DialogContent className="max-w-md" hideCloseButton>
+      <DialogContent className="max-w-md" showCloseButton={false}>
         <DialogTitle className="text-center text-lg font-medium">
           How do you wish to interact with Ivy?
         </DialogTitle>

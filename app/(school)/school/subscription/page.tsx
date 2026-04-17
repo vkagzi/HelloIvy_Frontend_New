@@ -8,7 +8,8 @@ import ModuleSubscriptions from '@/components/ModuleSubscriptions';
 export default function SchoolSubscriptionPage() {
   const { data: session, status } = useSession();
 
-  if (status === 'authenticated' && session?.user?.role !== 'schooladmin') {
+  const allowedRoles = ['schooladmin', 'schoolopsadmin'];
+  if (status === 'authenticated' && !allowedRoles.includes(session?.user?.role ?? '')) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <p className="text-lg font-semibold text-gray-800">Access Denied</p>

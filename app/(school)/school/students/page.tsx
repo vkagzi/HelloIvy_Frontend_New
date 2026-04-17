@@ -8,6 +8,8 @@ import api from '@/lib/api-client';
 import { StatusBadge } from '@/components/admin/UserTable';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -17,6 +19,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import AssignModulesDialog from '@/components/AssignModulesDialog';
+
+interface ModuleAssignment {
+  id: number;
+  module_name: string;
+}
 
 interface StudentItem {
   id: number;
@@ -27,7 +51,30 @@ interface StudentItem {
   is_active: boolean;
   last_login: string | null;
   created_at: string;
+  assigned_modules?: ModuleAssignment[];
 }
+
+const MODULE_LABELS: Record<string, string> = {
+  essay_brainstormer: 'Essay Brainstormer',
+  essay_evaluator: 'Essay Evaluator',
+  college_selector: 'College Selector',
+  degree_selector: 'Degree Selector',
+  interview_prep: 'Interview Prep',
+  resume_builder: 'Resume Builder',
+  career_discovery: 'Career Discovery',
+  domain_discovery: 'Domain Discovery',
+};
+
+const MODULE_COLORS: Record<string, string> = {
+  essay_brainstormer: 'bg-blue-100 text-blue-700',
+  essay_evaluator: 'bg-indigo-100 text-indigo-700',
+  college_selector: 'bg-green-100 text-green-700',
+  degree_selector: 'bg-teal-100 text-teal-700',
+  interview_prep: 'bg-orange-100 text-orange-700',
+  resume_builder: 'bg-pink-100 text-pink-700',
+  career_discovery: 'bg-purple-100 text-purple-700',
+  domain_discovery: 'bg-cyan-100 text-cyan-700',
+};
 
 export default function SchoolStudentsPage() {
   const { data: session, status } = useSession();
@@ -40,6 +87,21 @@ export default function SchoolStudentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
+  const [autoAssignGrades, setAutoAssignGrades] = useState<string[]>([]);
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  // Assign dialog state
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [assignMode, setAssignMode] = useState<'selected' | 'grade'>('selected');
+
+  // Revoke state
+  const [revoking, setRevoking] = useState<number | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<{
+    id: number;
+    moduleName: string;
+  } | null>(null);
 
   const fetchStudents = useCallback(async () => {
     if (!schoolId) return;
@@ -50,13 +112,14 @@ export default function SchoolStudentsPage() {
       const data = await api<{
         grouped_students?: Record<string, StudentItem[]>;
         total: number;
+        auto_assign_grades?: string[];
       }>(`/api/schools/${schoolId}/students/?${params.toString()}`);
 
       const grouped = data.grouped_students ?? {};
       setGroupedStudents(grouped);
       setTotal(data.total);
+      setAutoAssignGrades(data.auto_assign_grades ?? []);
 
-      // Set initial active tab
       const gradeKeys = Object.keys(grouped).sort((a, b) => {
         if (a === 'No Grade') return 1;
         if (b === 'No Grade') return -1;
@@ -65,9 +128,9 @@ export default function SchoolStudentsPage() {
 
       if (gradeKeys.length > 0) {
         setActiveTab((prev) => {
-          if (prev && gradeKeys.includes(prev)) return prev;
+          if (prev && (prev === 'all' || gradeKeys.includes(prev))) return prev;
           if (initialGrade && gradeKeys.includes(initialGrade)) return initialGrade;
-          return gradeKeys[0];
+          return 'all';
         });
       }
     } catch (err: unknown) {
@@ -80,6 +143,56 @@ export default function SchoolStudentsPage() {
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  // Clear selection when switching tabs
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [activeTab]);
+
+  const allStudents = Object.values(groupedStudents).flat();
+  const currentStudents = activeTab === 'all' ? allStudents : (groupedStudents[activeTab] ?? []);
+
+  const toggleStudent = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (currentStudents.length > 0 && currentStudents.every((s) => selectedIds.has(s.id))) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(currentStudents.map((s) => s.id)));
+    }
+  };
+
+  const handleAssignSelected = () => {
+    setAssignMode('selected');
+    setAssignDialogOpen(true);
+  };
+
+  const handleAssignGrade = () => {
+    setAssignMode('grade');
+    setAssignDialogOpen(true);
+  };
+
+  const handleRevoke = async (assignmentId: number) => {
+    setRevoking(assignmentId);
+    try {
+      await api(`/api/accounts/school/assign-modules/${assignmentId}/revoke/`, {
+        method: 'POST',
+      });
+      fetchStudents();
+    } catch {
+      // ignore
+    } finally {
+      setRevoking(null);
+      setRevokeTarget(null);
+    }
+  };
 
   if (status === 'loading') return <LoadingState />;
 
@@ -121,6 +234,40 @@ export default function SchoolStudentsPage() {
         </div>
       </div>
 
+      {/* Assignment toolbar */}
+      {(selectedIds.size > 0 || currentStudents.length > 0) && (
+        <div className="flex items-center gap-3 rounded-lg border border-purple-200 bg-purple-50 px-4 py-2.5">
+          {selectedIds.size > 0 && (
+            <>
+              <span className="text-sm font-medium text-purple-800">
+                {selectedIds.size} student{selectedIds.size !== 1 ? 's' : ''} selected
+              </span>
+              <Button
+                size="sm"
+                onClick={handleAssignSelected}
+              >
+                Assign Modules
+              </Button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="text-xs text-purple-600 hover:text-purple-800 underline"
+              >
+                Clear selection
+              </button>
+            </>
+          )}
+          {selectedIds.size === 0 && activeTab && activeTab !== 'No Grade' && activeTab !== 'all' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAssignGrade}
+            >
+              Assign Modules to All in {activeTab}
+            </Button>
+          )}
+        </div>
+      )}
+
       {sortedGrades.length === 0 ? (
         <div className="rounded-md bg-yellow-50 p-4">
           <p className="text-sm text-yellow-700">No students found.</p>
@@ -129,8 +276,18 @@ export default function SchoolStudentsPage() {
         <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0 h-auto overflow-x-auto">
+            <TabsTrigger
+              value="all"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 data-[state=active]:shadow-none px-5 py-3 whitespace-nowrap"
+            >
+              All Students
+              <span className="ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700">
+                {total}
+              </span>
+            </TabsTrigger>
             {sortedGrades.map((grade) => {
               const count = groupedStudents[grade]?.length ?? 0;
+              const hasAutoAssign = autoAssignGrades.includes(grade);
               return (
                 <TabsTrigger
                   key={grade}
@@ -141,20 +298,136 @@ export default function SchoolStudentsPage() {
                   <span className="ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700">
                     {count}
                   </span>
+                  {hasAutoAssign && (
+                    <span className="ml-1 inline-flex h-4 items-center rounded-full bg-green-100 px-1.5 text-[10px] font-medium text-green-700" title="Auto-assign active">
+                      Auto
+                    </span>
+                  )}
                 </TabsTrigger>
               );
             })}
           </TabsList>
 
+          <TabsContent value="all" className="mt-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allStudents.length > 0 && allStudents.every((s) => selectedIds.has(s.id))}
+                      onCheckedChange={toggleAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead>Modules</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Login</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allStudents.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                      No students found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  allStudents.map((s) => (
+                    <TableRow key={s.id} className={selectedIds.has(s.id) ? 'bg-purple-50/50' : ''}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(s.id)}
+                          onCheckedChange={() => toggleStudent(s.id)}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <Link
+                          href={`/school/students/${s.id}`}
+                          className="text-purple-600 hover:text-purple-800"
+                        >
+                          {s.first_name || s.last_name ? `${s.first_name} ${s.last_name}`.trim() : s.email}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{s.email}</TableCell>
+                      <TableCell>{s.grade || 'No Grade'}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(s.assigned_modules ?? []).map((m) => (
+                            <TooltipProvider key={m.id}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Badge
+                                      className={`group/badge cursor-pointer gap-1 pr-1.5 transition-all ${MODULE_COLORS[m.module_name] ?? 'bg-gray-100 text-gray-700'} border-transparent hover:shadow-sm ${revoking === m.id ? 'opacity-50' : ''}`}
+                                      onClick={() =>
+                                        setRevokeTarget({
+                                          id: m.id,
+                                          moduleName: m.module_name,
+                                        })
+                                      }
+                                    >
+                                      {MODULE_LABELS[m.module_name] ?? m.module_name}
+                                      <svg
+                                        className="size-3 opacity-0 transition-opacity group-hover/badge:opacity-70"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"
+                                        />
+                                      </svg>
+                                    </Badge>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  Click to revoke access
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ))}
+                          {(!s.assigned_modules || s.assigned_modules.length === 0) && (
+                            <span className="text-xs text-muted-foreground italic">None</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge active={s.is_active} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {s.last_login ? new Date(s.last_login).toLocaleString() : 'Never'}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TabsContent>
+
           {sortedGrades.map((grade) => {
             const students = groupedStudents[grade] ?? [];
+            const allSelected = students.length > 0 && students.every((s) => selectedIds.has(s.id));
             return (
               <TabsContent key={grade} value={grade} className="mt-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={allSelected}
+                          onCheckedChange={toggleAll}
+                          aria-label="Select all"
+                        />
+                      </TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Modules</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Last Login</TableHead>
                     </TableRow>
@@ -162,13 +435,19 @@ export default function SchoolStudentsPage() {
                   <TableBody>
                     {students.length === 0 ? (
                       <TableRow>
-                          <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                          <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                           No students in this grade.
                         </TableCell>
                       </TableRow>
                     ) : (
                       students.map((s) => (
-                        <TableRow key={s.id}>
+                        <TableRow key={s.id} className={selectedIds.has(s.id) ? 'bg-purple-50/50' : ''}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedIds.has(s.id)}
+                              onCheckedChange={() => toggleStudent(s.id)}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium">
                             <Link
                               href={`/school/students/${s.id}`}
@@ -178,6 +457,50 @@ export default function SchoolStudentsPage() {
                             </Link>
                           </TableCell>
                           <TableCell className="text-muted-foreground">{s.email}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(s.assigned_modules ?? []).map((m) => (
+                                <TooltipProvider key={m.id}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span>
+                                        <Badge
+                                          className={`group/badge cursor-pointer gap-1 pr-1.5 transition-all ${MODULE_COLORS[m.module_name] ?? 'bg-gray-100 text-gray-700'} border-transparent hover:shadow-sm ${revoking === m.id ? 'opacity-50' : ''}`}
+                                          onClick={() =>
+                                            setRevokeTarget({
+                                              id: m.id,
+                                              moduleName: m.module_name,
+                                            })
+                                          }
+                                        >
+                                          {MODULE_LABELS[m.module_name] ?? m.module_name}
+                                          <svg
+                                            className="size-3 opacity-0 transition-opacity group-hover/badge:opacity-70"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M6 18L18 6M6 6l12 12"
+                                            />
+                                          </svg>
+                                        </Badge>
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                      Click to revoke access
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ))}
+                              {(!s.assigned_modules || s.assigned_modules.length === 0) && (
+                                <span className="text-xs text-muted-foreground italic">None</span>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <StatusBadge active={s.is_active} />
                           </TableCell>
@@ -195,6 +518,60 @@ export default function SchoolStudentsPage() {
         </Tabs>
         </div>
       )}
+
+      {/* Assign modules dialog */}
+      <AssignModulesDialog
+        open={assignDialogOpen}
+        onOpenChange={(isOpen) => {
+          setAssignDialogOpen(isOpen);
+        }}
+        selectedStudentIds={assignMode === 'selected' ? Array.from(selectedIds) : []}
+        gradeLevel={assignMode === 'grade' ? activeTab : undefined}
+        studentCount={assignMode === 'selected' ? selectedIds.size : currentStudents.length}
+        schoolId={schoolId}
+        onSuccess={() => {
+          setSelectedIds(new Set());
+          fetchStudents();
+        }}
+      />
+
+      {/* Revoke confirmation dialog */}
+      <AlertDialog
+        open={!!revokeTarget}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setRevokeTarget(null);
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke Module Access</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to revoke{' '}
+              <span className="font-medium text-foreground">
+                {revokeTarget
+                  ? (MODULE_LABELS[revokeTarget.moduleName] ??
+                    revokeTarget.moduleName)
+                  : ''}
+              </span>{' '}
+              access? The student will lose access to this module immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={revoking !== null}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={revoking !== null}
+              onClick={() => {
+                if (revokeTarget) handleRevoke(revokeTarget.id);
+              }}
+            >
+              {revoking !== null ? 'Revoking...' : 'Revoke Access'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
