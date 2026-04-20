@@ -4,7 +4,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import api from '@/lib/api-client';
-import { FiIcon } from '@/app/_components/Icons';
 import { Input } from '@/components/ui/input';
 
 const MODULE_PRICE = 999;
@@ -24,6 +23,7 @@ interface CheckoutSession {
   currency: string;
   num_students?: number;
   price_per_student?: number;
+  payment_url?: string;
 }
 
 export interface CheckoutConfig {
@@ -110,15 +110,8 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
 
-  // Card form state
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [nameOnCard, setNameOnCard] = useState('');
-
   const [processing, setProcessing] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   // Redirect if no modules
   useEffect(() => {
@@ -149,38 +142,21 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const formatCard = (v: string) =>
-    v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
-
-  const formatExpiry = (v: string) => {
-    const d = v.replace(/\D/g, '').slice(0, 4);
-    return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
-  };
-
   const isContactValid =
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
     phone.replace(/\D/g, '').length >= 10;
 
-  const isFormValid =
-    isContactValid &&
-    nameOnCard.trim().length > 0 &&
-    cardNumber.replace(/\s/g, '').length === 16 &&
-    expiry.length === 5 &&
-    cvv.length >= 3;
-
   const displayTotal = grandTotal || (session?.total ?? subtotal);
   const stateName = stateParam === 'maharashtra' ? 'Maharashtra' : stateParam === 'rest_of_india' ? 'Rest of India' : '';
   const taxLabel = stateParam === 'maharashtra' ? 'GST (9% CGST + 9% SGST)' : 'IGST (18%)';
 
   const handlePay = async () => {
-    if (!isFormValid) return;
+    if (!isContactValid) return;
     setProcessing(true);
     setPayError(null);
     try {
-      let paymentId: number;
-
       const contactDetails = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -188,28 +164,31 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
         phone: phone.trim(),
       };
 
+      let result: CheckoutSession;
+
       if (config.mode === 'student') {
-        // Student: create payment on submit
+        // Student: create payment session now
         const modules = lineItems.flatMap((item) => Array.from({ length: item.quantity }, () => item.module));
-        const result = await api<CheckoutSession>(config.createEndpoint, {
+        result = await api<CheckoutSession>(config.createEndpoint, {
           method: 'POST',
           body: { modules, ...contactDetails },
         });
-        paymentId = result.payment_id;
       } else {
-        // School: session already created
+        // School: session already created on mount
         if (!session) return;
-        paymentId = session.payment_id;
+        result = session;
       }
 
-      // Simulate processing delay
-      await new Promise((res) => setTimeout(res, 1800));
+      // Redirect to HDFC payment page
+      if (result.payment_url) {
+        window.location.href = result.payment_url;
+        return;
+      }
 
-      const confirmUrl = config.confirmEndpoint.replace('{payment_id}', String(paymentId));
+      // Fallback: if no payment URL (dummy gateway), confirm directly
+      const confirmUrl = config.confirmEndpoint.replace('{payment_id}', String(result.payment_id));
       await api(confirmUrl, { method: 'POST' });
-
-      setSuccess(true);
-      setTimeout(() => router.push(config.successRedirect), 1500);
+      router.push(config.successRedirect);
     } catch (err: unknown) {
       setPayError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
     } finally {
@@ -238,18 +217,6 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
     );
   }
 
-  if (success) {
-    return (
-      <div className="mx-auto max-w-lg rounded-xl border border-green-200 bg-green-50 p-10 text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-          <FiIcon name="check" className="h-6 w-6 text-green-600" />
-        </div>
-        <h2 className="text-lg font-bold text-gray-900">Payment Successful!</h2>
-        <p className="mt-1 text-sm text-gray-500">{config.successMessage}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       {/* Back button */}
@@ -266,7 +233,7 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
       </button>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        {/* Contact + Card form */}
+        {/* Contact form */}
         <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
           {payError && (
             <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{payError}</div>
@@ -329,70 +296,19 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
             </div>
           </div>
 
-          {/* Payment details */}
-          <h2 className="mb-5 text-base font-semibold text-gray-900">Payment Details</h2>
-
-          <div className="space-y-4">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-700">Name on card</label>
-              <Input
-                type="text"
-                placeholder="John Doe"
-                value={nameOnCard}
-                onChange={(e) => setNameOnCard(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-700">Card number</label>
-              <Input
-                type="text"
-                inputMode="numeric"
-                placeholder="1234 5678 9012 3456"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(formatCard(e.target.value))}
-                className="font-mono"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">Expiry (MM/YY)</label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="MM/YY"
-                  value={expiry}
-                  onChange={(e) => setExpiry(formatExpiry(e.target.value))}
-                  className="font-mono"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">CVV</label>
-                <Input
-                  type="password"
-                  inputMode="numeric"
-                  placeholder="•••"
-                  maxLength={4}
-                  value={cvv}
-                  onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  className="font-mono"
-                />
-              </div>
-            </div>
-          </div>
-
           <p className="mt-4 text-xs text-gray-400">
-            🔒 This is a demo checkout. No real payment is processed.
+            🔒 You will be redirected to HDFC&apos;s secure payment page to complete the transaction.
           </p>
 
           <button
             onClick={handlePay}
-            disabled={!isFormValid || processing}
+            disabled={!isContactValid || processing}
             className="mt-6 w-full cursor-pointer rounded-lg bg-purple-600 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {processing ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                Processing…
+                Redirecting to payment…
               </span>
             ) : (
               `Pay ₹${typeof displayTotal === 'number' ? displayTotal.toLocaleString('en-IN') : displayTotal}`
