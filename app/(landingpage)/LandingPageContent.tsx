@@ -1,6 +1,59 @@
 'use client';
 import React, { useState } from 'react';
-import './LandingPage.css';
+
+const PROBLEMS = [
+  {
+    title: 'High Student: Counsellor Ratio',
+    description:
+      "\u201COur school counselor is a subject teacher as well, so she\u2019s booked with other commitments\u2026 She hasn\u2019t really given us individual support.\u201D",
+    author: '- Hemaprabha Ashwin, Parent, IB Board, Dubai',
+  },
+  {
+    title: 'Outdated Tools',
+    description:
+      "\u201CMost tools we\u2019ve seen are static - they don\u2019t talk, they don\u2019t adapt, and they certainly don\u2019t counsel.\u201D",
+    author: '- Kunal Dalal, Promoter, JBCN School, Mumbai',
+  },
+  {
+    title: 'Overwhelming Process',
+    description:
+      "\u201CIt\u2019s like standing at the base of a mountain - no map, no guide, just noise. You\u2019re stuck, overwhelmed, and afraid to take the first step.\u201D",
+    author:
+      '- Alman Merchant, Parent, IGCSE Board, American School of Bombay, Mumbai',
+  },
+  {
+    title: 'Lack of Affordable, Personalized Guidance',
+    description:
+      "\u201CWe don\u2019t have any counselor for international admissions\u2026 That kind of guidance is non-existent in cities like ours.\u201D",
+    author:
+      '- Amitava Ghosh, Principal, Bharatiya Vidya Bhavan, Raipur',
+  },
+  {
+    title: 'Great Guidance Exists but at a Cost',
+    description:
+      "\u201CExperienced counselors who know how to guide you aren\u2019t accessible unless you pay lakhs. The rest of us get vague advice and outdated info - it\u2019s just not fair.\u201D",
+    author: '- Sushri, Student, XIM Bhubaneswar',
+  },
+  {
+    title: 'No Contextual Advice',
+    description:
+      "\u201CWhere is the space for a counsellor to do upgradation and understand the dynamics of the career market?\u201D",
+    author:
+      '- Manju Surendran, Principal, Faravanahi International Academy, Nashik',
+  },
+  {
+    title: 'Lack of Support',
+    description:
+      "\u201CIn school, we got zero real help. My parents and I had to figure out everything on our own.\u201D",
+    author: '- Dia Soman, Student, DPS-Modern Indian School, Qatar',
+  },
+  {
+    title: 'Barriers to Emotional Openness',
+    description:
+      "\u201CWith a counselor, there\u2019s intimidation - it takes a lot of time to open up.\u201D",
+    author: '- Archita Saraf Rajpuria, Trustee, RSET',
+  },
+];
 
 export default function LandingPageContent(): React.ReactElement {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -13,89 +66,157 @@ export default function LandingPageContent(): React.ReactElement {
   };
 
   return (
-    <div className="landing-page">
+    <div className="font-work-sans leading-relaxed">
       {/* Header */}
-      <header className="header">
-        <div className="header-content">
-          <div className="logo-section">
+      <header className="sticky top-0 z-1000 w-full border-b border-neutral-200 bg-white/90 py-[15px] backdrop-blur-sm">
+        <div className="mx-auto flex max-w-[95%] items-center justify-between px-[15px] md:px-[30px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+          <div className="flex items-center gap-2">
             <img
               src="/images/icon.png"
               alt="HelloIvy - AI Powered Education Platform Logo"
-              className="logo-img responsive-img"
+              className="h-8 w-8 max-w-full object-contain sm:h-9 sm:w-9 md:h-10 md:w-10"
+              loading="lazy"
             />
-            <a href="#intro" className="logo-text" aria-label="HelloIvy - AI Powered Education Platform">
-              hello<span className="logo-highlight">ivy</span>
+            <a
+              href="#intro"
+              className="text-xl font-bold text-neutral-900 no-underline sm:text-2xl md:text-[28px]"
+              aria-label="HelloIvy - AI Powered Education Platform"
+            >
+              hello<span className="text-brand-indigo">ivy</span>
             </a>
           </div>
 
           <button
-            className="mobile-menu-btn"
+            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-2 text-2xl outline-none transition-all duration-200 hover:bg-brand-indigo/10 md:hidden"
             onClick={() => setShowMobileMenu(!showMobileMenu)}
           >
-            ☰
+            &#9776;
           </button>
 
-          <nav className="nav-desktop" role="navigation" aria-label="Main navigation">
-            <ul className="nav-list">
-              <li><a href="#intro" onClick={(e) => { e.preventDefault(); scrollToSection('intro'); }} className="nav-link" aria-label="Go to introduction section">Intro</a></li>
-              <li><a href="#about" onClick={(e) => { e.preventDefault(); scrollToSection('about'); }} className="nav-link" aria-label="Go to about us section">About Us</a></li>
-              <li><a href="#features" onClick={(e) => { e.preventDefault(); scrollToSection('features'); }} className="nav-link" aria-label="Go to features section">Features</a></li>
-              <li><a href="#users" onClick={(e) => { e.preventDefault(); scrollToSection('users'); }} className="nav-link" aria-label="Go to users section">Users</a></li>
-              <li><a href="#contact" onClick={(e) => { e.preventDefault(); scrollToSection('contact'); }} className="nav-link" aria-label="Go to contact section">Contact Us</a></li>
+          <nav
+            className="hidden md:block"
+            role="navigation"
+            aria-label="Main navigation"
+          >
+            <ul className="m-0 flex list-none gap-5 p-0 md:gap-[30px] lg:gap-10">
+              {[
+                {
+                  id: 'intro',
+                  label: 'Intro',
+                  ariaLabel: 'Go to introduction section',
+                },
+                {
+                  id: 'about',
+                  label: 'About Us',
+                  ariaLabel: 'Go to about us section',
+                },
+                {
+                  id: 'features',
+                  label: 'Features',
+                  ariaLabel: 'Go to features section',
+                },
+                {
+                  id: 'users',
+                  label: 'Users',
+                  ariaLabel: 'Go to users section',
+                },
+                {
+                  id: 'contact',
+                  label: 'Contact Us',
+                  ariaLabel: 'Go to contact section',
+                },
+              ].map(({ id, label, ariaLabel }) => (
+                <li key={id}>
+                  <a
+                    href={'#' + id}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToSection(id);
+                    }}
+                    className="cursor-pointer rounded-full px-4 py-2 text-sm font-semibold text-neutral-500 no-underline outline-none transition-all duration-200 hover:bg-brand-indigo/10 hover:text-brand-indigo"
+                    aria-label={ariaLabel}
+                  >
+                    {label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </nav>
 
-          <div className="desktop-buttons">
+          <div className="hidden items-center gap-[15px] md:flex">
             <button
-              className="btn btn-primary"
-              onClick={() => window.location.href = '/contact'}
+              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-indigo px-6 py-3 text-center font-semibold text-white outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(76,74,246,0.3)] active:translate-y-0"
+              onClick={() => {
+                window.location.href = '/contact';
+              }}
             >
               Talk To Expert
             </button>
             <button
-              className="btn btn-secondary"
-              onClick={() => window.location.href = '/signup'}
+              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-teal px-6 py-3 text-center font-semibold text-brand-navy outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(16,229,200,0.3)] active:translate-y-0"
+              onClick={() => {
+                window.location.href = '/signup';
+              }}
             >
               Login/Register
             </button>
           </div>
         </div>
+
         {/* Mobile Menu */}
         {showMobileMenu && (
           <>
-            <div className="mobile-menu-overlay" onClick={() => setShowMobileMenu(false)} />
-            <div className={`mobile-menu ${showMobileMenu ? 'open' : ''}`}>
-              <button className="mobile-menu-close" onClick={() => setShowMobileMenu(false)}>
-                ✕
+            <div
+              className="fixed inset-0 z-9998 bg-black/50"
+              onClick={() => setShowMobileMenu(false)}
+            />
+            <div className="fixed right-0 top-0 z-9999 h-screen w-[280px] translate-x-0 bg-white p-5 shadow-[-4px_0_20px_rgba(0,0,0,0.1)] transition-transform duration-300">
+              <button
+                className="mb-5 ml-auto block cursor-pointer border-none bg-transparent p-2 text-2xl"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                &#x2715;
               </button>
               <nav>
-                <ul className="mobile-nav-list">
-                  <li className="mobile-nav-item">
-                    <a href="#intro" onClick={(e) => { e.preventDefault(); scrollToSection('intro'); setShowMobileMenu(false); }} className="mobile-nav-link">Intro</a>
-                  </li>
-                  <li className="mobile-nav-item">
-                    <a href="#about" onClick={(e) => { e.preventDefault(); scrollToSection('about'); setShowMobileMenu(false); }} className="mobile-nav-link">About Us</a>
-                  </li>
-                  <li className="mobile-nav-item">
-                    <a href="#features" onClick={(e) => { e.preventDefault(); scrollToSection('features'); setShowMobileMenu(false); }} className="mobile-nav-link">Features</a>
-                  </li>
-                  <li className="mobile-nav-item">
-                    <a href="#users" onClick={(e) => { e.preventDefault(); scrollToSection('users'); setShowMobileMenu(false); }} className="mobile-nav-link">Users</a>
-                  </li>
-                  <li className="mobile-nav-item">
-                    <a href="#contact" onClick={(e) => { e.preventDefault(); scrollToSection('contact'); setShowMobileMenu(false); }} className="mobile-nav-link">Contact Us</a>
-                  </li>
+                <ul className="m-0 flex list-none flex-col p-0">
+                  {[
+                    { id: 'intro', label: 'Intro' },
+                    { id: 'about', label: 'About Us' },
+                    { id: 'features', label: 'Features' },
+                    { id: 'users', label: 'Users' },
+                    { id: 'contact', label: 'Contact Us' },
+                  ].map(({ id, label }) => (
+                    <li key={id} className="border-b border-neutral-100">
+                      <a
+                        href={'#' + id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scrollToSection(id);
+                          setShowMobileMenu(false);
+                        }}
+                        className="flex min-h-11 cursor-pointer items-center py-[15px] text-sm font-semibold text-neutral-500 no-underline hover:text-brand-indigo"
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  ))}
                 </ul>
-                <div className="mobile-buttons">
+                <div className="mt-[30px] flex flex-col gap-[15px]">
                   <button
-                    className="btn btn-primary"
-                    onClick={() => { setShowMobileMenu(false); window.location.href = '/contact'; }}
+                    className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-indigo px-6 py-3 text-center font-semibold text-white outline-none transition-all duration-200 hover:-translate-y-0.5"
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      window.location.href = '/contact';
+                    }}
                   >
                     Talk To Expert
                   </button>
                   <button
-                    className="btn btn-secondary"
-                    onClick={() => { setShowMobileMenu(false); window.location.href = '/signup'; }}
+                    className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-teal px-6 py-3 text-center font-semibold text-brand-navy outline-none transition-all duration-200 hover:-translate-y-0.5"
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      window.location.href = '/signup';
+                    }}
                   >
                     Login/Register
                   </button>
@@ -108,22 +229,29 @@ export default function LandingPageContent(): React.ReactElement {
 
       <main>
         {/* Intro Section */}
-        <section id="intro" className="section intro-section">
-          <div className="section-container">
-            <div className="intro-content">
-              <div className="intro-text">
-                <h1>
-                  Your <span className="gradient-text">AI Powered</span> Platform for Career & Educational Success
+        <section
+          id="intro"
+          className="bg-white py-[60px] md:py-20 lg:py-[120px]"
+        >
+          <div className="mx-auto max-w-[95%] px-[15px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+            <div className="flex flex-col items-center gap-10 text-center md:grid md:grid-cols-[1.2fr_1fr] md:items-center md:gap-[60px] md:text-left lg:gap-20">
+              <div>
+                <h1 className="mb-5 text-[32px] font-bold leading-tight text-neutral-900 sm:text-[36px] md:text-[42px] lg:text-[56px]">
+                  Your <span className="gradient-text">AI Powered</span>{' '}
+                  Platform for Career &amp; Educational Success
                 </h1>
-                <p>
-                  Empowering schools & colleges with personalized, data-driven guidance—from Career & Degree Selection to college admission—backed by 14+ years of expertise.
+                <p className="mx-auto text-base text-neutral-500 sm:text-[17px] md:mx-0 md:max-w-[500px] md:text-lg">
+                  Empowering schools &amp; colleges with personalized,
+                  data-driven guidance&mdash;from Career &amp; Degree Selection
+                  to college admission&mdash;backed by 14+ years of expertise.
                 </p>
               </div>
-              <div className="intro-image">
+              <div className="mx-auto w-full max-w-[400px] md:max-w-[600px]">
                 <img
                   src="/images/OBJECTS.png"
-                  alt="HelloIvy AI-powered educational platform dashboard showing Career & Degree Selection and college selection tools"
-                  className="responsive-img"
+                  alt="HelloIvy AI-powered educational platform dashboard"
+                  className="block h-auto max-w-full"
+                  loading="lazy"
                 />
               </div>
             </div>
@@ -131,202 +259,164 @@ export default function LandingPageContent(): React.ReactElement {
         </section>
 
         {/* About Us Section */}
-        <section id="about" className="section about-section">
-          <div className="section-container">
-            <div className="section-header">
-              <span className="section-tag">ABOUT US</span>
-              <h2 className="section-title" style={{
-                background: 'linear-gradient(90deg, #6B68FE, #312ED0)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
-                Where Human Expertise <span className="gradient-text">Meets AI</span>
+        <section
+          id="about"
+          className="bg-brand-surface py-[60px] md:py-20 lg:py-[120px]"
+        >
+          <div className="mx-auto max-w-[95%] px-[15px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+            <div className="mb-10 text-center md:mb-[60px]">
+              <span className="mb-4 inline-block rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium">
+                ABOUT US
+              </span>
+              <h2 className="mb-5 text-[28px] font-bold leading-snug text-neutral-900 sm:text-[32px] md:text-[36px] lg:text-[42px]">
+                <span className="gradient-text-blue">
+                  Where Human Expertise{' '}
+                </span>
+                <span className="gradient-text">Meets AI</span>
               </h2>
-              <p className="about-description">
-                An AI-powered platform built to elevate counselors, empower students, and transform the Career & Degree Selection journey. Designed as a smart co-pilot, it delivers personalized, data-driven support to help students uncover passions, build standout profiles, and gain admission to top global universities.
+              <p className="mx-auto mt-5 max-w-full text-sm leading-relaxed text-neutral-500 sm:text-[15px] md:max-w-[800px] md:text-base">
+                An AI-powered platform built to elevate counselors, empower
+                students, and transform the Career &amp; Degree Selection
+                journey. Designed as a smart co-pilot, it delivers personalized,
+                data-driven support to help students uncover passions, build
+                standout profiles, and gain admission to top global universities.
               </p>
             </div>
 
             {/* University Logos */}
-            <div className="university-logos">
+            <div className="my-10 flex items-center justify-center px-2.5 md:my-[50px]">
               <img
                 src="/images/college logos.png"
                 alt="Top universities and colleges including Oxford, Stanford, UCLA, MIT, Georgia Tech, University of Michigan, LSE, USC, Cambridge, and HEC Paris"
-                className="responsive-img"
+                className="mx-auto block h-auto max-w-full md:max-w-[90%]"
+                loading="lazy"
               />
             </div>
 
             {/* Founder Section */}
-            <div className="founder-section">
-              <div className="founder-image-container">
-                <div className="founder-image-wrapper">
+            <div className="mt-[60px] flex flex-col items-center gap-10 md:mt-20 md:grid md:grid-cols-2 md:items-center md:gap-20 lg:gap-[100px]">
+              <div className="relative order-2 p-2.5 md:order-0">
+                <div className="relative mx-auto w-full max-w-[300px] sm:max-w-[350px] md:max-w-[400px]">
                   <img
                     src="/images/VK.png"
-                    alt="Vibha Kagzi, Founder and CEO of HelloIvy, education technology expert with 14+ years of experience"
-                    className="founder-image responsive-img"
+                    alt="Vibha Kagzi, Founder and CEO of HelloIvy"
+                    className="block h-auto w-full max-w-full rounded-full"
+                    loading="lazy"
                   />
                 </div>
-                <div className="founder-quote">
-                  <p className="founder-quote-text">
-                    &quot;We&apos;re not here to sell dreams. We&apos;re here to architect reality.&quot;
+                <div className="relative z-2 -mt-10 rounded-2xl bg-white px-5 py-[30px] text-center shadow-[0_10px_30px_rgba(0,0,0,0.08)] sm:-mt-[50px] sm:px-[25px] sm:py-[35px] md:-mt-[60px] md:p-10">
+                  <p className="mb-2.5 text-base font-medium italic leading-snug sm:text-lg md:text-xl">
+                    &quot;We&apos;re not here to sell dreams. We&apos;re here to
+                    architect reality.&quot;
                   </p>
-                  <p className="founder-quote-author">
-                    — Vibha Kagzi, Founder & CEO
+                  <p className="text-sm font-semibold not-italic text-neutral-500 sm:text-[15px] md:text-base">
+                    &mdash; Vibha Kagzi, Founder &amp; CEO
                   </p>
                 </div>
               </div>
-              <div className="founder-content">
-                <h3>Who we are:</h3>
-                <p>
-                  A company born from the expertise of Reachivy.com — trusted advisors to the dreamers, the doers, and the disruptors of tomorrow.
+              <div>
+                <h3 className="mb-2.5 text-[22px] font-bold">Who we are:</h3>
+                <p className="mb-5 text-neutral-500">
+                  A company born from the expertise of Reachivy.com &mdash;
+                  trusted advisors to the dreamers, the doers, and the
+                  disruptors of tomorrow.
                 </p>
-                <p>
-                  For over 14+ yrs, we&apos;ve guided thousands of students to top universities and careers around the world. Trusted by thousands of students to navigate their academic and professional journeys. Now, we are harnessing the power of AI to revolutionize how career and college guidance is delivered in institutions worldwide.
+                <p className="mb-5 text-neutral-500">
+                  For over 14+ yrs, we&apos;ve guided thousands of students to
+                  top universities and careers around the world. Trusted by
+                  thousands of students to navigate their academic and
+                  professional journeys. Now, we are harnessing the power of AI
+                  to revolutionize how career and college guidance is delivered
+                  in institutions worldwide.
                 </p>
-                <p>
+                <p className="mb-5 text-neutral-500">
                   We&apos;re taking it a step further.
                 </p>
               </div>
             </div>
 
             {/* Statistics Section */}
-            <div className="statistics-section">
-              <img src="/images/pointers.png" alt="HelloIvy key statistics: 1M+ real student data points, 14+ years of expertise, 2 published books on admissions, top programs in STEM and Business, 95% satisfaction score, 10+ intelligent models, 5,000 students admitted to top universities, 2x faster application process, 0% commission model" className="responsive-img" />
+            <div className="mt-10 flex items-center justify-center md:mt-20">
+              <img
+                src="/images/pointers.png"
+                alt="HelloIvy key statistics"
+                className="block h-auto max-w-full"
+                loading="lazy"
+              />
             </div>
 
             {/* Why Ivy Section */}
-            <div className="why-ivy-section">
-              <span className="section-tag">WHY IVY</span>
-              <h2 className="section-title">
-                Based on Research to <span style={{ color: '#E842A5' }}>Solve</span> <span style={{ color: '#A16BFE' }}>Real</span> <span style={{ color: '#4C4AF6' }}>Problems</span>
+            <div className="mt-[60px] text-center md:mt-[120px]">
+              <span className="mb-4 inline-block rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium">
+                WHY IVY
+              </span>
+              <h2 className="mb-5 text-[28px] font-bold leading-snug sm:text-[32px] md:text-[36px] lg:text-[42px]">
+                Based on Research to{' '}
+                <span className="text-brand-pink">Solve</span>{' '}
+                <span className="text-brand-purple-light">Real</span>{' '}
+                <span className="text-brand-indigo">Problems</span>
               </h2>
 
-              <div className="problems-grid">
-                <div className="problem-item">
-                  <h3 className="problem-title">
-                    High Student: Counsellor Ratio
-                  </h3>
-                  <p className="problem-description">
-                    &quot;Our school counselor is a subject teacher as well, so she&apos;s booked with other commitments... She hasn&apos;t really given us individual support.&quot;
-                  </p>
-                  <p className="problem-author">
-                    - Hemaprabha Ashwin, Parent, IB Board, Dubai
-                  </p>
-                </div>
-
-                <div className="problem-item">
-                  <h3 className="problem-title">
-                    Outdated Tools
-                  </h3>
-                  <p className="problem-description">
-                    &quot;Most tools we&apos;ve seen are static - they don&apos;t talk, they don&apos;t adapt, and they certainly don&apos;t counsel.&quot;
-                  </p>
-                  <p className="problem-author">
-                    - Kunal Dalal, Promoter, JBCN School, Mumbai
-                  </p>
-                </div>
-
-                <div className="problem-item">
-                  <h3 className="problem-title">
-                    Overwhelming Process
-                  </h3>
-                  <p className="problem-description">
-                    &quot;It&apos;s like standing at the base of a mountain - no map, no guide, just noise. You&apos;re stuck, overwhelmed, and afraid to take the first step.&quot;
-                  </p>
-                  <p className="problem-author">
-                    - Alman Merchant, Parent, IGCSE Board, American School of Bombay, Mumbai
-                  </p>
-                </div>
-
-                <div className="problem-item">
-                  <h3 className="problem-title">
-                    Lack of Affordable, Personalized Guidance
-                  </h3>
-                  <p className="problem-description">
-                    &quot;We don&apos;t have any counselor for international admissions... That kind of guidance is non-existent in cities like ours.&quot;
-                  </p>
-                  <p className="problem-author">
-                    - Amitava Ghosh, Principal, Bharatiya Vidya Bhavan, Raipur
-                  </p>
-                </div>
-
-                <div className="problem-item">
-                  <h3 className="problem-title">
-                    Great Guidance Exists but at a Cost
-                  </h3>
-                  <p className="problem-description">
-                    &quot;Experienced counselors who know how to guide you aren&apos;t accessible unless you pay lakhs. The rest of us get vague advice and outdated info - it&apos;s just not fair.&quot;
-                  </p>
-                  <p className="problem-author">
-                    - Sushri, Student, XIM Bhubaneswar
-                  </p>
-                </div>
-
-                <div className="problem-item">
-                  <h3 className="problem-title">
-                    No Contextual Advice
-                  </h3>
-                  <p className="problem-description">
-                    &quot;Where is the space for a counsellor to do upgradation and understand the dynamics of the career market?&quot;
-                  </p>
-                  <p className="problem-author">
-                    - Manju Surendran, Principal, Faravanahi International Academy, Nashik
-                  </p>
-                </div>
-
-                <div className="problem-item">
-                  <h3 className="problem-title">
-                    Lack of Support
-                  </h3>
-                  <p className="problem-description">
-                    &quot;In school, we got zero real help. My parents and I had to figure out everything on our own.&quot;
-                  </p>
-                  <p className="problem-author">
-                    - Dia Soman, Student, DPS-Modern Indian School, Qatar
-                  </p>
-                </div>
-
-                <div className="problem-item">
-                  <h3 className="problem-title">
-                    Barriers to Emotional Openness
-                  </h3>
-                  <p className="problem-description">
-                    &quot;With a counselor, there&apos;s intimidation - it takes a lot of time to open up.&quot;
-                  </p>
-                  <p className="problem-author">
-                    - Archita Saraf Rajpuria, Trustee, RSET
-                  </p>
-                </div>
+              <div className="mx-auto mt-0 grid max-w-full grid-cols-1 items-stretch gap-[30px] text-left md:max-w-[1000px] md:grid-cols-2 md:gap-x-[60px] md:gap-y-10">
+                {PROBLEMS.map((problem, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col border-b border-neutral-300 pb-[30px]"
+                  >
+                    <h3 className="mb-[15px] text-xl font-bold text-neutral-900">
+                      {problem.title}
+                    </h3>
+                    <p className="mb-[15px] flex-1 leading-relaxed text-neutral-500">
+                      {problem.description}
+                    </p>
+                    <p className="m-0 text-sm italic text-neutral-400">
+                      {problem.author}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
         {/* Features Section */}
-        <section id="features" className="section features-section">
-          <div className="section-container">
-            <div className="section-header">
-              <span className="section-tag">FEATURES</span>
-              <h2 className="section-title">
-                <span style={{ color: '#E842A5' }}>Smart</span> <span style={{ color: '#A16BFE' }}>Features</span> That Transform Education Planning
+        <section
+          id="features"
+          className="bg-white py-[60px] md:py-20 lg:py-[120px]"
+        >
+          <div className="mx-auto max-w-[95%] px-[15px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+            <div className="mb-10 text-center md:mb-[60px]">
+              <span className="mb-4 inline-block rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium">
+                FEATURES
+              </span>
+              <h2 className="mb-5 text-[28px] font-bold leading-snug text-neutral-900 sm:text-[32px] md:text-[36px] lg:text-[42px]">
+                <span className="text-brand-pink">Smart</span>{' '}
+                <span className="text-brand-purple-light">Features</span>{' '}
+                That Transform Education Planning
               </h2>
             </div>
 
-            <div className="features-content">
-              <div className="features-list">
+            <div className="flex flex-col items-center gap-10 md:grid md:grid-cols-[1fr_1.3fr] md:items-center md:gap-20 lg:gap-[100px]">
+              <div className="flex flex-col gap-0">
                 {[
-                  { icon: '💼', text: 'Career & Degree Selection ' },
-                  { icon: '👤', text: 'Profile Builder' },
-                  { icon: '🎓', text: 'Degree Selector' },
-                  { icon: '🏫', text: 'College Selection' },
-                  { icon: '🧠', text: 'Essay Brainstormer' },
-                  { icon: '📝', text: 'Essay Evaluator' },
-                  { icon: '📄', text: 'Resume Builder' },
-                  { icon: '🎤', text: 'Interview Preparation' },
-                  { icon: '💰', text: 'Scholarship & Financial Aid Finder' }
+                  { icon: '\ud83d\udcbc', text: 'Career & Degree Selection' },
+                  { icon: '\ud83d\udc64', text: 'Profile Builder' },
+                  { icon: '\ud83c\udf93', text: 'Degree Selector' },
+                  { icon: '\ud83c\udfeb', text: 'College Selection' },
+                  { icon: '\ud83e\udde0', text: 'Essay Brainstormer' },
+                  { icon: '\ud83d\udcdd', text: 'Essay Evaluator' },
+                  { icon: '\ud83d\udcc4', text: 'Resume Builder' },
+                  { icon: '\ud83c\udfa4', text: 'Interview Preparation' },
+                  {
+                    icon: '\ud83d\udcb0',
+                    text: 'Scholarship & Financial Aid Finder',
+                  },
                 ].map((feature, index) => (
-                  <div key={index} className="feature-item">
-                    <span className="feature-icon">
+                  <div
+                    key={index}
+                    className="flex items-center gap-[15px] border-b border-neutral-300 py-[15px] text-lg font-semibold text-neutral-900 last:border-b-0"
+                  >
+                    <span className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-blue-50 p-2 text-xl">
                       {feature.icon}
                     </span>
                     {feature.text}
@@ -334,13 +424,13 @@ export default function LandingPageContent(): React.ReactElement {
                 ))}
               </div>
 
-              <div className="video-container">
+              <div className="relative h-0 w-full overflow-hidden rounded-2xl pb-[56.25%] shadow-[0_10px_40px_rgba(0,0,0,0.1)] contain-[layout]">
                 <iframe
                   src="https://www.youtube.com/embed/ax3L6hP9GU0?controls=1&rel=0"
                   title="HelloIvy Platform Demo"
                   allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  className="video-iframe"
+                  className="absolute left-0 top-0 h-full w-full border-0"
                   loading="lazy"
                 />
               </div>
@@ -349,47 +439,72 @@ export default function LandingPageContent(): React.ReactElement {
         </section>
 
         {/* Users Section */}
-        <section id="users" className="section users-section">
-          <div className="section-container">
-            <div className="section-header">
-              <span className="section-tag">USERS</span>
-              <h2 className="section-title" style={{
-                background: 'linear-gradient(90deg, #6B68FE, #312ED0)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
-                Built for Every Role in the <span className="gradient-text">Education Journey</span>
+        <section
+          id="users"
+          className="bg-neutral-50 py-[60px] md:py-20 lg:py-[120px]"
+        >
+          <div className="mx-auto max-w-[95%] px-[15px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+            <div className="mb-10 text-center md:mb-[60px]">
+              <span className="mb-4 inline-block rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium">
+                USERS
+              </span>
+              <h2 className="mb-5 text-[28px] font-bold leading-snug sm:text-[32px] md:text-[36px] lg:text-[42px]">
+                <span className="gradient-text-blue">
+                  Built for Every Role in the{' '}
+                </span>
+                <span className="gradient-text">Education Journey</span>
               </h2>
             </div>
 
-            <div className="users-grid">
+            <div className="grid grid-cols-1 gap-[30px] text-center md:grid-cols-2 md:gap-10 lg:grid-cols-3 lg:gap-[60px]">
               {[
                 {
                   image: '/images/Frame.png',
                   title: 'Students',
-                  features: ['24x7 Personalised Guidance', 'Ivy-League level Expertise', 'Conversational Experience']
+                  features: [
+                    '24x7 Personalised Guidance',
+                    'Ivy-League level Expertise',
+                    'Conversational Experience',
+                  ],
                 },
                 {
                   image: '/images/Frame (1).png',
                   title: 'Educational Institutes',
-                  features: ['Improved Student Outcomes', 'Scalable Support System', 'White-Labeled Solution']
+                  features: [
+                    'Improved Student Outcomes',
+                    'Scalable Support System',
+                    'White-Labeled Solution',
+                  ],
                 },
                 {
                   image: '/images/Frame (2).png',
                   title: 'Counsellors',
-                  features: ['AI-Powered Co-Pilot', '80% Less Admin Time', 'Real-Time Dashboards']
-                }
+                  features: [
+                    'AI-Powered Co-Pilot',
+                    '80% Less Admin Time',
+                    'Real-Time Dashboards',
+                  ],
+                },
               ].map((user, index) => (
-                <div key={index} className="user-card">
+                <div
+                  key={index}
+                  className="flex flex-col items-center p-[30px] text-center md:p-10"
+                >
                   <img
                     src={user.image}
                     alt={user.title}
-                    className="user-image responsive-img"
+                    className="mx-auto mb-5 block h-[120px] w-auto max-w-full sm:h-[140px] md:mb-[25px] md:h-[150px]"
+                    loading="lazy"
                   />
-                  <h3 className="user-title">{user.title}</h3>
-                  <ul className="user-features">
+                  <h3 className="mb-[15px] w-full text-center text-2xl font-bold">
+                    {user.title}
+                  </h3>
+                  <ul className="m-0 w-full max-w-[250px] list-none p-0 text-left text-neutral-500 sm:max-w-[280px] md:max-w-[300px]">
                     {user.features.map((feature, idx) => (
-                      <li key={idx} className="user-feature">
+                      <li
+                        key={idx}
+                        className="relative mb-2.5 pl-[25px] before:absolute before:left-0 before:font-bold before:text-brand-teal before:content-['✔']"
+                      >
                         {feature}
                       </li>
                     ))}
@@ -401,16 +516,25 @@ export default function LandingPageContent(): React.ReactElement {
         </section>
 
         {/* Contact Section */}
-        <section id="contact" className="section contact-section">
-          <div className="section-container">
-            <div className="contact-card">
-              <h2 className="contact-title">Contact Us</h2>
-              <p className="contact-text">
+        <section
+          id="contact"
+          className="bg-white py-[60px] md:py-20 lg:py-[120px]"
+        >
+          <div className="mx-auto max-w-[95%] px-[15px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+            <div className="mx-auto max-w-full rounded-2xl bg-white px-5 py-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.07)] md:max-w-[600px] md:p-[60px]">
+              <h2 className="gradient-text mb-5 text-[32px] font-bold leading-tight sm:text-[36px] md:text-web-h1 lg:text-display-sm">
+                Contact Us
+              </h2>
+              <p className="mb-5 text-base text-neutral-500 sm:text-[17px] md:text-lg">
                 Are you a student, parent, or educator inspired by our mission?
               </p>
-              <p className="contact-text">
-                If you&apos;re exploring job opportunities and want to be part of our team, get in touch at{' '}
-                <a href="mailto:partners@reachivy.com" className="contact-link">
+              <p className="mb-5 text-base text-neutral-500 sm:text-[17px] md:text-lg">
+                If you&apos;re exploring job opportunities and want to be part
+                of our team, get in touch at{' '}
+                <a
+                  href="mailto:partners@reachivy.com"
+                  className="font-semibold text-brand-navy no-underline"
+                >
                   partners@reachivy.com
                 </a>
               </p>
@@ -420,28 +544,73 @@ export default function LandingPageContent(): React.ReactElement {
       </main>
 
       {/* Footer */}
-      <footer className="footer">
-        <div className="footer-content">
+      <footer className="bg-brand-navy py-[30px] text-white lg:py-10">
+        <div className="mx-auto flex max-w-[90%] flex-col items-center justify-center gap-5 px-[15px] text-center md:flex-row md:justify-between md:gap-[30px] md:text-left lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
           <div>
-            <p className="footer-text">
-              © 2025. All rights reserved |{' '}
-              <a href="/privacy" className="footer-link">Privacy policy</a> |{' '}
-              <a href="/terms" className="footer-link">Terms & Condition</a>
+            <p className="m-0 text-xs opacity-80 sm:text-[13px] md:text-sm">
+              &copy; 2025. All rights reserved |{' '}
+              <a href="/privacy" className="text-white no-underline">
+                Privacy policy
+              </a>{' '}
+              |{' '}
+              <a href="/terms" className="text-white no-underline">
+                Terms &amp; Condition
+              </a>
             </p>
           </div>
-          <div className="footer-social">
-            <div className="social-icons">
-              <a href="https://www.facebook.com/reachivy" className="social-link" target="_blank" rel="noopener noreferrer">
-                <img src="/images/facebook.png" alt="Facebook" className="social-icon" />
+          <div className="flex items-center gap-5 md:gap-[30px]">
+            <div className="flex gap-[15px]">
+              <a
+                href="https://www.facebook.com/reachivy"
+                className="opacity-80 transition-opacity duration-200 hover:opacity-100"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="/images/facebook.png"
+                  alt="Facebook"
+                  className="h-6 w-6 brightness-0 invert"
+                  loading="lazy"
+                />
               </a>
-              <a href="http://instagram.com/reach_ivy/" className="social-link" target="_blank" rel="noopener noreferrer">
-                <img src="/images/instagram.png" alt="Instagram" className="social-icon" />
+              <a
+                href="http://instagram.com/reach_ivy/"
+                className="opacity-80 transition-opacity duration-200 hover:opacity-100"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="/images/instagram.png"
+                  alt="Instagram"
+                  className="h-6 w-6 brightness-0 invert"
+                  loading="lazy"
+                />
               </a>
-              <a href="https://www.linkedin.com/company/reachivy/" className="social-link" target="_blank" rel="noopener noreferrer">
-                <img src="/images/linkedin.png" alt="LinkedIn" className="social-icon" />
+              <a
+                href="https://www.linkedin.com/company/reachivy/"
+                className="opacity-80 transition-opacity duration-200 hover:opacity-100"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="/images/linkedin.png"
+                  alt="LinkedIn"
+                  className="h-6 w-6 brightness-0 invert"
+                  loading="lazy"
+                />
               </a>
-              <a href="https://www.youtube.com/user/reachivy" className="social-link" target="_blank" rel="noopener noreferrer">
-                <img src="/images/youtube.png" alt="Youtube" className="social-icon" />
+              <a
+                href="https://www.youtube.com/user/reachivy"
+                className="opacity-80 transition-opacity duration-200 hover:opacity-100"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="/images/youtube.png"
+                  alt="Youtube"
+                  className="h-6 w-6 brightness-0 invert"
+                  loading="lazy"
+                />
               </a>
             </div>
           </div>

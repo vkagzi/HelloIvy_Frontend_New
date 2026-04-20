@@ -232,12 +232,34 @@
   /* Letter Spacing (tracking-*) */
   --tracking-tight: -0.02em;
   --tracking-normal: 0;
+
+  /* Landing Page Brand Colors */
+  --color-brand-indigo: #4c4af6;
+  --color-brand-teal: #10e5c8;
+  --color-brand-navy: #2e3b8d;
+  --color-brand-pink: #e842a5;
+  --color-brand-purple-light: #a16bfe;
+  --color-brand-surface: #f8f9fe;
 }
 
 body {
   background: var(--color-white);
   color: var(--color-black);
   font-family: var(--font-work-sans), sans-serif;
+}
+
+@utility gradient-text {
+  background: linear-gradient(90deg, var(--color-brand-purple-light), var(--color-brand-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@utility gradient-text-blue {
+  background: linear-gradient(90deg, #6b68fe, #312ed0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .signup-background {
