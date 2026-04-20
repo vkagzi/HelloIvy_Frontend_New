@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 
 // Public routes that don't require authentication
-const PUBLIC_ROUTES = ['/', '/login', '/signup', '/essay-evaluator', '/pay-as-student'];
+const PUBLIC_ROUTES = ['/', '/login', '/signup', '/pay-as-student', '/terms'];
 
 // Auth routes that should redirect to role-appropriate dashboard if logged in
 const AUTH_ROUTES = ['/login', '/signup'];
