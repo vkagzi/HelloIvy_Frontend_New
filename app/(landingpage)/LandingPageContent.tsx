@@ -66,10 +66,10 @@ export default function LandingPageContent(): React.ReactElement {
   };
 
   return (
-    <div className="font-work-sans leading-relaxed">
+    <div className="font-work-sans leading-relaxed tracking-normal text-neutral-700">
       {/* Header */}
-      <header className="sticky top-0 z-1000 w-full border-b border-neutral-200 bg-white/90 py-[15px] backdrop-blur-sm">
-        <div className="mx-auto flex max-w-[95%] items-center justify-between px-[15px] md:px-[30px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+      <header className="sticky top-0 z-1000 w-full border-b border-neutral-100 bg-white/95 py-4 backdrop-blur-md">
+        <div className="mx-auto flex max-w-[95%] items-center justify-between px-5 md:px-10 lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
           <div className="flex items-center gap-2">
             <img
               src="/images/icon.png"
@@ -79,7 +79,7 @@ export default function LandingPageContent(): React.ReactElement {
             />
             <a
               href="#intro"
-              className="text-xl font-bold text-neutral-900 no-underline sm:text-2xl md:text-[28px]"
+              className="font-darker-grotesque text-2xl font-extrabold tracking-tight text-neutral-900 no-underline sm:text-[28px] md:text-[32px]"
               aria-label="HelloIvy - AI Powered Education Platform"
             >
               hello<span className="text-brand-indigo">ivy</span>
@@ -98,7 +98,7 @@ export default function LandingPageContent(): React.ReactElement {
             role="navigation"
             aria-label="Main navigation"
           >
-            <ul className="m-0 flex list-none gap-5 p-0 md:gap-[30px] lg:gap-10">
+            <ul className="m-0 flex list-none gap-2 p-0 md:gap-1 lg:gap-2">
               {[
                 {
                   id: 'intro',
@@ -133,7 +133,7 @@ export default function LandingPageContent(): React.ReactElement {
                       e.preventDefault();
                       scrollToSection(id);
                     }}
-                    className="cursor-pointer rounded-full px-4 py-2 text-sm font-semibold text-neutral-500 no-underline outline-none transition-all duration-200 hover:bg-brand-indigo/10 hover:text-brand-indigo"
+                    className="cursor-pointer rounded-full px-5 py-2.5 text-[15px] font-medium text-neutral-600 no-underline outline-none transition-all duration-200 hover:bg-brand-indigo/8 hover:text-brand-indigo"
                     aria-label={ariaLabel}
                   >
                     {label}
@@ -143,9 +143,9 @@ export default function LandingPageContent(): React.ReactElement {
             </ul>
           </nav>
 
-          <div className="hidden items-center gap-[15px] md:flex">
+          <div className="hidden items-center gap-3 md:flex">
             <button
-              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-indigo px-6 py-3 text-center font-semibold text-white outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(76,74,246,0.3)] active:translate-y-0"
+              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-2 border-brand-indigo bg-transparent px-6 py-2.5 text-center text-[15px] font-semibold text-brand-indigo outline-none transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-indigo hover:text-white hover:shadow-[0_8px_20px_rgba(76,74,246,0.25)] active:translate-y-0"
               onClick={() => {
                 window.location.href = '/contact';
               }}
@@ -153,12 +153,12 @@ export default function LandingPageContent(): React.ReactElement {
               Talk To Expert
             </button>
             <button
-              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-teal px-6 py-3 text-center font-semibold text-brand-navy outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(16,229,200,0.3)] active:translate-y-0"
+              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-indigo px-6 py-3 text-center text-[15px] font-semibold text-white outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(76,74,246,0.3)] active:translate-y-0"
               onClick={() => {
                 window.location.href = '/signup';
               }}
             >
-              Login/Register
+              Login / Register
             </button>
           </div>
         </div>
@@ -231,16 +231,16 @@ export default function LandingPageContent(): React.ReactElement {
         {/* Intro Section */}
         <section
           id="intro"
-          className="bg-white py-[60px] md:py-20 lg:py-[120px]"
+          className="bg-white py-16 md:py-24 lg:py-32"
         >
-          <div className="mx-auto max-w-[95%] px-[15px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
-            <div className="flex flex-col items-center gap-10 text-center md:grid md:grid-cols-[1.2fr_1fr] md:items-center md:gap-[60px] md:text-left lg:gap-20">
+          <div className="mx-auto max-w-[95%] px-5 lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+            <div className="flex flex-col items-center gap-12 text-center md:grid md:grid-cols-[1.2fr_1fr] md:items-center md:gap-16 md:text-left lg:gap-24">
               <div>
-                <h1 className="mb-5 text-[32px] font-bold leading-tight text-neutral-900 sm:text-[36px] md:text-[42px] lg:text-[56px]">
+                <h1 className="font-darker-grotesque mb-6 text-[36px] font-extrabold leading-[1.1] tracking-tight text-neutral-900 sm:text-[42px] md:text-[50px] lg:text-[62px]">
                   Your <span className="gradient-text">AI Powered</span>{' '}
                   Platform for Career &amp; Educational Success
                 </h1>
-                <p className="mx-auto text-base text-neutral-500 sm:text-[17px] md:mx-0 md:max-w-[500px] md:text-lg">
+                <p className="mx-auto text-[17px] leading-relaxed text-neutral-500 sm:text-lg md:mx-0 md:max-w-[520px] md:text-xl">
                   Empowering schools &amp; colleges with personalized,
                   data-driven guidance&mdash;from Career &amp; Degree Selection
                   to college admission&mdash;backed by 14+ years of expertise.
@@ -261,20 +261,20 @@ export default function LandingPageContent(): React.ReactElement {
         {/* About Us Section */}
         <section
           id="about"
-          className="bg-brand-surface py-[60px] md:py-20 lg:py-[120px]"
+          className="bg-brand-surface py-16 md:py-24 lg:py-32"
         >
-          <div className="mx-auto max-w-[95%] px-[15px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
-            <div className="mb-10 text-center md:mb-[60px]">
-              <span className="mb-4 inline-block rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium">
+          <div className="mx-auto max-w-[95%] px-5 lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+            <div className="mb-12 text-center md:mb-16">
+              <span className="mb-5 inline-block rounded-full border border-neutral-200 bg-white px-5 py-2 text-xs font-semibold tracking-widest text-neutral-500">
                 ABOUT US
               </span>
-              <h2 className="mb-5 text-[28px] font-bold leading-snug text-neutral-900 sm:text-[32px] md:text-[36px] lg:text-[42px]">
+              <h2 className="font-darker-grotesque mb-5 text-[30px] font-extrabold leading-snug tracking-tight text-neutral-900 sm:text-[34px] md:text-web-h1 lg:text-display-sm">
                 <span className="gradient-text-blue">
                   Where Human Expertise{' '}
                 </span>
                 <span className="gradient-text">Meets AI</span>
               </h2>
-              <p className="mx-auto mt-5 max-w-full text-sm leading-relaxed text-neutral-500 sm:text-[15px] md:max-w-[800px] md:text-base">
+              <p className="mx-auto mt-6 max-w-full text-[15px] leading-[1.8] text-neutral-500 sm:text-base md:max-w-[720px] md:text-[17px]">
                 An AI-powered platform built to elevate counselors, empower
                 students, and transform the Career &amp; Degree Selection
                 journey. Designed as a smart co-pilot, it delivers personalized,
@@ -284,19 +284,19 @@ export default function LandingPageContent(): React.ReactElement {
             </div>
 
             {/* University Logos */}
-            <div className="my-10 flex items-center justify-center px-2.5 md:my-[50px]">
+            <div className="my-12 flex items-center justify-center px-4 md:my-16">
               <img
                 src="/images/college logos.png"
                 alt="Top universities and colleges including Oxford, Stanford, UCLA, MIT, Georgia Tech, University of Michigan, LSE, USC, Cambridge, and HEC Paris"
-                className="mx-auto block h-auto max-w-full md:max-w-[90%]"
+                className="mx-auto block h-auto max-w-full opacity-80 md:max-w-[85%]"
                 loading="lazy"
               />
             </div>
 
             {/* Founder Section */}
-            <div className="mt-[60px] flex flex-col items-center gap-10 md:mt-20 md:grid md:grid-cols-2 md:items-center md:gap-20 lg:gap-[100px]">
+            <div className="mt-16 flex flex-col items-center gap-12 md:mt-24 md:grid md:grid-cols-2 md:items-center md:gap-20 lg:gap-28">
               <div className="relative order-2 p-2.5 md:order-0">
-                <div className="relative mx-auto w-full max-w-[300px] sm:max-w-[350px] md:max-w-[400px]">
+                <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[320px] md:max-w-[380px]">
                   <img
                     src="/images/VK.png"
                     alt="Vibha Kagzi, Founder and CEO of HelloIvy"
@@ -304,24 +304,24 @@ export default function LandingPageContent(): React.ReactElement {
                     loading="lazy"
                   />
                 </div>
-                <div className="relative z-2 -mt-10 rounded-2xl bg-white px-5 py-[30px] text-center shadow-[0_10px_30px_rgba(0,0,0,0.08)] sm:-mt-[50px] sm:px-[25px] sm:py-[35px] md:-mt-[60px] md:p-10">
-                  <p className="mb-2.5 text-base font-medium italic leading-snug sm:text-lg md:text-xl">
+                <div className="relative z-2 -mt-10 rounded-2xl border border-neutral-100 bg-white px-6 py-8 text-center shadow-[0_12px_40px_rgba(0,0,0,0.06)] sm:-mt-[50px] sm:px-8 sm:py-9 md:-mt-[60px] md:px-10 md:py-12">
+                  <p className="mb-3 font-darker-grotesque text-lg font-medium italic leading-snug sm:text-xl md:text-2xl">
                     &quot;We&apos;re not here to sell dreams. We&apos;re here to
                     architect reality.&quot;
                   </p>
-                  <p className="text-sm font-semibold not-italic text-neutral-500 sm:text-[15px] md:text-base">
+                  <p className="text-sm font-semibold not-italic text-neutral-400 sm:text-[15px] md:text-base">
                     &mdash; Vibha Kagzi, Founder &amp; CEO
                   </p>
                 </div>
               </div>
               <div>
-                <h3 className="mb-2.5 text-[22px] font-bold">Who we are:</h3>
-                <p className="mb-5 text-neutral-500">
+                <h3 className="font-darker-grotesque mb-4 text-[24px] font-bold tracking-tight md:text-[28px]">Who we are:</h3>
+                <p className="mb-5 text-[15px] leading-[1.8] text-neutral-500 md:text-base">
                   A company born from the expertise of Reachivy.com &mdash;
                   trusted advisors to the dreamers, the doers, and the
                   disruptors of tomorrow.
                 </p>
-                <p className="mb-5 text-neutral-500">
+                <p className="mb-5 text-[15px] leading-[1.8] text-neutral-500 md:text-base">
                   For over 14+ yrs, we&apos;ve guided thousands of students to
                   top universities and careers around the world. Trusted by
                   thousands of students to navigate their academic and
@@ -329,14 +329,14 @@ export default function LandingPageContent(): React.ReactElement {
                   to revolutionize how career and college guidance is delivered
                   in institutions worldwide.
                 </p>
-                <p className="mb-5 text-neutral-500">
+                <p className="mb-5 text-[15px] leading-[1.8] text-neutral-500 md:text-base">
                   We&apos;re taking it a step further.
                 </p>
               </div>
             </div>
 
             {/* Statistics Section */}
-            <div className="mt-10 flex items-center justify-center md:mt-20">
+            <div className="mt-14 flex items-center justify-center md:mt-24">
               <img
                 src="/images/pointers.png"
                 alt="HelloIvy key statistics"
@@ -346,27 +346,27 @@ export default function LandingPageContent(): React.ReactElement {
             </div>
 
             {/* Why Ivy Section */}
-            <div className="mt-[60px] text-center md:mt-[120px]">
-              <span className="mb-4 inline-block rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium">
+            <div className="mt-16 text-center md:mt-28">
+              <span className="mb-5 inline-block rounded-full border border-neutral-200 bg-white px-5 py-2 text-xs font-semibold tracking-widest text-neutral-500">
                 WHY IVY
               </span>
-              <h2 className="mb-5 text-[28px] font-bold leading-snug sm:text-[32px] md:text-[36px] lg:text-[42px]">
+              <h2 className="font-darker-grotesque mb-8 text-[30px] font-extrabold leading-snug tracking-tight sm:text-[34px] md:text-web-h1 lg:text-display-sm">
                 Based on Research to{' '}
                 <span className="text-brand-pink">Solve</span>{' '}
                 <span className="text-brand-purple-light">Real</span>{' '}
                 <span className="text-brand-indigo">Problems</span>
               </h2>
 
-              <div className="mx-auto mt-0 grid max-w-full grid-cols-1 items-stretch gap-[30px] text-left md:max-w-[1000px] md:grid-cols-2 md:gap-x-[60px] md:gap-y-10">
+              <div className="mx-auto mt-2 grid max-w-full grid-cols-1 items-stretch gap-6 text-left md:max-w-[1000px] md:grid-cols-2 md:gap-x-10 md:gap-y-6">
                 {PROBLEMS.map((problem, index) => (
                   <div
                     key={index}
-                    className="flex flex-col border-b border-neutral-300 pb-[30px]"
+                    className="flex flex-col rounded-xl border border-neutral-100 bg-white p-6 transition-shadow duration-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] md:p-8"
                   >
-                    <h3 className="mb-[15px] text-xl font-bold text-neutral-900">
+                    <h3 className="mb-3 text-lg font-bold text-neutral-900">
                       {problem.title}
                     </h3>
-                    <p className="mb-[15px] flex-1 leading-relaxed text-neutral-500">
+                    <p className="mb-4 flex-1 text-[15px] leading-[1.7] text-neutral-500">
                       {problem.description}
                     </p>
                     <p className="m-0 text-sm italic text-neutral-400">
@@ -441,14 +441,14 @@ export default function LandingPageContent(): React.ReactElement {
         {/* Users Section */}
         <section
           id="users"
-          className="bg-neutral-50 py-[60px] md:py-20 lg:py-[120px]"
+          className="bg-brand-surface py-16 md:py-24 lg:py-32"
         >
-          <div className="mx-auto max-w-[95%] px-[15px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
-            <div className="mb-10 text-center md:mb-[60px]">
-              <span className="mb-4 inline-block rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium">
+          <div className="mx-auto max-w-[95%] px-5 lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+            <div className="mb-12 text-center md:mb-16">
+              <span className="mb-5 inline-block rounded-full border border-neutral-200 bg-white px-5 py-2 text-xs font-semibold tracking-widest text-neutral-500">
                 USERS
               </span>
-              <h2 className="mb-5 text-[28px] font-bold leading-snug sm:text-[32px] md:text-[36px] lg:text-[42px]">
+              <h2 className="font-darker-grotesque mb-5 text-[30px] font-extrabold leading-snug tracking-tight sm:text-[34px] md:text-web-h1 lg:text-display-sm">
                 <span className="gradient-text-blue">
                   Built for Every Role in the{' '}
                 </span>
@@ -456,7 +456,7 @@ export default function LandingPageContent(): React.ReactElement {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-[30px] text-center md:grid-cols-2 md:gap-10 lg:grid-cols-3 lg:gap-[60px]">
+            <div className="grid grid-cols-1 gap-6 text-center md:grid-cols-2 md:gap-8 lg:grid-cols-3 lg:gap-10">
               {[
                 {
                   image: '/images/Frame.png',
@@ -488,22 +488,22 @@ export default function LandingPageContent(): React.ReactElement {
               ].map((user, index) => (
                 <div
                   key={index}
-                  className="flex flex-col items-center p-[30px] text-center md:p-10"
+                  className="flex flex-col items-center rounded-2xl border border-neutral-100 bg-white p-8 text-center shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] md:p-10"
                 >
                   <img
                     src={user.image}
                     alt={user.title}
-                    className="mx-auto mb-5 block h-[120px] w-auto max-w-full sm:h-[140px] md:mb-[25px] md:h-[150px]"
+                    className="mx-auto mb-6 block h-[120px] w-auto max-w-full sm:h-[140px] md:mb-8 md:h-[150px]"
                     loading="lazy"
                   />
-                  <h3 className="mb-[15px] w-full text-center text-2xl font-bold">
+                  <h3 className="font-darker-grotesque mb-4 w-full text-center text-[26px] font-bold tracking-tight">
                     {user.title}
                   </h3>
-                  <ul className="m-0 w-full max-w-[250px] list-none p-0 text-left text-neutral-500 sm:max-w-[280px] md:max-w-[300px]">
+                  <ul className="m-0 w-full max-w-[250px] list-none p-0 text-left text-[15px] text-neutral-500 sm:max-w-[280px] md:max-w-[300px]">
                     {user.features.map((feature, idx) => (
                       <li
                         key={idx}
-                        className="relative mb-2.5 pl-[25px] before:absolute before:left-0 before:font-bold before:text-brand-teal before:content-['✔']"
+                        className="relative mb-3 pl-[25px] before:absolute before:left-0 before:font-bold before:text-brand-teal before:content-['✔']"
                       >
                         {feature}
                       </li>
@@ -518,48 +518,56 @@ export default function LandingPageContent(): React.ReactElement {
         {/* Contact Section */}
         <section
           id="contact"
-          className="bg-white py-[60px] md:py-20 lg:py-[120px]"
+          className="bg-neutral-50 py-16 md:py-24 lg:py-32"
         >
-          <div className="mx-auto max-w-[95%] px-[15px] lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
-            <div className="mx-auto max-w-full rounded-2xl bg-white px-5 py-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.07)] md:max-w-[600px] md:p-[60px]">
-              <h2 className="gradient-text mb-5 text-[32px] font-bold leading-tight sm:text-[36px] md:text-web-h1 lg:text-display-sm">
+          <div className="mx-auto max-w-[95%] px-5 lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+            <div className="mx-auto max-w-full overflow-hidden rounded-3xl border border-neutral-100 bg-white px-6 py-12 text-center shadow-[0_20px_60px_rgba(0,0,0,0.05)] md:max-w-[640px] md:px-16 md:py-16">
+              <h2 className="gradient-text font-darker-grotesque mb-6 text-[34px] font-extrabold leading-tight tracking-tight sm:text-[38px] md:text-[44px] lg:text-[50px]">
                 Contact Us
               </h2>
-              <p className="mb-5 text-base text-neutral-500 sm:text-[17px] md:text-lg">
+              <p className="mb-4 text-[15px] leading-relaxed text-neutral-500 sm:text-base md:text-[17px]">
                 Are you a student, parent, or educator inspired by our mission?
               </p>
-              <p className="mb-5 text-base text-neutral-500 sm:text-[17px] md:text-lg">
+              <p className="mb-8 text-[15px] leading-relaxed text-neutral-500 sm:text-base md:text-[17px]">
                 If you&apos;re exploring job opportunities and want to be part
                 of our team, get in touch at{' '}
                 <a
                   href="mailto:partners@reachivy.com"
-                  className="font-semibold text-brand-navy no-underline"
+                  className="font-semibold text-brand-indigo no-underline transition-colors hover:text-brand-navy"
                 >
                   partners@reachivy.com
                 </a>
               </p>
+              <button
+                className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-indigo px-8 py-3 text-center text-[15px] font-semibold text-white outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(76,74,246,0.3)] active:translate-y-0"
+                onClick={() => {
+                  window.location.href = '/contact';
+                }}
+              >
+                Get in Touch
+              </button>
             </div>
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="bg-brand-navy py-[30px] text-white lg:py-10">
-        <div className="mx-auto flex max-w-[90%] flex-col items-center justify-center gap-5 px-[15px] text-center md:flex-row md:justify-between md:gap-[30px] md:text-left lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
+      <footer className="bg-brand-navy py-8 text-white lg:py-12">
+        <div className="mx-auto flex max-w-[90%] flex-col items-center justify-center gap-6 px-5 text-center md:flex-row md:justify-between md:gap-8 md:text-left lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
           <div>
-            <p className="m-0 text-xs opacity-80 sm:text-[13px] md:text-sm">
+            <p className="m-0 text-[13px] opacity-70 sm:text-sm md:text-[15px]">
               &copy; 2025. All rights reserved |{' '}
-              <a href="/privacy" className="text-white no-underline">
+              <a href="/privacy" className="text-white/90 no-underline transition-colors hover:text-white">
                 Privacy policy
               </a>{' '}
               |{' '}
-              <a href="/terms" className="text-white no-underline">
+              <a href="/terms" className="text-white/90 no-underline transition-colors hover:text-white">
                 Terms &amp; Condition
               </a>
             </p>
           </div>
-          <div className="flex items-center gap-5 md:gap-[30px]">
-            <div className="flex gap-[15px]">
+          <div className="flex items-center gap-6 md:gap-8">
+            <div className="flex gap-4">
               <a
                 href="https://www.facebook.com/reachivy"
                 className="opacity-80 transition-opacity duration-200 hover:opacity-100"
