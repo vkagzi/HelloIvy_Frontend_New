@@ -1,5 +1,7 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 
 const PROBLEMS = [
   {
@@ -71,19 +73,20 @@ export default function LandingPageContent(): React.ReactElement {
       <header className="sticky top-0 z-1000 w-full border-b border-neutral-100 bg-white/95 py-4 backdrop-blur-md">
         <div className="mx-auto flex max-w-[95%] items-center justify-between px-5 md:px-10 lg:max-w-[1400px] xl:max-w-[85%] 2xl:max-w-[80%]">
           <div className="flex items-center gap-2">
-            <img
+            <Image
               src="/images/icon.png"
               alt="HelloIvy - AI Powered Education Platform Logo"
+              width={40}
+              height={40}
               className="h-8 w-8 max-w-full object-contain sm:h-9 sm:w-9 md:h-10 md:w-10"
-              loading="lazy"
             />
-            <a
+            <Link
               href="#intro"
               className="font-darker-grotesque text-2xl font-extrabold tracking-tight text-neutral-900 no-underline sm:text-[28px] md:text-[32px]"
               aria-label="HelloIvy - AI Powered Education Platform"
             >
               hello<span className="text-brand-indigo">ivy</span>
-            </a>
+            </Link>
           </div>
 
           <button
@@ -144,22 +147,18 @@ export default function LandingPageContent(): React.ReactElement {
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
-            <button
-              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-2 border-brand-indigo bg-transparent px-6 py-2.5 text-center text-[15px] font-semibold text-brand-indigo outline-none transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-indigo hover:text-white hover:shadow-[0_8px_20px_rgba(76,74,246,0.25)] active:translate-y-0"
-              onClick={() => {
-                window.location.href = '/contact';
-              }}
+            <Link
+              href="/contact"
+              className="inline-flex min-h-11 items-center justify-center rounded-full border-2 border-brand-indigo bg-transparent px-6 py-2.5 text-center text-[15px] font-semibold text-brand-indigo no-underline outline-none transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-indigo hover:text-white hover:shadow-[0_8px_20px_rgba(76,74,246,0.25)] active:translate-y-0"
             >
               Talk To Expert
-            </button>
-            <button
-              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-indigo px-6 py-3 text-center text-[15px] font-semibold text-white outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(76,74,246,0.3)] active:translate-y-0"
-              onClick={() => {
-                window.location.href = '/signup';
-              }}
+            </Link>
+            <Link
+              href="/signup"
+              className="inline-flex min-h-11 items-center justify-center rounded-full border-none bg-brand-indigo px-6 py-3 text-center text-[15px] font-semibold text-white no-underline outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(76,74,246,0.3)] active:translate-y-0"
             >
               Login / Register
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -202,24 +201,20 @@ export default function LandingPageContent(): React.ReactElement {
                   ))}
                 </ul>
                 <div className="mt-[30px] flex flex-col gap-[15px]">
-                  <button
-                    className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-indigo px-6 py-3 text-center font-semibold text-white outline-none transition-all duration-200 hover:-translate-y-0.5"
-                    onClick={() => {
-                      setShowMobileMenu(false);
-                      window.location.href = '/contact';
-                    }}
+                  <Link
+                    href="/contact"
+                    className="inline-flex min-h-11 items-center justify-center rounded-full border-none bg-brand-indigo px-6 py-3 text-center font-semibold text-white no-underline outline-none transition-all duration-200 hover:-translate-y-0.5"
+                    onClick={() => setShowMobileMenu(false)}
                   >
                     Talk To Expert
-                  </button>
-                  <button
-                    className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-teal px-6 py-3 text-center font-semibold text-brand-navy outline-none transition-all duration-200 hover:-translate-y-0.5"
-                    onClick={() => {
-                      setShowMobileMenu(false);
-                      window.location.href = '/signup';
-                    }}
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="inline-flex min-h-11 items-center justify-center rounded-full border-none bg-brand-teal px-6 py-3 text-center font-semibold text-brand-navy no-underline outline-none transition-all duration-200 hover:-translate-y-0.5"
+                    onClick={() => setShowMobileMenu(false)}
                   >
                     Login/Register
-                  </button>
+                  </Link>
                 </div>
               </nav>
             </div>
@@ -247,11 +242,12 @@ export default function LandingPageContent(): React.ReactElement {
                 </p>
               </div>
               <div className="mx-auto w-full max-w-[400px] md:max-w-[600px]">
-                <img
+                <Image
                   src="/images/OBJECTS.png"
                   alt="HelloIvy AI-powered educational platform dashboard"
+                  width={600}
+                  height={450}
                   className="block h-auto max-w-full"
-                  loading="lazy"
                 />
               </div>
             </div>
@@ -285,11 +281,12 @@ export default function LandingPageContent(): React.ReactElement {
 
             {/* University Logos */}
             <div className="my-12 flex items-center justify-center px-4 md:my-16">
-              <img
+              <Image
                 src="/images/college logos.png"
                 alt="Top universities and colleges including Oxford, Stanford, UCLA, MIT, Georgia Tech, University of Michigan, LSE, USC, Cambridge, and HEC Paris"
+                width={1200}
+                height={120}
                 className="mx-auto block h-auto max-w-full opacity-80 md:max-w-[85%]"
-                loading="lazy"
               />
             </div>
 
@@ -297,11 +294,12 @@ export default function LandingPageContent(): React.ReactElement {
             <div className="mt-16 flex flex-col items-center gap-12 md:mt-24 md:grid md:grid-cols-2 md:items-center md:gap-20 lg:gap-28">
               <div className="relative order-2 p-2.5 md:order-0">
                 <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[320px] md:max-w-[380px]">
-                  <img
+                  <Image
                     src="/images/VK.png"
                     alt="Vibha Kagzi, Founder and CEO of HelloIvy"
+                    width={380}
+                    height={380}
                     className="block h-auto w-full max-w-full rounded-full"
-                    loading="lazy"
                   />
                 </div>
                 <div className="relative z-2 -mt-10 rounded-2xl border border-neutral-100 bg-white px-6 py-8 text-center shadow-[0_12px_40px_rgba(0,0,0,0.06)] sm:-mt-[50px] sm:px-8 sm:py-9 md:-mt-[60px] md:px-10 md:py-12">
@@ -337,11 +335,12 @@ export default function LandingPageContent(): React.ReactElement {
 
             {/* Statistics Section */}
             <div className="mt-14 flex items-center justify-center md:mt-24">
-              <img
+              <Image
                 src="/images/pointers.png"
                 alt="HelloIvy key statistics"
+                width={1200}
+                height={200}
                 className="block h-auto max-w-full"
-                loading="lazy"
               />
             </div>
 
@@ -490,11 +489,12 @@ export default function LandingPageContent(): React.ReactElement {
                   key={index}
                   className="flex flex-col items-center rounded-2xl border border-neutral-100 bg-white p-8 text-center shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] md:p-10"
                 >
-                  <img
+                  <Image
                     src={user.image}
                     alt={user.title}
+                    width={200}
+                    height={150}
                     className="mx-auto mb-6 block h-[120px] w-auto max-w-full sm:h-[140px] md:mb-8 md:h-[150px]"
-                    loading="lazy"
                   />
                   <h3 className="font-darker-grotesque mb-4 w-full text-center text-[26px] font-bold tracking-tight">
                     {user.title}
@@ -538,14 +538,12 @@ export default function LandingPageContent(): React.ReactElement {
                   partners@reachivy.com
                 </a>
               </p>
-              <button
-                className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border-none bg-brand-indigo px-8 py-3 text-center text-[15px] font-semibold text-white outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(76,74,246,0.3)] active:translate-y-0"
-                onClick={() => {
-                  window.location.href = '/contact';
-                }}
+              <Link
+                href="/contact"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border-none bg-brand-indigo px-8 py-3 text-center text-[15px] font-semibold text-white no-underline outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(76,74,246,0.3)] active:translate-y-0"
               >
                 Get in Touch
-              </button>
+              </Link>
             </div>
           </div>
         </section>
@@ -557,13 +555,13 @@ export default function LandingPageContent(): React.ReactElement {
           <div>
             <p className="m-0 text-[13px] opacity-70 sm:text-sm md:text-[15px]">
               &copy; 2025. All rights reserved |{' '}
-              <a href="/privacy" className="text-white/90 no-underline transition-colors hover:text-white">
+              <Link href="/privacy" className="text-white/90 no-underline transition-colors hover:text-white">
                 Privacy policy
-              </a>{' '}
+              </Link>{' '}
               |{' '}
-              <a href="/terms" className="text-white/90 no-underline transition-colors hover:text-white">
+              <Link href="/terms" className="text-white/90 no-underline transition-colors hover:text-white">
                 Terms &amp; Condition
-              </a>
+              </Link>
             </p>
           </div>
           <div className="flex items-center gap-6 md:gap-8">
@@ -574,11 +572,12 @@ export default function LandingPageContent(): React.ReactElement {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <img
+                <Image
                   src="/images/facebook.png"
                   alt="Facebook"
+                  width={24}
+                  height={24}
                   className="h-6 w-6 brightness-0 invert"
-                  loading="lazy"
                 />
               </a>
               <a
@@ -587,11 +586,12 @@ export default function LandingPageContent(): React.ReactElement {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <img
+                <Image
                   src="/images/instagram.png"
                   alt="Instagram"
+                  width={24}
+                  height={24}
                   className="h-6 w-6 brightness-0 invert"
-                  loading="lazy"
                 />
               </a>
               <a
@@ -600,11 +600,12 @@ export default function LandingPageContent(): React.ReactElement {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <img
+                <Image
                   src="/images/linkedin.png"
                   alt="LinkedIn"
+                  width={24}
+                  height={24}
                   className="h-6 w-6 brightness-0 invert"
-                  loading="lazy"
                 />
               </a>
               <a
@@ -613,11 +614,12 @@ export default function LandingPageContent(): React.ReactElement {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <img
+                <Image
                   src="/images/youtube.png"
                   alt="Youtube"
+                  width={24}
+                  height={24}
                   className="h-6 w-6 brightness-0 invert"
-                  loading="lazy"
                 />
               </a>
             </div>
