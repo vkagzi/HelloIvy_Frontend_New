@@ -6,6 +6,8 @@ import api from '@/lib/api-client';
 export interface ModuleChoice {
   value: string;
   label: string;
+  icon?: string;
+  color?: string;
 }
 
 let cachedModules: ModuleChoice[] | null = null;
@@ -26,4 +28,17 @@ export function useModuleChoices() {
   }, []);
 
   return { modules, loading };
+}
+
+/** Build lookup maps from the modules array returned by useModuleChoices(). */
+export function buildModuleLookups(modules: ModuleChoice[]) {
+  const labels: Record<string, string> = {};
+  const icons: Record<string, string> = {};
+  const colors: Record<string, string> = {};
+  for (const m of modules) {
+    labels[m.value] = m.label;
+    if (m.icon) icons[m.value] = m.icon;
+    if (m.color) colors[m.value] = m.color;
+  }
+  return { labels, icons, colors };
 }

@@ -13,33 +13,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import ProfileViewDetails from '@/app/(saas)/profile/_components/ProfileView';
 import { calculateProfileCompletion } from '@/app/(saas)/profile/utils/profileCompletion';
+import { useModuleChoices, buildModuleLookups } from '@/lib/hooks/useModuleChoices';
 
 interface ModuleAssignment {
   id: number;
   module_name: string;
 }
-
-const MODULE_LABELS: Record<string, string> = {
-  essay_brainstormer: 'Essay Brainstormer',
-  essay_evaluator: 'Essay Evaluator',
-  college_selector: 'College Selector',
-  degree_selector: 'Degree Selector',
-  interview_prep: 'Interview Prep',
-  resume_builder: 'Resume Builder',
-  career_discovery: 'Career Discovery',
-  domain_discovery: 'Domain Discovery',
-};
-
-const MODULE_COLORS: Record<string, string> = {
-  essay_brainstormer: 'bg-blue-100 text-blue-700',
-  essay_evaluator: 'bg-indigo-100 text-indigo-700',
-  college_selector: 'bg-green-100 text-green-700',
-  degree_selector: 'bg-teal-100 text-teal-700',
-  interview_prep: 'bg-orange-100 text-orange-700',
-  resume_builder: 'bg-pink-100 text-pink-700',
-  career_discovery: 'bg-purple-100 text-purple-700',
-  domain_discovery: 'bg-cyan-100 text-cyan-700',
-};
 
 const PROFILE_SECTIONS = [
   { key: 'personal', label: 'Personal Details', contextKey: 'personalDetails' },
@@ -80,6 +59,9 @@ export default function SchoolStudentDetailPage() {
   const [user, setUser] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { modules: moduleChoices } = useModuleChoices();
+  const { labels: MODULE_LABELS, colors: MODULE_COLORS } = buildModuleLookups(moduleChoices);
 
   const [activeTab, setActiveTab] = useState<string>('profile');
   const [activeProfileSection, setActiveProfileSection] = useState<string>('personal');
@@ -136,11 +118,6 @@ export default function SchoolStudentDetailPage() {
       label: 'Career & Degree Selection',
       badge: `${user.modules.career_discovery.completed_sessions}/${user.modules.career_discovery.total_sessions}`,
     },
-    {
-      key: 'assigned',
-      label: 'Assigned Modules',
-      badge: String(user.assigned_modules?.length ?? 0),
-    },
   ];
 
   return (
@@ -165,6 +142,23 @@ export default function SchoolStudentDetailPage() {
           </Link>
         }
       />
+
+      {/* Assigned Modules */}
+      {user.assigned_modules && user.assigned_modules.length > 0 && (
+        <div className="mb-5 flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-5 py-3">
+          <span className="text-sm font-medium text-gray-600">Assigned Modules:</span>
+          <div className="flex flex-wrap gap-2">
+            {user.assigned_modules.map((m) => (
+              <Badge
+                key={m.id}
+                className={`${MODULE_COLORS[m.module_name] ?? 'bg-gray-100 text-gray-700'} border-transparent`}
+              >
+                {MODULE_LABELS[m.module_name] ?? m.module_name}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Vertical Tabs Layout */}
       <div className="mb-5 flex gap-5">
@@ -271,26 +265,6 @@ export default function SchoolStudentDetailPage() {
             />
           )}
 
-          {/* Assigned Modules Tab */}
-          {activeTab === 'assigned' && (
-            <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
-              <h2 className="mb-3 text-base font-semibold text-gray-900">Assigned Modules</h2>
-              {user.assigned_modules && user.assigned_modules.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {user.assigned_modules.map((m) => (
-                    <Badge
-                      key={m.id}
-                      className={`${MODULE_COLORS[m.module_name] ?? 'bg-gray-100 text-gray-700'} border-transparent`}
-                    >
-                      {MODULE_LABELS[m.module_name] ?? m.module_name}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400 italic">No modules assigned</p>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>

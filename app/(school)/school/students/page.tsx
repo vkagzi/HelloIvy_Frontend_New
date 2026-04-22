@@ -36,6 +36,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import AssignModulesDialog from '@/components/AssignModulesDialog';
+import { useModuleChoices, buildModuleLookups } from '@/lib/hooks/useModuleChoices';
 
 interface ModuleAssignment {
   id: number;
@@ -54,33 +55,14 @@ interface StudentItem {
   assigned_modules?: ModuleAssignment[];
 }
 
-const MODULE_LABELS: Record<string, string> = {
-  essay_brainstormer: 'Essay Brainstormer',
-  essay_evaluator: 'Essay Evaluator',
-  college_selector: 'College Selector',
-  degree_selector: 'Degree Selector',
-  interview_prep: 'Interview Prep',
-  resume_builder: 'Resume Builder',
-  career_discovery: 'Career Discovery',
-  domain_discovery: 'Domain Discovery',
-};
-
-const MODULE_COLORS: Record<string, string> = {
-  essay_brainstormer: 'bg-blue-100 text-blue-700',
-  essay_evaluator: 'bg-indigo-100 text-indigo-700',
-  college_selector: 'bg-green-100 text-green-700',
-  degree_selector: 'bg-teal-100 text-teal-700',
-  interview_prep: 'bg-orange-100 text-orange-700',
-  resume_builder: 'bg-pink-100 text-pink-700',
-  career_discovery: 'bg-purple-100 text-purple-700',
-  domain_discovery: 'bg-cyan-100 text-cyan-700',
-};
-
 export default function SchoolStudentsPage() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const schoolId = session?.user?.school_id;
   const initialGrade = searchParams?.get('grade') ?? '';
+
+  const { modules: moduleChoices } = useModuleChoices();
+  const { labels: MODULE_LABELS, colors: MODULE_COLORS } = buildModuleLookups(moduleChoices);
 
   const [groupedStudents, setGroupedStudents] = useState<Record<string, StudentItem[]>>({});
   const [total, setTotal] = useState(0);

@@ -21,6 +21,7 @@ import ModuleAssignDialog from '@/components/admin/ModuleAssignDialog';
 import { Badge } from '@/components/ui/badge';
 import { ALL_ROLES, ADMIN_ROLES } from '@/lib/constants/roles';
 import { useAcademicLevels } from '@/lib/hooks/useAcademicLevels';
+import { useModuleChoices, buildModuleLookups } from '@/lib/hooks/useModuleChoices';
 
 interface SchoolOption {
   id: number;
@@ -81,28 +82,6 @@ const PROFILE_SECTIONS = [
 
 const ROLES = ALL_ROLES;
 
-const MODULE_LABELS: Record<string, string> = {
-  essay_brainstormer: 'Essay Brainstormer',
-  essay_evaluator: 'Essay Evaluator',
-  college_selector: 'College Selector',
-  degree_selector: 'Degree Selector',
-  interview_prep: 'Interview Prep',
-  resume_builder: 'Resume Builder',
-  career_discovery: 'Career Discovery',
-  domain_discovery: 'Domain Discovery',
-};
-
-const MODULE_COLORS: Record<string, string> = {
-  essay_brainstormer: 'bg-blue-100 text-blue-700',
-  essay_evaluator: 'bg-indigo-100 text-indigo-700',
-  college_selector: 'bg-green-100 text-green-700',
-  degree_selector: 'bg-teal-100 text-teal-700',
-  interview_prep: 'bg-orange-100 text-orange-700',
-  resume_builder: 'bg-pink-100 text-pink-700',
-  career_discovery: 'bg-purple-100 text-purple-700',
-  domain_discovery: 'bg-cyan-100 text-cyan-700',
-};
-
 export default function AdminUserDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -119,6 +98,9 @@ export default function AdminUserDetailPage() {
 
   const { academicLevels, gradeLevels } = useAcademicLevels();
   const academicLevelLabels = Object.fromEntries(academicLevels.map((al) => [al.value, al.label]));
+
+  const { modules: moduleChoices } = useModuleChoices();
+  const { labels: MODULE_LABELS, colors: MODULE_COLORS } = buildModuleLookups(moduleChoices);
 
   // Edit Details modal state
   const [editOpen, setEditOpen] = useState(false);

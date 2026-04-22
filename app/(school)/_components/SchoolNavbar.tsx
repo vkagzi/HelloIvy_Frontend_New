@@ -80,14 +80,14 @@ const SchoolNavbar: React.FC = () => {
       </div>
 
       {/* School Admin badge */}
-      <div className={`mb-2 ${collapsed ? 'lg:hidden' : ''}`}>
-        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+      <div className={`mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
+        <div className={`rounded-lg border px-3 py-2 text-center text-sm font-bold tracking-wide ${
           userRole === 'schoolopsadmin'
-            ? 'bg-teal-100 text-teal-800'
-            : 'bg-emerald-100 text-emerald-800'
+            ? 'border-teal-300 bg-teal-50 text-teal-900'
+            : 'border-emerald-300 bg-emerald-50 text-emerald-900'
         }`}>
           {userRole === 'schoolopsadmin' ? 'School Ops Admin' : 'School Admin'}
-        </span>
+        </div>
       </div>
 
       <ul className="mt-2 flex-1">

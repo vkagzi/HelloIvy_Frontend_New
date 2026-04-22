@@ -113,10 +113,10 @@ const AdminNavbar: React.FC = () => {
       </div>
 
       {/* Admin badge */}
-      <div className={`mb-2 ${collapsed ? 'lg:hidden' : ''}`}>
-        <span className="inline-flex rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-800">
+      <div className={`mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
+        <div className="rounded-lg border border-purple-300 bg-purple-50 px-3 py-2 text-center text-sm font-bold tracking-wide text-purple-900">
           Admin
-        </span>
+        </div>
       </div>
 
       <ul className="mt-2 flex-1">

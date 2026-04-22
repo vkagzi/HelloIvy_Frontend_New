@@ -5,21 +5,10 @@ import Link from 'next/link';
 import { LockKeyhole } from 'lucide-react';
 import api from '@/lib/api-client';
 import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
-import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
+import { useModuleChoices, buildModuleLookups } from '@/lib/hooks/useModuleChoices';
 import { FiIcon } from '@/app/_components/Icons';
 
 /* ─── shared constants ──────────────────────────────────────── */
-
-const MODULE_ICONS: Record<string, string> = {
-  essay_brainstormer: 'brain-circuit',
-  essay_evaluator: 'list-check',
-  college_selector: 'school',
-  degree_selector: 'graduation-cap',
-  interview_prep: 'videoconference',
-  resume_builder: 'CV',
-  career_discovery: 'briefcase',
-  domain_discovery: 'world',
-};
 
 const STATUS_COLORS: Record<string, string> = {
   completed: 'bg-green-100 text-green-700',
@@ -114,11 +103,13 @@ function SchoolSubscriptionsTable({
   loading,
   lockedModules,
   purchaseHref,
+  moduleIcons,
 }: {
   subscriptions: SchoolSubscription[];
   loading: boolean;
   lockedModules: LockedModule[];
   purchaseHref: string;
+  moduleIcons: Record<string, string>;
 }) {
   if (loading) return <SkeletonRows count={4} />;
 
@@ -147,7 +138,7 @@ function SchoolSubscriptionsTable({
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {subscriptions.filter((sub) => sub.is_active).map((sub) => {
-              const icon = MODULE_ICONS[sub.module_name] ?? 'star';
+              const icon = moduleIcons[sub.module_name] ?? 'star';
               return (
                 <tr key={sub.module_name} className="hover:bg-neutral-50">
                   <td className="px-4 py-3">
@@ -172,7 +163,7 @@ function SchoolSubscriptionsTable({
               );
             })}
             {lockedModules.map((m) => {
-              const icon = MODULE_ICONS[m.value] ?? 'star';
+              const icon = moduleIcons[m.value] ?? 'star';
               return (
                 <tr key={m.value} className="bg-neutral-50/60 opacity-75">
                   <td className="px-4 py-3">
@@ -202,11 +193,13 @@ function B2CSubscriptionsTable({
   loading,
   lockedModules,
   purchaseHref,
+  moduleIcons,
 }: {
   subscriptions: UserSubscription[];
   loading: boolean;
   lockedModules: LockedModule[];
   purchaseHref: string;
+  moduleIcons: Record<string, string>;
 }) {
   if (loading) return <SkeletonRows count={4} />;
 
@@ -235,7 +228,7 @@ function B2CSubscriptionsTable({
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {subscriptions.filter((sub) => sub.is_active).map((sub) => {
-              const icon = MODULE_ICONS[sub.module_name] ?? 'star';
+              const icon = moduleIcons[sub.module_name] ?? 'star';
               return (
                 <tr key={sub.id} className="hover:bg-neutral-50">
                   <td className="px-4 py-3">
@@ -256,7 +249,7 @@ function B2CSubscriptionsTable({
               );
             })}
             {lockedModules.map((m) => {
-              const icon = MODULE_ICONS[m.value] ?? 'star';
+              const icon = moduleIcons[m.value] ?? 'star';
               return (
                 <tr key={m.value} className="bg-neutral-50/60 opacity-75">
                   <td className="px-4 py-3">
@@ -357,6 +350,7 @@ export default function ModuleSubscriptions(props: ModuleSubscriptionsProps) {
 
   const { modules: moduleChoices, loading: choicesLoading } = useModuleChoices();
   const { modules: activeModules, loading: accessLoading } = useModuleAccess();
+  const { icons: moduleIcons } = buildModuleLookups(moduleChoices);
 
   const [payments, setPayments] = useState<Payment[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
@@ -415,7 +409,7 @@ export default function ModuleSubscriptions(props: ModuleSubscriptionsProps) {
             <h2 className="text-xl font-bold text-gray-900">Module Subscriptions</h2>
             <p className="mt-1 text-sm text-gray-500">Modules your school currently has access to.</p>
           </div>
-          <SchoolSubscriptionsTable subscriptions={[...subscriptions].sort((a, b) => a.module_display.localeCompare(b.module_display))} loading={false} lockedModules={inactiveModules} purchaseHref={href} />
+          <SchoolSubscriptionsTable subscriptions={[...subscriptions].sort((a, b) => a.module_display.localeCompare(b.module_display))} loading={false} lockedModules={inactiveModules} purchaseHref={href} moduleIcons={moduleIcons} />
         </section>
       ) : (
         <section>
@@ -423,7 +417,7 @@ export default function ModuleSubscriptions(props: ModuleSubscriptionsProps) {
             <h2 className="text-xl font-bold text-gray-900">Module Subscriptions</h2>
             <p className="mt-1 text-sm text-gray-500">Your module access overview.</p>
           </div>
-          <B2CSubscriptionsTable subscriptions={[...userSubscriptions].sort((a, b) => a.module_display.localeCompare(b.module_display))} loading={false} lockedModules={inactiveModules} purchaseHref={href} />
+          <B2CSubscriptionsTable subscriptions={[...userSubscriptions].sort((a, b) => a.module_display.localeCompare(b.module_display))} loading={false} lockedModules={inactiveModules} purchaseHref={href} moduleIcons={moduleIcons} />
         </section>
       )}
 
