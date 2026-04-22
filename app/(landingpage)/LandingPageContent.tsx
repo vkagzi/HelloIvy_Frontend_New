@@ -21,7 +21,7 @@ const PROBLEMS = [
     description:
       "\u201CIt\u2019s like standing at the base of a mountain - no map, no guide, just noise. You\u2019re stuck, overwhelmed, and afraid to take the first step.\u201D",
     author:
-      '- Alman Merchant, Parent, IGCSE Board, American School of Bombay, Mumbai',
+      '- Aiman Merchant, Parent, IGCSE Board, American School of Bombay, Mumbai',
   },
   {
     title: 'Lack of Affordable, Personalized Guidance',
@@ -41,7 +41,7 @@ const PROBLEMS = [
     description:
       "\u201CWhere is the space for a counsellor to do upgradation and understand the dynamics of the career market?\u201D",
     author:
-      '- Manju Surendran, Principal, Faravanahi International Academy, Nashik',
+      '- Manju Surendran, Principal, Fravashi International Academy, Nashik',
   },
   {
     title: 'Lack of Support',
