@@ -3,7 +3,7 @@ import React from 'react';
 import Navbar from '@/app/_components/Navbar';
 import AppHead from '@/app/_components/AppHead';
 import SessionGuard from '@/app/_components/SessionGuard';
-import TermsGuard from '@/app/_components/TermsGuard';
+import PasswordChangeGuard from '@/app/_components/PasswordChangeGuard';
 import { auth } from '@/auth';
 import { SessionProvider } from 'next-auth/react';
 import { ProfileProvider } from '@/app/(saas)/profile/_context/ProfileContext';
@@ -33,7 +33,7 @@ export default async function RootLayout({
           <NavbarProvider>
             <ModuleAccessProvider>
               <SessionGuard>
-                <TermsGuard>
+                <PasswordChangeGuard>
                   <Navbar />
                   <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
                     <AppHead session={session} />
@@ -41,7 +41,7 @@ export default async function RootLayout({
                       {children}
                     </main>
                   </div>
-                </TermsGuard>
+                </PasswordChangeGuard>
               </SessionGuard>
             </ModuleAccessProvider>
           </NavbarProvider>

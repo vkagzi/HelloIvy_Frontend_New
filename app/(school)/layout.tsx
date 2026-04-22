@@ -3,6 +3,7 @@ import React from 'react';
 import SchoolNavbar from '@/app/(school)/_components/SchoolNavbar';
 import SchoolHead from '@/app/(school)/_components/SchoolHead';
 import SessionGuard from '@/app/_components/SessionGuard';
+import PasswordChangeGuard from '@/app/_components/PasswordChangeGuard';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
@@ -40,6 +41,7 @@ export default async function SchoolLayout({
         <NavbarProvider>
           <ModuleAccessProvider>
             <SessionGuard>
+            <PasswordChangeGuard>
             <SchoolNavbar />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <SchoolHead session={session} />
@@ -47,6 +49,7 @@ export default async function SchoolLayout({
                 {children}
               </main>
             </div>
+            </PasswordChangeGuard>
           </SessionGuard>
           </ModuleAccessProvider>
         </NavbarProvider>

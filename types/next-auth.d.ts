@@ -12,6 +12,7 @@ declare module 'next-auth' {
       school_id?: number;
       school_name?: string;
       terms_accepted?: boolean;
+      force_password_change?: boolean;
     } & DefaultSession['user'];
     accessToken?: string;
   }
@@ -26,6 +27,7 @@ declare module 'next-auth' {
     school_id?: number;
     school_name?: string;
     terms_accepted?: boolean;
+    force_password_change?: boolean;
     accessToken?: string;
   }
 }
@@ -41,6 +43,7 @@ declare module 'next-auth/jwt' {
     school_id?: number;
     school_name?: string;
     terms_accepted?: boolean;
+    force_password_change?: boolean;
     accessToken?: string;
   }
 }

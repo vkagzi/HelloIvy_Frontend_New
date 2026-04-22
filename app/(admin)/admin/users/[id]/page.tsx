@@ -552,6 +552,15 @@ export default function AdminUserDetailPage() {
             const activeSectionConfig = PROFILE_SECTIONS.find(s => s.key === activeProfileSection) ?? PROFILE_SECTIONS[0];
             let sectionData: ProfileData = (profileInner[activeSectionConfig.contextKey] as ProfileData) ?? {};
 
+            // Use authoritative first/last name from the User model
+            if (activeSectionConfig.key === 'personal') {
+              sectionData = {
+                ...sectionData,
+                firstName: user.first_name ?? '',
+                lastName: user.last_name ?? '',
+              };
+            }
+
             if (activeSectionConfig.key === 'extra-curricular') {
               sectionData = {
                 extraCurricular: profileInner.extraCurricular ?? [],

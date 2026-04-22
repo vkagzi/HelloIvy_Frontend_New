@@ -3,6 +3,7 @@ import React from 'react';
 import AdminNavbar from '@/app/(admin)/_components/AdminNavbar';
 import AdminHead from '@/app/(admin)/_components/AdminHead';
 import SessionGuard from '@/app/_components/SessionGuard';
+import PasswordChangeGuard from '@/app/_components/PasswordChangeGuard';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
@@ -38,6 +39,7 @@ export default async function AdminLayout({
       <SessionProvider session={session}>
         <NavbarProvider>
           <SessionGuard>
+            <PasswordChangeGuard>
             <AdminNavbar />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <AdminHead session={session} />
@@ -45,6 +47,7 @@ export default async function AdminLayout({
                 {children}
               </main>
             </div>
+            </PasswordChangeGuard>
           </SessionGuard>
         </NavbarProvider>
       </SessionProvider>

@@ -55,6 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             school_id: user.school_id || undefined,
             school_name: user.school_name || undefined,
             terms_accepted: user.terms_accepted ?? false,
+            force_password_change: user.force_password_change ?? false,
             accessToken: data.token,
           };
         } catch {
@@ -75,11 +76,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.school_id = user.school_id;
         token.school_name = user.school_name;
         token.terms_accepted = user.terms_accepted;
+        token.force_password_change = user.force_password_change;
         token.accessToken = user.accessToken;
       }
       if (trigger === 'update') {
         if (session?.terms_accepted !== undefined) {
           token.terms_accepted = session.terms_accepted;
+        }
+        if (session?.force_password_change !== undefined) {
+          token.force_password_change = session.force_password_change;
         }
         if (session?.first_name !== undefined) {
           token.first_name = session.first_name;
@@ -103,6 +108,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.school_id = token.school_id as number | undefined;
         session.user.school_name = token.school_name as string | undefined;
         session.user.terms_accepted = token.terms_accepted as boolean | undefined;
+        session.user.force_password_change = token.force_password_change as boolean | undefined;
         session.accessToken = token.accessToken as string;
       }
       return session;
