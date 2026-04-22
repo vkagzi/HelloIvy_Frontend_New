@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -36,6 +36,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import AssignModulesDialog from '@/components/AssignModulesDialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import { useModuleChoices, buildModuleLookups } from '@/lib/hooks/useModuleChoices';
 
 interface ModuleAssignment {
@@ -78,12 +80,20 @@ export default function SchoolStudentsPage() {
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [assignMode, setAssignMode] = useState<'selected' | 'grade'>('selected');
 
+  // Reminder state
+  const [sendingReminder, setSendingReminder] = useState(false);
+
   // Revoke state
   const [revoking, setRevoking] = useState<number | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<{
     id: number;
     moduleName: string;
   } | null>(null);
+
+  // Filter state
+  const [nameQuery, setNameQuery] = useState('');
+  const [emailQuery, setEmailQuery] = useState('');
+  const [moduleFilter, setModuleFilter] = useState('');
 
   const fetchStudents = useCallback(async () => {
     if (!schoolId) return;
@@ -132,7 +142,40 @@ export default function SchoolStudentsPage() {
   }, [activeTab]);
 
   const allStudents = Object.values(groupedStudents).flat();
-  const currentStudents = activeTab === 'all' ? allStudents : (groupedStudents[activeTab] ?? []);
+
+  const filterStudents = useCallback((students: StudentItem[]) => {
+    let result = students;
+    if (nameQuery.trim()) {
+      const q = nameQuery.trim().toLowerCase();
+      result = result.filter((s) =>
+        `${s.first_name} ${s.last_name}`.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q)
+      );
+    }
+    if (emailQuery.trim()) {
+      const q = emailQuery.trim().toLowerCase();
+      result = result.filter((s) => s.email.toLowerCase().includes(q));
+    }
+    if (moduleFilter) {
+      result = result.filter((s) =>
+        (s.assigned_modules ?? []).some((m) => m.module_name === moduleFilter)
+      );
+    }
+    return result;
+  }, [nameQuery, emailQuery, moduleFilter]);
+
+  const filteredAllStudents = useMemo(() => filterStudents(allStudents), [filterStudents, allStudents]);
+  const filteredGrouped = useMemo(() => {
+    const out: Record<string, StudentItem[]> = {};
+    for (const grade of Object.keys(groupedStudents)) {
+      out[grade] = filterStudents(groupedStudents[grade] ?? []);
+    }
+    return out;
+  }, [filterStudents, groupedStudents]);
+
+  const currentStudents = activeTab === 'all' ? filteredAllStudents : (filteredGrouped[activeTab] ?? []);
+
+  const hasActiveFilters = nameQuery.trim() !== '' || emailQuery.trim() !== '' || moduleFilter !== '';
 
   const toggleStudent = (id: number) => {
     setSelectedIds((prev) => {
@@ -159,6 +202,22 @@ export default function SchoolStudentsPage() {
   const handleAssignGrade = () => {
     setAssignMode('grade');
     setAssignDialogOpen(true);
+  };
+
+  const handleSendReminder = async () => {
+    if (selectedIds.size === 0) return;
+    setSendingReminder(true);
+    try {
+      await api('/api/accounts/school/module-reminder/', {
+        method: 'POST',
+        body: { user_ids: Array.from(selectedIds) },
+      });
+      setSelectedIds(new Set());
+    } catch {
+      // ignore
+    } finally {
+      setSendingReminder(false);
+    }
   };
 
   const handleRevoke = async (assignmentId: number) => {
@@ -216,6 +275,42 @@ export default function SchoolStudentsPage() {
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Input
+          placeholder="Search by name…"
+          value={nameQuery}
+          onChange={(e) => setNameQuery(e.target.value)}
+          className="h-9 w-52"
+        />
+        <Input
+          placeholder="Search by email…"
+          value={emailQuery}
+          onChange={(e) => setEmailQuery(e.target.value)}
+          className="h-9 w-56"
+        />
+        <Select value={moduleFilter || '__all__'} onValueChange={(v: string) => setModuleFilter(v === '__all__' ? '' : v)}>
+          <SelectTrigger className="h-9 w-52">
+            <SelectValue placeholder="Filter by module" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Modules</SelectItem>
+            {moduleChoices.map((m) => (
+              <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setNameQuery(''); setEmailQuery(''); setModuleFilter(''); }}
+          >
+            Clear filters
+          </Button>
+        )}
+      </div>
+
       {/* Assignment toolbar */}
       {(selectedIds.size > 0 || currentStudents.length > 0) && (
         <div className="flex items-center gap-3 rounded-lg border border-purple-200 bg-purple-50 px-4 py-2.5">
@@ -225,10 +320,19 @@ export default function SchoolStudentsPage() {
                 {selectedIds.size} student{selectedIds.size !== 1 ? 's' : ''} selected
               </span>
               <Button
-                size="sm"
+                size="xs"
+                variant='outline'
                 onClick={handleAssignSelected}
               >
                 Assign Modules
+              </Button>
+              <Button
+                size="xs"
+                variant='outline'
+                onClick={handleSendReminder}
+                disabled={sendingReminder}
+              >
+                {sendingReminder ? 'Sending...' : 'Send Reminder'}
               </Button>
               <button
                 onClick={() => setSelectedIds(new Set())}
@@ -240,7 +344,7 @@ export default function SchoolStudentsPage() {
           )}
           {selectedIds.size === 0 && activeTab && activeTab !== 'No Grade' && activeTab !== 'all' && (
             <Button
-              size="sm"
+              size="xs"
               variant="outline"
               onClick={handleAssignGrade}
             >
@@ -296,7 +400,7 @@ export default function SchoolStudentsPage() {
                 <TableRow>
                   <TableHead className="w-10">
                     <Checkbox
-                      checked={allStudents.length > 0 && allStudents.every((s) => selectedIds.has(s.id))}
+                      checked={filteredAllStudents.length > 0 && filteredAllStudents.every((s) => selectedIds.has(s.id))}
                       onCheckedChange={toggleAll}
                       aria-label="Select all"
                     />
@@ -310,14 +414,14 @@ export default function SchoolStudentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {allStudents.length === 0 ? (
+                {filteredAllStudents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
-                      No students found.
+                      {hasActiveFilters ? 'No students match the current filters.' : 'No students found.'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  allStudents.map((s) => (
+                  filteredAllStudents.map((s) => (
                     <TableRow key={s.id} className={selectedIds.has(s.id) ? 'bg-purple-50/50' : ''}>
                       <TableCell>
                         <Checkbox
@@ -393,7 +497,7 @@ export default function SchoolStudentsPage() {
           </TabsContent>
 
           {sortedGrades.map((grade) => {
-            const students = groupedStudents[grade] ?? [];
+            const students = filteredGrouped[grade] ?? [];
             const allSelected = students.length > 0 && students.every((s) => selectedIds.has(s.id));
             return (
               <TabsContent key={grade} value={grade} className="mt-0">
@@ -418,7 +522,7 @@ export default function SchoolStudentsPage() {
                     {students.length === 0 ? (
                       <TableRow>
                           <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                          No students in this grade.
+                          {hasActiveFilters ? 'No students match the current filters.' : 'No students in this grade.'}
                         </TableCell>
                       </TableRow>
                     ) : (
