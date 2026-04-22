@@ -57,6 +57,8 @@ const PROBLEMS = [
   },
 ];
 
+const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL || '';
+
 export default function LandingPageContent(): React.ReactElement {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -154,7 +156,7 @@ export default function LandingPageContent(): React.ReactElement {
               Talk To Expert
             </Link>
             <Link
-              href="/signup"
+              href={`${AUTH_URL}/signup`}
               className="inline-flex min-h-11 items-center justify-center rounded-full border-none bg-brand-indigo px-6 py-3 text-center text-[15px] font-semibold text-white no-underline outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(76,74,246,0.3)] active:translate-y-0"
             >
               Login / Register
@@ -209,7 +211,7 @@ export default function LandingPageContent(): React.ReactElement {
                     Talk To Expert
                   </Link>
                   <Link
-                    href="/signup"
+                    href={`${AUTH_URL}/signup`}
                     className="inline-flex min-h-11 items-center justify-center rounded-full border-none bg-brand-teal px-6 py-3 text-center font-semibold text-brand-navy no-underline outline-none transition-all duration-200 hover:-translate-y-0.5"
                     onClick={() => setShowMobileMenu(false)}
                   >

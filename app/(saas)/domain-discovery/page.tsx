@@ -376,7 +376,7 @@ function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                   <p className="mt-1 text-sm text-orange-700">
                     You need to complete your profile before starting a Stream &
                     Subject Selection session.
-                    {missingSections.length > 0 && (
+                    {missingSections.some(s => s === 'personalDetails' || s === 'educational') && (
                       <>
                         {' '}
                         Missing:{' '}
