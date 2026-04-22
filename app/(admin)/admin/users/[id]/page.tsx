@@ -37,6 +37,13 @@ interface UserModuleSub {
   created_at: string;
 }
 
+interface UserComment {
+  counselor_comment: string;
+  counselor_comment_updated_at: string | null;
+  parent_student_comment: string;
+  parent_student_comment_updated_at: string | null;
+}
+
 interface UserDetail {
   id: number;
   email: string;
@@ -140,6 +147,18 @@ export default function AdminUserDetailPage() {
   const [deleteModuleId, setDeleteModuleId] = useState<number | null>(null);
   const [deleteModuleSaving, setDeleteModuleSaving] = useState(false);
 
+  // Comments tab state
+  const [comments, setComments] = useState<UserComment>({
+    counselor_comment: '',
+    counselor_comment_updated_at: null,
+    parent_student_comment: '',
+    parent_student_comment_updated_at: null,
+  });
+  const [counselorDrafts, setCounselorDrafts] = useState<string[]>(['']);
+  const [parentDrafts, setParentDrafts] = useState<string[]>(['']);
+  const [commentSaving, setCommentSaving] = useState<'counselor' | 'parent' | null>(null);
+  const [commentSuccess, setCommentSuccess] = useState<'counselor' | 'parent' | null>(null);
+
   // Main vertical tab state
   const [activeTab, setActiveTab] = useState<string>('profile');
   // Profile section sub-tab state
@@ -155,11 +174,84 @@ export default function AdminUserDetailPage() {
     }
   }, [userId]);
 
+  const COMMENT_SEPARATOR = '\n---\n';
+
+  const splitComments = (text: string): string[] => {
+    if (!text) return [''];
+    const parts = text.split(COMMENT_SEPARATOR);
+    return parts.length > 0 ? parts : [''];
+  };
+
+  const fetchComments = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const data = await api<UserComment>(`/api/accounts/admin/users/${userId}/comments/`);
+      setComments(data);
+      setCounselorDrafts(splitComments(data.counselor_comment));
+      setParentDrafts(splitComments(data.parent_student_comment));
+    } catch {
+      // ignore — endpoint may not exist yet
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  const handleSaveComment = async (type: 'counselor' | 'parent') => {
+    if (!userId) return;
+    setCommentSaving(type);
+    setCommentSuccess(null);
+    try {
+      const joined = type === 'counselor'
+        ? counselorDrafts.join(COMMENT_SEPARATOR)
+        : parentDrafts.join(COMMENT_SEPARATOR);
+      const body = type === 'counselor'
+        ? { counselor_comment: joined }
+        : { parent_student_comment: joined };
+      const data = await api<UserComment>(`/api/accounts/admin/users/${userId}/comments/`, {
+        method: 'PATCH',
+        body,
+      });
+      setComments(data);
+      setCommentSuccess(type);
+      setTimeout(() => setCommentSuccess(null), 2000);
+    } catch {
+      // ignore
+    } finally {
+      setCommentSaving(null);
+    }
+  };
+
+  const updateDraft = (type: 'counselor' | 'parent', index: number, value: string) => {
+    if (type === 'counselor') {
+      setCounselorDrafts(prev => prev.map((d, i) => i === index ? value : d));
+    } else {
+      setParentDrafts(prev => prev.map((d, i) => i === index ? value : d));
+    }
+  };
+
+  const addDraft = (type: 'counselor' | 'parent') => {
+    if (type === 'counselor') {
+      setCounselorDrafts(prev => [...prev, '']);
+    } else {
+      setParentDrafts(prev => [...prev, '']);
+    }
+  };
+
+  const removeDraft = (type: 'counselor' | 'parent', index: number) => {
+    if (type === 'counselor') {
+      setCounselorDrafts(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setParentDrafts(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'modules') {
       fetchUserModules();
     }
-  }, [activeTab, fetchUserModules]);
+    if (activeTab === 'comments') {
+      fetchComments();
+    }
+  }, [activeTab, fetchUserModules, fetchComments]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -413,6 +505,10 @@ export default function AdminUserDetailPage() {
                     label: 'Assigned Modules',
                     badge: String(user.assigned_modules?.length ?? 0),
                   }]),
+                  {
+                    key: 'comments',
+                    label: 'Counselor Connect',
+                  },
                 ];
 
               return tabs.map((tab) => (
@@ -427,13 +523,13 @@ export default function AdminUserDetailPage() {
                   }`}
                 >
                   <span className="truncate">{tab.label}</span>
-                  <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                  {'badge' in tab && <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                     activeTab === tab.key
                       ? 'bg-indigo-100 text-indigo-700'
                       : 'bg-gray-100 text-gray-500'
                   }`}>
                     {tab.badge}
-                  </span>
+                  </span>}
                 </Button>
               ));
             })()}
@@ -589,6 +685,165 @@ export default function AdminUserDetailPage() {
               ) : (
                 <p className="text-sm text-gray-400">No module subscriptions assigned yet.</p>
               )}
+            </div>
+          )}
+
+          {/* Comments Tab */}
+          {activeTab === 'comments' && (
+            <div className="rounded-lg border border-gray-200 bg-white px-5 py-4 space-y-4">
+              <h2 className="text-base font-semibold text-gray-900">Counselor Connect</h2>
+
+              <div className="grid grid-cols-2 gap-5">
+                {/* Counselor Comments */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Counselor Comments
+                  </label>
+                  <div className="space-y-3">
+                    {counselorDrafts.map((draft, idx) => (
+                      <div key={idx} className="relative">
+                        {idx > 0 && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="flex-1 border-t border-dashed border-gray-300" />
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting {idx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeDraft('counselor', idx)}
+                              className="text-gray-400 hover:text-red-500 text-xs"
+                              title="Remove this entry"
+                            >
+                              ✕
+                            </button>
+                            <div className="flex-1 border-t border-dashed border-gray-300" />
+                          </div>
+                        )}
+                        {idx === 0 && counselorDrafts.length > 1 && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="flex-1 border-t border-dashed border-gray-300" />
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting 1</span>
+                            <div className="flex-1 border-t border-dashed border-gray-300" />
+                          </div>
+                        )}
+                        <textarea
+                          id={`counselor-comment-${idx}`}
+                          rows={3}
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                          placeholder={`Enter counselor comments${counselorDrafts.length > 1 ? ` (meeting ${idx + 1})` : ''}...`}
+                          value={draft}
+                          onChange={(e) => updateDraft('counselor', idx, e.target.value)}
+                        />
+                        <p className="mt-1 text-[11px] text-gray-400 flex items-center gap-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
+                          {draft.trim()
+                            ? (comments.counselor_comment_updated_at
+                                ? `Last updated: ${formatDateTime(comments.counselor_comment_updated_at)}`
+                                : 'Not yet saved')
+                            : 'No content'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => addDraft('counselor')}
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-dashed text-gray-500 hover:text-indigo-600 hover:border-indigo-400"
+                  >
+                    + Add
+                  </Button>
+                  <div className="flex items-center justify-end">
+                    <div className="flex items-center gap-2">
+                      {commentSuccess === 'counselor' && (
+                        <span className="text-xs text-green-600 font-medium">Saved ✓</span>
+                      )}
+                      <Button
+                        onClick={() => handleSaveComment('counselor')}
+                        disabled={commentSaving === 'counselor'}
+                        className="bg-indigo-600 hover:bg-indigo-700"
+                        size="sm"
+                      >
+                        {commentSaving === 'counselor' ? 'Saving...' : 'Save'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Student / Parent Comments */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Student / Parent Comments
+                  </label>
+                  <div className="space-y-3">
+                    {parentDrafts.map((draft, idx) => (
+                      <div key={idx} className="relative">
+                        {idx > 0 && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="flex-1 border-t border-dashed border-gray-300" />
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting {idx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeDraft('parent', idx)}
+                              className="text-gray-400 hover:text-red-500 text-xs"
+                              title="Remove this entry"
+                            >
+                              ✕
+                            </button>
+                            <div className="flex-1 border-t border-dashed border-gray-300" />
+                          </div>
+                        )}
+                        {idx === 0 && parentDrafts.length > 1 && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="flex-1 border-t border-dashed border-gray-300" />
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting 1</span>
+                            <div className="flex-1 border-t border-dashed border-gray-300" />
+                          </div>
+                        )}
+                        <textarea
+                          id={`parent-comment-${idx}`}
+                          rows={3}
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                          placeholder={`Enter student / parent comments${parentDrafts.length > 1 ? ` (meeting ${idx + 1})` : ''}...`}
+                          value={draft}
+                          onChange={(e) => updateDraft('parent', idx, e.target.value)}
+                        />
+                        <p className="mt-1 text-[11px] text-gray-400 flex items-center gap-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
+                          {draft.trim()
+                            ? (comments.parent_student_comment_updated_at
+                                ? `Last updated: ${formatDateTime(comments.parent_student_comment_updated_at)}`
+                                : 'Not yet saved')
+                            : 'No content'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => addDraft('parent')}
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-dashed text-gray-500 hover:text-indigo-600 hover:border-indigo-400"
+                  >
+                    + Add
+                  </Button>
+                  <div className="flex items-center justify-end">
+                    <div className="flex items-center gap-2">
+                      {commentSuccess === 'parent' && (
+                        <span className="text-xs text-green-600 font-medium">Saved ✓</span>
+                      )}
+                      <Button
+                        onClick={() => handleSaveComment('parent')}
+                        disabled={commentSaving === 'parent'}
+                        className="bg-indigo-600 hover:bg-indigo-700"
+                        size="sm"
+                      >
+                        {commentSaving === 'parent' ? 'Saving...' : 'Save'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
