@@ -448,8 +448,7 @@ const CareerResultsPage: React.FC = () => {
 
                   {/* Body */}
                   <div className="p-6">
-                    <div className="grid gap-8 md:grid-cols-2">
-                      <div className="space-y-6">
+                    <div className="md:columns-2 gap-8 [&>div]:mb-6 [&>div]:break-inside-avoid">
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
                             <span className="mr-2 rounded-lg bg-[#e9d5ff] p-1.5">
@@ -526,9 +525,6 @@ const CareerResultsPage: React.FC = () => {
                           </ul>
                         </div>
 
-                      </div>
-
-                      <div className="space-y-6">
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
                             <span className="mr-2 rounded-lg bg-amber-100 p-1.5">
@@ -719,7 +715,6 @@ const CareerResultsPage: React.FC = () => {
                           </div>
                         )}
 
-                      </div>
                     </div>
                   </div>
                 </div>

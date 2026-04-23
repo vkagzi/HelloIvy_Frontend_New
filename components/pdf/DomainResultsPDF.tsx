@@ -155,131 +155,175 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
     </Page>
 
     {/* ===== One page per domain ===== */}
-    {recommendations.map((domain, index) => (
-      <Page key={index} size="A4" style={s.page} wrap>
-        <Image src={LOGO_APP_BASE64} style={{ width: 80, height: 16, marginBottom: 8 }} />
-        <View style={s.card}>
-          {/* Header */}
-          <View style={[s.cardHeader, { backgroundColor: brandBlue }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.cardRank}>#{index + 1}</Text>
-              <Text style={s.cardTitle}>{domain.domain_title}</Text>
-              <Text style={s.cardCategory}>{domain.category}</Text>
-            </View>
-            <View style={[s.badge, { borderColor: matchColor(domain.match_percentage), borderWidth: 1.5 }]}>
-              <Text style={[s.badgeText, { color: matchColor(domain.match_percentage) }]}>
-                {domain.match_percentage}% Match
-              </Text>
-            </View>
+    {recommendations.map((domain, index) => {
+      // Build sections with weight estimates for balanced column layout
+      const sections: { weight: number; el: React.ReactNode }[] = [];
+
+      sections.push({
+        weight: 2 + ((domain.why_recommended || domain.description)?.length || 0) / 80,
+        el: (
+          <View wrap={false} key="why">
+            <Text style={s.sectionTitle}>Why This Domain Fits You</Text>
+            <Text style={s.sectionText}>{domain.why_recommended || domain.description}</Text>
           </View>
+        ),
+      });
 
-          {/* Body — two columns */}
-          <View style={s.cardBody}>
-            <View style={s.twoCol}>
-              {/* Left column */}
-              <View style={s.col}>
-                <Text style={s.sectionTitle}>Why This Domain Fits You</Text>
-                <Text style={s.sectionText}>{domain.why_recommended || domain.description}</Text>
-
-                {domain.key_interests?.length > 0 ? (
-                  <>
-                    <Text style={s.sectionTitle}>Key Interests</Text>
-                    <View style={s.chipRow}>
-                      {domain.key_interests.map((item, i) => (
-                        <View key={i} style={s.chip}>
-                          <Text style={s.chipText}>{item}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </>
-                ) : null}
-
-                {domain.related_subjects?.length > 0 ? (
-                  <>
-                    <Text style={s.sectionTitle}>Related Subjects</Text>
-                    {domain.related_subjects.map((subj, i) => {
-                      // Safety: handle both string[] (old data) and RelatedSubject[] (new data)
-                      if (typeof subj === 'string') {
-                        return (
-                          <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
-                            <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{subj}</Text>
-                          </View>
-                        );
-                      }
-                      const subject = subj && typeof subj === 'object' ? subj : { subject: String(subj), relevance: '', importance: 'supporting', importance_reason: '', combination_pathways: [] };
-                      const importanceLabel = { core: 'Core', supporting: 'Supporting', optional: 'Optional' }[subject.importance] || String(subject.importance || '');
-                      const importanceColor = { core: '#dc2626', supporting: '#d97706', optional: '#2563eb' }[subject.importance] || gray;
-                      return (
-                        <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{String(subject.subject || '')}</Text>
-                            <Text style={{ fontSize: 7, color: importanceColor, fontFamily: 'Helvetica-Bold' }}>{importanceLabel}</Text>
-                          </View>
-                          {subject.relevance ? <Text style={{ fontSize: 8, color: gray, marginTop: 2 }}>{String(subject.relevance)}</Text> : null}
-                          {Array.isArray(subject.combination_pathways) && subject.combination_pathways.map((pw, pi) => (
-                            <View key={pi} style={{ marginTop: 2, paddingLeft: 6 }}>
-                              <Text style={{ fontSize: 7, color: '#374151' }}>{String(pw.pathway_name || '')}: {Array.isArray(pw.paired_with) ? pw.paired_with.join(', ') : ''} {'-> '}{Array.isArray(pw.leads_to) ? pw.leads_to.join(', ') : ''}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      );
-                    })}
-                  </>
-                ) : null}
-
-                {domain.sub_domains?.length > 0 ? (
-                  <>
-                    <Text style={s.sectionTitle}>Sub-domains</Text>
-                    {domain.sub_domains.map((sd, i) => (
-                      <View key={i} style={s.bulletItem}>
-                        <Text style={s.bullet}>•</Text>
-                        <Text style={s.bulletText}>{sd}</Text>
-                      </View>
-                    ))}
-                  </>
-                ) : null}
-              </View>
-
-              {/* Right column */}
-              <View style={s.col}>
-                {domain.exploration_activities?.length > 0 ? (
-                  <>
-                    <Text style={s.sectionTitle}>Exploration Activities</Text>
-                    {domain.exploration_activities.map((act, i) => (
-                      <View key={i} style={[s.bulletItem, { alignItems: 'flex-start' }]}>
-                        <View style={s.stepNum}>
-                          <Text style={s.stepNumText}>{i + 1}</Text>
-                        </View>
-                        <Text style={s.stepText}>{act}</Text>
-                      </View>
-                    ))}
-                  </>
-                ) : null}
-
-                {domain.potential_careers?.length > 0 ? (
-                  <>
-                    <Text style={s.sectionTitle}>Potential Career Paths</Text>
-                    <View style={s.chipRow}>
-                      {domain.potential_careers.map((c, i) => (
-                        <View key={i} style={s.chipPurple}>
-                          <Text style={s.chipPurpleText}>{c}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </>
-                ) : null}
+      if (domain.key_interests?.length > 0) {
+        sections.push({
+          weight: 1 + Math.ceil(domain.key_interests.length / 4),
+          el: (
+            <View wrap={false} key="interests">
+              <Text style={s.sectionTitle}>Key Interests</Text>
+              <View style={s.chipRow}>
+                {domain.key_interests.map((item, i) => (
+                  <View key={i} style={s.chip}>
+                    <Text style={s.chipText}>{item}</Text>
+                  </View>
+                ))}
               </View>
             </View>
+          ),
+        });
+      }
+
+      if (domain.sub_domains?.length > 0) {
+        sections.push({
+          weight: 1 + domain.sub_domains.length * 1.2,
+          el: (
+            <View wrap={false} key="subdomains">
+              <Text style={s.sectionTitle}>Sub-domains</Text>
+              {domain.sub_domains.map((sd, i) => (
+                <View key={i} style={s.bulletItem}>
+                  <Text style={s.bullet}>•</Text>
+                  <Text style={s.bulletText}>{sd}</Text>
+                </View>
+              ))}
+            </View>
+          ),
+        });
+      }
+
+      if (domain.exploration_activities?.length > 0) {
+        sections.push({
+          weight: 1 + domain.exploration_activities.length * 1.5,
+          el: (
+            <View wrap={false} key="activities">
+              <Text style={s.sectionTitle}>Exploration Activities</Text>
+              {domain.exploration_activities.map((act, i) => (
+                <View key={i} style={[s.bulletItem, { alignItems: 'flex-start' }]}>
+                  <View style={s.stepNum}>
+                    <Text style={s.stepNumText}>{i + 1}</Text>
+                  </View>
+                  <Text style={s.stepText}>{act}</Text>
+                </View>
+              ))}
+            </View>
+          ),
+        });
+      }
+
+      if (domain.related_subjects?.length > 0) {
+        sections.push({
+          weight: 1 + domain.related_subjects.length * 2.5,
+          el: (
+            <View wrap={false} key="subjects">
+              <Text style={s.sectionTitle}>Related Subjects</Text>
+              {domain.related_subjects.map((subj, i) => {
+                if (typeof subj === 'string') {
+                  return (
+                    <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
+                      <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{subj}</Text>
+                    </View>
+                  );
+                }
+                const subject = subj && typeof subj === 'object' ? subj : { subject: String(subj), relevance: '', importance: 'supporting', importance_reason: '', combination_pathways: [] };
+                const importanceLabel = { core: 'Core', supporting: 'Supporting', optional: 'Optional' }[subject.importance] || String(subject.importance || '');
+                const importanceColor = { core: '#dc2626', supporting: '#d97706', optional: '#2563eb' }[subject.importance] || gray;
+                return (
+                  <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{String(subject.subject || '')}</Text>
+                      <Text style={{ fontSize: 7, color: importanceColor, fontFamily: 'Helvetica-Bold' }}>{importanceLabel}</Text>
+                    </View>
+                    {subject.relevance ? <Text style={{ fontSize: 8, color: gray, marginTop: 2 }}>{String(subject.relevance)}</Text> : null}
+                    {Array.isArray(subject.combination_pathways) && subject.combination_pathways.map((pw, pi) => (
+                      <View key={pi} style={{ marginTop: 2, paddingLeft: 6 }}>
+                        <Text style={{ fontSize: 7, color: '#374151' }}>{String(pw.pathway_name || '')}: {Array.isArray(pw.paired_with) ? pw.paired_with.join(', ') : ''} {'-> '}{Array.isArray(pw.leads_to) ? pw.leads_to.join(', ') : ''}</Text>
+                      </View>
+                    ))}
+                  </View>
+                );
+              })}
+            </View>
+          ),
+        });
+      }
+
+      if (domain.potential_careers?.length > 0) {
+        sections.push({
+          weight: 1 + Math.ceil(domain.potential_careers.length / 3),
+          el: (
+            <View wrap={false} key="careers">
+              <Text style={s.sectionTitle}>Potential Career Paths</Text>
+              <View style={s.chipRow}>
+                {domain.potential_careers.map((c, i) => (
+                  <View key={i} style={s.chipPurple}>
+                    <Text style={s.chipPurpleText}>{c}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ),
+        });
+      }
+
+      // Greedy partition into balanced columns
+      const leftCol: React.ReactNode[] = [];
+      const rightCol: React.ReactNode[] = [];
+      let leftW = 0, rightW = 0;
+      for (const sec of sections) {
+        if (leftW <= rightW) {
+          leftCol.push(sec.el);
+          leftW += sec.weight;
+        } else {
+          rightCol.push(sec.el);
+          rightW += sec.weight;
+        }
+      }
+
+      return (
+        <Page key={index} size="A4" style={s.page} wrap>
+          <Image src={LOGO_APP_BASE64} style={{ width: 80, height: 16, marginBottom: 8 }} />
+          <View style={s.card}>
+            <View style={[s.cardHeader, { backgroundColor: brandBlue }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardRank}>#{index + 1}</Text>
+                <Text style={s.cardTitle}>{domain.domain_title}</Text>
+                <Text style={s.cardCategory}>{domain.category}</Text>
+              </View>
+              <View style={[s.badge, { borderColor: matchColor(domain.match_percentage), borderWidth: 1.5 }]}>
+                <Text style={[s.badgeText, { color: matchColor(domain.match_percentage) }]}>
+                  {domain.match_percentage}% Match
+                </Text>
+              </View>
+            </View>
+            <View style={s.cardBody}>
+              <View style={s.twoCol}>
+                <View style={s.col}>{leftCol}</View>
+                <View style={s.col}>{rightCol}</View>
+              </View>
+            </View>
           </View>
-        </View>
-        <View style={s.footer} fixed>
-          <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
-          <Text style={s.footerText}>|</Text>
-          <Text style={s.footerText}>partners@reachivy.com</Text>
-        </View>
-        <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
-      </Page>
-    ))}
+          <View style={s.footer} fixed>
+            <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
+            <Text style={s.footerText}>|</Text>
+            <Text style={s.footerText}>partners@reachivy.com</Text>
+          </View>
+          <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
+        </Page>
+      );
+    })}
   </Document>
 );
 

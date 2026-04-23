@@ -134,177 +134,239 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
     </Page>
 
     {/* ===== One page per career ===== */}
-    {recommendations.map((career, index) => (
-      <Page key={index} size="A4" style={s.page} wrap>
-        <Image src={LOGO_APP_BASE64} style={{ width: 80, height: 16, marginBottom: 8 }} />
-        <View style={s.card}>
-          {/* Header */}
-          <View wrap={false} style={[s.cardHeader, { backgroundColor: purple }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.cardRank}>#{index + 1}</Text>
-              <Text style={s.cardTitle}>{career.career_title}</Text>
-            </View>
-            <View style={[s.badge, { borderColor: matchColor(career.match_percentage), borderWidth: 1.5 }]}>
-              <Text style={[s.badgeText, { color: matchColor(career.match_percentage) }]}>
-                {career.match_percentage}% Match
-              </Text>
-            </View>
+    {recommendations.map((career, index) => {
+      // Build sections with weight estimates for balanced column layout
+      const sections: { weight: number; el: React.ReactNode }[] = [];
+
+      sections.push({
+        weight: 2 + (career.description?.length || 0) / 80,
+        el: (
+          <View wrap={false} key="overview">
+            <Text style={s.sectionTitle}>Career Overview</Text>
+            <Text style={s.sectionText}>{career.description}</Text>
           </View>
+        ),
+      });
 
-          {/* Body — two columns */}
-          <View style={s.cardBody}>
-            <View style={s.twoCol}>
-              {/* Left column */}
-              <View style={s.col}>
-                <View wrap={false}>
-                  <Text style={s.sectionTitle}>Career Overview</Text>
-                  <Text style={s.sectionText}>{career.description}</Text>
+      sections.push({
+        weight: 2 + (career.why_recommended?.length || 0) / 80,
+        el: (
+          <View wrap={false} key="why">
+            <Text style={s.sectionTitle}>Why This Career Fits You</Text>
+            <Text style={s.sectionText}>{career.why_recommended}</Text>
+          </View>
+        ),
+      });
+
+      if (career.day_in_life) {
+        sections.push({
+          weight: 2 + career.day_in_life.length / 80,
+          el: (
+            <View wrap={false} key="dayinlife">
+              <Text style={s.sectionTitle}>A Day in the Life</Text>
+              <Text style={s.sectionText}>{career.day_in_life}</Text>
+            </View>
+          ),
+        });
+      }
+
+      if (career.alignment_points?.length > 0) {
+        sections.push({
+          weight: 1 + career.alignment_points.length * 1.5,
+          el: (
+            <View wrap={false} key="alignment">
+              <Text style={s.sectionTitle}>How This Matches Your Interests</Text>
+              {career.alignment_points.map((pt, i) => (
+                <View key={i} style={s.bulletItem}>
+                  <Text style={s.bullet}>•</Text>
+                  <Text style={s.bulletText}>{pt}</Text>
                 </View>
+              ))}
+            </View>
+          ),
+        });
+      }
 
-                <View wrap={false}>
-                  <Text style={s.sectionTitle}>Why This Career Fits You</Text>
-                  <Text style={s.sectionText}>{career.why_recommended}</Text>
-                </View>
-
-                {career.day_in_life ? (
-                  <View wrap={false}>
-                    <Text style={s.sectionTitle}>A Day in the Life</Text>
-                    <Text style={s.sectionText}>{career.day_in_life}</Text>
+      if (career.required_skills?.length > 0) {
+        sections.push({
+          weight: 1 + Math.ceil(career.required_skills.length / 4),
+          el: (
+            <View wrap={false} key="skills">
+              <Text style={s.sectionTitle}>Required Skills</Text>
+              <View style={s.chipRow}>
+                {career.required_skills.map((sk, i) => (
+                  <View key={i} style={s.chip}>
+                    <Text style={s.chipText}>{sk}</Text>
                   </View>
-                ) : null}
-
-                {career.alignment_points?.length > 0 ? (
-                  <View wrap={false}>
-                    <Text style={s.sectionTitle}>How This Matches Your Interests</Text>
-                    {career.alignment_points.map((pt, i) => (
-                      <View key={i} style={s.bulletItem}>
-                        <Text style={s.bullet}>•</Text>
-                        <Text style={s.bulletText}>{pt}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ) : null}
-              </View>
-
-              {/* Right column */}
-              <View style={s.col}>
-                {career.required_skills?.length > 0 ? (
-                  <View wrap={false}>
-                    <Text style={s.sectionTitle}>Required Skills</Text>
-                    <View style={s.chipRow}>
-                      {career.required_skills.map((sk, i) => (
-                        <View key={i} style={s.chip}>
-                          <Text style={s.chipText}>{sk}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                ) : null}
-
-                {career.related_subjects?.length > 0 ? (
-                  <View wrap={false}>
-                    <Text style={s.sectionTitle}>Related Subjects</Text>
-                    <View style={s.chipRow}>
-                      {career.related_subjects.map((subj, i) => (
-                        <View key={i} style={[s.chip, { backgroundColor: lightBlue }]}>
-                          <Text style={[s.chipText, { color: blue }]}>{subj}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                ) : null}
-
-                {career.degrees?.length > 0 ? (
-                  <View wrap={false}>
-                    <Text style={s.sectionTitle}>Potential Degrees</Text>
-                    {career.degrees.map((deg, i) => {
-                      // Backward compat: handle old string[] data
-                      if (typeof deg === 'string') {
-                        return (
-                          <View key={i} style={[s.chip, { backgroundColor: '#fef3c7', marginBottom: 3 }]}>
-                            <Text style={[s.chipText, { color: '#92400e' }]}>{deg}</Text>
-                          </View>
-                        );
-                      }
-                      const pathwayLabel = String(deg.pathway?.rank || '');
-                      const pathwayColor = { 'Core Path': '#059669', 'Alternate Path': '#2563eb', 'Differentiated Path': '#7c3aed' }[pathwayLabel] || gray;
-                      const stars = Array.from({ length: 5 }, (_, si) => si < (deg.fit_score || 0) ? '*' : ' ').join('');
-                      return (
-                        <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{String(deg.degree || '')}</Text>
-                            <Text style={{ fontSize: 7, color: pathwayColor, fontFamily: 'Helvetica-Bold' }}>{pathwayLabel}</Text>
-                          </View>
-                          <View style={{ flexDirection: 'row', gap: 4, marginTop: 1 }}>
-                            <Text style={{ fontSize: 8, color: '#d97706' }}>{stars}</Text>
-                            <Text style={{ fontSize: 7, color: gray }}>{String(deg.fit_reason || '')}</Text>
-                          </View>
-                          {deg.pathway?.label ? (
-                            <Text style={{ fontSize: 7, color: '#374151', marginTop: 1 }}>{String(deg.pathway.label)}: {String(deg.pathway.why || '')}</Text>
-                          ) : null}
-                          {deg.decision_filter?.condition ? (
-                            <Text style={{ fontSize: 7, color: '#9ca3af', marginTop: 1, fontStyle: 'italic' }}>If {String(deg.decision_filter.condition)}</Text>
-                          ) : null}
-                        </View>
-                      );
-                    })}
-                  </View>
-                ) : null}
-
-                {career.next_steps?.length > 0 ? (
-                  <View wrap={false}>
-                    <Text style={s.sectionTitle}>Next Steps</Text>
-                    {career.next_steps.map((step, i) => (
-                      <View key={i} style={[s.bulletItem, { alignItems: 'flex-start' }]}>
-                        <View style={s.stepNum}>
-                          <Text style={s.stepNumText}>{i + 1}</Text>
-                        </View>
-                        <Text style={s.stepText}>{step}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ) : null}
-
-                {career.pros_and_cons && (career.pros_and_cons.pros?.length > 0 || career.pros_and_cons.cons?.length > 0) ? (
-                  <View wrap={false}>
-                    <Text style={s.sectionTitle}>Pros & Cons</Text>
-                    {career.pros_and_cons.pros?.length > 0 && (
-                      <View style={s.prosBox}>
-                        <Text style={s.prosTitle}>Pros</Text>
-                        {career.pros_and_cons.pros.map((p, i) => (
-                          <Text key={i} style={s.proItem}>+ {p}</Text>
-                        ))}
-                      </View>
-                    )}
-                    {career.pros_and_cons.cons?.length > 0 && (
-                      <View style={s.consBox}>
-                        <Text style={s.consTitle}>Cons</Text>
-                        {career.pros_and_cons.cons.map((c, i) => (
-                          <Text key={i} style={s.conItem}>- {c}</Text>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                ) : null}
-
-                {career.work_life_balance ? (
-                  <View wrap={false}>
-                    <Text style={s.sectionTitle}>Work-Life Balance</Text>
-                    <Text style={s.sectionText}>{career.work_life_balance}</Text>
-                  </View>
-                ) : null}
+                ))}
               </View>
             </View>
+          ),
+        });
+      }
+
+      if (career.related_subjects?.length > 0) {
+        sections.push({
+          weight: 1 + Math.ceil(career.related_subjects.length / 4),
+          el: (
+            <View wrap={false} key="subjects">
+              <Text style={s.sectionTitle}>Related Subjects</Text>
+              <View style={s.chipRow}>
+                {career.related_subjects.map((subj, i) => (
+                  <View key={i} style={[s.chip, { backgroundColor: lightBlue }]}>
+                    <Text style={[s.chipText, { color: blue }]}>{subj}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ),
+        });
+      }
+
+      if (career.degrees?.length > 0) {
+        sections.push({
+          weight: 1 + career.degrees.length * 3,
+          el: (
+            <View wrap={false} key="degrees">
+              <Text style={s.sectionTitle}>Potential Degrees</Text>
+              {career.degrees.map((deg, i) => {
+                if (typeof deg === 'string') {
+                  return (
+                    <View key={i} style={[s.chip, { backgroundColor: '#fef3c7', marginBottom: 3 }]}>
+                      <Text style={[s.chipText, { color: '#92400e' }]}>{deg}</Text>
+                    </View>
+                  );
+                }
+                const pathwayLabel = String(deg.pathway?.rank || '');
+                const pathwayColor = { 'Core Path': '#059669', 'Alternate Path': '#2563eb', 'Differentiated Path': '#7c3aed' }[pathwayLabel] || gray;
+                const stars = Array.from({ length: 5 }, (_, si) => si < (deg.fit_score || 0) ? '*' : ' ').join('');
+                return (
+                  <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{String(deg.degree || '')}</Text>
+                      <Text style={{ fontSize: 7, color: pathwayColor, fontFamily: 'Helvetica-Bold' }}>{pathwayLabel}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 4, marginTop: 1 }}>
+                      <Text style={{ fontSize: 8, color: '#d97706' }}>{stars}</Text>
+                      <Text style={{ fontSize: 7, color: gray }}>{String(deg.fit_reason || '')}</Text>
+                    </View>
+                    {deg.pathway?.label ? (
+                      <Text style={{ fontSize: 7, color: '#374151', marginTop: 1 }}>{String(deg.pathway.label)}: {String(deg.pathway.why || '')}</Text>
+                    ) : null}
+                    {deg.decision_filter?.condition ? (
+                      <Text style={{ fontSize: 7, color: '#9ca3af', marginTop: 1, fontStyle: 'italic' }}>If {String(deg.decision_filter.condition)}</Text>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          ),
+        });
+      }
+
+      if (career.next_steps?.length > 0) {
+        sections.push({
+          weight: 1 + career.next_steps.length * 1.5,
+          el: (
+            <View wrap={false} key="steps">
+              <Text style={s.sectionTitle}>Next Steps</Text>
+              {career.next_steps.map((step, i) => (
+                <View key={i} style={[s.bulletItem, { alignItems: 'flex-start' }]}>
+                  <View style={s.stepNum}>
+                    <Text style={s.stepNumText}>{i + 1}</Text>
+                  </View>
+                  <Text style={s.stepText}>{step}</Text>
+                </View>
+              ))}
+            </View>
+          ),
+        });
+      }
+
+      if (career.pros_and_cons && (career.pros_and_cons.pros?.length > 0 || career.pros_and_cons.cons?.length > 0)) {
+        sections.push({
+          weight: 1 + (career.pros_and_cons.pros?.length || 0) * 1.2 + (career.pros_and_cons.cons?.length || 0) * 1.2,
+          el: (
+            <View wrap={false} key="proscons">
+              <Text style={s.sectionTitle}>Pros & Cons</Text>
+              {career.pros_and_cons.pros?.length > 0 && (
+                <View style={s.prosBox}>
+                  <Text style={s.prosTitle}>Pros</Text>
+                  {career.pros_and_cons.pros.map((p, i) => (
+                    <Text key={i} style={s.proItem}>+ {p}</Text>
+                  ))}
+                </View>
+              )}
+              {career.pros_and_cons.cons?.length > 0 && (
+                <View style={s.consBox}>
+                  <Text style={s.consTitle}>Cons</Text>
+                  {career.pros_and_cons.cons.map((c, i) => (
+                    <Text key={i} style={s.conItem}>- {c}</Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          ),
+        });
+      }
+
+      if (career.work_life_balance) {
+        sections.push({
+          weight: 2 + (career.work_life_balance.length || 0) / 80,
+          el: (
+            <View wrap={false} key="wlb">
+              <Text style={s.sectionTitle}>Work-Life Balance</Text>
+              <Text style={s.sectionText}>{career.work_life_balance}</Text>
+            </View>
+          ),
+        });
+      }
+
+      // Greedy partition into balanced columns
+      const leftCol: React.ReactNode[] = [];
+      const rightCol: React.ReactNode[] = [];
+      let leftW = 0, rightW = 0;
+      for (const sec of sections) {
+        if (leftW <= rightW) {
+          leftCol.push(sec.el);
+          leftW += sec.weight;
+        } else {
+          rightCol.push(sec.el);
+          rightW += sec.weight;
+        }
+      }
+
+      return (
+        <Page key={index} size="A4" style={s.page} wrap>
+          <Image src={LOGO_APP_BASE64} style={{ width: 80, height: 16, marginBottom: 8 }} />
+          <View style={s.card}>
+            <View wrap={false} style={[s.cardHeader, { backgroundColor: purple }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardRank}>#{index + 1}</Text>
+                <Text style={s.cardTitle}>{career.career_title}</Text>
+              </View>
+              <View style={[s.badge, { borderColor: matchColor(career.match_percentage), borderWidth: 1.5 }]}>
+                <Text style={[s.badgeText, { color: matchColor(career.match_percentage) }]}>
+                  {career.match_percentage}% Match
+                </Text>
+              </View>
+            </View>
+            <View style={s.cardBody}>
+              <View style={s.twoCol}>
+                <View style={s.col}>{leftCol}</View>
+                <View style={s.col}>{rightCol}</View>
+              </View>
+            </View>
           </View>
-        </View>
-        <View style={s.footer} fixed>
-          <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
-          <Text style={s.footerText}>|</Text>
-          <Text style={s.footerText}>partners@reachivy.com</Text>
-        </View>
-        <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
-      </Page>
-    ))}
+          <View style={s.footer} fixed>
+            <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
+            <Text style={s.footerText}>|</Text>
+            <Text style={s.footerText}>partners@reachivy.com</Text>
+          </View>
+          <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
+        </Page>
+      );
+    })}
   </Document>
 );
 
