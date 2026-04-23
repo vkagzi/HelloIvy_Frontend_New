@@ -61,13 +61,6 @@ export default auth((req) => {
       }
     }
 
-    // /subscription — only B2C students (no school_id)
-    if (pathname.startsWith('/subscription')) {
-      const schoolId = (req.auth?.user as any)?.school_id;
-      if (schoolId) {
-        return NextResponse.redirect(new URL('/dashboard', req.nextUrl));
-      }
-    }
   }
 
   return NextResponse.next();

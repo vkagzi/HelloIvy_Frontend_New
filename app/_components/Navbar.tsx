@@ -23,13 +23,12 @@ const Navbar: React.FC = () => {
 
   const filteredNavItems = useMemo(() => {
     return sidebarNavItems
-      .filter((item) => !(isB2BStudent && item.href === '/subscription'))
       .map((item) =>
         isSchoolAdmin && item.href === '/subscription'
           ? { ...item, href: '/school/subscription' }
           : item
       );
-  }, [isB2BStudent, isSchoolAdmin]);
+  }, [isSchoolAdmin]);
 
   // Close drawer on route change
   useEffect(() => {

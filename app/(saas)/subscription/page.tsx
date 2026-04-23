@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import ModuleSubscriptions from '@/components/ModuleSubscriptions';
 
 export default function SubscriptionPage() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
 
   if (status === 'loading') {
     return (
@@ -18,18 +18,23 @@ export default function SubscriptionPage() {
     );
   }
 
+  const isB2BStudent =
+    session?.user?.role === 'student' && !!session?.user?.school_id;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <Link
-          href="/pay-as-student"
-          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700"
-        >
-          Purchase More Modules
-        </Link>
-      </div>
+      {!isB2BStudent && (
+        <div className="flex items-center justify-end">
+          <Link
+            href="/pay-as-student"
+            className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700"
+          >
+            Purchase More Modules
+          </Link>
+        </div>
+      )}
 
-      <ModuleSubscriptions mode="b2c" />
+      <ModuleSubscriptions mode={isB2BStudent ? 'b2b' : 'b2c'} />
     </div>
   );
 }
