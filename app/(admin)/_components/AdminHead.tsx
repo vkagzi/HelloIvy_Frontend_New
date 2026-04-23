@@ -98,6 +98,9 @@ const AdminHead: React.FC<AdminHeadProps> = ({ session }) => {
             <DropdownMenuItem asChild>
               <Link href="/dashboard">Back to App</Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/change-password">Change Password</Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild className="text-red-600 focus:text-red-600">
               <Link href="/logout">Log Out</Link>

@@ -38,6 +38,7 @@ export const navItems: NavItem[] = [
   { label: 'Starred', icon: 'star', href: '/starred' },
   { label: 'Personal Details', icon: 'user', href: '/profile/personal/edit' },
   { label: 'Settings', icon: 'settings', href: '/settings' },
+  { label: 'Change Password', icon: 'lock', href: '/change-password' },
   { label: 'Legal', icon: 'document', href: '/legal' },
   { label: 'Unlock Modules', icon: 'star', href: '/pay-as-student' },
   { label: 'Checkout', icon: 'credit-card', href: '/pay-as-student/checkout' },

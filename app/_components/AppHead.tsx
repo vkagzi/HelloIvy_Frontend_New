@@ -158,6 +158,9 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
               <DropdownMenuItem asChild>
                 <Link href="/profile/personal/edit">My Profile</Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/change-password">Change Password</Link>
+              </DropdownMenuItem>
               {/* <DropdownMenuItem asChild>
                 <Link href="/settings">Settings</Link>
               </DropdownMenuItem> */}
