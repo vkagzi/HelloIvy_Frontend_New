@@ -13,11 +13,42 @@ interface StatusResponse {
   message: string;
 }
 
+// Recover payment context from localStorage when HDFC strips our query params.
+// localStorage is used (not sessionStorage) because HDFC may open the return
+// URL in a new tab.
+function getSavedPaymentContext(): { payment_id: string; type: string } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('pending_payment');
+    console.log('[PaymentStatus] localStorage pending_payment:', raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Ensure payment_id is a string
+      if (parsed?.payment_id) {
+        parsed.payment_id = String(parsed.payment_id);
+        return parsed;
+      }
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 export default function PaymentStatusPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const paymentId = searchParams?.get('payment_id') ?? '';
-  const paymentType = searchParams?.get('type') ?? 'student';
+  // HDFC SmartGateway may replace query params on redirect, so fall back
+  // to the order_id that HDFC always includes (set to our payment.id),
+  // then to the value we stashed in sessionStorage before the redirect.
+  const saved = getSavedPaymentContext();
+  const paymentId =
+    searchParams?.get('payment_id') ??
+    searchParams?.get('order_id') ??
+    saved?.payment_id ??
+    '';
+  const paymentType =
+    searchParams?.get('type') ??
+    saved?.type ??
+    'student';
 
   const [status, setStatus] = useState<PaymentStatus>('loading');
   const [message, setMessage] = useState('');
@@ -25,26 +56,39 @@ export default function PaymentStatusPage() {
   const attemptRef = useRef(0);
 
   useEffect(() => {
+    console.log('[PaymentStatus] Page loaded with params:', {
+      payment_id: searchParams?.get('payment_id'),
+      order_id: searchParams?.get('order_id'),
+      type: searchParams?.get('type'),
+      all_params: Object.fromEntries(searchParams?.entries() ?? []),
+      resolved_paymentId: paymentId,
+      resolved_paymentType: paymentType,
+    });
+
     if (!paymentId) {
+      console.error('[PaymentStatus] No payment ID found in URL params');
       setStatus('failed');
       setMessage('Invalid payment. No payment ID found.');
       return;
     }
 
     const checkStatus = async () => {
+      const url = `/api/accounts/payment/${paymentId}/status/?type=${paymentType}`;
+      console.log(`[PaymentStatus] Polling attempt ${attemptRef.current + 1}: ${url}`);
       try {
-        const data = await api<StatusResponse>(
-          `/api/accounts/payment/${paymentId}/status/?type=${paymentType}`
-        );
+        const data = await api<StatusResponse>(url);
+        console.log('[PaymentStatus] API response:', data);
 
         if (data.status === 'completed') {
           setStatus('completed');
           setMessage(data.message);
           if (pollRef.current) clearInterval(pollRef.current);
+          try { localStorage.removeItem('pending_payment'); } catch { /* ignore */ }
         } else if (data.status === 'failed') {
           setStatus('failed');
           setMessage(data.message);
           if (pollRef.current) clearInterval(pollRef.current);
+          try { localStorage.removeItem('pending_payment'); } catch { /* ignore */ }
         } else {
           setStatus('pending');
           setMessage(data.message || 'Payment is being processed...');
@@ -55,7 +99,8 @@ export default function PaymentStatusPage() {
             setMessage('Payment verification is taking longer than expected. Please check your payment history.');
           }
         }
-      } catch {
+      } catch (err) {
+        console.error('[PaymentStatus] API error:', err);
         setStatus('failed');
         setMessage('Unable to verify payment status. Please check your payment history.');
         if (pollRef.current) clearInterval(pollRef.current);

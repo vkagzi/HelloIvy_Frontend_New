@@ -45,7 +45,7 @@ export interface UserSubscription {
 
 export interface Payment {
   id: number;
-  modules_purchased: string[];
+  modules_purchased: (string | { module: string; quantity: number })[];
   amount: string;
   currency: string;
   status: string;
@@ -412,7 +412,10 @@ function PaymentHistoryTable({
                   {new Date(p.created_at).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3 text-gray-700">
-                  {p.modules_purchased.map((m) => labelFor(m)).join(', ') || '—'}
+                  {p.modules_purchased.map((entry) => {
+                    if (typeof entry === 'string') return labelFor(entry);
+                    return `${labelFor(entry.module)} - ${entry.quantity}`;
+                  }).join(', ') || '—'}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">
                   {p.currency === 'INR' ? '₹' : p.currency}{' '}

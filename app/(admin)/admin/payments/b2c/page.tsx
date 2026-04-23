@@ -28,7 +28,7 @@ interface UserPayment {
   user_email: string;
   user_first_name: string;
   user_last_name: string;
-  modules_purchased: string[];
+  modules_purchased: (string | { module: string; quantity: number })[];
   amount: string;
   currency: string;
   status: string;
@@ -127,7 +127,7 @@ export default function B2CPaymentsPage() {
     try {
       await api('/api/payments/b2c/', {
         method: 'POST',
-        body: { ...addForm, modules_purchased: addModules, user: Number(addForm.user), amount: parseFloat(addForm.amount), expiry_date: addForm.expiry_date || null, quantity: addForm.quantity ? Number(addForm.quantity) : null },
+        body: { ...addForm, modules_purchased: addModules.map(m => ({ module: m, quantity: 1 })), user: Number(addForm.user), amount: parseFloat(addForm.amount), expiry_date: addForm.expiry_date || null, quantity: addForm.quantity ? Number(addForm.quantity) : null },
       });
       setAddOpen(false);
       setAddForm({ user: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', expiry_date: '', quantity: '', notes: '' });
@@ -234,7 +234,11 @@ export default function B2CPaymentsPage() {
                 <td className="px-4 py-3 text-gray-700">{p.user_last_name || '-'}</td>
                 <td className="px-4 py-3 text-gray-500 text-xs">
                   {p.modules_purchased.length > 0
-                    ? p.modules_purchased.map((m) => m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())).join(', ')
+                    ? p.modules_purchased.map((entry) => {
+                        if (typeof entry === 'string') return entry.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                        const label = entry.module.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                        return `${label} - ${entry.quantity}`;
+                      }).join(', ')
                     : '-'}
                 </td>
                 <td className="px-4 py-3 font-medium">{p.currency} {p.amount}</td>

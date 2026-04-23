@@ -24,7 +24,7 @@ interface SchoolPayment {
   status: string;
   payment_gateway: string;
   gateway_transaction_id: string;
-  modules_purchased: string[];
+  modules_purchased: (string | { module: string; quantity: number })[];
   expiry_date: string | null;
   quantity: number | null;
   notes: string;
@@ -121,7 +121,7 @@ export default function SchoolPaymentsPage() {
     try {
       await api('/api/payments/schools/', {
         method: 'POST',
-        body: { ...addForm, school: Number(addForm.school), amount: parseFloat(addForm.amount), modules_purchased: addModules, expiry_date: addForm.expiry_date || null, quantity: addForm.quantity ? Number(addForm.quantity) : null },
+        body: { ...addForm, school: Number(addForm.school), amount: parseFloat(addForm.amount), modules_purchased: addModules.map(m => ({ module: m, quantity: 1 })), expiry_date: addForm.expiry_date || null, quantity: addForm.quantity ? Number(addForm.quantity) : null },
       });
       setAddOpen(false);
       setAddForm({ school: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', expiry_date: '', quantity: '', notes: '' });
@@ -242,7 +242,11 @@ export default function SchoolPaymentsPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-500 text-xs">
                   {p.modules_purchased.length > 0
-                    ? p.modules_purchased.map((m) => m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())).join(', ')
+                    ? p.modules_purchased.map((entry) => {
+                        if (typeof entry === 'string') return entry.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                        const label = entry.module.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                        return `${label} - ${entry.quantity}`;
+                      }).join(', ')
                     : '-'}
                 </td>
                 <td className="px-4 py-3 text-gray-500">{p.quantity ?? '-'}</td>
