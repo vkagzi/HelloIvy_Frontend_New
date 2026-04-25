@@ -918,7 +918,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'select',
     label: 'Estimated Overall Rank',
     placeholder: 'Select estimated overall rank',
-    required: true,
+    required: false,
     options: ['Top 5%', 'Top 6-10%', 'Top 11-25%', 'Top 26-50%', 'Bottom 50%'],
   },
   {

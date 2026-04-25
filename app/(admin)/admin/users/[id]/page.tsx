@@ -146,6 +146,16 @@ export default function AdminUserDetailPage() {
   // Profile section sub-tab state
   const [activeProfileSection, setActiveProfileSection] = useState<string>('personal');
 
+  // Counselor Connect - accordion & editable state
+  const [expandedMeetings, setExpandedMeetings] = useState<Record<number, boolean>>({ 0: true });
+  const [meetingEditable, setMeetingEditable] = useState<Record<string, boolean>>({});
+
+  // Email section state
+  const [emailCounselorBody, setEmailCounselorBody] = useState('');
+  const [emailStudentBody, setEmailStudentBody] = useState('');
+  const [emailCounselorSentAt, setEmailCounselorSentAt] = useState<string | null>(null);
+  const [emailStudentSentAt, setEmailStudentSentAt] = useState<string | null>(null);
+
   const fetchUserModules = useCallback(async () => {
     if (!userId) return;
     try {
@@ -679,157 +689,304 @@ export default function AdminUserDetailPage() {
             </div>
           )}
 
-          {/* Comments Tab */}
+          {/* Counselor Connect Tab */}
           {activeTab === 'comments' && (
-            <div className="rounded-lg border border-gray-200 bg-white px-5 py-4 space-y-4">
-              <h2 className="text-base font-semibold text-gray-900">Counselor Connect</h2>
-
-              <div className="grid grid-cols-2 gap-5">
-                {/* Counselor Comments */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Counselor Comments
-                  </label>
-                  <div className="space-y-3">
-                    {counselorDrafts.map((draft, idx) => (
-                      <div key={idx} className="relative">
-                        {idx > 0 && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting {idx + 1}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeDraft('counselor', idx)}
-                              className="text-gray-400 hover:text-red-500 text-xs"
-                              title="Remove this entry"
-                            >
-                              ✕
-                            </button>
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                          </div>
-                        )}
-                        {idx === 0 && counselorDrafts.length > 1 && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting 1</span>
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                          </div>
-                        )}
-                        <textarea
-                          id={`counselor-comment-${idx}`}
-                          rows={3}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
-                          placeholder={`Enter counselor comments${counselorDrafts.length > 1 ? ` (meeting ${idx + 1})` : ''}...`}
-                          value={draft}
-                          onChange={(e) => updateDraft('counselor', idx, e.target.value)}
-                        />
-                        <p className="mt-1 text-[11px] text-gray-400 flex items-center gap-1">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
-                          {draft.trim()
-                            ? (comments.counselor_comment_updated_at
-                                ? `Last updated: ${formatDateTime(comments.counselor_comment_updated_at)}`
-                                : 'Not yet saved')
-                            : 'No content'}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+            <div className="space-y-5">
+              {/* Main Meetings Card */}
+              <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                {/* Header with Add Meeting */}
+                <div className="flex items-center justify-between border-b border-gray-100 bg-gradient-to-r from-indigo-50/80 to-purple-50/60 px-6 py-4">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" /></svg>
+                    Counselor Connect
+                  </h2>
                   <Button
-                    type="button"
-                    onClick={() => addDraft('counselor')}
-                    variant="outline"
+                    onClick={() => {
+                      addDraft('counselor');
+                      addDraft('parent');
+                      setExpandedMeetings(prev => ({ ...prev, [Math.max(counselorDrafts.length, parentDrafts.length)]: true }));
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 shadow-sm gap-1.5"
                     size="sm"
-                    className="w-full border-dashed text-gray-500 hover:text-indigo-600 hover:border-indigo-400"
                   >
-                    + Add
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+                    Add Meeting
                   </Button>
-                  <div className="flex items-center justify-end">
-                    <div className="flex items-center gap-2">
-                      {commentSuccess === 'counselor' && (
-                        <span className="text-xs text-green-600 font-medium">Saved ✓</span>
+                </div>
+
+                {/* Meeting Accordions */}
+                <div className="divide-y divide-gray-100">
+                  {Array.from({ length: Math.max(counselorDrafts.length, parentDrafts.length) }, (_, idx) => (
+                    <div key={idx} className="group">
+                      {/* Meeting Header (Accordion Toggle) */}
+                      <button
+                        type="button"
+                        onClick={() => setExpandedMeetings(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                        className={`w-full flex items-center justify-between px-6 py-3.5 text-left transition-colors ${
+                          expandedMeetings[idx]
+                            ? 'bg-indigo-50/60'
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+                            expandedMeetings[idx]
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <span className={`text-sm font-semibold ${
+                            expandedMeetings[idx] ? 'text-indigo-700' : 'text-gray-700'
+                          }`}>
+                            Meeting {idx + 1}
+                          </span>
+                          {(counselorDrafts[idx]?.trim() || parentDrafts[idx]?.trim()) && (
+                            <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700 border border-green-200">
+                              Has Notes
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {idx > 0 && (
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeDraft('counselor', idx);
+                                removeDraft('parent', idx);
+                              }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); removeDraft('counselor', idx); removeDraft('parent', idx); } }}
+                              className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"
+                              title="Remove this meeting"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                            </span>
+                          )}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className={`h-5 w-5 transition-transform duration-200 ${
+                              expandedMeetings[idx] ? 'rotate-180 text-indigo-600' : 'text-gray-400'
+                            }`}
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </button>
+
+                      {/* Meeting Content (Expanded) */}
+                      {expandedMeetings[idx] && (
+                        <div className="px-6 pb-5 pt-3 bg-white border-t border-gray-100">
+                          <div className="grid grid-cols-2 gap-5">
+                            {/* Student / Parent Comments (Left) */}
+                            <div className="space-y-2">
+                              <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" /></svg>
+                                Student / Parent Comments
+                              </label>
+                              <textarea
+                                id={`parent-comment-${idx}`}
+                                rows={5}
+                                className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-vertical transition-colors ${
+                                  meetingEditable[`parent-${idx}`] === false
+                                    ? 'bg-gray-50 border-gray-200 cursor-not-allowed'
+                                    : 'bg-white border-gray-300'
+                                }`}
+                                placeholder={`Enter student / parent notes for meeting ${idx + 1}...`}
+                                value={parentDrafts[idx] ?? ''}
+                                onChange={(e) => updateDraft('parent', idx, e.target.value)}
+                                disabled={meetingEditable[`parent-${idx}`] === false}
+                              />
+                              <div className="flex items-center justify-between">
+                                <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
+                                  {(parentDrafts[idx] ?? '').trim()
+                                    ? (comments.parent_student_comment_updated_at
+                                        ? `Updated: ${formatDateTime(comments.parent_student_comment_updated_at)}`
+                                        : 'Not yet saved')
+                                    : 'No content'}
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setMeetingEditable(prev => ({ ...prev, [`parent-${idx}`]: prev[`parent-${idx}`] === false ? true : false }))}
+                                  className={`text-xs gap-1 ${
+                                    meetingEditable[`parent-${idx}`] === false
+                                      ? 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
+                                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                                  {meetingEditable[`parent-${idx}`] === false ? 'Edit' : 'Lock'}
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Counselor Comments (Right) */}
+                            <div className="space-y-2">
+                              <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" /></svg>
+                                Counselor Comments
+                              </label>
+                              <textarea
+                                id={`counselor-comment-${idx}`}
+                                rows={5}
+                                className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-vertical transition-colors ${
+                                  meetingEditable[`counselor-${idx}`] === false
+                                    ? 'bg-gray-50 border-gray-200 cursor-not-allowed'
+                                    : 'bg-white border-gray-300'
+                                }`}
+                                placeholder={`Enter counselor notes for meeting ${idx + 1}...`}
+                                value={counselorDrafts[idx] ?? ''}
+                                onChange={(e) => updateDraft('counselor', idx, e.target.value)}
+                                disabled={meetingEditable[`counselor-${idx}`] === false}
+                              />
+                              <div className="flex items-center justify-between">
+                                <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
+                                  {(counselorDrafts[idx] ?? '').trim()
+                                    ? (comments.counselor_comment_updated_at
+                                        ? `Updated: ${formatDateTime(comments.counselor_comment_updated_at)}`
+                                        : 'Not yet saved')
+                                    : 'No content'}
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setMeetingEditable(prev => ({ ...prev, [`counselor-${idx}`]: prev[`counselor-${idx}`] === false ? true : false }))}
+                                  className={`text-xs gap-1 ${
+                                    meetingEditable[`counselor-${idx}`] === false
+                                      ? 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
+                                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                                  {meetingEditable[`counselor-${idx}`] === false ? 'Edit' : 'Lock'}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Submit for this meeting */}
+                          <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
+                            {commentSuccess && (
+                              <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                                Saved ✓
+                              </span>
+                            )}
+                            <Button
+                              onClick={async () => {
+                                await handleSaveComment('counselor');
+                                await handleSaveComment('parent');
+                              }}
+                              disabled={commentSaving !== null}
+                              className="bg-indigo-600 hover:bg-indigo-700 shadow-sm gap-1.5"
+                              size="sm"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                              {commentSaving ? 'Submitting...' : 'Submit'}
+                            </Button>
+                          </div>
+                        </div>
                       )}
+                    </div>
+                  ))}
+
+                  {/* Empty State */}
+                  {counselorDrafts.length === 0 && parentDrafts.length === 0 && (
+                    <div className="px-6 py-10 text-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                      <p className="mt-2 text-sm text-gray-500">No meetings yet. Click &quot;Add Meeting&quot; to get started.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Email Section */}
+              <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div className="border-b border-gray-100 bg-gradient-to-r from-amber-50/60 to-orange-50/40 px-6 py-3.5">
+                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
+                    Send Email
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 gap-0 divide-x divide-gray-100">
+                  {/* Email Counselor */}
+                  <div className="px-5 py-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" /></svg>
+                      </span>
+                      <label className="text-sm font-semibold text-gray-700">Email the Counselor</label>
+                    </div>
+                    <textarea
+                      id="email-counselor-body"
+                      rows={4}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-vertical"
+                      placeholder="Compose email to counselor..."
+                      value={emailCounselorBody}
+                      onChange={(e) => setEmailCounselorBody(e.target.value)}
+                    />
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
+                        {emailCounselorSentAt ? `Sent: ${emailCounselorSentAt}` : 'Not sent yet'}
+                      </p>
                       <Button
-                        onClick={() => handleSaveComment('counselor')}
-                        disabled={commentSaving === 'counselor'}
-                        className="bg-indigo-600 hover:bg-indigo-700"
+                        onClick={() => {
+                          // TODO: integrate with email API
+                          setEmailCounselorSentAt(new Date().toLocaleString());
+                          setEmailCounselorBody('');
+                        }}
+                        disabled={!emailCounselorBody.trim()}
+                        className="bg-amber-600 hover:bg-amber-700 shadow-sm gap-1.5"
                         size="sm"
                       >
-                        {commentSaving === 'counselor' ? 'Saving...' : 'Save'}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                        Send
                       </Button>
                     </div>
                   </div>
-                </div>
 
-                {/* Student / Parent Comments */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Student / Parent Comments
-                  </label>
-                  <div className="space-y-3">
-                    {parentDrafts.map((draft, idx) => (
-                      <div key={idx} className="relative">
-                        {idx > 0 && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting {idx + 1}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeDraft('parent', idx)}
-                              className="text-gray-400 hover:text-red-500 text-xs"
-                              title="Remove this entry"
-                            >
-                              ✕
-                            </button>
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                          </div>
-                        )}
-                        {idx === 0 && parentDrafts.length > 1 && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting 1</span>
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                          </div>
-                        )}
-                        <textarea
-                          id={`parent-comment-${idx}`}
-                          rows={3}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
-                          placeholder={`Enter student / parent comments${parentDrafts.length > 1 ? ` (meeting ${idx + 1})` : ''}...`}
-                          value={draft}
-                          onChange={(e) => updateDraft('parent', idx, e.target.value)}
-                        />
-                        <p className="mt-1 text-[11px] text-gray-400 flex items-center gap-1">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
-                          {draft.trim()
-                            ? (comments.parent_student_comment_updated_at
-                                ? `Last updated: ${formatDateTime(comments.parent_student_comment_updated_at)}`
-                                : 'Not yet saved')
-                            : 'No content'}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => addDraft('parent')}
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-dashed text-gray-500 hover:text-indigo-600 hover:border-indigo-400"
-                  >
-                    + Add
-                  </Button>
-                  <div className="flex items-center justify-end">
+                  {/* Email Student */}
+                  <div className="px-5 py-4 space-y-3">
                     <div className="flex items-center gap-2">
-                      {commentSuccess === 'parent' && (
-                        <span className="text-xs text-green-600 font-medium">Saved ✓</span>
-                      )}
+                      <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" /></svg>
+                      </span>
+                      <label className="text-sm font-semibold text-gray-700">Email the Student</label>
+                    </div>
+                    <textarea
+                      id="email-student-body"
+                      rows={4}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-vertical"
+                      placeholder="Compose email to student..."
+                      value={emailStudentBody}
+                      onChange={(e) => setEmailStudentBody(e.target.value)}
+                    />
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
+                        {emailStudentSentAt ? `Sent: ${emailStudentSentAt}` : 'Not sent yet'}
+                      </p>
                       <Button
-                        onClick={() => handleSaveComment('parent')}
-                        disabled={commentSaving === 'parent'}
-                        className="bg-indigo-600 hover:bg-indigo-700"
+                        onClick={() => {
+                          // TODO: integrate with email API
+                          setEmailStudentSentAt(new Date().toLocaleString());
+                          setEmailStudentBody('');
+                        }}
+                        disabled={!emailStudentBody.trim()}
+                        className="bg-blue-600 hover:bg-blue-700 shadow-sm gap-1.5"
                         size="sm"
                       >
-                        {commentSaving === 'parent' ? 'Saving...' : 'Save'}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                        Send
                       </Button>
                     </div>
                   </div>
