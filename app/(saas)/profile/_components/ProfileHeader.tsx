@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import imgIcon from '@/assets/images/icon.png';
 import { Heading, Paragraph } from '@/app/_components/Typography';
@@ -8,7 +8,6 @@ import { FiIcon } from '@/app/_components/Icons';
 import Button from '@/app/_components/Button';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import { useUserAuth } from '@/app/_hooks/useUserAuth';
-import ChangePasswordDialog from '@/app/(saas)/profile/_components/ChangePasswordDialog';
 
 type InfoItemProps = {
   icon: string;
@@ -52,7 +51,6 @@ const ProfileHeaderSkeleton: React.FC = () => (
 const ProfileHeaderView: React.FC = () => {
   const { personalDetails: defaultValues, loading } = useProfile();
   const { userDetails } = useUserAuth();
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 
   if (loading) {
     return <ProfileHeaderSkeleton />;
@@ -105,13 +103,7 @@ const ProfileHeaderView: React.FC = () => {
             <Heading level={4} className="font-extrabold text-neutral-900">
               {getFullName()}
             </Heading>
-            {/* <Button
-              variant="outline"
-              size="sm"
-              label="Change Password"
-              iconLeft={<FiIcon name="lock" className="h-3.5 w-3.5" />}
-              onClick={() => setPasswordDialogOpen(true)}
-            /> */}
+
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-neutral-900">
             {profileInfo.map((info, index) => (
@@ -125,10 +117,6 @@ const ProfileHeaderView: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* <ChangePasswordDialog
-        open={passwordDialogOpen}
-        onOpenChange={setPasswordDialogOpen}
-      /> */}
     </section>
   );
 };
