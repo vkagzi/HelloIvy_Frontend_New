@@ -134,7 +134,7 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
 
     api<CheckoutSession>(config.createEndpoint, {
       method: 'POST',
-      body: { module_quantities: moduleQuantities },
+      body: { module_quantities: moduleQuantities, coupon_code: couponCode || undefined },
     })
       .then((data) => setSession(data))
       .catch((err: unknown) => setInitError(err instanceof Error ? err.message : 'Failed to initialise checkout'))
@@ -171,7 +171,7 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
         const modules = lineItems.flatMap((item) => Array.from({ length: item.quantity }, () => item.module));
         result = await api<CheckoutSession>(config.createEndpoint, {
           method: 'POST',
-          body: { modules, ...contactDetails },
+          body: { modules, coupon_code: couponCode || undefined, ...contactDetails },
         });
       } else {
         // School: session already created on mount
@@ -181,18 +181,6 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
 
       // Redirect to HDFC payment page
       if (result.payment_url) {
-        // Persist payment context so the status page can recover it
-        // after HDFC strips our query params on redirect.
-        // Use localStorage (not sessionStorage) because HDFC may open
-        // the return URL in a new tab.
-        try {
-          const ctx = JSON.stringify({
-            payment_id: String(result.payment_id),
-            type: config.mode,
-          });
-          localStorage.setItem('pending_payment', ctx);
-          console.log('[Checkout] Saved pending_payment to localStorage:', ctx);
-        } catch { /* SSR / quota — non-critical */ }
         window.location.href = result.payment_url;
         return;
       }

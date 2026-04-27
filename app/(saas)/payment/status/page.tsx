@@ -13,57 +13,34 @@ interface StatusResponse {
   message: string;
 }
 
-// Recover payment context from localStorage when HDFC strips our query params.
-// localStorage is used (not sessionStorage) because HDFC may open the return
-// URL in a new tab.
-function getSavedPaymentContext(): { payment_id: string; type: string } | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('pending_payment');
-    console.log('[PaymentStatus] localStorage pending_payment:', raw);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      // Ensure payment_id is a string
-      if (parsed?.payment_id) {
-        parsed.payment_id = String(parsed.payment_id);
-        return parsed;
-      }
-    }
-  } catch { /* ignore */ }
-  return null;
-}
-
 export default function PaymentStatusPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // HDFC SmartGateway may replace query params on redirect, so fall back
-  // to the order_id that HDFC always includes (set to our payment.id),
-  // then to the value we stashed in sessionStorage before the redirect.
-  const saved = getSavedPaymentContext();
-  const paymentId =
-    searchParams?.get('payment_id') ??
-    searchParams?.get('order_id') ??
-    saved?.payment_id ??
-    '';
-  const paymentType =
-    searchParams?.get('type') ??
-    saved?.type ??
-    'student';
 
-  const [status, setStatus] = useState<PaymentStatus>('loading');
-  const [message, setMessage] = useState('');
+  // The Route Handler at /api/payment/return/ verifies with HDFC and
+  // redirects here with payment_id, status, and type as query params.
+  const paymentId = searchParams?.get('payment_id') ?? '';
+  const paymentType = searchParams?.get('type') ?? 'student';
+  // Pre-verified status from the Route Handler (completed | failed | pending).
+  // If present, we can show the result immediately without polling.
+  const initialStatus = searchParams?.get('status') ?? '';
+
+  const [status, setStatus] = useState<PaymentStatus>(
+    initialStatus === 'completed' ? 'completed'
+    : initialStatus === 'failed' ? 'failed'
+    : 'loading',
+  );
+  const [message, setMessage] = useState(
+    initialStatus === 'completed' ? 'Payment successful! Your modules are now active.'
+    : initialStatus === 'failed' ? 'Payment was not successful. Please try again.'
+    : '',
+  );
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const attemptRef = useRef(0);
 
   useEffect(() => {
-    console.log('[PaymentStatus] Page loaded with params:', {
-      payment_id: searchParams?.get('payment_id'),
-      order_id: searchParams?.get('order_id'),
-      type: searchParams?.get('type'),
-      all_params: Object.fromEntries(searchParams?.entries() ?? []),
-      resolved_paymentId: paymentId,
-      resolved_paymentType: paymentType,
-    });
+    // If the Route Handler already confirmed the status, no polling needed
+    if (initialStatus === 'completed' || initialStatus === 'failed') return;
 
     if (!paymentId) {
       console.error('[PaymentStatus] No payment ID found in URL params');
@@ -77,23 +54,19 @@ export default function PaymentStatusPage() {
       console.log(`[PaymentStatus] Polling attempt ${attemptRef.current + 1}: ${url}`);
       try {
         const data = await api<StatusResponse>(url);
-        console.log('[PaymentStatus] API response:', data);
 
         if (data.status === 'completed') {
           setStatus('completed');
           setMessage(data.message);
           if (pollRef.current) clearInterval(pollRef.current);
-          try { localStorage.removeItem('pending_payment'); } catch { /* ignore */ }
         } else if (data.status === 'failed') {
           setStatus('failed');
           setMessage(data.message);
           if (pollRef.current) clearInterval(pollRef.current);
-          try { localStorage.removeItem('pending_payment'); } catch { /* ignore */ }
         } else {
           setStatus('pending');
           setMessage(data.message || 'Payment is being processed...');
           attemptRef.current += 1;
-          // Stop polling after 10 attempts (~30 seconds)
           if (attemptRef.current >= 10 && pollRef.current) {
             clearInterval(pollRef.current);
             setMessage('Payment verification is taking longer than expected. Please check your payment history.');
@@ -107,17 +80,14 @@ export default function PaymentStatusPage() {
       }
     };
 
-    // Check immediately
     checkStatus();
-
-    // Poll every 3 seconds if still pending
     pollRef.current = setInterval(checkStatus, 3000);
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentId, paymentType]);
+  }, [paymentId, paymentType, initialStatus]);
 
   const successRedirect = paymentType === 'school' ? '/school/dashboard' : '/subscription';
   const retryUrl = paymentType === 'school' ? '/school/payment' : '/pay-as-student';
