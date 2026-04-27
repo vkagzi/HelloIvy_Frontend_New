@@ -12,6 +12,7 @@ import type { ModuleStats } from '@/components/admin/ModuleCard';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import ProfileViewDetails from '@/app/(saas)/profile/_components/ProfileView';
 import { calculateProfileCompletion } from '@/app/(saas)/profile/utils/profileCompletion';
+import CounselorConnectPanel from '@/components/counselor-connect/CounselorConnectPanel';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -146,6 +147,16 @@ export default function AdminUserDetailPage() {
   // Profile section sub-tab state
   const [activeProfileSection, setActiveProfileSection] = useState<string>('personal');
 
+  // Counselor Connect - accordion & editable state
+  const [expandedMeetings, setExpandedMeetings] = useState<Record<number, boolean>>({ 0: true });
+  const [meetingEditable, setMeetingEditable] = useState<Record<string, boolean>>({});
+
+  // Email section state
+  const [emailCounselorBody, setEmailCounselorBody] = useState('');
+  const [emailStudentBody, setEmailStudentBody] = useState('');
+  const [emailCounselorSentAt, setEmailCounselorSentAt] = useState<string | null>(null);
+  const [emailStudentSentAt, setEmailStudentSentAt] = useState<string | null>(null);
+
   const fetchUserModules = useCallback(async () => {
     if (!userId) return;
     try {
@@ -212,9 +223,9 @@ export default function AdminUserDetailPage() {
 
   const addDraft = (type: 'counselor' | 'parent') => {
     if (type === 'counselor') {
-      setCounselorDrafts(prev => [...prev, '']);
+      setCounselorDrafts(prev => ['', ...prev]);
     } else {
-      setParentDrafts(prev => [...prev, '']);
+      setParentDrafts(prev => ['', ...prev]);
     }
   };
 
@@ -679,157 +690,93 @@ export default function AdminUserDetailPage() {
             </div>
           )}
 
-          {/* Comments Tab */}
+          {/* Counselor Connect Tab */}
           {activeTab === 'comments' && (
-            <div className="rounded-lg border border-gray-200 bg-white px-5 py-4 space-y-4">
-              <h2 className="text-base font-semibold text-gray-900">Counselor Connect</h2>
+            <div className="space-y-5">
+              <CounselorConnectPanel
+                apiEndpoint={`/api/accounts/admin/users/${userId}/comments/`}
+                editableRole="both"
+              />
 
-              <div className="grid grid-cols-2 gap-5">
-                {/* Counselor Comments */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Counselor Comments
-                  </label>
-                  <div className="space-y-3">
-                    {counselorDrafts.map((draft, idx) => (
-                      <div key={idx} className="relative">
-                        {idx > 0 && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting {idx + 1}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeDraft('counselor', idx)}
-                              className="text-gray-400 hover:text-red-500 text-xs"
-                              title="Remove this entry"
-                            >
-                              ✕
-                            </button>
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                          </div>
-                        )}
-                        {idx === 0 && counselorDrafts.length > 1 && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting 1</span>
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                          </div>
-                        )}
-                        <textarea
-                          id={`counselor-comment-${idx}`}
-                          rows={3}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
-                          placeholder={`Enter counselor comments${counselorDrafts.length > 1 ? ` (meeting ${idx + 1})` : ''}...`}
-                          value={draft}
-                          onChange={(e) => updateDraft('counselor', idx, e.target.value)}
-                        />
-                        <p className="mt-1 text-[11px] text-gray-400 flex items-center gap-1">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
-                          {draft.trim()
-                            ? (comments.counselor_comment_updated_at
-                                ? `Last updated: ${formatDateTime(comments.counselor_comment_updated_at)}`
-                                : 'Not yet saved')
-                            : 'No content'}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => addDraft('counselor')}
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-dashed text-gray-500 hover:text-indigo-600 hover:border-indigo-400"
-                  >
-                    + Add
-                  </Button>
-                  <div className="flex items-center justify-end">
+              {/* Email Section */}
+              <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div className="border-b border-gray-100 bg-gradient-to-r from-amber-50/60 to-orange-50/40 px-6 py-3.5">
+                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
+                    Send Email
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 gap-0 divide-x divide-gray-100">
+                  {/* Email Counselor */}
+                  <div className="px-5 py-4 space-y-3">
                     <div className="flex items-center gap-2">
-                      {commentSuccess === 'counselor' && (
-                        <span className="text-xs text-green-600 font-medium">Saved ✓</span>
-                      )}
+                      <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" /></svg>
+                      </span>
+                      <label className="text-sm font-semibold text-gray-700">Email the Counselor</label>
+                    </div>
+                    <textarea
+                      id="email-counselor-body"
+                      rows={4}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-vertical"
+                      placeholder="Compose email to counselor..."
+                      value={emailCounselorBody}
+                      onChange={(e) => setEmailCounselorBody(e.target.value)}
+                    />
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
+                        {emailCounselorSentAt ? `Sent: ${emailCounselorSentAt}` : 'Not sent yet'}
+                      </p>
                       <Button
-                        onClick={() => handleSaveComment('counselor')}
-                        disabled={commentSaving === 'counselor'}
-                        className="bg-indigo-600 hover:bg-indigo-700"
+                        onClick={() => {
+                          // TODO: integrate with email API
+                          setEmailCounselorSentAt(new Date().toLocaleString());
+                          setEmailCounselorBody('');
+                        }}
+                        disabled={!emailCounselorBody.trim()}
+                        className="bg-amber-600 hover:bg-amber-700 shadow-sm gap-1.5"
                         size="sm"
                       >
-                        {commentSaving === 'counselor' ? 'Saving...' : 'Save'}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                        Send
                       </Button>
                     </div>
                   </div>
-                </div>
 
-                {/* Student / Parent Comments */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Student / Parent Comments
-                  </label>
-                  <div className="space-y-3">
-                    {parentDrafts.map((draft, idx) => (
-                      <div key={idx} className="relative">
-                        {idx > 0 && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting {idx + 1}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeDraft('parent', idx)}
-                              className="text-gray-400 hover:text-red-500 text-xs"
-                              title="Remove this entry"
-                            >
-                              ✕
-                            </button>
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                          </div>
-                        )}
-                        {idx === 0 && parentDrafts.length > 1 && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Meeting 1</span>
-                            <div className="flex-1 border-t border-dashed border-gray-300" />
-                          </div>
-                        )}
-                        <textarea
-                          id={`parent-comment-${idx}`}
-                          rows={3}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
-                          placeholder={`Enter student / parent comments${parentDrafts.length > 1 ? ` (meeting ${idx + 1})` : ''}...`}
-                          value={draft}
-                          onChange={(e) => updateDraft('parent', idx, e.target.value)}
-                        />
-                        <p className="mt-1 text-[11px] text-gray-400 flex items-center gap-1">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
-                          {draft.trim()
-                            ? (comments.parent_student_comment_updated_at
-                                ? `Last updated: ${formatDateTime(comments.parent_student_comment_updated_at)}`
-                                : 'Not yet saved')
-                            : 'No content'}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => addDraft('parent')}
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-dashed text-gray-500 hover:text-indigo-600 hover:border-indigo-400"
-                  >
-                    + Add
-                  </Button>
-                  <div className="flex items-center justify-end">
+                  {/* Email Student */}
+                  <div className="px-5 py-4 space-y-3">
                     <div className="flex items-center gap-2">
-                      {commentSuccess === 'parent' && (
-                        <span className="text-xs text-green-600 font-medium">Saved ✓</span>
-                      )}
+                      <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" /></svg>
+                      </span>
+                      <label className="text-sm font-semibold text-gray-700">Email the Student</label>
+                    </div>
+                    <textarea
+                      id="email-student-body"
+                      rows={4}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-vertical"
+                      placeholder="Compose email to student..."
+                      value={emailStudentBody}
+                      onChange={(e) => setEmailStudentBody(e.target.value)}
+                    />
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>
+                        {emailStudentSentAt ? `Sent: ${emailStudentSentAt}` : 'Not sent yet'}
+                      </p>
                       <Button
-                        onClick={() => handleSaveComment('parent')}
-                        disabled={commentSaving === 'parent'}
-                        className="bg-indigo-600 hover:bg-indigo-700"
+                        onClick={() => {
+                          // TODO: integrate with email API
+                          setEmailStudentSentAt(new Date().toLocaleString());
+                          setEmailStudentBody('');
+                        }}
+                        disabled={!emailStudentBody.trim()}
+                        className="bg-blue-600 hover:bg-blue-700 shadow-sm gap-1.5"
                         size="sm"
                       >
-                        {commentSaving === 'parent' ? 'Saving...' : 'Save'}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                        Send
                       </Button>
                     </div>
                   </div>
