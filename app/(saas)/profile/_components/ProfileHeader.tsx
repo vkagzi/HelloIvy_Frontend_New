@@ -105,13 +105,13 @@ const ProfileHeaderView: React.FC = () => {
             <Heading level={4} className="font-extrabold text-neutral-900">
               {getFullName()}
             </Heading>
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
               label="Change Password"
               iconLeft={<FiIcon name="lock" className="h-3.5 w-3.5" />}
               onClick={() => setPasswordDialogOpen(true)}
-            />
+            /> */}
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-neutral-900">
             {profileInfo.map((info, index) => (
@@ -125,10 +125,10 @@ const ProfileHeaderView: React.FC = () => {
           </div>
         </div>
       </div>
-      <ChangePasswordDialog
+      {/* <ChangePasswordDialog
         open={passwordDialogOpen}
         onOpenChange={setPasswordDialogOpen}
-      />
+      /> */}
     </section>
   );
 };

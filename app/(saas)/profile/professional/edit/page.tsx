@@ -140,7 +140,7 @@ const ProfessionalFormDetails: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
-      <ResumeUploader onParsed={setParsedResumeData} />
+      {/* <ResumeUploader onParsed={setParsedResumeData} /> */}
       <Tabs />
       <DynamicForm
         key={JSON.stringify(formDefaults)}

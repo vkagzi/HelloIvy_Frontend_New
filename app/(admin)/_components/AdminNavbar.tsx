@@ -39,7 +39,7 @@ const adminNavItems: NavItem[] = [
       { label: 'School Payments', href: '/admin/payments/schools' },
     ],
   },
-  { label: 'Counselor Connect', icon: 'comment-alt', href: '/admin/counselor-connect' },
+  // { label: 'Counselor Connect', icon: 'comment-alt', href: '/admin/counselor-connect' },
 ];
 
 const AdminNavbar: React.FC = () => {
