@@ -8,6 +8,7 @@ export interface ModuleChoice {
   label: string;
   icon?: string;
   color?: string;
+  price?: number;
 }
 
 let cachedModules: ModuleChoice[] | null = null;

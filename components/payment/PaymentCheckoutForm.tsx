@@ -5,8 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import api from '@/lib/api-client';
 import { Input } from '@/components/ui/input';
-
-const MODULE_PRICE = 999;
+import { useModulePrices } from '@/lib/hooks/useModulePrices';
 
 interface LineItem {
   module: string;
@@ -42,19 +41,20 @@ export interface CheckoutConfig {
   title: string;
 }
 
-function parseLineItems(modulesParam: string, maxQty: number): LineItem[] {
+function parseLineItems(modulesParam: string, maxQty: number, priceGetter: (mod: string) => number): LineItem[] {
   return modulesParam
     .split(',')
     .filter(Boolean)
     .map((entry) => {
       const [mod, qtyStr] = entry.split(':');
       const quantity = qtyStr ? Math.max(1, Math.min(maxQty, parseInt(qtyStr, 10) || 1)) : 1;
+      const price = priceGetter(mod);
       return {
         module: mod,
         label: mod.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
         quantity,
-        price: MODULE_PRICE,
-        lineTotal: MODULE_PRICE * quantity,
+        price,
+        lineTotal: price * quantity,
       };
     });
 }
@@ -63,6 +63,7 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: authSession, status: authStatus } = useSession();
+  const { getPrice } = useModulePrices();
   const isLoggedIn = authStatus === 'authenticated' && !!authSession?.user;
   const modulesParam = searchParams?.get('modules') ?? '';
   const stateParam = searchParams?.get('state') ?? '';
@@ -72,7 +73,7 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
   const grandTotal = parseInt(searchParams?.get('total') ?? '0', 10);
 
   const maxQty = config.mode === 'school' ? 200 : 10;
-  const lineItems = parseLineItems(modulesParam, maxQty);
+  const lineItems = parseLineItems(modulesParam, maxQty, getPrice);
   const subtotal = lineItems.reduce((s, i) => s + i.lineTotal, 0);
 
   // Parse per-module quantities for school mode

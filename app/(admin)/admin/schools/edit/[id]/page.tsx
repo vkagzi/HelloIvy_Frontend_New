@@ -19,6 +19,7 @@ interface SchoolProfile {
   website: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  currency?: string | null;
 }
 
 export default function AdminSchoolEditPage() {

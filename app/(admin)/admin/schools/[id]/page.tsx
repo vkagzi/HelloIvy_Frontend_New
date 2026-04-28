@@ -35,6 +35,7 @@ interface SchoolDetail {
   website: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  currency: string | null;
   is_active: boolean;
   student_count: number;
   subscriptions: SubscriptionItem[];
@@ -250,6 +251,7 @@ export default function SchoolDetailPage() {
           <InfoItem label="Students" value={String(school.student_count)} />
           <InfoItem label="Contact" value={school.contact_email || '—'} />
           <InfoItem label="Phone" value={school.contact_phone || '—'} />
+          <InfoItem label="Currency" value={school.currency || 'INR (default)'} />
           <InfoItem label="Created" value={formatDate(school.created_at)} />
         </div>
       </div>

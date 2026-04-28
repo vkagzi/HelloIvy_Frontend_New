@@ -4,11 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
+import { useModulePrices } from '@/lib/hooks/useModulePrices';
 import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
 import Link from 'next/link';
-
-// Price in INR per module — must match backend MODULE_PRICES
-const MODULE_PRICE_INR = 999;
 
 // Demo coupon codes — replace with real API validation when ready
 const VALID_COUPONS: Record<string, number> = {
@@ -57,6 +55,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const { modules: moduleChoices, loading: modulesLoading } = useModuleChoices();
+  const { getPrice, currency: priceCurrency, loading: pricesLoading } = useModulePrices();
   const { modules: activeModules, loading: accessLoading } = useModuleAccess();
 
   const [rows, setRows] = useState<ModuleRow[]>([]);
@@ -113,7 +112,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
   const selectedRows = rows.filter((r) => r.quantity > 0);
   const totalUnits = selectedRows.reduce((s, r) => s + r.quantity, 0);
-  const subtotal = selectedRows.reduce((s, r) => s + MODULE_PRICE_INR * r.quantity, 0);
+  const subtotal = selectedRows.reduce((s, r) => s + getPrice(r.value) * r.quantity, 0);
   const discountAmount = appliedCoupon ? Math.round((subtotal * appliedCoupon.discountPct) / 100) : 0;
   const taxableAmount = subtotal - discountAmount;
 
@@ -154,7 +153,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
     router.push(`${config.checkoutUrl}?${params.toString()}`);
   };
 
-  const loading = modulesLoading || (config.showActiveModules ? accessLoading : false) || status === 'loading';
+  const loading = modulesLoading || pricesLoading || (config.showActiveModules ? accessLoading : false) || status === 'loading';
 
   // Access-denied guard for student mode (school admins can't buy as student)
   if (config.mode === 'student' && status === 'authenticated' && session?.user?.school_id) {
@@ -237,7 +236,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
               </div>
 
               {/* Unit price */}
-              <span className="text-right text-sm text-gray-600">₹{MODULE_PRICE_INR}</span>
+              <span className="text-right text-sm text-gray-600">₹{getPrice(row.value)}</span>
 
               {/* Quantity selector */}
               <div className="flex justify-center">
@@ -256,7 +255,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
               {/* Line total */}
               <span className={`text-right text-sm font-semibold ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>
-                {isSelected ? `₹${MODULE_PRICE_INR * row.quantity}` : '—'}
+                {isSelected ? `₹${getPrice(row.value) * row.quantity}` : '—'}
               </span>
             </div>
           );

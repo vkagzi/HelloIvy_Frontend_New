@@ -5,6 +5,9 @@ import api from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
+
+const CURRENCY_OPTIONS = ['INR', 'USD', 'EUR', 'AED'] as const;
 
 interface SchoolProfile {
   id: number;
@@ -17,6 +20,7 @@ interface SchoolProfile {
   website: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  currency?: string | null;
 }
 
 interface SchoolEditFormProps {
@@ -37,6 +41,7 @@ export default function SchoolEditForm({ school, onSaved }: SchoolEditFormProps)
     website: school.website ?? '',
     contact_email: school.contact_email ?? '',
     contact_phone: school.contact_phone ?? '',
+    currency: school.currency ?? '',
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -183,6 +188,21 @@ export default function SchoolEditForm({ school, onSaved }: SchoolEditFormProps)
         <div>
           <Label htmlFor="sef-phone">Contact Phone</Label>
           <Input id="sef-phone" name="contact_phone" value={form.contact_phone} onChange={handleChange} className="mt-1" />
+        </div>
+        <div>
+          <Label htmlFor="sef-currency">Billing Currency</Label>
+          <Select value={form.currency || ''} onValueChange={(v) => setForm((prev) => ({ ...prev, currency: v === 'none' ? '' : v }))}>
+            <SelectTrigger className="mt-1 w-full">
+              <SelectValue placeholder="Default (INR)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Default (INR)</SelectItem>
+              {CURRENCY_OPTIONS.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-1 text-xs text-gray-500">Pricing displayed in this currency for the school</p>
         </div>
       </div>
 
