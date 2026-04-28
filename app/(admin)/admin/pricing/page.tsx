@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import api from '@/lib/api-client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -11,9 +11,27 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 import { useToast } from '@/app/_components/Toast';
-import { Pencil, Trash2, DollarSign, Globe, Building2, User as UserIcon } from 'lucide-react';
+import { Pencil, Trash2, DollarSign, Globe, Building2, User as UserIcon, ChevronDown } from 'lucide-react';
+import * as Popover from '@radix-ui/react-popover';
+import { cn } from '@/lib/utils';
 
 const CURRENCIES = ['USD', 'EUR', 'AED'] as const;
+
+type ScopeType = 'none' | 'school' | 'user';
+
+interface SchoolOption {
+  id: number;
+  name: string;
+  contact_email: string;
+}
+
+interface UserOption {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+}
 
 interface ModulePricing {
   id: number;
@@ -59,9 +77,58 @@ export default function PricingPage() {
   const [form, setForm] = useState<FormData>({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
 
+  const [scopeType, setScopeType] = useState<ScopeType>('none');
+  const [scopeOpen, setScopeOpen] = useState(false);
+
+  // School autocomplete state
+  const [schools, setSchools] = useState<SchoolOption[]>([]);
+  const [schoolQuery, setSchoolQuery] = useState('');
+  const [schoolPopoverOpen, setSchoolPopoverOpen] = useState(false);
+  const schoolInputRef = useRef<HTMLInputElement>(null);
+  const [selectedSchoolLabel, setSelectedSchoolLabel] = useState('');
+
+  // User autocomplete state
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [userQuery, setUserQuery] = useState('');
+  const [userPopoverOpen, setUserPopoverOpen] = useState(false);
+  const userInputRef = useRef<HTMLInputElement>(null);
+  const [selectedUserLabel, setSelectedUserLabel] = useState('');
+
   const { modules } = useModuleChoices();
   const moduleLabels: Record<string, string> = {};
   for (const m of modules) moduleLabels[m.value] = m.label;
+
+  // Fetch schools for autocomplete
+  useEffect(() => {
+    if (!dialogOpen) return;
+    api<{ schools: SchoolOption[] }>('/api/schools/').then((data) => setSchools(data.schools)).catch(() => {});
+  }, [dialogOpen]);
+
+  // Fetch users (B2C) for autocomplete
+  useEffect(() => {
+    if (!dialogOpen) return;
+    api<{ users: UserOption[] }>('/api/accounts/admin/users/').then((data) => {
+      setUsers(data.users.filter((u) => u.role === 'student'));
+    }).catch(() => {});
+  }, [dialogOpen]);
+
+  const filteredSchools = useMemo(() => {
+    if (!schoolQuery.trim()) return schools;
+    const q = schoolQuery.toLowerCase();
+    return schools.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.contact_email?.toLowerCase().includes(q)
+    );
+  }, [schools, schoolQuery]);
+
+  const filteredUsers = useMemo(() => {
+    if (!userQuery.trim()) return users;
+    const q = userQuery.toLowerCase();
+    return users.filter(
+      (u) =>
+        u.email.toLowerCase().includes(q) ||
+        `${u.first_name} ${u.last_name}`.toLowerCase().includes(q)
+    );
+  }, [users, userQuery]);
 
   const fetchPricing = useCallback(async () => {
     setLoading(true);
@@ -83,6 +150,12 @@ export default function PricingPage() {
   const openCreate = () => {
     setEditingId(null);
     setForm({ ...EMPTY_FORM, currency_variants: { USD: '', EUR: '', AED: '' } });
+    setScopeType('none');
+    setScopeOpen(false);
+    setSelectedSchoolLabel('');
+    setSelectedUserLabel('');
+    setSchoolQuery('');
+    setUserQuery('');
     setDialogOpen(true);
   };
 
@@ -100,6 +173,20 @@ export default function PricingPage() {
       user: p.user != null ? String(p.user) : '',
       is_active: p.is_active,
     });
+    if (p.school) {
+      setScopeType('school');
+      setScopeOpen(true);
+      setSelectedSchoolLabel(p.school_name || `School #${p.school}`);
+    } else if (p.user) {
+      setScopeType('user');
+      setScopeOpen(true);
+      setSelectedUserLabel(p.user_email || `User #${p.user}`);
+    } else {
+      setScopeType('none');
+      setScopeOpen(false);
+    }
+    setSchoolQuery('');
+    setUserQuery('');
     setDialogOpen(true);
   };
 
@@ -321,36 +408,188 @@ export default function PricingPage() {
               </div>
             </div>
 
-            {/* Scope Section */}
-            <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-              <Label className="text-sm font-medium text-gray-700">Scope</Label>
-              <p className="text-xs text-gray-500">Leave both empty for global pricing.</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="pricing-school" className="flex items-center gap-1.5 text-xs text-gray-500">
-                    <Building2 className="h-3 w-3" /> School ID
-                  </Label>
-                  <Input
-                    id="pricing-school"
-                    type="number"
-                    placeholder="—"
-                    value={form.school}
-                    onChange={(e) => setForm({ ...form, school: e.target.value })}
-                  />
+            {/* Scope Section – collapsible, collapsed by default */}
+            <div className="rounded-lg border border-gray-200 bg-gray-50/50">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between p-4"
+                onClick={() => setScopeOpen(!scopeOpen)}
+              >
+                <span className="text-sm font-medium text-gray-700">Scope</span>
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 text-gray-500 transition-transform duration-200',
+                    scopeOpen && 'rotate-180'
+                  )}
+                />
+              </button>
+
+              {scopeOpen && (
+                <div className="space-y-4 border-t border-gray-200 px-4 pb-4 pt-3">
+                  {/* Radio options */}
+                  <div className="flex items-center gap-4">
+                    {(['none', 'school', 'user'] as const).map((opt) => (
+                      <label key={opt} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                        <input
+                          type="radio"
+                          name="scope-type"
+                          checked={scopeType === opt}
+                          onChange={() => {
+                            setScopeType(opt);
+                            setForm({ ...form, school: '', user: '' });
+                            setSelectedSchoolLabel('');
+                            setSelectedUserLabel('');
+                            setSchoolQuery('');
+                            setUserQuery('');
+                          }}
+                          className="accent-purple-600"
+                        />
+                        <span className="flex items-center gap-1">
+                          {opt === 'none' && <><Globe className="h-3.5 w-3.5 text-gray-500" /> Global</>}
+                          {opt === 'school' && <><Building2 className="h-3.5 w-3.5 text-gray-500" /> School</>}
+                          {opt === 'user' && <><UserIcon className="h-3.5 w-3.5 text-gray-500" /> User</>}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* School autofill */}
+                  {scopeType === 'school' && (
+                    <div className="space-y-1.5">
+                      <Label className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Building2 className="h-3 w-3" /> Search by name or email
+                      </Label>
+                      <Popover.Root open={schoolPopoverOpen} onOpenChange={setSchoolPopoverOpen}>
+                        <Popover.Trigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              'flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-left text-sm shadow-sm transition-colors',
+                              'hover:border-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20',
+                              schoolPopoverOpen && 'border-blue-500 ring-2 ring-blue-500/20'
+                            )}
+                          >
+                            <span className={cn('flex-1 truncate', !selectedSchoolLabel && 'text-neutral-400')}>
+                              {selectedSchoolLabel || 'Select school...'}
+                            </span>
+                            <ChevronDown className={cn('h-4 w-4 text-neutral-500 transition-transform', schoolPopoverOpen && 'rotate-180')} />
+                          </button>
+                        </Popover.Trigger>
+                        <Popover.Portal>
+                          <Popover.Content
+                            className="z-50 min-w-(--radix-popover-trigger-width) max-w-[600px] overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg"
+                            sideOffset={4}
+                            align="start"
+                          >
+                            <div className="border-b border-neutral-200 p-2">
+                              <Input
+                                ref={schoolInputRef}
+                                type="text"
+                                placeholder="Type school name or email..."
+                                value={schoolQuery}
+                                onChange={(e) => setSchoolQuery(e.target.value)}
+                                className="h-9 border-neutral-200 focus-visible:ring-1 focus-visible:ring-blue-500"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-48 overflow-auto p-1">
+                              {filteredSchools.length > 0 ? filteredSchools.slice(0, 50).map((s) => (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  className={cn(
+                                    'flex w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-blue-50',
+                                    form.school === String(s.id) && 'bg-blue-50'
+                                  )}
+                                  onClick={() => {
+                                    setForm({ ...form, school: String(s.id), user: '' });
+                                    setSelectedSchoolLabel(`${s.name}${s.contact_email ? ` (${s.contact_email})` : ''}`);
+                                    setSchoolQuery('');
+                                    setSchoolPopoverOpen(false);
+                                  }}
+                                >
+                                  <span className="font-medium">{s.name}</span>
+                                  {s.contact_email && <span className="text-xs text-gray-500">{s.contact_email}</span>}
+                                </button>
+                              )) : (
+                                <p className="px-3 py-4 text-center text-sm text-gray-500">No schools found</p>
+                              )}
+                            </div>
+                          </Popover.Content>
+                        </Popover.Portal>
+                      </Popover.Root>
+                    </div>
+                  )}
+
+                  {/* User autofill */}
+                  {scopeType === 'user' && (
+                    <div className="space-y-1.5">
+                      <Label className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <UserIcon className="h-3 w-3" /> Search by name or email
+                      </Label>
+                      <Popover.Root open={userPopoverOpen} onOpenChange={setUserPopoverOpen}>
+                        <Popover.Trigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              'flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-left text-sm shadow-sm transition-colors',
+                              'hover:border-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20',
+                              userPopoverOpen && 'border-blue-500 ring-2 ring-blue-500/20'
+                            )}
+                          >
+                            <span className={cn('flex-1 truncate', !selectedUserLabel && 'text-neutral-400')}>
+                              {selectedUserLabel || 'Select user...'}
+                            </span>
+                            <ChevronDown className={cn('h-4 w-4 text-neutral-500 transition-transform', userPopoverOpen && 'rotate-180')} />
+                          </button>
+                        </Popover.Trigger>
+                        <Popover.Portal>
+                          <Popover.Content
+                            className="z-50 min-w-(--radix-popover-trigger-width) max-w-[600px] overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg"
+                            sideOffset={4}
+                            align="start"
+                          >
+                            <div className="border-b border-neutral-200 p-2">
+                              <Input
+                                ref={userInputRef}
+                                type="text"
+                                placeholder="Type name or email..."
+                                value={userQuery}
+                                onChange={(e) => setUserQuery(e.target.value)}
+                                className="h-9 border-neutral-200 focus-visible:ring-1 focus-visible:ring-blue-500"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-48 overflow-auto p-1">
+                              {filteredUsers.length > 0 ? filteredUsers.slice(0, 50).map((u) => (
+                                <button
+                                  key={u.id}
+                                  type="button"
+                                  className={cn(
+                                    'flex w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-blue-50',
+                                    form.user === String(u.id) && 'bg-blue-50'
+                                  )}
+                                  onClick={() => {
+                                    setForm({ ...form, user: String(u.id), school: '' });
+                                    setSelectedUserLabel(`${u.first_name} ${u.last_name} (${u.email})`);
+                                    setUserQuery('');
+                                    setUserPopoverOpen(false);
+                                  }}
+                                >
+                                  <span className="font-medium">{u.first_name} {u.last_name}</span>
+                                  <span className="text-xs text-gray-500">{u.email}</span>
+                                </button>
+                              )) : (
+                                <p className="px-3 py-4 text-center text-sm text-gray-500">No users found</p>
+                              )}
+                            </div>
+                          </Popover.Content>
+                        </Popover.Portal>
+                      </Popover.Root>
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="pricing-user" className="flex items-center gap-1.5 text-xs text-gray-500">
-                    <UserIcon className="h-3 w-3" /> User ID
-                  </Label>
-                  <Input
-                    id="pricing-user"
-                    type="number"
-                    placeholder="—"
-                    value={form.user}
-                    onChange={(e) => setForm({ ...form, user: e.target.value })}
-                  />
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Active Toggle */}
