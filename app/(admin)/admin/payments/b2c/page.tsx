@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { RefreshCw } from 'lucide-react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
@@ -36,6 +37,7 @@ interface UserPayment {
   gateway_transaction_id: string;
   expiry_date: string | null;
   quantity: number | null;
+  metadata: Record<string, unknown>;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -47,6 +49,50 @@ const STATUS_COLORS: Record<string, string> = {
   failed: 'bg-red-100 text-red-800',
   refunded: 'bg-gray-100 text-gray-800',
 };
+
+function JsonEntries({ data, depth = 0 }: { data: Record<string, unknown>; depth?: number }) {
+  return (
+    <div className={`space-y-1 ${depth > 0 ? 'ml-4 border-l border-gray-200 pl-3' : ''}`}>
+      {Object.entries(data).map(([key, value]) => {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          return (
+            <div key={key}>
+              <span className="text-sm font-medium text-gray-600">{key}:</span>
+              <JsonEntries data={value as Record<string, unknown>} depth={depth + 1} />
+            </div>
+          );
+        }
+        if (Array.isArray(value)) {
+          return (
+            <div key={key}>
+              <span className="text-sm font-medium text-gray-600">{key}:</span>
+              <div className={`space-y-1 ml-4 border-l border-gray-200 pl-3`}>
+                {value.map((item, i) =>
+                  item && typeof item === 'object' && !Array.isArray(item) ? (
+                    <div key={i}>
+                      <span className="text-sm text-gray-400">[{i}]</span>
+                      <JsonEntries data={item as Record<string, unknown>} depth={depth + 2} />
+                    </div>
+                  ) : (
+                    <div key={i} className="text-sm text-gray-900 break-all">
+                      <span className="text-gray-400">[{i}]</span> {String(item)}
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div key={key} className="flex gap-2 text-sm">
+            <span className="font-medium text-gray-600 shrink-0">{key}:</span>
+            <span className="text-gray-900 break-all">{String(value ?? '')}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function B2CPaymentsPage() {
   const { modules: moduleChoices } = useModuleChoices();
@@ -81,6 +127,13 @@ export default function B2CPaymentsPage() {
   // Delete confirm
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteSaving, setDeleteSaving] = useState(false);
+
+  // Detail/metadata modal
+  const [detailPayment, setDetailPayment] = useState<UserPayment | null>(null);
+
+  // Refresh status
+  const [refreshingId, setRefreshingId] = useState<number | null>(null);
+  const [refreshResult, setRefreshResult] = useState<{ paymentId: number; gateway_result: Record<string, unknown> } | null>(null);
 
   const fetchPayments = useCallback(async () => {
     setLoading(true);
@@ -176,6 +229,22 @@ export default function B2CPaymentsPage() {
     }
   };
 
+  const handleRefresh = async (payment: UserPayment) => {
+    setRefreshingId(payment.id);
+    try {
+      const result = await api<{ payment: UserPayment; gateway_result: Record<string, unknown> }>(
+        `/api/payments/b2c/${payment.id}/refresh/`,
+        { method: 'POST' }
+      );
+      setRefreshResult({ paymentId: payment.id, gateway_result: result.gateway_result });
+      fetchPayments();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to refresh status');
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+
   if (loading) return <LoadingState message="Loading payments..." />;
   if (error) return <ErrorState message={error} />;
 
@@ -219,11 +288,12 @@ export default function B2CPaymentsPage() {
               <th className="px-4 py-3 text-left">Gateway</th>
               <th className="px-4 py-3 text-left">Txn ID</th>
               <th className="px-4 py-3 text-left">Date</th>
+              <th className="px-4 py-3 text-left">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {payments.length === 0 ? (
-              <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">No payments found.</td></tr>
+              <tr><td colSpan={13} className="px-4 py-8 text-center text-gray-400">No payments found.</td></tr>
             ) : payments.map((p) => (
               <tr key={p.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-500">#{p.id}</td>
@@ -252,6 +322,16 @@ export default function B2CPaymentsPage() {
                 <td className="px-4 py-3 text-gray-500">{p.payment_gateway || '-'}</td>
                 <td className="px-4 py-3 text-gray-500 font-mono text-xs">{p.gateway_transaction_id || '-'}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
+                <td className="px-4 py-3">
+                  <Button
+                    onClick={() => setDetailPayment(p)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-indigo-600 hover:text-indigo-700 hover:bg-transparent underline text-xs"
+                  >
+                    Details
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -260,7 +340,7 @@ export default function B2CPaymentsPage() {
 
       {/* Add Modal */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-7xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogTitle>Record B2C Payment</DialogTitle>
           {addError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{addError}</p>}
           <div className="space-y-3">
@@ -362,7 +442,7 @@ export default function B2CPaymentsPage() {
 
       {/* Edit Modal */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-7xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogTitle>Edit Payment #{editPayment?.id}</DialogTitle>
           {editError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{editError}</p>}
           <div className="space-y-3">
@@ -378,9 +458,125 @@ export default function B2CPaymentsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Detail/Metadata Modal */}
+      <Dialog open={detailPayment !== null} onOpenChange={(open) => { if (!open) { setDetailPayment(null); setRefreshResult(null); } }}>
+        <DialogContent className="sm:max-w-7xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+          <DialogTitle className="flex items-center justify-between">
+            <span>Payment #{detailPayment?.id}</span>
+            <div className="flex items-center gap-2">
+              {detailPayment && (
+                <Button
+                  onClick={() => handleRefresh(detailPayment)}
+                  disabled={refreshingId === detailPayment.id}
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                  title="Refresh from Gateway"
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshingId === detailPayment.id ? 'animate-spin' : ''}`} />
+                </Button>
+              )}
+              {detailPayment && (
+                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLORS[detailPayment.status] ?? 'bg-gray-100 text-gray-800'}`}>
+                  {detailPayment.status.charAt(0).toUpperCase() + detailPayment.status.slice(1)}
+                </span>
+              )}
+            </div>
+          </DialogTitle>
+          {detailPayment && (
+            <div className="space-y-5">
+              {/* Payment Info */}
+              <section className="rounded-lg border border-gray-200 p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Payment Info</h3>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-500">Amount</span><span className="font-medium text-gray-900">{detailPayment.currency} {detailPayment.amount}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Gateway</span><span className="font-medium text-gray-900">{detailPayment.payment_gateway || '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Transaction ID</span><span className="font-mono text-xs text-gray-900">{detailPayment.gateway_transaction_id || '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Quantity</span><span className="font-medium text-gray-900">{detailPayment.quantity ?? '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Expiry</span><span className="text-gray-900">{detailPayment.expiry_date ? new Date(detailPayment.expiry_date).toLocaleDateString() : '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Created</span><span className="text-gray-900">{new Date(detailPayment.created_at).toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Updated</span><span className="text-gray-900">{new Date(detailPayment.updated_at).toLocaleString()}</span></div>
+                </div>
+              </section>
+
+              {/* User Info */}
+              <section className="rounded-lg border border-gray-200 p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">User</h3>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-500">Email</span><Link href={`/admin/users/${detailPayment.user}`} className="text-blue-600 hover:underline">{detailPayment.user_email}</Link></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Name</span><span className="text-gray-900">{[detailPayment.user_first_name, detailPayment.user_last_name].filter(Boolean).join(' ') || '-'}</span></div>
+                </div>
+              </section>
+
+              {/* Modules */}
+              <section className="rounded-lg border border-gray-200 p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Modules Purchased</h3>
+                <div className="flex flex-wrap gap-2">
+                  {detailPayment.modules_purchased.length > 0 ? detailPayment.modules_purchased.map((entry, i) => {
+                    const label = typeof entry === 'string'
+                      ? entry.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+                      : `${entry.module.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} (\u00d7${entry.quantity})`;
+                    return <span key={i} className="inline-flex rounded-md bg-purple-50 border border-purple-200 px-2.5 py-1 text-xs font-medium text-purple-700">{label}</span>;
+                  }) : <span className="text-sm text-gray-400">None</span>}
+                </div>
+              </section>
+
+              {/* Notes */}
+              {detailPayment.notes && (
+                <section className="rounded-lg border border-gray-200 p-4 space-y-2">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Notes</h3>
+                  <p className="text-sm text-gray-700">{detailPayment.notes}</p>
+                </section>
+              )}
+
+              {/* Metadata */}
+              {detailPayment.metadata && Object.keys(detailPayment.metadata).length > 0 && (() => {
+                const gatewayKeys = ['gateway_response', 'payment_response', 'razorpay_response', 'stripe_response', 'gateway_data', 'provider_response'];
+                const gatewayEntries = Object.fromEntries(Object.entries(detailPayment.metadata).filter(([k]) => gatewayKeys.includes(k)));
+                const otherEntries = Object.fromEntries(Object.entries(detailPayment.metadata).filter(([k]) => !gatewayKeys.includes(k)));
+                return (
+                  <>
+                    {Object.keys(gatewayEntries).length > 0 && (
+                      <section className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
+                        <h3 className="text-sm font-semibold text-blue-800 uppercase tracking-wide">Gateway Response (from Metadata)</h3>
+                        <div className="bg-white rounded p-3 border border-blue-200">
+                          <JsonEntries data={gatewayEntries} />
+                        </div>
+                      </section>
+                    )}
+                    {Object.keys(otherEntries).length > 0 && (
+                      <section className="rounded-lg border border-gray-200 p-4 space-y-2">
+                        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Metadata</h3>
+                        <div className="max-h-56 overflow-y-auto bg-gray-50 rounded p-3">
+                          <JsonEntries data={otherEntries} />
+                        </div>
+                      </section>
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* Refresh Result */}
+              {refreshResult && refreshResult.paymentId === detailPayment.id && (
+                <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 space-y-2">
+                  <h3 className="text-sm font-semibold text-emerald-800 uppercase tracking-wide">Gateway Response</h3>
+                  <div className="max-h-48 overflow-y-auto bg-white rounded p-3 border border-emerald-200">
+                    <JsonEntries data={refreshResult.gateway_result} />
+                  </div>
+                </section>
+              )}
+
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="outline" onClick={() => { setDetailPayment(null); setRefreshResult(null); }}>Close</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirm */}
       <Dialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-7xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogTitle>Delete Payment</DialogTitle>
           <p className="text-sm text-gray-600">Are you sure you want to delete this payment record? This cannot be undone.</p>
           <div className="flex justify-end gap-2 pt-2">

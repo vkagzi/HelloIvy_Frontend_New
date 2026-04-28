@@ -27,6 +27,7 @@ interface SchoolPayment {
   modules_purchased: (string | { module: string; quantity: number })[];
   expiry_date: string | null;
   quantity: number | null;
+  metadata: Record<string, unknown>;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -74,6 +75,13 @@ export default function SchoolPaymentsPage() {
   // Delete confirm
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteSaving, setDeleteSaving] = useState(false);
+
+  // Detail/metadata modal
+  const [detailPayment, setDetailPayment] = useState<SchoolPayment | null>(null);
+
+  // Refresh status
+  const [refreshingId, setRefreshingId] = useState<number | null>(null);
+  const [refreshResult, setRefreshResult] = useState<{ paymentId: number; gateway_result: Record<string, unknown> } | null>(null);
 
   const fetchPayments = useCallback(async () => {
     setLoading(true);
@@ -168,6 +176,22 @@ export default function SchoolPaymentsPage() {
     }
   };
 
+  const handleRefresh = async (payment: SchoolPayment) => {
+    setRefreshingId(payment.id);
+    try {
+      const result = await api<{ payment: SchoolPayment; gateway_result: Record<string, unknown> }>(
+        `/api/payments/schools/${payment.id}/refresh/`,
+        { method: 'POST' }
+      );
+      setRefreshResult({ paymentId: payment.id, gateway_result: result.gateway_result });
+      fetchPayments();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to refresh status');
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+
   const toggleAddModule = (m: string) => {
     setAddModules((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]);
   };
@@ -255,24 +279,14 @@ export default function SchoolPaymentsPage() {
                 <td className="px-4 py-3 text-gray-500 font-mono text-xs">{p.gateway_transaction_id || '-'}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => openEdit(p)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-transparent underline"
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      onClick={() => setDeleteId(p.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-transparent underline"
-                    >
-                      Delete
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => setDetailPayment(p)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-indigo-600 hover:text-indigo-700 hover:bg-transparent underline text-xs"
+                  >
+                    Details
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -343,6 +357,93 @@ export default function SchoolPaymentsPage() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
             <Button onClick={handleEdit} disabled={editSaving}>{editSaving ? 'Saving...' : 'Save Changes'}</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail/Metadata Modal */}
+      <Dialog open={detailPayment !== null} onOpenChange={(open) => { if (!open) { setDetailPayment(null); setRefreshResult(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogTitle className="flex items-center justify-between">
+            <span>Payment #{detailPayment?.id}</span>
+            {detailPayment && (
+              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLORS[detailPayment.status] ?? 'bg-gray-100 text-gray-800'}`}>
+                {detailPayment.status.charAt(0).toUpperCase() + detailPayment.status.slice(1)}
+              </span>
+            )}
+          </DialogTitle>
+          {detailPayment && (
+            <div className="space-y-5">
+              {/* Payment Info */}
+              <section className="rounded-lg border border-gray-200 p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Payment Info</h3>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-500">Amount</span><span className="font-medium text-gray-900">{detailPayment.currency} {detailPayment.amount}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Gateway</span><span className="font-medium text-gray-900">{detailPayment.payment_gateway || '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Transaction ID</span><span className="font-mono text-xs text-gray-900">{detailPayment.gateway_transaction_id || '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Quantity</span><span className="font-medium text-gray-900">{detailPayment.quantity ?? '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Expiry</span><span className="text-gray-900">{detailPayment.expiry_date ? new Date(detailPayment.expiry_date).toLocaleDateString() : '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Created</span><span className="text-gray-900">{new Date(detailPayment.created_at).toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Updated</span><span className="text-gray-900">{new Date(detailPayment.updated_at).toLocaleString()}</span></div>
+                </div>
+              </section>
+
+              {/* School Info */}
+              <section className="rounded-lg border border-gray-200 p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">School</h3>
+                <div className="text-sm">
+                  <Link href={`/admin/schools/${detailPayment.school}`} className="text-blue-600 hover:underline font-medium">{detailPayment.school_name}</Link>
+                </div>
+              </section>
+
+              {/* Modules */}
+              <section className="rounded-lg border border-gray-200 p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Modules Purchased</h3>
+                <div className="flex flex-wrap gap-2">
+                  {detailPayment.modules_purchased.length > 0 ? detailPayment.modules_purchased.map((entry, i) => {
+                    const label = typeof entry === 'string'
+                      ? entry.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+                      : `${entry.module.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} (\u00d7${entry.quantity})`;
+                    return <span key={i} className="inline-flex rounded-md bg-purple-50 border border-purple-200 px-2.5 py-1 text-xs font-medium text-purple-700">{label}</span>;
+                  }) : <span className="text-sm text-gray-400">None</span>}
+                </div>
+              </section>
+
+              {/* Notes */}
+              {detailPayment.notes && (
+                <section className="rounded-lg border border-gray-200 p-4 space-y-2">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Notes</h3>
+                  <p className="text-sm text-gray-700">{detailPayment.notes}</p>
+                </section>
+              )}
+
+              {/* Metadata */}
+              {detailPayment.metadata && Object.keys(detailPayment.metadata).length > 0 && (
+                <section className="rounded-lg border border-gray-200 p-4 space-y-2">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Metadata</h3>
+                  <pre className="text-xs bg-gray-50 rounded p-3 overflow-x-auto max-h-56 overflow-y-auto">{JSON.stringify(detailPayment.metadata, null, 2)}</pre>
+                </section>
+              )}
+
+              {/* Refresh Result */}
+              {refreshResult && refreshResult.paymentId === detailPayment.id && (
+                <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 space-y-2">
+                  <h3 className="text-sm font-semibold text-emerald-800 uppercase tracking-wide">Gateway Response</h3>
+                  <pre className="text-xs bg-white rounded p-3 overflow-x-auto max-h-48 overflow-y-auto border border-emerald-200">{JSON.stringify(refreshResult.gateway_result, null, 2)}</pre>
+                </section>
+              )}
+
+              <div className="flex justify-end gap-2 pt-1">
+                <Button
+                  onClick={() => handleRefresh(detailPayment)}
+                  disabled={refreshingId === detailPayment.id}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {refreshingId === detailPayment.id ? 'Refreshing...' : 'Refresh from Gateway'}
+                </Button>
+                <Button variant="outline" onClick={() => { setDetailPayment(null); setRefreshResult(null); }}>Close</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

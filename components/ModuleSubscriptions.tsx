@@ -41,6 +41,9 @@ export interface UserSubscription {
   source: string;
   created_at: string;
   assigned_by_email?: string | null;
+  purchased?: number;
+  used_sessions?: number;
+  remaining_sessions?: number;
 }
 
 export interface Payment {
@@ -236,7 +239,7 @@ function B2CSubscriptionsTable({
             {subscriptions.filter((sub) => sub.is_active).map((sub) => {
               const icon = moduleIcons[sub.module_name] ?? 'star';
               return (
-                <tr key={sub.id} className="hover:bg-neutral-50">
+                <tr key={sub.module_name} className="hover:bg-neutral-50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-purple-100">
@@ -248,9 +251,9 @@ function B2CSubscriptionsTable({
                   <td className="whitespace-nowrap px-4 py-3 text-gray-700">
                     {new Date(sub.expiry_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </td>
-                  <td className="px-4 py-3 text-gray-700">—</td>
-                  <td className="px-4 py-3 text-gray-700">—</td>
-                  <td className="px-4 py-3 text-gray-700">—</td>
+                  <td className="px-4 py-3 text-gray-700">{sub.purchased ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-700">{sub.used_sessions ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-700">{sub.remaining_sessions ?? '—'}</td>
                 </tr>
               );
             })}
@@ -409,7 +412,8 @@ function PaymentHistoryTable({
             {payments.map((p) => (
               <tr key={p.id} className="hover:bg-neutral-50">
                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                  {new Date(p.created_at).toLocaleDateString()}
+                  <div>{new Date(p.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                  <div className="text-xs text-gray-400">{new Date(p.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
                 </td>
                 <td className="px-4 py-3 text-gray-700">
                   {p.modules_purchased.map((entry) => {
