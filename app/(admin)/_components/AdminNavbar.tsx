@@ -40,7 +40,7 @@ const adminNavItems: NavItem[] = [
     ],
   },
   { label: 'Pricing', icon: 'badge-dollar', href: '/admin/pricing' },
-  // { label: 'Counselor Connect', icon: 'comment-alt', href: '/admin/counselor-connect' },
+  { label: 'Counselor Connect', icon: 'comment-alt', href: '/admin/counselor-connect' },
 ];
 
 const AdminNavbar: React.FC = () => {
