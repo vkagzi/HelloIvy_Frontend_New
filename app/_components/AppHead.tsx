@@ -18,6 +18,7 @@ import type { Session } from 'next-auth';
 import { navItems } from '@/app/_constants/navItems';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
 import api from '@/lib/api-client';
+import TranscriptUploader from '@/app/_components/TranscriptUploader';
 
 type AppHeadProps = {
   session: Session | null;
@@ -103,6 +104,7 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
         </div>
         {!isPayAsStudent && (
         <div className="flex items-center gap-4">
+          {pathname?.startsWith('/profile') && <TranscriptUploader />}
           <Link
             href="/documents"
             className="rounded-md p-1.5 transition hover:bg-neutral-100"

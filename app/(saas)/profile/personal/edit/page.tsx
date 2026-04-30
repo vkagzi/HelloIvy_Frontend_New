@@ -21,8 +21,7 @@ import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse, loading, error, refetch } = useProfile();
-  const [parsedResumeData, setParsedResumeData] = useState<any>(null);
+  const { rawApiResponse, loading, error, refetch, parsedTranscriptData } = useProfile();
   const [resumeFormDefaults, setResumeFormDefaults] = useState<
     Record<string, unknown>
   >({});
@@ -119,24 +118,26 @@ const PersonalDetailsForm: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!parsedResumeData?.personal) return;
-    const p = parsedResumeData.personal;
+    if (!parsedTranscriptData?.personalDetails) return;
+    const p = parsedTranscriptData.personalDetails;
 
     setResumeFormDefaults((prev) => ({
       ...prev,
-      firstName: p.first_name ?? prev.firstName,
-      lastName: p.last_name ?? prev.lastName,
-      phoneNumber: p.phone ?? prev.phoneNumber,
+      ...p,
+      // fallback in case transcript AI uses old resume keys
+      firstName: p.firstName ?? p.first_name ?? prev.firstName,
+      lastName: p.lastName ?? p.last_name ?? prev.lastName,
+      phoneNumber: p.phoneNumber ?? p.phone ?? prev.phoneNumber,
       city: p.city ?? prev.city,
-      citizenship: p.citizenship ?? prev.citizenship,
+      citizenShip: p.citizenShip ?? p.citizenship ?? prev.citizenShip,
       gender: p.gender ?? prev.gender,
       dob: p.dob ?? prev.dob,
-      addressLine: p.address ?? prev.addressLine,
-      zipCode: p.zip_code ?? prev.zipCode,
-      motherProfession: p.mother_profession ?? prev.motherProfession,
-      fatherProfession: p.father_profession ?? prev.fatherProfession,
+      addressline: p.addressline ?? p.address ?? prev.addressline,
+      zipcode: p.zipcode ?? p.zip_code ?? prev.zipcode,
+      mothersProfession: p.mothersProfession ?? p.mother_profession ?? prev.mothersProfession,
+      fathersProfession: p.fathersProfession ?? p.father_profession ?? prev.fathersProfession,
     }));
-  }, [parsedResumeData]);
+  }, [parsedTranscriptData]);
 
   if (loading) {
     return (

@@ -21,6 +21,8 @@ type ProfileContextType = {
   completionPercentage: number;
   isProfileComplete: boolean;
   missingSections: string[];
+  parsedTranscriptData: Record<string, any> | null;
+  setParsedTranscriptData: (data: Record<string, any> | null) => void;
 };
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -39,6 +41,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [completionPercentage, setCompletionPercentage] = useState<number>(0);
   const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   const [missingSections, setMissingSections] = useState<string[]>([]);
+  const [parsedTranscriptData, setParsedTranscriptData] = useState<Record<string, any> | null>(null);
   const hasFetchedRef = useRef(false);
 
   const fetchProfileData = useCallback(async (): Promise<void> => {
@@ -140,6 +143,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         completionPercentage,
         isProfileComplete,
         missingSections,
+        parsedTranscriptData,
+        setParsedTranscriptData,
       }}
     >
       {children}

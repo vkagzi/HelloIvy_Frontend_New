@@ -160,16 +160,16 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     // Clear form values for this degree
     const degreeFields = section.fields ?? [];
     degreeFields.forEach((fieldId: string) => {
-      form.setValue(`${sectionType}.${degreeIdx}.${fieldId}`, undefined);
+      form.setValue(`${sectionType}.${degreeIdx}.${fieldId}` as any, undefined as any);
     });
     
     // Clear year values for this degree
     const currentYears = degrees.find((d) => d.key === key)?.yearRows ?? [];
     currentYears.forEach((_, yearIdx) => {
       (section.repeatables?.fields ?? []).forEach((fieldId: string) => {
-        form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}`, undefined);
+        form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}` as any, undefined as any);
       });
-      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year`, undefined);
+      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year` as any, undefined as any);
     });
     
     setDegrees((prev) => prev.filter((degree) => degree.key !== key));
@@ -216,9 +216,9 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     
     // Clear form values for this year
     (section.repeatables?.fields ?? []).forEach((fieldId: string) => {
-      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}`, undefined);
+      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}` as any, undefined as any);
     });
-    form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year`, undefined);
+    form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year` as any, undefined as any);
     
     setDegrees((prev) =>
       prev.map((deg, idx) =>

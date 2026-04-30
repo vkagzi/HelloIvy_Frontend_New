@@ -24,10 +24,9 @@ const ProfessionalFormDetails: React.FC = () => {
   const formRef = React.useRef<ReturnType<
     typeof import('react-hook-form').useForm
   > | null>(null);
-  const { rawApiResponse, refetch } = useProfile();
+  const { rawApiResponse, refetch, parsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const [parsedResumeData, setParsedResumeData] = useState<any>(null);
   const [formDefaults, setFormDefaults] = useState<Record<string, unknown>>({});
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
@@ -91,22 +90,31 @@ const ProfessionalFormDetails: React.FC = () => {
   
 
   useEffect(() => {
-    if (!parsedResumeData?.professional?.length) return;
+    if (!parsedTranscriptData?.professional?.length) return;
 
-    const exp = parsedResumeData.professional[0];
+    setFormDefaults((prev) => {
+      const existing = Array.isArray(prev.experiences) ? prev.experiences : [];
+      const mapped = parsedTranscriptData.professional.map((exp: any, idx: number) => {
+        const existExp = existing[idx] || {};
+        return {
+          ...existExp,
+          experienceType: exp.experienceType ?? exp.experience_type ?? existExp.experienceType,
+          industrySector: exp.industry ?? existExp.industrySector,
+          currentEmployer: exp.employerName ?? exp.company ?? existExp.currentEmployer,
+          city: exp.city ?? existExp.city,
+          durationValue: exp.duration ?? existExp.durationValue,
+          jobTitle: exp.title ?? existExp.jobTitle,
+          responsibilities: exp.responsibilities ?? existExp.responsibilities,
+          achievements: exp.achievements ?? existExp.achievements,
+        };
+      });
 
-    setFormDefaults((prev) => ({
-      ...prev,
-      experienceType: exp.experience_type ?? prev.experienceType,
-      industry: exp.industry ?? prev.industry,
-      employerName: exp.company ?? prev.employerName,
-      city: exp.city ?? prev.city,
-      duration: exp.duration ?? prev.duration,
-      title: exp.title ?? prev.title,
-      responsibilities: exp.responsibilities ?? prev.responsibilities,
-      achievements: exp.achievements ?? prev.achievements,
-    }));
-  }, [parsedResumeData]);
+      return {
+        ...prev,
+        experiences: mapped,
+      };
+    });
+  }, [parsedTranscriptData]);
 
 
 

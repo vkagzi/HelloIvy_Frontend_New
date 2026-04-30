@@ -29,7 +29,7 @@ import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 const EducationalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse, refetch, personalDetails } = useProfile();
+  const { rawApiResponse, refetch, personalDetails, parsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
@@ -40,7 +40,6 @@ const EducationalDetailsForm: React.FC = () => {
     [rawApiResponse]
   );
   const defaultValues = transformedResponse as Record<string, unknown>;
-  const [parsedResumeData, setParsedResumeData] = useState<any>(null);
   const [formDefaults, setFormDefaults] = useState<Record<string, unknown>>({});
   const [fieldDefs, setFieldDefs] = useState<FieldDefinition[]>(fieldDefss);
   const prevAcademicLevelRef = useRef<string | undefined>(undefined);
@@ -75,22 +74,59 @@ const EducationalDetailsForm: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!parsedResumeData?.personal) return;
+    if (!parsedTranscriptData?.educational) return;
 
-    const p = parsedResumeData.personal;
+    const e = parsedTranscriptData.educational;
+    const rawLevel = (e.academicLevel || '').toLowerCase();
+    
+    let academicLevel = 'College/Undergraduate';
+    if (rawLevel.includes('high school') || rawLevel.includes('12th') || rawLevel.includes('10th')) {
+        academicLevel = 'High School (8th–12th grade)';
+    } else if (rawLevel.includes('post') || rawLevel.includes('master') || rawLevel.includes('phd')) {
+        academicLevel = 'Postgraduate';
+    } else if (rawLevel.includes('work') || rawLevel.includes('completed')) {
+        academicLevel = 'Working/Completed College';
+    } else if (e.degree && !rawLevel) {
+        academicLevel = 'College/Undergraduate';
+    }
 
-    setFormDefaults((prev) => ({
-      ...prev,
+    setFormDefaults((prev) => {
+      const newDefaults = { ...prev };
+      newDefaults.academicLevel = academicLevel;
+      
+      if (academicLevel === 'College/Undergraduate' || academicLevel === 'Postgraduate' || academicLevel === 'Working/Completed College') {
+         const section = academicLevel === 'College/Undergraduate' ? 'undergraduate' : academicLevel === 'Postgraduate' ? 'postgraduate' : 'tenPlus';
+         const existingArray = Array.isArray(prev[section]) ? prev[section] : [];
+         const existing = existingArray.length > 0 ? existingArray[0] : {};
+         
+         newDefaults[section] = [{
+            ...existing,
+            institutionName: e.schoolName ?? e.institution ?? existing.institutionName,
+            degree: e.degree ?? existing.degree,
+            major: e.major ?? e.subject ?? existing.major,
+            startYear: e.startYear ?? e.start_year ?? existing.startYear,
+            endYear: e.endYear ?? e.end_year ?? existing.endYear,
+            overallPercentage: e.overallPercentage ?? existing.overallPercentage,
+            maximumPossibleGPA: e.maximumPossibleGPA ?? existing.maximumPossibleGPA,
+         }];
+      } else if (academicLevel === 'High School (8th–12th grade)') {
+         const existingArray = Array.isArray(prev.highSchool) ? prev.highSchool : [];
+         const existing = existingArray.length > 0 ? existingArray[0] : {};
+         
+         newDefaults.highSchool = [{
+            ...existing,
+            schoolName: e.schoolName ?? e.institution ?? existing.schoolName,
+            city: e.city ?? existing.city,
+            yearOfCompletion: e.yearOfCompletion ?? existing.yearOfCompletion,
+            board: e.board ?? existing.board,
+            overallPercentage: e.overallPercentage ?? existing.overallPercentage,
+            maximumPossibleGPA: e.maximumPossibleGPA ?? existing.maximumPossibleGPA,
+         }];
+      }
 
-      academicLevel: p.degree ? 'College/Undergraduate' : prev.academicLevel,
-
-      institutionName: p.institution ?? prev.institutionName,
-      degree: p.degree ?? prev.degree,
-      major: p.major ?? prev.major,
-      score: p.cgpa ?? prev.score,
-      gradeLevel: detectYear(p.start_year) ?? prev.gradeLevel,
-    }));
-  }, [parsedResumeData]);
+      return newDefaults;
+    });
+  }, [parsedTranscriptData]);
 
   // Apply DOB-based year lower bounds: school yearOfCompletion >= DOB+1, college startYear >= DOB+10
   React.useEffect(() => {

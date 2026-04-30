@@ -18,7 +18,7 @@ import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 const ExtraCurricularFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse, refetch } = useProfile();
+  const { rawApiResponse, refetch, parsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
@@ -119,14 +119,19 @@ const ExtraCurricularFormDetails: React.FC = () => {
 
   console.log('Extra-curricular data for form:', extraCurricularData); // Debug log
 
+  const formDefaults = {
+    extraCurricular: parsedTranscriptData?.extraCurricular?.length
+      ? parsedTranscriptData.extraCurricular
+      : extraCurricularData,
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
       <Tabs />
       <DynamicForm
-        defaultValues={{
-          extraCurricular: extraCurricularData,
-        }}
+        key={JSON.stringify(formDefaults)}
+        defaultValues={formDefaults}
         fieldDefs={fieldDefs}
         layout={layout}
         onSubmit={(values) => {
