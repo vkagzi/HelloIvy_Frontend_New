@@ -13,7 +13,8 @@ interface GraduateBlockProps {
   section: LayoutItem;
   sectionType: string;
   fieldDefs: FieldDefinition[];
-  form: UseFormReturn<Record<string, unknown>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form: UseFormReturn<any>;
   errors: Record<string, string>;
 }
 

@@ -42,7 +42,7 @@ export const navItems: NavItem[] = [
   { label: 'Legal', icon: 'document', href: '/legal' },
   { label: 'Unlock Modules', icon: 'star', href: '/pay-as-student' },
   { label: 'Checkout', icon: 'credit-card', href: '/pay-as-student/checkout' },
-  // { label: 'Counselor Connect', icon: 'comment-alt', href: '/counselor-connect' },
+  { label: 'Counselor Connect', icon: 'comment-alt', href: '/counselor-connect' },
   { label: 'Subscription', icon: 'list-check', href: '/subscription' },
 ];
 

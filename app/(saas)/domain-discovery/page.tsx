@@ -342,7 +342,7 @@ function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
             <li className="flex gap-3">
               <span className="min-w-5 font-semibold">5</span>
               <span>
-                The entire process takes about 30-40 minutes and is completely
+                The entire process takes about 20-30 minutes and is completely
                 personalized to your background and interests.
               </span>
             </li>
