@@ -40,6 +40,8 @@ async function handleReturn(
   // Default: redirect to status page in pending state
   let paymentId = '';
   let status = 'pending';
+  let amount = '';
+  let currency = '';
 
   try {
     // Call Django's unauthenticated return-verify endpoint
@@ -50,6 +52,8 @@ async function handleReturn(
       const data = await res.json();
       paymentId = data.payment_id ? String(data.payment_id) : '';
       status = data.status || 'pending';
+      amount = data.amount != null ? String(data.amount) : '';
+      currency = data.currency || '';
     } else {
       // If verify failed, try to extract payment_id from orderId format: "{id}_{hex}"
       const parts = orderId.split('_');
@@ -72,6 +76,8 @@ async function handleReturn(
   if (paymentId) redirectUrl.searchParams.set('payment_id', paymentId);
   redirectUrl.searchParams.set('status', status);
   redirectUrl.searchParams.set('type', paymentType);
+  if (amount) redirectUrl.searchParams.set('amount', amount);
+  if (currency) redirectUrl.searchParams.set('currency', currency);
 
   return NextResponse.redirect(redirectUrl);
 }

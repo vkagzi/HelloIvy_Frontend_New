@@ -11,6 +11,13 @@ interface StatusResponse {
   payment_id: number;
   status: string;
   message: string;
+  amount?: number;
+  currency?: string;
+}
+
+function formatCurrency(amount: number, currency: string = 'INR'): string {
+  const symbol = currency === 'INR' ? '₹' : currency + ' ';
+  return `${symbol}${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export default function PaymentStatusPage() {
@@ -24,6 +31,8 @@ export default function PaymentStatusPage() {
   // Pre-verified status from the Route Handler (completed | failed | pending).
   // If present, we can show the result immediately without polling.
   const initialStatus = searchParams?.get('status') ?? '';
+  const initialAmount = searchParams?.get('amount') ?? '';
+  const initialCurrency = searchParams?.get('currency') ?? 'INR';
 
   const [status, setStatus] = useState<PaymentStatus>(
     initialStatus === 'completed' ? 'completed'
@@ -35,6 +44,8 @@ export default function PaymentStatusPage() {
     : initialStatus === 'failed' ? 'Payment was not successful. Please try again.'
     : '',
   );
+  const [amount, setAmount] = useState(initialAmount ? Number(initialAmount) : 0);
+  const [currency, setCurrency] = useState(initialCurrency);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const attemptRef = useRef(0);
 
@@ -58,10 +69,14 @@ export default function PaymentStatusPage() {
         if (data.status === 'completed') {
           setStatus('completed');
           setMessage(data.message);
+          if (data.amount) setAmount(data.amount);
+          if (data.currency) setCurrency(data.currency);
           if (pollRef.current) clearInterval(pollRef.current);
         } else if (data.status === 'failed') {
           setStatus('failed');
           setMessage(data.message);
+          if (data.amount) setAmount(data.amount);
+          if (data.currency) setCurrency(data.currency);
           if (pollRef.current) clearInterval(pollRef.current);
         } else {
           setStatus('pending');
@@ -127,6 +142,20 @@ export default function PaymentStatusPage() {
             </div>
             <h2 className="text-lg font-bold text-gray-900">Payment Successful!</h2>
             <p className="mt-2 text-sm text-gray-500">{message}</p>
+
+            <div className="mt-5 rounded-lg border border-gray-100 bg-gray-50 p-4 text-left">
+              <div className="flex justify-between py-1.5">
+                <span className="text-sm text-gray-500">Order Number</span>
+                <span className="text-sm font-semibold text-gray-900">#{paymentId}</span>
+              </div>
+              {amount > 0 && (
+                <div className="flex justify-between border-t border-gray-200 py-1.5">
+                  <span className="text-sm text-gray-500">Amount Paid</span>
+                  <span className="text-sm font-semibold text-gray-900">{formatCurrency(amount, currency)}</span>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => router.push(successRedirect)}
               className="mt-6 w-full cursor-pointer rounded-lg bg-purple-600 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700"
@@ -144,6 +173,22 @@ export default function PaymentStatusPage() {
             </div>
             <h2 className="text-lg font-bold text-gray-900">Payment Failed</h2>
             <p className="mt-2 text-sm text-gray-500">{message}</p>
+
+            {paymentId && (
+              <div className="mt-5 rounded-lg border border-gray-100 bg-gray-50 p-4 text-left">
+                <div className="flex justify-between py-1.5">
+                  <span className="text-sm text-gray-500">Order Number</span>
+                  <span className="text-sm font-semibold text-gray-900">#{paymentId}</span>
+                </div>
+                {amount > 0 && (
+                  <div className="flex justify-between border-t border-gray-200 py-1.5">
+                    <span className="text-sm text-gray-500">Amount</span>
+                    <span className="text-sm font-semibold text-gray-900">{formatCurrency(amount, currency)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="mt-6 space-y-3">
               <button
                 onClick={() => router.push(retryUrl)}
