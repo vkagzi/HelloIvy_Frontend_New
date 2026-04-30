@@ -9,7 +9,7 @@ export const navItems: NavItem[] = [
   { label: 'Stream & Subject Selection', icon: 'world', href: '/domain-discovery' },
   { label: 'Career & Degree Selection ', icon: 'briefcase', href: '/career-discovery' },
   { label: 'Degree Selector', icon: 'graduation-cap', href: '/degree' },
-  { label: 'College Selector', icon: 'school', href: '/college' },
+  { label: 'College Selector', icon: 'school', href: '/college-selector' },
   {
     label: 'Essay Brainstorm',
     icon: 'brain-circuit',
@@ -42,11 +42,11 @@ export const navItems: NavItem[] = [
   { label: 'Legal', icon: 'document', href: '/legal' },
   { label: 'Unlock Modules', icon: 'star', href: '/pay-as-student' },
   { label: 'Checkout', icon: 'credit-card', href: '/pay-as-student/checkout' },
-  // { label: 'Counselor Connect', icon: 'comment-alt', href: '/counselor-connect' },
+  { label: 'Counselor Connect', icon: 'comment-alt', href: '/counselor-connect' },
   { label: 'Subscription', icon: 'list-check', href: '/subscription' },
 ];
 
 // Subset of nav items shown in the sidebar
 export const sidebarNavItems: NavItem[] = navItems.filter((item) =>
-  ['/dashboard', '/domain-discovery', '/career-discovery', '/subscription', '/counselor-connect'].includes(item.href)
+  ['/dashboard', '/domain-discovery', '/career-discovery', '/college-selector', '/subscription', '/counselor-connect'].includes(item.href)
 );

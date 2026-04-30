@@ -135,7 +135,7 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
 
     api<CheckoutSession>(config.createEndpoint, {
       method: 'POST',
-      body: { module_quantities: moduleQuantities, coupon_code: couponCode || undefined },
+      body: { module_quantities: moduleQuantities, coupon_code: couponCode || undefined, billing_state: stateParam || undefined },
     })
       .then((data) => setSession(data))
       .catch((err: unknown) => setInitError(err instanceof Error ? err.message : 'Failed to initialise checkout'))
@@ -172,7 +172,7 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
         const modules = lineItems.flatMap((item) => Array.from({ length: item.quantity }, () => item.module));
         result = await api<CheckoutSession>(config.createEndpoint, {
           method: 'POST',
-          body: { modules, coupon_code: couponCode || undefined, ...contactDetails },
+          body: { modules, coupon_code: couponCode || undefined, billing_state: stateParam || undefined, ...contactDetails },
         });
       } else {
         // School: session already created on mount

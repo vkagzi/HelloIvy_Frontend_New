@@ -7,10 +7,12 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Download } from 'lucide-react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
+import { downloadPDF } from '@/lib/pdf-from-component';
+import { InvoicePDF, type InvoiceData } from '@/components/pdf/InvoicePDF';
 
 const STATUS_CHOICES = ['pending', 'completed', 'failed', 'refunded'];
 
@@ -35,8 +37,6 @@ interface UserPayment {
   status: string;
   payment_gateway: string;
   gateway_transaction_id: string;
-  expiry_date: string | null;
-  quantity: number | null;
   metadata: Record<string, unknown>;
   notes: string;
   created_at: string;
@@ -106,7 +106,7 @@ export default function B2CPaymentsPage() {
 
   // Add modal
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ user: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', expiry_date: '', quantity: '', notes: '' });
+  const [addForm, setAddForm] = useState({ user: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
   const [addModules, setAddModules] = useState<string[]>([]);
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -180,10 +180,10 @@ export default function B2CPaymentsPage() {
     try {
       await api('/api/payments/b2c/', {
         method: 'POST',
-        body: { ...addForm, modules_purchased: addModules.map(m => ({ module: m, quantity: 1 })), user: Number(addForm.user), amount: parseFloat(addForm.amount), expiry_date: addForm.expiry_date || null, quantity: addForm.quantity ? Number(addForm.quantity) : null },
+        body: { ...addForm, modules_purchased: addModules.map(m => ({ module: m, quantity: 1 })), user: Number(addForm.user), amount: parseFloat(addForm.amount) },
       });
       setAddOpen(false);
-      setAddForm({ user: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', expiry_date: '', quantity: '', notes: '' });
+      setAddForm({ user: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
       setAddModules([]);
       setSelectedUser(null);
       setUserQuery('');
@@ -245,6 +245,40 @@ export default function B2CPaymentsPage() {
     }
   };
 
+  const handleDownloadInvoice = async (p: UserPayment) => {
+    const pricing = (p.metadata?.pricing ?? {}) as Record<string, unknown>;
+    const lineItems = p.modules_purchased.map((entry) => {
+      const mod = typeof entry === 'string' ? entry : entry.module;
+      const qty = typeof entry === 'string' ? 1 : entry.quantity;
+      const price = Math.round(
+        ((pricing.subtotal as number) ?? Number(p.amount)) / (p.modules_purchased.length || 1) / qty
+      );
+      return { module: mod, quantity: qty, price };
+    });
+
+    const invoiceData: InvoiceData = {
+      orderId: p.id,
+      orderDate: p.created_at,
+      billingName: [p.user_first_name, p.user_last_name].filter(Boolean).join(' ') || p.user_email,
+      firstName: p.user_first_name || '',
+      lastName: p.user_last_name || '',
+      email: p.user_email,
+      lineItems,
+      subtotal: (pricing.subtotal as number) ?? Number(p.amount),
+      discount: (pricing.discount as number) ?? 0,
+      discountCode: (pricing.coupon_code as string) ?? null,
+      tax: (pricing.tax as number) ?? 0,
+      taxRate: 18,
+      total: Number(p.amount),
+      currency: p.currency,
+      transactionId: p.gateway_transaction_id,
+      status: p.status,
+      paymentMode: p.payment_gateway,
+    };
+
+    await downloadPDF(<InvoicePDF data={invoiceData} />, `Invoice-${p.id}`);
+  };
+
   if (loading) return <LoadingState message="Loading payments..." />;
   if (error) return <ErrorState message={error} />;
 
@@ -281,10 +315,10 @@ export default function B2CPaymentsPage() {
               <th className="px-4 py-3 text-left">First Name</th>
               <th className="px-4 py-3 text-left">Last Name</th>
               <th className="px-4 py-3 text-left">Module</th>
-              <th className="px-4 py-3 text-left">Amount</th>
+              <th className="px-4 py-3 text-left">Pre-Tax Amt</th>
+              <th className="px-4 py-3 text-left">Tax</th>
+              <th className="px-4 py-3 text-left">Total</th>
               <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Qty</th>
-              <th className="px-4 py-3 text-left">Expiry</th>
               <th className="px-4 py-3 text-left">Gateway</th>
               <th className="px-4 py-3 text-left">Txn ID</th>
               <th className="px-4 py-3 text-left">Date</th>
@@ -311,16 +345,31 @@ export default function B2CPaymentsPage() {
                       }).join(', ')
                     : '-'}
                 </td>
+                <td className="px-4 py-3 text-gray-700">
+                  {(() => { const pr = (p.metadata?.pricing ?? {}) as Record<string, number>; const sub = pr.subtotal ?? 0; const disc = pr.discount ?? 0; const preTax = sub - disc; return preTax ? `${p.currency} ${preTax.toLocaleString()}` : '-'; })()}
+                </td>
+                <td className="px-4 py-3 text-gray-700">
+                  {(() => { const pr = (p.metadata?.pricing ?? {}) as Record<string, number>; return pr.tax ? `${p.currency} ${pr.tax.toLocaleString()}` : '-'; })()}
+                </td>
                 <td className="px-4 py-3 font-medium">{p.currency} {p.amount}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex rounded-full px-2 text-xs font-semibold ${STATUS_COLORS[p.status] ?? 'bg-gray-100 text-gray-800'}`}>
                     {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-500">{p.quantity ?? '-'}</td>
-                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{p.expiry_date ? new Date(p.expiry_date).toLocaleDateString() : '-'}</td>
                 <td className="px-4 py-3 text-gray-500">{p.payment_gateway || '-'}</td>
-                <td className="px-4 py-3 text-gray-500 font-mono text-xs">{p.gateway_transaction_id || '-'}</td>
+                <td className="px-4 py-3 font-mono text-xs">
+                  {p.gateway_transaction_id ? (
+                    <button
+                      onClick={() => handleDownloadInvoice(p)}
+                      className="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                      title="Download Invoice"
+                    >
+                      {p.gateway_transaction_id}
+                      <Download className="h-3 w-3 shrink-0" />
+                    </button>
+                  ) : '-'}
+                </td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
                 <td className="px-4 py-3">
                   <Button
@@ -427,10 +476,6 @@ export default function B2CPaymentsPage() {
             <div className="space-y-1"><Label>Status</Label><Select value={addForm.status} onValueChange={(v) => setAddForm({ ...addForm, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{STATUS_CHOICES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1"><Label htmlFor="add-gateway">Payment Gateway</Label><Input id="add-gateway" placeholder="e.g. stripe, razorpay" value={addForm.payment_gateway} onChange={(e) => setAddForm({ ...addForm, payment_gateway: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="add-txn">Transaction ID</Label><Input id="add-txn" placeholder="Gateway transaction ID" value={addForm.gateway_transaction_id} onChange={(e) => setAddForm({ ...addForm, gateway_transaction_id: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label htmlFor="add-expiry">Expiry Date</Label><Input id="add-expiry" type="date" value={addForm.expiry_date} onChange={(e) => setAddForm({ ...addForm, expiry_date: e.target.value })} /></div>
-              <div className="space-y-1"><Label htmlFor="add-quantity">Quantity</Label><Input id="add-quantity" type="number" min="1" placeholder="e.g. 1" value={addForm.quantity} onChange={(e) => setAddForm({ ...addForm, quantity: e.target.value })} /></div>
-            </div>
             <div className="space-y-1"><Label htmlFor="add-notes">Notes</Label><Input id="add-notes" placeholder="Optional notes" value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} /></div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -492,8 +537,6 @@ export default function B2CPaymentsPage() {
                   <div className="flex justify-between"><span className="text-gray-500">Amount</span><span className="font-medium text-gray-900">{detailPayment.currency} {detailPayment.amount}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Gateway</span><span className="font-medium text-gray-900">{detailPayment.payment_gateway || '-'}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Transaction ID</span><span className="font-mono text-xs text-gray-900">{detailPayment.gateway_transaction_id || '-'}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Quantity</span><span className="font-medium text-gray-900">{detailPayment.quantity ?? '-'}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Expiry</span><span className="text-gray-900">{detailPayment.expiry_date ? new Date(detailPayment.expiry_date).toLocaleDateString() : '-'}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Created</span><span className="text-gray-900">{new Date(detailPayment.created_at).toLocaleString()}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Updated</span><span className="text-gray-900">{new Date(detailPayment.updated_at).toLocaleString()}</span></div>
                 </div>
@@ -528,6 +571,35 @@ export default function B2CPaymentsPage() {
                   <p className="text-sm text-gray-700">{detailPayment.notes}</p>
                 </section>
               )}
+
+              {/* Tax Information */}
+              {(() => {
+                const pr = ((detailPayment.metadata?.pricing ?? {}) as Record<string, unknown>);
+                const tax = Number(pr.tax ?? 0);
+                const subtotal = Number(pr.subtotal ?? 0);
+                const discount = Number(pr.discount ?? 0);
+                const taxable = subtotal - discount;
+                const coupon = pr.coupon_code as string | null;
+                const couponPct = Number(pr.coupon_pct ?? 0);
+                if (!tax && !subtotal) return null;
+                const cgst = Math.round(tax / 2);
+                const sgst = tax - cgst;
+                return (
+                  <section className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+                    <h3 className="text-sm font-semibold text-amber-800 uppercase tracking-wide">Tax &amp; Pricing Breakdown</h3>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                      <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span className="font-medium text-gray-900">{detailPayment.currency} {subtotal.toLocaleString()}</span></div>
+                      {discount > 0 && <div className="flex justify-between"><span className="text-gray-500">Discount{coupon ? ` (${coupon} - ${couponPct}%)` : ''}</span><span className="font-medium text-red-600">- {detailPayment.currency} {discount.toLocaleString()}</span></div>}
+                      <div className="flex justify-between"><span className="text-gray-500">Taxable Amount</span><span className="font-medium text-gray-900">{detailPayment.currency} {taxable.toLocaleString()}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">CGST (9%)</span><span className="font-medium text-gray-900">{detailPayment.currency} {cgst.toLocaleString()}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">SGST (9%)</span><span className="font-medium text-gray-900">{detailPayment.currency} {sgst.toLocaleString()}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">IGST (18%)</span><span className="font-medium text-gray-900">{detailPayment.currency} {tax.toLocaleString()}</span></div>
+                      <div className="flex justify-between border-t border-amber-200 pt-1"><span className="text-gray-700 font-semibold">Total Tax</span><span className="font-bold text-gray-900">{detailPayment.currency} {tax.toLocaleString()}</span></div>
+                      <div className="flex justify-between border-t border-amber-200 pt-1"><span className="text-gray-700 font-semibold">Grand Total</span><span className="font-bold text-gray-900">{detailPayment.currency} {detailPayment.amount}</span></div>
+                    </div>
+                  </section>
+                );
+              })()}
 
               {/* Metadata */}
               {detailPayment.metadata && Object.keys(detailPayment.metadata).length > 0 && (() => {
