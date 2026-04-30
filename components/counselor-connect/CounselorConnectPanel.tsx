@@ -22,9 +22,9 @@ interface CounselorConnectPanelProps {
 const TOPICS = [
   { key: 'academic',    label: 'Academic',                                 color: 'border-blue-400',   bg: 'bg-blue-50',   text: 'text-blue-700',   icon: '🎓' },
   { key: 'work',        label: 'Work Experience',                          color: 'border-amber-400',  bg: 'bg-amber-50',  text: 'text-amber-700',  icon: '💼' },
-  { key: 'leadership',  label: 'Leadership Skills / Extra-Curricular / Sport', color: 'border-emerald-400', bg: 'bg-emerald-50', text: 'text-emerald-700', icon: '🏆' },
-  { key: 'community',   label: 'Community Service',                        color: 'border-rose-400',   bg: 'bg-rose-50',   text: 'text-rose-700',   icon: '🤝' },
-  { key: 'discussion',  label: 'Discussion Areas for Meeting',             color: 'border-violet-400', bg: 'bg-violet-50', text: 'text-violet-700', icon: '💬' },
+  { key: 'leadership',  label: 'Leadership Skills / Extra-Curricular / Sport', color: 'border-teal-400',   bg: 'bg-teal-50',   text: 'text-teal-700',   icon: '🏆' },
+  { key: 'community',   label: 'Community Service',                        color: 'border-orange-400', bg: 'bg-orange-50', text: 'text-orange-700', icon: '🤝' },
+  { key: 'discussion',  label: 'Discussion Points',             color: 'border-violet-400', bg: 'bg-violet-50', text: 'text-violet-700', icon: '💬' },
 ] as const;
 
 type TopicKey = (typeof TOPICS)[number]['key'];
@@ -88,7 +88,7 @@ export default function CounselorConnectPanel({
   const [parentDrafts, setParentDrafts] = useState<TopicMap[]>([{ ...EMPTY_TOPICS }]);
   const [commentSaving, setCommentSaving] = useState<'counselor' | 'parent' | null>(null);
   const [commentSuccess, setCommentSuccess] = useState<'counselor' | 'parent' | null>(null);
-  const [expandedMeetings, setExpandedMeetings] = useState<Record<number, boolean>>({ 0: true });
+  const [expandedMeetings, setExpandedMeetings] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   const canEditStudent = editableRole === 'student' || editableRole === 'both';
@@ -185,7 +185,7 @@ export default function CounselorConnectPanel({
               >
                 <div className="flex items-center gap-3">
                   <span className={`text-sm font-semibold ${expandedMeetings[idx] ? 'text-indigo-700' : 'text-gray-700'}`}>
-                    Meeting
+                    Meeting {meetingCount - idx}
                   </span>
                   {(hasContent(counselorDrafts[idx] ?? EMPTY_TOPICS) || hasContent(parentDrafts[idx] ?? EMPTY_TOPICS)) && (
                     <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700 border border-green-200">
