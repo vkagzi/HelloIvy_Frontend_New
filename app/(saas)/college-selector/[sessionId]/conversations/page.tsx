@@ -160,15 +160,34 @@ const collegeSelectorConversationConfig: ConversationConfig = {
       </div>
     ),
 
-    renderExitDialog: ({ onStay, onExit }) => ({
-      title: 'Leave College Selection?',
-      description:
-        'Your conversation progress will be saved. You can resume later from where you left off.',
-      stayLabel: 'Stay',
-      exitLabel: 'Leave & Save',
-      onStay,
-      onExit,
-    }),
+    renderExitDialog: ({ onConfirm, onCancel }) => (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Leave College Selection?
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Your conversation progress will be saved. You can resume later from where you left off.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+            >
+              Stay
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+            >
+              Leave & Save
+            </button>
+          </div>
+        </div>
+      </div>
+    ),
   },
 };
 

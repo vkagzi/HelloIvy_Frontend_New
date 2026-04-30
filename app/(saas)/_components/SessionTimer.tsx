@@ -12,7 +12,7 @@ interface SessionTimerProps {
   /** Called once when the countdown reaches zero */
   onTimeExpired?: () => void;
   /** Primary accent colour – defaults to 'purple' */
-  accentColor?: 'purple' | 'teal';
+  accentColor?: 'purple' | 'teal' | 'green';
 }
 
 /**
@@ -88,7 +88,21 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const defaultColor = accentColor === 'teal' ? 'teal' : 'purple';
+  const defaultColor = accentColor ?? 'purple';
+
+  const defaultContainerClass =
+    defaultColor === 'teal'
+      ? 'border-teal-300 bg-teal-50'
+      : defaultColor === 'green'
+        ? 'border-green-300 bg-green-50'
+        : 'border-purple-300 bg-purple-50';
+
+  const defaultTextClass =
+    defaultColor === 'teal'
+      ? 'text-teal-700'
+      : defaultColor === 'green'
+        ? 'text-green-700'
+        : 'text-purple-700';
 
   const containerClass = isPaused
     ? 'border-yellow-300 bg-yellow-50'
@@ -96,9 +110,7 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
       ? 'border-red-300 bg-red-50'
       : timeRemaining <= 300
         ? 'border-orange-300 bg-orange-50'
-        : defaultColor === 'teal'
-          ? 'border-teal-300 bg-teal-50'
-          : 'border-purple-300 bg-purple-50';
+        : defaultContainerClass;
 
   const textClass = isPaused
     ? 'text-yellow-700'
@@ -106,9 +118,7 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
       ? 'text-red-700'
       : timeRemaining <= 300
         ? 'text-orange-700'
-        : defaultColor === 'teal'
-          ? 'text-teal-700'
-          : 'text-purple-700';
+        : defaultTextClass;
 
   return (
     <div

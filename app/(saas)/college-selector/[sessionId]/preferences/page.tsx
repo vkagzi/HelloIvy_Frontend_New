@@ -253,7 +253,7 @@ function SearchableSelect({ options, value, onChange, placeholder }: {
 export default function PreferencesPage() {
   const router = useRouter();
   const params = useParams();
-  const sessionId = params.sessionId as string;
+  const sessionId = params?.sessionId as string;
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);

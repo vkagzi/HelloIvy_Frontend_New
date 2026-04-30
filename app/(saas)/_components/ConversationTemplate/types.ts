@@ -35,9 +35,9 @@ export interface ConversationTheme {
   /** Hover gradient to for CTA, e.g. 'to-cyan-700' */
   ctaHoverTo: string;
   /** Accent color for SessionTimer, e.g. 'teal' */
-  timerAccent: 'purple' | 'teal';
+  timerAccent: 'purple' | 'teal' | 'green';
   /** Accent color name for voice loading spinner border, e.g. 'teal' */
-  accentName: 'purple' | 'teal';
+  accentName: 'purple' | 'teal' | 'green';
   /** Timestamp text color for user messages, e.g. 'text-teal-100' */
   userTimestampColor: string;
 }
