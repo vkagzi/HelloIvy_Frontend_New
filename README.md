@@ -47,7 +47,7 @@ A Next.js 16 web application for the Hello Ivy platform. Built with React 19, Ty
 
    ```bash
    git clone <repo-url>
-   cd helloivy-web-main
+   cd frontend
    ```
 
 2. **Install dependencies**
