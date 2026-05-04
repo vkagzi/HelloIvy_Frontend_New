@@ -20,17 +20,19 @@ interface ModuleChoicesResponse {
 const DEFAULT_PRICE = 999;
 const DEFAULT_CURRENCY = 'INR';
 
-const fetcher = () => api<ModuleChoicesResponse>('/api/accounts/module-choices/');
+// TODO: restore API call once backend is ready
+// const fetcher = () => api<ModuleChoicesResponse>('/api/accounts/module-choices/');
+const STATIC_MODULES: ModuleChoice[] = [
+  { value: 'college_selector', label: 'College Selector', price: 4500, icon: 'school', color: 'bg-green-100 text-green-700' },
+  { value: 'career_discovery', label: 'Career & Degree Selection', price: 999, icon: 'briefcase', color: 'bg-purple-100 text-purple-700' },
+  { value: 'domain_discovery', label: 'Stream & Subject Selection', price: 999, icon: 'world', color: 'bg-cyan-100 text-cyan-700' },
+];
 
 export function useModuleChoices() {
-  const { data, isLoading: loading } = useSWR('module-choices', fetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 60_000,
-  });
-
-  const modules = data?.modules ?? [];
-  const currency = data?.currency ?? DEFAULT_CURRENCY;
-  const defaultPrice = data?.default_price ?? DEFAULT_PRICE;
+  const modules = STATIC_MODULES;
+  const loading = false;
+  const currency = DEFAULT_CURRENCY;
+  const defaultPrice = DEFAULT_PRICE;
 
   const prices: Record<string, number> = {};
   for (const m of modules) {
