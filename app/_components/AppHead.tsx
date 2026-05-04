@@ -101,7 +101,7 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
             </>
           )}
         </div>
-        {!isPayAsStudent && (
+        {(!isPayAsStudent || session) && (
         <div className="flex items-center gap-4">
           <Link
             href="/documents"

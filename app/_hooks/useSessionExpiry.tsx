@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getSession } from 'next-auth/react';
+import { getSession, useSession } from 'next-auth/react';
 import { CHANNEL_NAME, STORAGE_KEY } from '@/lib/auth-broadcast';
 import { clearAuthCache } from '@/lib/api-client';
 
@@ -21,6 +21,7 @@ import { clearAuthCache } from '@/lib/api-client';
  */
 export function useSessionExpiry() {
   const [isSessionExpired, setIsSessionExpired] = useState(false);
+  const { data: session } = useSession();
 
   // Track whether we *had* a valid session at some point so we don't
   // false-positive on the very first render before NextAuth loads.
@@ -104,16 +105,12 @@ export function useSessionExpiry() {
       document.removeEventListener('visibilitychange', onVisibilityChange);
   }, [isSessionExpired, markExpired]);
 
-  // --- Seed hadSessionRef on mount ---
+  // --- Seed hadSessionRef from the SessionProvider context (no extra fetch) ---
   useEffect(() => {
-    getSession().then((session) => {
-      if (session?.user) {
-        hadSessionRef.current = true;
-      }
-    }).catch(() => {
-      // ignore
-    });
-  }, []);
+    if (session?.user) {
+      hadSessionRef.current = true;
+    }
+  }, [session]);
 
   return { isSessionExpired };
 }

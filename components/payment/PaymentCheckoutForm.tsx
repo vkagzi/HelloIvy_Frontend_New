@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import api from '@/lib/api-client';
 import { Input } from '@/components/ui/input';
-import { useModulePrices } from '@/lib/hooks/useModulePrices';
+import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 
 interface LineItem {
   module: string;
@@ -63,7 +63,7 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: authSession, status: authStatus } = useSession();
-  const { getPrice } = useModulePrices();
+  const { getPrice } = useModuleChoices();
   const isLoggedIn = authStatus === 'authenticated' && !!authSession?.user;
   const modulesParam = searchParams?.get('modules') ?? '';
   const stateParam = searchParams?.get('state') ?? '';
