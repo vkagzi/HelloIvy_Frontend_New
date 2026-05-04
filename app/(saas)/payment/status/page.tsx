@@ -33,6 +33,8 @@ export default function PaymentStatusPage() {
   const initialStatus = searchParams?.get('status') ?? '';
   const initialAmount = searchParams?.get('amount') ?? '';
   const initialCurrency = searchParams?.get('currency') ?? 'INR';
+  // order_id is passed for guest checkouts so we can poll without auth
+  const orderId = searchParams?.get('order_id') ?? '';
 
   const [status, setStatus] = useState<PaymentStatus>(
     initialStatus === 'completed' ? 'completed'
@@ -61,7 +63,11 @@ export default function PaymentStatusPage() {
     }
 
     const checkStatus = async () => {
-      const url = `/api/accounts/payment/${paymentId}/status/?type=${paymentType}`;
+      // Use the guest-status endpoint when order_id is available (guest checkout),
+      // otherwise fall back to the authenticated status endpoint.
+      const url = orderId
+        ? `/api/accounts/payment/${paymentId}/guest-status/?order_id=${encodeURIComponent(orderId)}`
+        : `/api/accounts/payment/${paymentId}/status/?type=${paymentType}`;
       console.log(`[PaymentStatus] Polling attempt ${attemptRef.current + 1}: ${url}`);
       try {
         const data = await api<StatusResponse>(url);
@@ -104,7 +110,8 @@ export default function PaymentStatusPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentId, paymentType, initialStatus]);
 
-  const successRedirect = paymentType === 'school' ? '/school/dashboard' : '/subscription';
+  const isGuest = !!orderId;
+  const successRedirect = isGuest ? '/pay-as-student' : (paymentType === 'school' ? '/school/dashboard' : '/subscription');
   const retryUrl = paymentType === 'school' ? '/school/payment' : '/pay-as-student';
 
   return (
@@ -145,8 +152,8 @@ export default function PaymentStatusPage() {
 
             <div className="mt-5 rounded-lg border border-gray-100 bg-gray-50 p-4 text-left">
               <div className="flex justify-between py-1.5">
-                <span className="text-sm text-gray-500">Order Number</span>
-                <span className="text-sm font-semibold text-gray-900">#{paymentId}</span>
+                <span className="text-sm text-gray-500">Order ID</span>
+                <span className="text-sm font-semibold text-gray-900">{orderId || paymentId}</span>
               </div>
               {amount > 0 && (
                 <div className="flex justify-between border-t border-gray-200 py-1.5">
@@ -177,8 +184,8 @@ export default function PaymentStatusPage() {
             {paymentId && (
               <div className="mt-5 rounded-lg border border-gray-100 bg-gray-50 p-4 text-left">
                 <div className="flex justify-between py-1.5">
-                  <span className="text-sm text-gray-500">Order Number</span>
-                  <span className="text-sm font-semibold text-gray-900">#{paymentId}</span>
+                  <span className="text-sm text-gray-500">Order ID</span>
+                  <span className="text-sm font-semibold text-gray-900">{orderId || paymentId}</span>
                 </div>
                 {amount > 0 && (
                   <div className="flex justify-between border-t border-gray-200 py-1.5">
@@ -200,7 +207,7 @@ export default function PaymentStatusPage() {
                 onClick={() => router.push(successRedirect)}
                 className="w-full cursor-pointer rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
-                Go to Dashboard
+                {isGuest ? 'Back to Home' : 'Go to Dashboard'}
               </button>
             </div>
           </>

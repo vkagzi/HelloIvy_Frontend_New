@@ -17,6 +17,7 @@ interface LineItem {
 
 interface CheckoutSession {
   payment_id: number;
+  order_id?: string;
   line_items: { module: string; label: string; price: number }[];
   total: number;
   currency: string;
@@ -186,7 +187,19 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
         return;
       }
 
-      // Fallback: if no payment URL (dummy gateway), confirm directly
+      // Fallback: if no payment URL (dummy gateway)
+      if (!isLoggedIn) {
+        // Guest user: redirect to status page with order_id for verification
+        const statusParams = new URLSearchParams({
+          payment_id: String(result.payment_id),
+          status: 'pending',
+          type: config.mode,
+        });
+        if (result.order_id) statusParams.set('order_id', result.order_id);
+        router.push(`/payment/status?${statusParams.toString()}`);
+        return;
+      }
+
       const confirmUrl = config.confirmEndpoint.replace('{payment_id}', String(result.payment_id));
       await api(confirmUrl, { method: 'POST' });
       router.push(config.successRedirect);
