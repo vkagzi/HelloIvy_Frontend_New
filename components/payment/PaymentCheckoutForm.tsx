@@ -60,7 +60,15 @@ function parseLineItems(modulesParam: string, maxQty: number, priceGetter: (mod:
     });
 }
 
-export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig }) {
+export default function PaymentCheckoutForm({
+  config,
+  createCheckout,
+  confirmPayment,
+}: {
+  config: CheckoutConfig;
+  createCheckout?: (body: any) => Promise<any>;
+  confirmPayment?: (paymentId: number) => Promise<void>;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: authSession, status: authStatus } = useSession();
@@ -171,10 +179,10 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
       if (config.mode === 'student') {
         // Student: create payment session now
         const modules = lineItems.flatMap((item) => Array.from({ length: item.quantity }, () => item.module));
-        result = await api<CheckoutSession>(config.createEndpoint, {
-          method: 'POST',
-          body: { modules, coupon_code: couponCode || undefined, billing_state: stateParam || undefined, ...contactDetails },
-        });
+        const body = { modules, coupon_code: couponCode || undefined, billing_state: stateParam || undefined, ...contactDetails };
+        result = createCheckout
+          ? await createCheckout(body)
+          : await api<CheckoutSession>(config.createEndpoint, { method: 'POST', body });
       } else {
         // School: session already created on mount
         if (!session) return;
@@ -200,8 +208,12 @@ export default function PaymentCheckoutForm({ config }: { config: CheckoutConfig
         return;
       }
 
-      const confirmUrl = config.confirmEndpoint.replace('{payment_id}', String(result.payment_id));
-      await api(confirmUrl, { method: 'POST' });
+      if (confirmPayment) {
+        await confirmPayment(result.payment_id);
+      } else {
+        const confirmUrl = config.confirmEndpoint.replace('{payment_id}', String(result.payment_id));
+        await api(confirmUrl, { method: 'POST' });
+      }
       router.push(config.successRedirect);
     } catch (err: unknown) {
       setPayError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
