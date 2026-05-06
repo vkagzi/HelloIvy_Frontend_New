@@ -41,7 +41,7 @@ async function handleReturn(
   params: Promise<{ orderId: string; type: string }>,
 ) {
   const { orderId, type: paymentType } = await params;
-  const baseUrl = request.nextUrl.origin;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
 
   // Default: redirect to status page in pending state
   let paymentId = '';
