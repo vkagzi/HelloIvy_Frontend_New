@@ -2,58 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { collegeSelectorApi, CollegeSelectorPreferences } from '@/lib/college-selector-api';
-import { Button } from '@/app/_components/Button';
+import { collegeSelectorApi, CollegeSelectorPreferences, DegreeLevelOption } from '@/lib/college-selector-api';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { SelectAutofill } from '@/components/ui/select-autofill';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import { FiIcon } from '@/app/_components/Icons';
+import api from '@/lib/api';
 
 // ================== Constants (from PRD) ==================
-
-const DEGREE_LEVELS = [
-  { value: 'undergraduate', label: 'Undergraduate' },
-  { value: 'masters', label: 'Masters' },
-  { value: 'mba', label: 'MBA' },
-  { value: 'phd', label: 'PhD' },
-];
-
-const DEGREE_TYPES_UG = [
-  'Bachelor of Arts (BA)', 'Bachelor of Science (BS / BSc)', 'Bachelor of Fine Arts (BFA)',
-  'Bachelor of Music (BM / BMus)', 'Bachelor of Design (BDes)', 'Bachelor of Architecture (BArch)',
-  'Bachelor of Engineering (BE)', 'Bachelor of Science in Engineering (BSE / BEng)',
-  'Bachelor of Technology (BTech)', 'Bachelor of Commerce (BCom)',
-  'Bachelor of Business Administration (BBA)', 'Bachelor of Management Studies (BMS)',
-  'Bachelor of Economics (BEcon)', 'Bachelor of Social Work (BSW)', 'Bachelor of Education (BEd)',
-  'Bachelor of Journalism / Mass Communication (BJMC)', 'Bachelor of Communication',
-  'Bachelor of Law (LLB)', 'Bachelor of Computer Applications (BCA)',
-  'Bachelor of Information Technology (BIT)', 'Bachelor of Data Science',
-  'Bachelor of Artificial Intelligence', 'Bachelor of Nursing (BSN)',
-  'Bachelor of Pharmacy (BPharm)', 'Bachelor of Public Health (BPH)',
-  'Bachelor of Physiotherapy (BPT)', 'Bachelor of Occupational Therapy',
-  'Bachelor of Dental Surgery (BDS)', 'Bachelor of Medicine / MBBS',
-  'Bachelor of Veterinary Science', 'Bachelor of Agriculture (BSc Agriculture)',
-  'Bachelor of Environmental Science', 'Bachelor of Hospitality Management',
-  'Bachelor of Hotel Administration', 'Bachelor of Tourism Management',
-  'Bachelor of Culinary Arts', 'Bachelor of Fashion Design', 'Bachelor of Interior Design',
-  'Bachelor of Animation / Game Design', 'Bachelor of Aviation / Aeronautical Studies',
-  'Other',
-];
-
-const DEGREE_TYPES_MASTERS = [
-  'Master of Arts (MA)', 'Master of Science (MS / MSc)', 'Master of Research (MRes)',
-  'Master of Studies (MSt)', 'Master of Liberal Arts (MLA)', 'Master of Interdisciplinary Studies (MIS)',
-  'Integrated Master of Engineering (MEng)', 'Integrated Master of Science (MSci)',
-  'BS/MS in Engineering', 'BS/MS in Computer Science', 'BS/MS in Data Science / AI',
-  'BS/MS in Biotechnology / Life Sciences', 'BBA + MBA Integrated Programs',
-  'BS/BA + Master in Management (MiM)', 'Integrated Business Honors + Master\'s Programs',
-  'Finance or Economics Combined Bachelor\'s + Master\'s',
-  'BA + Master of Public Policy (MPP)', 'BA + Master of International Relations',
-  'BA + Master of Public Administration (MPA)', 'Integrated Social Sciences Master\'s Pathways',
-  'BA/MA in Humanities', 'BA/MA in Languages or Literature',
-  'Integrated Liberal Arts Master\'s Programs', 'Integrated Bachelor + Master of Architecture',
-  'Integrated Design Master\'s Programs', 'Master of Advanced Study (MAS)',
-  'Master of Applied Science (MASc)', 'Master of Business Administration (MBA)',
-  'Executive MBA (EMBA)', 'Master in Management (MiM / MIM)',
-  'Master of Finance (MFin / MiF)', 'PhD', 'MPhil', 'Other',
-];
 
 const MAJOR_OPTIONS = [
   'Accounting', 'Finance', 'Economics', 'Business Administration', 'International Business',
@@ -159,17 +120,100 @@ const TEACHING_STYLES = [
 
 const TOTAL_STEPS = 7;
 
+// ================== Profile → Preferences Mappings ==================
+
+const getDegreeLevelFromProfile = (degreeInterest: string): string => {
+  const lower = degreeInterest.toLowerCase();
+  if (lower.includes('bachelor') || lower === 'mbbs' || lower === 'llb') return 'undergraduate';
+  if (lower.includes('phd') || lower.includes('doctor') || lower === 'juris doctor (jd)') return 'doctorate';
+  if (lower.includes('master') || lower.includes('mba')) return 'postgraduate';
+  return '';
+};
+
+// Maps profile degreeInterest values to preferences degreeType values where they differ
+const PROFILE_TO_PREF_DEGREE_TYPE: Record<string, string> = {
+  'Bachelor of Science (BS)': 'Bachelor of Science (BS / BSc)',
+  'Bachelor of Business Administration (BBA)': 'Bachelor of Business Administration (BBA)',
+  'Bachelor of Engineering (BE/B.Tech)': 'Bachelor of Engineering (BE)',
+  'Bachelor of Fine Arts (BFA)': 'Bachelor of Fine Arts (BFA)',
+  'Bachelor of Commerce (B.Com)': 'Bachelor of Commerce (BCom)',
+  'MBBS': 'Bachelor of Medicine / MBBS-equivalent entry programs',
+  'LLB': 'Bachelor of Law (LLB)',
+  'Master of Arts (MA)': 'Master of Arts (MA)',
+  'Master of Science (MS)': 'Master of Science (MS / MSc)',
+  'Master of Business Administration (MBA)': 'Master of Business Administration (MBA)',
+  'Master of Engineering (ME/M.Tech)': 'Master of Engineering (MEng / ME / MTech)',
+  'Master of Fine Arts (MFA)': 'Master of Fine Arts (MFA)',
+  'Master of Public Health (MPH)': 'Master of Public Health (MPH)',
+  'Master of Education (M.Ed)': 'Master of Education (MEd)',
+  'Doctor of Philosophy (PhD)': 'PhD',
+  'Doctor of Medicine (MD)': 'Doctor of Medicine (MD)',
+  'Juris Doctor (JD)': 'Juris Doctor (JD)',
+  'Doctor of Education (Ed.D)': 'Doctor of Education (EdD)',
+};
+
+const mapProfileDegreeType = (degreeInterest: string, options: string[]): string => {
+  // Check explicit mapping first
+  const mapped = PROFILE_TO_PREF_DEGREE_TYPE[degreeInterest];
+  if (mapped && options.includes(mapped)) return mapped;
+  // Try direct match
+  if (options.includes(degreeInterest)) return degreeInterest;
+  return '';
+};
+
+const getProfileAdditionalDetails = (data: unknown): Record<string, string> | undefined => {
+  if (!data || typeof data !== 'object') return undefined;
+  const root = data as Record<string, unknown>;
+  const profileWrapper = root.profile;
+  if (!profileWrapper || typeof profileWrapper !== 'object') return undefined;
+
+  const profile = profileWrapper as Record<string, unknown>;
+  const directAdditional = profile.additional;
+  if (directAdditional && typeof directAdditional === 'object') {
+    return directAdditional as Record<string, string>;
+  }
+
+  const nestedProfile = profile.profile;
+  if (!nestedProfile || typeof nestedProfile !== 'object') return undefined;
+  const nestedAdditional = (nestedProfile as Record<string, unknown>).additional;
+  if (nestedAdditional && typeof nestedAdditional === 'object') {
+    return nestedAdditional as Record<string, string>;
+  }
+
+  return undefined;
+};
+
+// Maps profile domainInterest to the closest primary major option
+const DOMAIN_TO_MAJOR_MAP: Record<string, string> = {
+  'Technology & IT': 'Computer Science',
+  'Business & Management': 'Business Administration',
+  'Healthcare & Medicine': 'Pre-Medical Studies',
+  'Engineering': 'Mechanical Engineering',
+  'Law & Legal Services': 'Law / Pre-Law',
+  'Finance & Accounting': 'Finance',
+  'Education': 'Education',
+  'Arts & Design': 'Fine Arts',
+  'Science & Research': 'Physics',
+  'Agriculture': 'Agriculture',
+  'Media & Journalism': 'Journalism',
+  'Government & Public Service': 'Public Policy',
+  'Hospitality & Tourism': 'Food Science',
+  'Real Estate': 'Business Administration',
+  'Retail & E-commerce': 'Marketing',
+  'Manufacturing': 'Mechanical Engineering',
+};
+
 // ================== Helper Components ==================
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-600">Step {current} of {total}</span>
-        <span className="text-sm text-gray-500">{Math.round((current / total) * 100)}%</span>
+    <div className="mb-6 space-y-3">
+      <div className="flex items-center justify-between">
+        <Badge variant="secondary">Step {current} of {total}</Badge>
+        <span className="text-sm text-neutral-500">{Math.round((current / total) * 100)}%</span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
-        <div className="bg-green-500 h-2 rounded-full transition-all duration-300" style={{ width: `${(current / total) * 100}%` }} />
+      <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
+        <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${(current / total) * 100}%` }} />
       </div>
     </div>
   );
@@ -179,24 +223,26 @@ function MCQOption({ value, label, desc, selected, onSelect }: {
   value: string; label: string; desc?: string; selected: boolean; onSelect: (v: string) => void;
 }) {
   return (
-    <button
-      type="button" onClick={() => onSelect(value)}
-      className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-        selected ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
-      }`}
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => onSelect(value)}
+      className={cn(
+        'h-auto w-full justify-start gap-3 rounded-xl border-2 p-4 text-left whitespace-normal hover:bg-neutral-50',
+        selected && 'border-primary bg-primary/5 text-primary hover:bg-primary/10'
+      )}
     >
-      <div className="flex items-center gap-3">
-        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-          selected ? 'border-green-500' : 'border-gray-300'
-        }`}>
-          {selected && <div className="w-3 h-3 rounded-full bg-green-500" />}
-        </div>
-        <div>
-          <div className="font-medium text-gray-900">{label}</div>
-          {desc && <div className="text-sm text-gray-500 mt-0.5">{desc}</div>}
-        </div>
-      </div>
-    </button>
+      <span className={cn(
+        'flex size-5 shrink-0 items-center justify-center rounded-full border-2',
+        selected ? 'border-primary' : 'border-neutral-300'
+      )}>
+        {selected && <span className="size-2.5 rounded-full bg-primary" />}
+      </span>
+      <span className="grid gap-1">
+        <span className="font-medium text-neutral-900">{label}</span>
+        {desc && <span className="text-sm font-normal text-neutral-500">{desc}</span>}
+      </span>
+    </Button>
   );
 }
 
@@ -204,47 +250,28 @@ function MultiSelectChip({ label, selected, onToggle }: {
   label: string; selected: boolean; onToggle: () => void;
 }) {
   return (
-    <button
-      type="button" onClick={onToggle}
-      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-        selected ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-      }`}
+    <Button
+      type="button"
+      size="sm"
+      variant={selected ? 'default' : 'secondary'}
+      onClick={onToggle}
+      className="rounded-full"
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
 function SearchableSelect({ options, value, onChange, placeholder }: {
   options: string[]; value: string; onChange: (v: string) => void; placeholder: string;
 }) {
-  const [search, setSearch] = useState('');
-  const [open, setOpen] = useState(false);
-  const filtered = options.filter((o) => o.toLowerCase().includes(search.toLowerCase()));
-
   return (
-    <div className="relative">
-      <input
-        type="text" placeholder={placeholder} value={open ? search : value}
-        onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
-        onFocus={() => setOpen(true)}
-        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
-      />
-      {open && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
-          {filtered.map((opt) => (
-            <button
-              key={opt} type="button"
-              onClick={() => { onChange(opt); setSearch(''); setOpen(false); }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-green-50 ${value === opt ? 'bg-green-50 text-green-700' : 'text-gray-700'}`}
-            >
-              {opt}
-            </button>
-          ))}
-          {filtered.length === 0 && <div className="px-4 py-2 text-sm text-gray-400">No results</div>}
-        </div>
-      )}
-    </div>
+    <SelectAutofill
+      options={options}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+    />
   );
 }
 
@@ -258,6 +285,9 @@ export default function PreferencesPage() {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [degreeLevels, setDegreeLevels] = useState<DegreeLevelOption[]>([]);
+  const [degreeTypesByLevel, setDegreeTypesByLevel] = useState<Record<string, string[]>>({});
+  const [degreeOptionsLoading, setDegreeOptionsLoading] = useState(true);
 
   // Step 1: Degree Goals
   const [degreeLevel, setDegreeLevel] = useState('');
@@ -292,6 +322,33 @@ export default function PreferencesPage() {
   const [prestigeImportant, setPrestigeImportant] = useState(false);
   const [additionalNotes, setAdditionalNotes] = useState('');
 
+  // Reset degree type when degree level changes
+  useEffect(() => {
+    const options = degreeTypesByLevel[degreeLevel] ?? [];
+    if (degreeType && !options.includes(degreeType)) {
+      setDegreeType('');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [degreeLevel, degreeTypesByLevel]);
+
+  // Fetch degree levels and degree types from Django
+  useEffect(() => {
+    const fetchDegreeOptions = async () => {
+      setDegreeOptionsLoading(true);
+      try {
+        const data = await collegeSelectorApi.getDegreeOptions();
+        setDegreeLevels(data.degree_levels);
+        setDegreeTypesByLevel(data.degree_types);
+      } catch (err) {
+        console.error('Failed to fetch degree options:', err);
+        setError('Failed to load degree options. Please refresh and try again.');
+      } finally {
+        setDegreeOptionsLoading(false);
+      }
+    };
+    fetchDegreeOptions();
+  }, []);
+
   // Check if session already has preferences
   useEffect(() => {
     const checkPreferences = async () => {
@@ -307,10 +364,48 @@ export default function PreferencesPage() {
     checkPreferences();
   }, [sessionId, router]);
 
-  const getDegreeTypes = () => {
-    if (degreeLevel === 'undergraduate') return DEGREE_TYPES_UG;
-    return DEGREE_TYPES_MASTERS;
-  };
+  // Prefill from profile data
+  useEffect(() => {
+    const prefillFromProfile = async () => {
+      try {
+        const data = await api('/api/profiles/');
+        const additional = getProfileAdditionalDetails(data);
+        if (!additional) return;
+
+        // Prefill degree level and degree type from degreeInterest
+        const rawProfileDegree = additional.degreeInterest;
+        const customProfileDegree = additional.degreeInterestOther;
+        const profileDegree = rawProfileDegree === 'Other' ? customProfileDegree : rawProfileDegree;
+        if (profileDegree && profileDegree !== 'None') {
+          const level = getDegreeLevelFromProfile(profileDegree);
+          if (level) {
+            setDegreeLevel((prev) => prev || level);
+            const typeOptions = degreeTypesByLevel[level] ?? [];
+            const mappedType = mapProfileDegreeType(profileDegree, typeOptions);
+            if (mappedType) {
+              setDegreeType((prev) => prev || mappedType);
+            }
+          }
+        }
+
+        // Prefill primary major from domainInterest
+        const profileDomain = additional.domainInterest;
+        if (profileDomain && profileDomain !== 'None' && profileDomain !== 'Other') {
+          const mappedMajor = DOMAIN_TO_MAJOR_MAP[profileDomain];
+          if (mappedMajor && MAJOR_OPTIONS.includes(mappedMajor)) {
+            setPrimaryMajor((prev) => prev || mappedMajor);
+          }
+        }
+      } catch {
+        // Profile fetch failed — continue without prefill
+      }
+    };
+    if (!degreeOptionsLoading) {
+      prefillFromProfile();
+    }
+  }, [degreeOptionsLoading, degreeTypesByLevel]);
+
+  const getDegreeTypes = () => degreeTypesByLevel[degreeLevel] ?? [];
 
   const toggleCountry = (country: string) => {
     if (countries.includes(country)) {
@@ -369,32 +464,38 @@ export default function PreferencesPage() {
   };
 
   return (
-    <div className="h-full overflow-auto bg-white">
-      <div className="mx-auto max-w-2xl px-4 py-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">College Selection Preferences</h1>
-        <p className="text-gray-500 mb-6">Tell us what you&apos;re looking for so we can find the best colleges for you.</p>
+    <div className="h-full overflow-auto bg-neutral-50">
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <Card>
+          <CardContent className="p-6 md:p-8">
+            <h1 className="mb-2 text-2xl font-bold text-neutral-900">College Selection Preferences</h1>
+            <p className="mb-6 text-neutral-500">Tell us what you&apos;re looking for so we can find the best colleges for you.</p>
 
-        <StepIndicator current={step} total={TOTAL_STEPS} />
+            <StepIndicator current={step} total={TOTAL_STEPS} />
 
         {/* Step 1: Degree Goals */}
         {step === 1 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">1. Degree Goals</h2>
-            <p className="text-gray-600">Which degree do you wish to pursue?</p>
+            <h2 className="text-xl font-semibold text-neutral-900">1. Degree Goals</h2>
+            <p className="text-neutral-600">Which degree do you wish to pursue?</p>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Degree Level *</label>
-              <div className="grid grid-cols-2 gap-3">
-                {DEGREE_LEVELS.map((d) => (
-                  <MCQOption key={d.value} value={d.value} label={d.label}
-                    selected={degreeLevel === d.value} onSelect={setDegreeLevel} />
-                ))}
-              </div>
+              <Label className="mb-2">Degree Level *</Label>
+              {degreeOptionsLoading ? (
+                <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-500">Loading degree options...</div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {degreeLevels.map((d) => (
+                    <MCQOption key={d.value} value={d.value} label={d.label}
+                      selected={degreeLevel === d.value} onSelect={setDegreeLevel} />
+                  ))}
+                </div>
+              )}
             </div>
 
             {degreeLevel && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Degree Type *</label>
+                <Label className="mb-2">Degree Type *</Label>
                 <SearchableSelect
                   options={getDegreeTypes()} value={degreeType}
                   onChange={setDegreeType} placeholder="Search degree type..."
@@ -403,7 +504,7 @@ export default function PreferencesPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Primary Major / Area of Concentration *</label>
+              <Label className="mb-2">Primary Major / Area of Concentration *</Label>
               <SearchableSelect
                 options={MAJOR_OPTIONS} value={primaryMajor}
                 onChange={setPrimaryMajor} placeholder="Search major..."
@@ -411,7 +512,7 @@ export default function PreferencesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Major / Minor (Optional)</label>
+              <Label className="mb-2">Secondary Major / Minor (Optional)</Label>
               <SearchableSelect
                 options={['Not Applicable', ...MAJOR_OPTIONS]} value={secondaryMajor}
                 onChange={setSecondaryMajor} placeholder="Not Applicable"
@@ -423,10 +524,10 @@ export default function PreferencesPage() {
         {/* Step 2: Country Selection */}
         {step === 2 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">2. Country Preferences</h2>
-            <p className="text-gray-600">
+            <h2 className="text-xl font-semibold text-neutral-900">2. Country Preferences</h2>
+            <p className="text-neutral-600">
               We will shortlist 20 colleges from across the countries you pick. Select up to 5.
-              <span className="ml-2 text-sm text-green-600 font-medium">{countries.length}/5 selected</span>
+              <Badge variant="secondary" className="ml-2">{countries.length}/5 selected</Badge>
             </p>
             <div className="flex flex-wrap gap-2">
               {COUNTRY_OPTIONS.map((country) => (
@@ -437,9 +538,9 @@ export default function PreferencesPage() {
               ))}
             </div>
             {countries.length > 0 && (
-              <div className="p-4 rounded-lg bg-green-50 border border-green-200">
-                <p className="text-sm font-medium text-green-800">Your selection:</p>
-                <p className="text-sm text-green-700 mt-1">{countries.join(', ')}</p>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <p className="text-sm font-medium text-primary">Your selection:</p>
+                <p className="mt-1 text-sm text-neutral-700">{countries.join(', ')}</p>
               </div>
             )}
           </div>
@@ -448,8 +549,8 @@ export default function PreferencesPage() {
         {/* Step 3: Campus Setting */}
         {step === 3 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">3. Campus Setting</h2>
-            <p className="text-gray-600">What kind of campus environment do you prefer?</p>
+            <h2 className="text-xl font-semibold text-neutral-900">3. Campus Setting</h2>
+            <p className="text-neutral-600">What kind of campus environment do you prefer?</p>
             <div className="space-y-3">
               {CAMPUS_SETTINGS.map((s) => (
                 <MCQOption key={s.value} value={s.value} label={s.label} desc={s.desc}
@@ -458,21 +559,18 @@ export default function PreferencesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">How important is this preference?</label>
-              <div className="flex gap-3">
+              <Label className="mb-2">How important is this preference?</Label>
+              <div className="flex flex-wrap gap-3">
                 {CAMPUS_IMPORTANCE.map((i) => (
-                  <button key={i.value} type="button" onClick={() => setCampusImportance(i.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                      campusImportance === i.value ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}>
+                  <Button key={i.value} type="button" variant={campusImportance === i.value ? 'default' : 'outline'} onClick={() => setCampusImportance(i.value)}>
                     {i.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Geographic Climate Preference</label>
+              <Label className="mb-2">Geographic Climate Preference</Label>
               <div className="grid grid-cols-2 gap-3">
                 {CLIMATE_OPTIONS.map((c) => (
                   <MCQOption key={c.value} value={c.value} label={c.label}
@@ -486,8 +584,8 @@ export default function PreferencesPage() {
         {/* Step 4: Type of College */}
         {step === 4 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">4. Type of College</h2>
-            <p className="text-gray-600">What type of institution are you interested in?</p>
+            <h2 className="text-xl font-semibold text-neutral-900">4. Type of College</h2>
+            <p className="text-neutral-600">What type of institution are you interested in?</p>
             <div className="space-y-3">
               {COLLEGE_TYPES.map((t) => (
                 <MCQOption key={t.value} value={t.value} label={t.label}
@@ -495,7 +593,7 @@ export default function PreferencesPage() {
               ))}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Why does this matter to you most? (select all that apply)</label>
+              <Label className="mb-2">Why does this matter to you most? (select all that apply)</Label>
               <div className="flex flex-wrap gap-2">
                 {COLLEGE_TYPE_REASONS.map((r) => (
                   <MultiSelectChip key={r} label={r} selected={collegeTypeReasons.includes(r)}
@@ -509,8 +607,8 @@ export default function PreferencesPage() {
         {/* Step 5: Research Intensity */}
         {step === 5 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">5. Research Intensity</h2>
-            <p className="text-gray-600">How important are research opportunities in your college experience?</p>
+            <h2 className="text-xl font-semibold text-neutral-900">5. Research Intensity</h2>
+            <p className="text-neutral-600">How important are research opportunities in your college experience?</p>
             <div className="space-y-3">
               {RESEARCH_LEVELS.map((r) => (
                 <MCQOption key={r.value} value={r.value} label={r.label}
@@ -518,7 +616,7 @@ export default function PreferencesPage() {
               ))}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Preferred research exposure (select all that apply)</label>
+              <Label className="mb-2">Preferred research exposure (select all that apply)</Label>
               <div className="flex flex-wrap gap-2">
                 {RESEARCH_EXPOSURE.map((r) => (
                   <MultiSelectChip key={r} label={r} selected={researchExposure.includes(r)}
@@ -532,11 +630,11 @@ export default function PreferencesPage() {
         {/* Step 6: Cultural Fit */}
         {step === 6 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">6. Cultural Fit</h2>
-            <p className="text-gray-600">What kind of campus culture would you thrive in? (select all that apply)</p>
+            <h2 className="text-xl font-semibold text-neutral-900">6. Cultural Fit</h2>
+            <p className="text-neutral-600">What kind of campus culture would you thrive in? (select all that apply)</p>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Academic & Intellectual</label>
+              <Label className="mb-2">Academic & Intellectual</Label>
               <div className="flex flex-wrap gap-2">
                 {CULTURAL_FIT_ACADEMIC.map((c) => (
                   <MultiSelectChip key={c} label={c} selected={culturalFit.includes(c)}
@@ -546,7 +644,7 @@ export default function PreferencesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Social Environment</label>
+              <Label className="mb-2">Social Environment</Label>
               <div className="flex flex-wrap gap-2">
                 {CULTURAL_FIT_SOCIAL.map((c) => (
                   <MultiSelectChip key={c} label={c} selected={culturalFit.includes(c)}
@@ -556,15 +654,12 @@ export default function PreferencesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">How important is &quot;fit&quot; in your final decision?</label>
-              <div className="flex gap-3">
+              <Label className="mb-2">How important is &quot;fit&quot; in your final decision?</Label>
+              <div className="flex flex-wrap gap-3">
                 {FIT_IMPORTANCE.map((f) => (
-                  <button key={f.value} type="button" onClick={() => setFitImportance(f.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                      fitImportance === f.value ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}>
+                  <Button key={f.value} type="button" variant={fitImportance === f.value ? 'default' : 'outline'} onClick={() => setFitImportance(f.value)}>
                     {f.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -574,10 +669,10 @@ export default function PreferencesPage() {
         {/* Step 7: Class Size, Teaching & Final */}
         {step === 7 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">7. Class Size, Teaching & Final Preferences</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">7. Class Size, Teaching & Final Preferences</h2>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">What learning environment do you prefer?</label>
+              <Label className="mb-2">What learning environment do you prefer?</Label>
               <div className="space-y-3">
                 {CLASS_SIZES.map((s) => (
                   <MCQOption key={s.value} value={s.value} label={s.label}
@@ -587,7 +682,7 @@ export default function PreferencesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Which teaching style appeals more to you?</label>
+              <Label className="mb-2">Which teaching style appeals more to you?</Label>
               <div className="space-y-3">
                 {TEACHING_STYLES.map((t) => (
                   <MCQOption key={t.value} value={t.value} label={t.label}
@@ -597,31 +692,32 @@ export default function PreferencesPage() {
             </div>
 
             <div className="space-y-3">
-              <label className="flex items-center gap-3 p-4 rounded-lg border-2 border-gray-200 cursor-pointer hover:border-gray-300">
-                <input type="checkbox" checked={financialAidRequired}
-                  onChange={(e) => setFinancialAidRequired(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-green-500 focus:ring-green-500"
+              <Label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-neutral-200 p-4 hover:border-neutral-300">
+                <Checkbox
+                  checked={financialAidRequired}
+                  onCheckedChange={(checked) => setFinancialAidRequired(checked === true)}
+                  className="size-5"
                 />
-                <span className="text-gray-900">I require financial aid or scholarship</span>
-              </label>
+                <span className="text-neutral-900">I require financial aid or scholarship</span>
+              </Label>
 
-              <label className="flex items-center gap-3 p-4 rounded-lg border-2 border-gray-200 cursor-pointer hover:border-gray-300">
-                <input type="checkbox" checked={prestigeImportant}
-                  onChange={(e) => setPrestigeImportant(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-green-500 focus:ring-green-500"
+              <Label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-neutral-200 p-4 hover:border-neutral-300">
+                <Checkbox
+                  checked={prestigeImportant}
+                  onCheckedChange={(checked) => setPrestigeImportant(checked === true)}
+                  className="size-5"
                 />
-                <span className="text-gray-900">The prestige of the college is an important factor in my decision</span>
-              </label>
+                <span className="text-neutral-900">The prestige of the college is an important factor in my decision</span>
+              </Label>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Label className="mb-2">
                 Is there anything else you would like us to consider? (Optional)
-              </label>
-              <textarea
+              </Label>
+              <Textarea
                 value={additionalNotes} onChange={(e) => setAdditionalNotes(e.target.value)}
                 placeholder="E.g., specific colleges you're interested in, budget constraints, location preferences..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none resize-none"
                 rows={4}
               />
             </div>
@@ -629,11 +725,11 @@ export default function PreferencesPage() {
         )}
 
         {error && (
-          <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between mt-8 pb-8">
+        <div className="flex justify-between mt-8">
           <Button
             variant="outline" size="lg"
             onClick={() => setStep(Math.max(1, step - 1))}
@@ -644,16 +740,16 @@ export default function PreferencesPage() {
 
           {step < TOTAL_STEPS ? (
             <Button
-              variant="primary" size="lg"
+              size="lg"
               onClick={() => setStep(step + 1)}
               disabled={!canProceed()}
-              iconRight={<FiIcon name="arrow-small-right" className="h-5 w-5" />}
             >
               Next
+              <FiIcon name="arrow-small-right" className="h-5 w-5" />
             </Button>
           ) : (
             <Button
-              variant="primary" size="lg"
+              size="lg"
               onClick={handleSubmit}
               disabled={saving || !canProceed()}
             >
@@ -661,6 +757,8 @@ export default function PreferencesPage() {
             </Button>
           )}
         </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

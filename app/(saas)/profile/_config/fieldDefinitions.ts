@@ -138,12 +138,15 @@ export const POSTGRADUATE_DEGREE_PROGRAMS = [
   'M.Ed (Master of Education)',
   'M.L.L.B. (Master of Laws)',
   'M.P.T. (Master of Physiotherapy)',
-  'M.D. (Doctor of Medicine)',
   'M.D.S. (Master of Dental Surgery)',
   'M.C.A. (Master of Computer Applications)',
   'M.S.W. (Master of Social Work)',
   'LL.M. (Master of Laws)',
-  'M.B.B.S. (Master of Medicine & Surgery)',
+  'Other',
+];
+
+export const DOCTORATE_DEGREE_PROGRAMS = [
+  'M.D. (Doctor of Medicine)',
   'Ph.D. (Doctor of Philosophy)',
   'Other',
 ];
@@ -837,9 +840,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
       map: {
         'College/Undergraduate': UNDERGRADUATE_DEGREE_PROGRAMS,
         Postgraduate: POSTGRADUATE_DEGREE_PROGRAMS,
+        Doctorate: DOCTORATE_DEGREE_PROGRAMS,
         'Working/Completed College': [
           ...UNDERGRADUATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
           ...POSTGRADUATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
+          ...DOCTORATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
           'Other',
         ],
       },
@@ -847,7 +852,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
         'Associate',
         'Bachelor',
         'Master',
-        'Doctorate',
+        ...DOCTORATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
         'Professional',
         'Certificate',
         'Diploma',
