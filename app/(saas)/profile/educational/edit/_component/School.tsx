@@ -9,6 +9,7 @@ import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
 import { isFieldVisible } from '@/app/_components/dynamic-form/utils/utils';
+import TranscriptUploader from '@/app/_components/TranscriptUploader';
 
 /** Returns the list of grades to display in descending order (always 2 grades) */
 const computeGradesToShow = (
@@ -239,6 +240,42 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
       });
     });
   }, [gradesToShow.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // Watch for changes in the form data (e.g. from AI uploader) to sync subject rows
+  const watchedSectionData = useWatch({
+    control: form.control,
+    name: sectionType as any,
+  });
+
+  useEffect(() => {
+    if (!Array.isArray(watchedSectionData)) return;
+
+    setSubjectRowsByGrade((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      watchedSectionData.forEach((entry, idx) => {
+        const grade = gradesToShow[idx];
+        if (grade === undefined) return;
+
+        const subjectsFieldName = section.repeatables?.name ?? 'subjects';
+        const formSubjects = (entry as Record<string, unknown>)?.[subjectsFieldName] as any[];
+        
+        if (Array.isArray(formSubjects)) {
+          const currentRows = prev[grade] || [];
+          if (formSubjects.length !== currentRows.length) {
+            changed = true;
+            next[grade] = formSubjects.map((s, sIdx) => ({
+              _id: currentRows[sIdx]?._id || nanoid(),
+              ...s
+            }));
+          }
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [watchedSectionData, gradesToShow, section.repeatables?.name]);
 
   // Add a subject row to a specific grade
   const handleAddSubjectRow = (grade: number, schoolIdx: number): void => {
@@ -372,11 +409,13 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
             key={gradeForSchool}
             className="mb-6 flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
           >
-            {/* School Heading */}
             <div className="mb-5">
-              <Label size="lg" className="font-semibold text-neutral-900">
-                {gradeLabel} Basic Details
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label size="lg" className="font-semibold text-neutral-900">
+                  {gradeLabel} Basic Details
+                </Label>
+                <TranscriptUploader targetIndex={schoolIdx} />
+              </div>
               {schoolIdx > 0 && (
                 <div className="mb-3 flex items-center gap-2">
                   <input

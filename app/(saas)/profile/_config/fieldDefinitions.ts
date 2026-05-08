@@ -121,6 +121,23 @@ export const UNDERGRADUATE_DEGREE_PROGRAMS = [
   'B.N. (Bachelor of Nursing)',
   'B.J. (Bachelor of Journalism)',
   'B.C.A. (Bachelor of Computer Applications)',
+  'Integrated Master of Engineering (MEng)',
+  'Integrated Master of Science (MSci / MSc)',
+  'BS/MS in Engineering',
+  'BS/MS in Computer Science',
+  'BS/MS in Data Science / AI',
+  'BS/MS in Biotechnology / Life Sciences',
+  'BBA + MBA Integrated Programs',
+  'BS/BA + Master in Management (MiM)',
+  'BA + Master of Public Policy (MPP)',
+  'BA + Master of International Relations',
+  'BA + Master of Public Administration (MPA)',
+  'Integrated Social Sciences Master’s Pathways',
+  'BA/MA in Humanities',
+  'BA/MA in Languages or Literature',
+  'Integrated Liberal Arts Master’s Programs',
+  'Integrated Bachelor + Master of Architecture',
+  'Integrated Design Master’s Programs',
   'Other',
 ];
 
@@ -145,6 +162,18 @@ export const POSTGRADUATE_DEGREE_PROGRAMS = [
   'LL.M. (Master of Laws)',
   'M.B.B.S. (Master of Medicine & Surgery)',
   'Ph.D. (Doctor of Philosophy)',
+  'Master of Science (MS / MSc)',
+  'Master of Research (MRes)',
+  'Master of Studies (MSt)',
+  'Master of Liberal Arts (MLA / ALM)',
+  'Master of Interdisciplinary Studies (MIS / MAIS)',
+  'Master of Advanced Study (MAS)',
+  'Master of Applied Science (MASc)',
+  'Executive MBA (EMBA)',
+  'Master in Management (MiM / MIM)',
+  'Master of Finance (MFin / MiF)',
+  'Master of Arts (MA)',
+  'Mphil',
   'Other',
 ];
 
@@ -628,9 +657,9 @@ export const educationalFieldDefs: FieldDefinition[] = [
     placeholder: 'Select academic level',
     options: [
       'High School (8th–12th grade)',
-      'College/Undergraduate',
+      'Undergraduate',
       'Postgraduate',
-      'Working/Completed College',
+      'Working Professional',
     ],
     required: true,
   },
@@ -650,7 +679,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
           'Grade 11',
           'Grade 12',
         ],
-        'College/Undergraduate': [
+        Undergraduate: [
           'Year 1',
           'Year 2',
           'Year 3',
@@ -658,6 +687,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
           'Year 5',
         ],
         Postgraduate: ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+        'Working Professional': ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
       },
     },
     visibility: {
@@ -665,8 +695,9 @@ export const educationalFieldDefs: FieldDefinition[] = [
         field_id: 'academicLevel',
         value: [
           'High School (8th–12th grade)',
-          'College/Undergraduate',
+          'Undergraduate',
           'Postgraduate',
+          'Working Professional',
         ],
       },
     },
@@ -705,6 +736,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     label: 'Month of Completion',
     placeholder: 'Select month & year',
     required: true,
+    maxYear: 2035,
   },
   {
     id: 'board',
@@ -835,9 +867,9 @@ export const educationalFieldDefs: FieldDefinition[] = [
     optionsDependsOn: {
       fieldId: 'academicLevel',
       map: {
-        'College/Undergraduate': UNDERGRADUATE_DEGREE_PROGRAMS,
+        'Undergraduate': UNDERGRADUATE_DEGREE_PROGRAMS,
         Postgraduate: POSTGRADUATE_DEGREE_PROGRAMS,
-        'Working/Completed College': [
+        'Working Professional': [
           ...UNDERGRADUATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
           ...POSTGRADUATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
           'Other',
@@ -868,7 +900,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     label: 'Start Year',
     placeholder: 'Select start year',
     options: Array.from(
-      { length: new Date().getFullYear() - 1960 + 1 },
+      { length: 2030 - 1960 + 1 },
       (_, i) => (1960 + i).toString()
     ),
     required: true,
@@ -883,15 +915,20 @@ export const educationalFieldDefs: FieldDefinition[] = [
     optionsDependsOn: {
       fieldId: 'academicLevel',
       map: {
-        'College/Undergraduate': Array.from({ length: 10 }, (_, i) =>
-          (new Date().getFullYear() + i).toString()
-        ),
-        Postgraduate: Array.from(
-          { length: new Date().getFullYear() - 1960 + 1 },
+        'High School (8th–12th grade)': Array.from(
+          { length: 2035 - 1960 + 1 },
           (_, i) => (1960 + i).toString()
         ),
-        'Working/Completed College': Array.from(
-          { length: new Date().getFullYear() - 1960 + 1 },
+        'Undergraduate': Array.from(
+          { length: 2035 - 1960 + 1 },
+          (_, i) => (1960 + i).toString()
+        ),
+        Postgraduate: Array.from(
+          { length: 2035 - 1960 + 1 },
+          (_, i) => (1960 + i).toString()
+        ),
+        'Working Professional': Array.from(
+          { length: 2035 - 1960 + 1 },
           (_, i) => (1960 + i).toString()
         ),
       },
@@ -926,7 +963,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'text',
     label: 'Your Score/ GPA/ Percentage',
     placeholder: 'Enter your score, GPA, or percentage',
-    required: false,
+    required: true,
   },
 
   {
@@ -1378,40 +1415,10 @@ export const educationalLayout: LayoutBlock[] = [
     },
   },
   {
-    type: 'undergraduate',
-    fields: [
-      'institutionName',
-      'degree',
-      'major',
-      'startYear',
-      'endYear',
-      'overallPercentage',
-      'maximumPossibleGPA',
-      'estimatedRank',
-      'redFlags',
-    ],
-    columns: 3,
-    visibility: {
-      depends_on: {
-        field_id: 'academicLevel',
-        value: ['College/Undergraduate'],
-      },
-    },
-    repeatables: {
-      fields: ['score', 'highestTotalScore'],
-      name: 'years',
-      repeatable: true,
-      repeatable_option: {
-        add: '+ Add Year',
-        show_default: 1,
-        min: 1,
-      },
-    },
-  },
-  {
     type: 'postgraduate',
     fields: [
       'institutionName',
+      'city',
       'degree',
       'major',
       'startYear',
@@ -1440,9 +1447,10 @@ export const educationalLayout: LayoutBlock[] = [
     },
   },
   {
-    type: 'tenPlus',
+    type: 'undergraduate',
     fields: [
       'institutionName',
+      'city',
       'degree',
       'major',
       'startYear',
@@ -1456,7 +1464,71 @@ export const educationalLayout: LayoutBlock[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['Working/Completed College'],
+        value: ['Undergraduate'],
+      },
+    },
+    repeatables: {
+      fields: ['score', 'highestTotalScore'],
+      name: 'years',
+      repeatable: true,
+      repeatable_option: {
+        add: '+ Add Year',
+        show_default: 4,
+        min: 1,
+      },
+    },
+  },
+  {
+    type: 'undergraduate_prereq',
+    fields: [
+      'institutionName',
+      'city',
+      'degree',
+      'major',
+      'startYear',
+      'endYear',
+      'overallPercentage',
+      'maximumPossibleGPA',
+      'estimatedRank',
+      'redFlags',
+    ],
+    columns: 3,
+    visibility: {
+      depends_on: {
+        field_id: 'academicLevel',
+        value: ['Postgraduate'],
+      },
+    },
+    repeatables: {
+      fields: ['score', 'highestTotalScore'],
+      name: 'years',
+      repeatable: true,
+      repeatable_option: {
+        add: '+ Add Year',
+        show_default: 4,
+        min: 1,
+      },
+    },
+  },
+  {
+    type: 'tenPlus',
+    fields: [
+      'institutionName',
+      'city',
+      'degree',
+      'major',
+      'startYear',
+      'endYear',
+      'overallPercentage',
+      'maximumPossibleGPA',
+      'estimatedRank',
+      'redFlags',
+    ],
+    columns: 3,
+    visibility: {
+      depends_on: {
+        field_id: 'academicLevel',
+        value: ['Working Professional'],
       },
     },
     repeatables: {
@@ -1721,6 +1793,7 @@ export const professionalFieldDefs: FieldDefinition[] = [
       'Entrepreneurship',
       'Family Business',
       'Freelance',
+      'Project',
     ],
     placeholder: 'Select experience type',
     required: true,
@@ -1803,6 +1876,21 @@ export const professionalFieldDefs: FieldDefinition[] = [
     label: 'Your Responsibilities',
     placeholder: 'Describe your responsibilities',
     required: false,
+    width: 2,
+  },
+  {
+    id: 'startDate',
+    type: 'date',
+    label: 'Start Date',
+    placeholder: 'DD/MM/YYYY',
+    required: false,
+  },
+  {
+    id: 'endDate',
+    type: 'date',
+    label: 'End Date',
+    placeholder: 'DD/MM/YYYY',
+    required: false,
   },
   {
     id: 'achievements',
@@ -1833,10 +1921,10 @@ export const professionalLayout: LayoutBlock[] = [
       'experienceType',
       'industrySector',
       'currentEmployer',
-      'city',
-      'durationValue',
-      'durationUnit',
       'jobTitle',
+      'startDate',
+      'endDate',
+      'city',
       'responsibilities',
       'achievements',
       'reasonForLeaving',
@@ -2114,12 +2202,12 @@ export const getExtracurricularTitle = (
 ): string => {
   if (!academicLevel) return 'Extra Curricular Activities';
   const levels = Array.isArray(academicLevel) ? academicLevel : [academicLevel];
-  if (levels.includes('Working/Completed College')) {
+  if (levels.includes('Working Professional')) {
     return 'Extracurriculars during UG/PG, Work/Internship/Startup Experience';
   }
   if (
     levels.includes('Postgraduate') ||
-    levels.includes('College/Undergraduate')
+    levels.includes('Undergraduate')
   ) {
     return 'Extracurriculars during School/Highschool, UG/PG, Work/Internship/Startup Experience';
   }

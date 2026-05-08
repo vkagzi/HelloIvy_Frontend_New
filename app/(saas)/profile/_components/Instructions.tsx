@@ -6,6 +6,7 @@ interface InstructionsProps {
   content?: string;
   readMoreHref?: string;
   onListen?: () => void;
+  action?: React.ReactNode;
 }
 
 const Instructions: React.FC<InstructionsProps> = ({
@@ -13,6 +14,7 @@ const Instructions: React.FC<InstructionsProps> = ({
   content = `Please provide comprehensive information about your educational background. This includes your degree, field of study, institution details, and academic achievements. Accurate information helps us deliver personalized career guidance and relevant opportunities tailored to your qualifications and goals.`,
   readMoreHref = '#',
   onListen,
+  action,
 }) => {
   const [expanded, setExpanded] = React.useState(false);
 
@@ -44,11 +46,12 @@ const Instructions: React.FC<InstructionsProps> = ({
         <div className={`text-para-sm text-neutral-600 ${expanded ? '' : 'line-clamp-2'}`}>
           {content}
         </div>
-        <div className="flex flex-col gap-1.5 rounded-lg p-1">
+        <div className="flex items-center justify-end">
+          {action && <div className="mr-4 flex-shrink-0">{action}</div>}
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
-            className="text-label-sm cursor-pointer self-start font-medium text-blue-500 hover:text-blue-700"
+            className="text-label-sm cursor-pointer font-medium text-blue-500 hover:text-blue-700"
           >
             {expanded ? 'Show Less' : 'Read More'}
           </button>

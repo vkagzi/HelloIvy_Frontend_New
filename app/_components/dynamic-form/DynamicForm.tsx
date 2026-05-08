@@ -155,11 +155,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   let { schema } = generateDynamicFormSchema(fieldDefs, layout);
 
   // Add test scores validation schema
-  const percentileField = z
-    .number()
-    .min(1, 'Percentile must be at least 1')
-    .max(100, 'Percentile must be at most 100')
-    .optional();
+  const percentileField = z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
+    z.number().min(1, 'Percentile must be at least 1').max(100, 'Percentile must be at most 100').optional()
+  );
 
   const testScoresSchema = z.object({
     testScores: z
@@ -1007,6 +1006,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         } else if (
           (innerItem.type === 'highSchool' ||
             innerItem.type === 'undergraduate' ||
+            innerItem.type === 'undergraduate_prereq' ||
             innerItem.type === 'postgraduate' ||
             innerItem.type === 'tenPlus' ||
             innerItem.type === 'professional') &&
@@ -1259,6 +1259,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       if (
         item.type === 'highSchool' ||
         item.type === 'undergraduate' ||
+        item.type === 'undergraduate_prereq' ||
         item.type === 'postgraduate' ||
         item.type === 'tenPlus'
       ) {
@@ -1414,7 +1415,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
   return (
     <form
-      onSubmit={form.handleSubmit((values) => {
+      onSubmit={form.handleSubmit(async (values) => {
         // Filter out empty rows before validation
         const cleanedValues = filterEmptyRows(values);
         const result = schema.safeParse(cleanedValues);
@@ -1470,7 +1471,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           return;
         }
         setErrors({});
-        onSubmit(cleanedValues);
+        await onSubmit(cleanedValues);
         if (shouldNavigate && onSaveAndNavigate) {
           onSaveAndNavigate();
           setShouldNavigate(false);

@@ -8,6 +8,8 @@ import { FieldRenderer } from '@/app/_components/dynamic-form/FieldRenderer';
 import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
+import TranscriptUploader from '@/app/_components/TranscriptUploader';
+import { UNDERGRADUATE_DEGREE_PROGRAMS, POSTGRADUATE_DEGREE_PROGRAMS } from '@/app/(saas)/profile/_config/fieldDefinitions';
 
 interface GraduateBlockProps {
   section: LayoutItem;
@@ -247,16 +249,19 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
             <Label size="lg" className="font-semibold text-neutral-900">
               Degree {degreeIdx + 1} - Basic Details
             </Label>
-            {degrees.length > minDegrees && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                label="Remove Degree"
-                className="text-blue-500"
-                onClick={() => handleRemoveDegree(degree.key, degreeIdx)}
-              />
-            )}
+            <div className="flex items-center gap-3">
+              <TranscriptUploader targetSection={sectionType} targetIndex={degreeIdx} />
+              {degrees.length > minDegrees && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  label="Remove Degree"
+                  className="text-blue-500"
+                  onClick={() => handleRemoveDegree(degree.key, degreeIdx)}
+                />
+              )}
+            </div>
           </div>
 
           {/* Degree Fields */}
@@ -276,6 +281,17 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                   ...fieldDef,
                   id: controllerName,
                 };
+                const getOptionsOverride = (fid: string) => {
+                  if (fid !== 'degree') return undefined;
+                  if (sectionType === 'undergraduate' || sectionType === 'undergraduate_prereq') {
+                    return UNDERGRADUATE_DEGREE_PROGRAMS;
+                  }
+                  if (sectionType === 'postgraduate') {
+                    return POSTGRADUATE_DEGREE_PROGRAMS;
+                  }
+                  return undefined;
+                };
+
                 return (
                   <div key={fieldDef.id}>
                     <Controller
@@ -290,6 +306,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                           inputHeightClass="py-2"
                           labelHeightClass="text-label-md"
                           inputWidthClass="w-full"
+                          optionsOverride={getOptionsOverride(fieldDef.id)}
                         />
                       )}
                     />
@@ -396,6 +413,17 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                   ...fieldDef,
                   id: controllerName,
                 };
+                const getOptionsOverride = (fid: string) => {
+                  if (fid !== 'degree') return undefined;
+                  if (sectionType === 'undergraduate' || sectionType === 'undergraduate_prereq') {
+                    return UNDERGRADUATE_DEGREE_PROGRAMS;
+                  }
+                  if (sectionType === 'postgraduate') {
+                    return POSTGRADUATE_DEGREE_PROGRAMS;
+                  }
+                  return undefined;
+                };
+
                 return (
                   <div key={fieldDef.id}>
                     <Controller
@@ -410,6 +438,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                           inputHeightClass="py-2"
                           labelHeightClass="text-label-md"
                           inputWidthClass="w-full"
+                          optionsOverride={getOptionsOverride(fieldDef.id)}
                         />
                       )}
                     />

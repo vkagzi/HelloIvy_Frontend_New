@@ -80,7 +80,7 @@ const api = async <T = any>(
   options: ApiOptions = {}
 ): Promise<T> => {
   let token = options.tokenOverride;
-  
+
   // Get token from Auth.js session if not overridden
   if (!token && typeof window !== 'undefined') {
     token = (await getAuthToken()) || undefined;
@@ -96,6 +96,8 @@ const api = async <T = any>(
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    console.warn('[API] No auth token found in session. Request may fail with 403/401.');
   }
 
   const baseUrl =
@@ -119,8 +121,12 @@ const api = async <T = any>(
     try {
       errorBody = await res.json();
     } catch {
-      errorBody = { error: `Request failed with status ${res.status}` };
+      errorBody = { error: res.statusText || `Request failed with status ${res.status}` };
     }
+
+    // Ensure we have a string error message even if DRF returns 'detail'
+    const errorMessage = errorBody.error || errorBody.detail || res.statusText || 'Unknown error';
+    errorBody.error = errorMessage;
 
     if (process.env.NODE_ENV !== 'production') {
       console.error(`API request failed with status ${res.status}:`, errorBody);

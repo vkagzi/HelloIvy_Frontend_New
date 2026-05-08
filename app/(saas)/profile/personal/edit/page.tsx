@@ -17,6 +17,7 @@ import {
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import ResumeUploader from '@/app/_components/ResumeUploader';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import TranscriptUploader from '@/app/_components/TranscriptUploader';
 
 const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
@@ -118,8 +119,16 @@ const PersonalDetailsForm: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!parsedTranscriptData?.personalDetails) return;
+    if (!parsedTranscriptData) return;
+    console.log('!!! [PersonalDetailsForm] Received parsed data:', parsedTranscriptData);
+    
+    if (!parsedTranscriptData.personalDetails) {
+      console.warn('!!! [PersonalDetailsForm] No personalDetails found in parsed data');
+      return;
+    }
+    
     const p = parsedTranscriptData.personalDetails;
+    console.log('!!! [PersonalDetailsForm] Mapping personal details:', p);
 
     setResumeFormDefaults((prev) => ({
       ...prev,
@@ -235,6 +244,9 @@ const PersonalDetailsForm: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
+      <div className="mt-2">
+        <ResumeUploader />
+      </div>
       <Tabs />
       <DynamicForm
         key={JSON.stringify(formDefaults)}
@@ -259,6 +271,16 @@ const PersonalDetailsForm: React.FC = () => {
           }, 500);
         }}
       />
+
+      {/* TEMPORARY DEBUG VIEW - REMOVE AFTER FIXING */}
+      {parsedTranscriptData && (
+        <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-4">
+          <h3 className="mb-2 text-sm font-bold text-red-800">DEBUG: Raw Parsed Data (Personal Details)</h3>
+          <pre className="max-h-60 overflow-auto text-xs text-red-700">
+            {JSON.stringify(parsedTranscriptData.personalDetails, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
 };

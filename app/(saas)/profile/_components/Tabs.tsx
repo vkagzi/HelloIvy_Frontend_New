@@ -76,6 +76,7 @@ export const tabs = [
   {
     id: 0,
     label: 'Personal',
+    timeEstimate: '2-5 mins',
     classLabel: 'personal',
     dataStoreId: 'personalDetails',
     icon: GradientIcon,
@@ -84,6 +85,7 @@ export const tabs = [
   {
     id: 1,
     label: 'Educational',
+    timeEstimate: '5-7 mins',
     classLabel: 'educational',
     dataStoreId: 'educational',
     icon: GradientIcon,
@@ -92,6 +94,7 @@ export const tabs = [
   {
     id: 2,
     label: 'Professional',
+    timeEstimate: '2-7 mins',
     classLabel: 'professional',
     dataStoreId: 'professional',
     icon: GradientIcon,
@@ -100,6 +103,7 @@ export const tabs = [
   {
     id: 3,
     label: 'Extra - Curriculars',
+    timeEstimate: '2-5 mins',
     classLabel: 'extra-curricular',
     dataStoreId: 'extraCurricular',
     icon: GradientIcon,
@@ -108,6 +112,7 @@ export const tabs = [
   {
     id: 4,
     label: 'Additional',
+    timeEstimate: '2-5 mins',
     classLabel: 'additional',
     dataStoreId: 'additional',
     icon: GradientIcon,
@@ -125,7 +130,7 @@ const Tabs: React.FC = () => {
 
   return (
     <div className="flex justify-between px-2 py-3">
-      {tabs.map((tab) => {
+      {tabs.map((tab: any) => {
         const isActive = pathname
           ?.toLowerCase()
           .includes(tab.classLabel.toLowerCase());
@@ -145,11 +150,16 @@ const Tabs: React.FC = () => {
                   })}
                 </span>
               </div>
-              <Label
-                className={`${isActive ? 'font-semibold text-neutral-900' : 'font-medium text-neutral-500'}`}
-              >
-                {tab.label}
-              </Label>
+              <div className="flex items-center gap-2">
+                <Label
+                  className={`${isActive ? 'font-semibold text-neutral-900' : 'font-medium text-neutral-500'}`}
+                >
+                  {tab.label}
+                </Label>
+                <span className="text-violet-700 text-xs whitespace-nowrap">
+                  ⏳ {tab.timeEstimate}
+                </span>
+              </div>
             </div>
             {isActive ? (
               <div className="from-action-gradient-100-left to-action-gradient-100-right flex h-1 w-full gap-10 rounded-full bg-gradient-to-r" />

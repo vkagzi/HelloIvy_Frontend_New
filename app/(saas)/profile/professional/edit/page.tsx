@@ -90,20 +90,27 @@ const ProfessionalFormDetails: React.FC = () => {
   
 
   useEffect(() => {
-    if (!parsedTranscriptData?.professional?.length) return;
+    if (!parsedTranscriptData?.professional) return;
+    
+    // Support both direct array and nested experiences array
+    const professional = parsedTranscriptData.professional;
+    const experiences = Array.isArray(professional) ? professional : (professional.experiences || []);
+    
+    if (!experiences.length) return;
 
     setFormDefaults((prev) => {
       const existing = Array.isArray(prev.experiences) ? prev.experiences : [];
-      const mapped = parsedTranscriptData.professional.map((exp: any, idx: number) => {
+      const mapped = experiences.map((exp: any, idx: number) => {
         const existExp = existing[idx] || {};
         return {
           ...existExp,
           experienceType: exp.experienceType ?? exp.experience_type ?? existExp.experienceType,
-          industrySector: exp.industry ?? existExp.industrySector,
-          currentEmployer: exp.employerName ?? exp.company ?? existExp.currentEmployer,
+          industrySector: exp.industrySector ?? exp.industry ?? existExp.industrySector,
+          currentEmployer: exp.currentEmployer ?? exp.employerName ?? exp.company ?? existExp.currentEmployer,
           city: exp.city ?? existExp.city,
-          durationValue: exp.duration ?? existExp.durationValue,
-          jobTitle: exp.title ?? existExp.jobTitle,
+          durationValue: exp.durationValue ?? exp.duration ?? existExp.durationValue,
+          durationUnit: exp.durationUnit ?? exp.unit ?? existExp.durationUnit,
+          jobTitle: exp.jobTitle ?? exp.title ?? existExp.jobTitle,
           responsibilities: exp.responsibilities ?? existExp.responsibilities,
           achievements: exp.achievements ?? existExp.achievements,
         };
@@ -111,6 +118,7 @@ const ProfessionalFormDetails: React.FC = () => {
 
       return {
         ...prev,
+        ...professional, // merge top-level if any
         experiences: mapped,
       };
     });

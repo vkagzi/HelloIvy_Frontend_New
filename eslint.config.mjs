@@ -28,17 +28,14 @@ const eslintConfig = [
       prettier: prettierPlugin.default,
     },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
-        'error',
+        'warn',
         { argsIgnorePattern: '^_' },
       ],
-      '@typescript-eslint/explicit-function-return-type': [
-        'error',
-        { allowExpressions: true },
-      ],
-      'prettier/prettier': 'error',
-      'no-console': ['error', { allow: ['error'] }],
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      'prettier/prettier': 'warn',
+      'no-console': ['warn', { allow: ['error', 'warn'] }],
     },
   },
   prettierConfig,

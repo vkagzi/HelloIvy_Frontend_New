@@ -1,92 +1,154 @@
 'use client';
-import { useState } from 'react';
 
-export default function ResumeUploader({ onParsed }: any) {
+import React, { useRef, useState, useEffect } from 'react';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import { useToast } from '@/app/_components/Toast';
+import { getAuthToken } from '@/lib/api';
+
+export default function ResumeUploader() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { setParsedTranscriptData } = useProfile();
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isExtracting, setIsExtracting] = useState(false);
 
-  const handleUpload = async (e: any) => {
-    const file = e.target.files[0];
-    const token = localStorage.getItem('access');
+  // Simulated extraction progress after upload is 100%
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isExtracting) {
+      interval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev < 70) return prev + 2;
+          if (prev < 90) return prev + 1;
+          if (prev < 98) return prev + 0.2;
+          return prev;
+        });
+      }, 100);
+    }
+    return () => clearInterval(interval);
+  }, [isExtracting]);
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
+
+    setLoading(true);
+    setIsExtracting(false);
+    setUploadProgress(0);
+    addToast('Scanning resume... This may take a moment. Please don\'t leave this page.', { type: 'info' });
 
     const formData = new FormData();
     formData.append('file', file);
 
-    setLoading(true);
-
     try {
-      const res = await fetch(
-        'http://localhost:8000/api/profiles/parse-resume/',
-        {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-        }
-      );
-      if (!res.ok) {
-        throw new Error("Resume parsing failed");
-      }
-      const data = await res.json();
-      console.log('Parsed Data:', data);
-      onParsed(data);
-    } catch (err) {
-      console.error(err);
-    }
+      const token = await getAuthToken();
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const url = `${baseUrl}/api/profiles/parse-transcript/`;
 
-    setLoading(false);
+      const xhr = new XMLHttpRequest();
+
+      const response = await new Promise((resolve, reject) => {
+        xhr.open('POST', url, true);
+        
+        if (token) {
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        }
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = Math.round((event.loaded / event.total) * 50);
+            setUploadProgress(percentComplete);
+            if (percentComplete === 50) {
+              setIsExtracting(true);
+            }
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              setIsExtracting(false);
+              setUploadProgress(100);
+              resolve(JSON.parse(xhr.responseText));
+            } catch (e) {
+              reject(new Error('Failed to parse response'));
+            }
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              reject(new Error(errorData.error || errorData.detail || `Upload failed with status ${xhr.status}`));
+            } catch (e) {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error occurred during upload'));
+        xhr.onabort = () => reject(new Error('Upload aborted'));
+
+        xhr.send(formData);
+      });
+
+      console.log('Parsed Resume Data:', response);
+
+      // Update global context so the personal details form can read this
+      setParsedTranscriptData({ ...(response as any), _target: { section: 'personal', index: undefined } });
+      addToast('Resume data successfully extracted!', { type: 'success' });
+    } catch (err: any) {
+      console.error(err);
+      addToast(err.message || 'Error parsing resume. Please try again.', { type: 'error' });
+    } finally {
+      setLoading(false);
+      setIsExtracting(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   return (
-    <div className=" bg-white p-2">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        {/* LEFT SIDE */}
-        <div className="max-w-lg">
-          <h3 className="--text-product-h5 font-bold text-neutral-800">
-            Auto-fill your profile using your resume
-          </h3>
+    <div className="flex flex-col items-start gap-1">
+      <button
+        type="button"
+        disabled={loading}
+        onClick={() => fileInputRef.current?.click()}
+        className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-600 transition hover:bg-blue-100 disabled:opacity-50"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        {loading ? 'Scanning...' : 'Upload Resume'}
+      </button>
 
-          {/* <p className="text-para-sm mt-1 text-neutral-600">
-             or report card
-          </p> */}
-
-          {loading && (
-            <p className="mt-2 text-sm text-blue-500">
-              Parsing your document...
-            </p>
-          )}
-        </div>
-
-        {/* RIGHT SIDE UPLOAD BOX */}
-        <label
-          htmlFor="resumeUpload"
-          className="w-full cursor-pointer md:w-[400px]"
-        >
-          <div className="hover:border-product-h5 rounded-xl border-2 border-dashed p-6 text-center transition">
-            <div className="mb-2 text-3xl">📄</div>
-
-            <p className="text-sm text-neutral-600">
-              Drag & drop your file here or click
-              <span className="text-product-h6 ml-1 font-medium">
-                Upload File
-              </span>
-            </p>
-
-            <p className="mt-1 text-xs text-neutral-400">
-              Supported: PDF, DOCX, JPG, PNG
-            </p>
+      {loading && (
+        <div className="mt-1 w-full max-w-[140px]">
+          <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
+            <div 
+              className="h-full bg-blue-600 transition-all duration-300 ease-out"
+              style={{ width: `${uploadProgress}%` }}
+            />
           </div>
-        </label>
+          <p className="mt-1 text-[10px] text-neutral-500 font-medium text-left">
+            {uploadProgress < 50 
+              ? `Uploading: ${uploadProgress * 2}%` 
+              : uploadProgress < 100 
+                ? `Extracting Data: ${uploadProgress}%`
+                : 'Finishing...'}
+          </p>
+        </div>
+      )}
 
-        {/* HIDDEN INPUT */}
-        <input
-          id="resumeUpload"
-          type="file"
-          accept=".pdf,.docx,.png,.jpg"
-          onChange={handleUpload}
-          className="hidden"
-        />
-      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.docx,.doc,.jpg,.jpeg,.png,.txt"
+        className="hidden"
+        onChange={handleFileChange}
+      />
     </div>
   );
 }

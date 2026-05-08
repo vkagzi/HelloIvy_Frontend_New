@@ -109,7 +109,7 @@ const api = async <T = any>(
     body: isRawBody ? options.body : options.body ? JSON.stringify(options.body) : undefined,
     cache: 'no-store',
     next: { revalidate: 0 },
-    credentials: 'include',
+    credentials: 'same-origin',
   });
 
   if (!res.ok) {
