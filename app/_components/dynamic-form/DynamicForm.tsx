@@ -1039,7 +1039,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         i++;
       }
       renderedSections.push(
-        <CollapsibleSection key={sectionTitle} title={sectionTitle}>
+        <CollapsibleSection key={sectionTitle} title={sectionTitle} id={sectionTitle.toLowerCase().replace(/\s+/g, '-')}>
           {sectionContent}
         </CollapsibleSection>
       );

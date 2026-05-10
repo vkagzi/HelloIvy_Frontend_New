@@ -22,8 +22,12 @@ import {
 const collegeSelectorApiAdapter: ConversationConfig['api'] = {
   getSession: async (sessionId) => {
     const s: CollegeSelectorSession = await collegeSelectorApi.getSession(sessionId);
+    const conversationStartedAt = typeof s.metadata?.conversation_started_at === 'string'
+      ? s.metadata.conversation_started_at
+      : undefined;
+
     return {
-      created_at: s.created_at,
+      created_at: conversationStartedAt,
       is_completed: s.is_completed,
       metadata: s.metadata,
     };
@@ -78,6 +82,13 @@ const collegeSelectorConversationConfig: ConversationConfig = {
         total_steps?: number;
         is_completed?: boolean;
       };
+
+      if (!sessionInfo?.created_at && historyResponse.messages.length > 0) {
+        sessionInfo = {
+          ...(sessionInfo ?? {}),
+          created_at: historyResponse.messages[0].timestamp,
+        };
+      }
 
       const currentStep = r.current_step ?? 0;
       const totalSteps = r.total_steps ?? 20;

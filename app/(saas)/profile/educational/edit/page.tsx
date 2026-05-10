@@ -351,6 +351,19 @@ const EducationalDetailsForm: React.FC = () => {
     }
   }, [defaultValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Scroll to hash element (e.g. #standardised-test-score) after form renders
+  useEffect(() => {
+    const hash = window.location.hash?.slice(1);
+    if (!hash) return;
+    const timer = setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="flex flex-col gap-4">
       <Instructions />

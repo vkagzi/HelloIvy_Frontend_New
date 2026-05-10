@@ -5,18 +5,20 @@ interface CollapsibleSectionProps {
   title: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  id?: string;
 }
 
 const CollapsibleSection: FC<CollapsibleSectionProps> = ({
   title,
   children,
   defaultOpen = true,
+  id,
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const toggleOpen = (): void => setIsOpen((prev) => !prev);
 
   return (
-    <div className="mb-4 rounded-lg border border-neutral-200">
+    <div id={id} className="mb-4 rounded-lg border border-neutral-200">
       <div
         className="flex cursor-pointer items-center justify-between border-b border-neutral-200 p-5"
         onClick={toggleOpen}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { collegeSelectorApi, CollegeSelectorPreferences, DegreeLevelOption } from '@/lib/college-selector-api';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { SelectAutofill } from '@/components/ui/select-autofill';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { FiIcon } from '@/app/_components/Icons';
@@ -17,39 +18,309 @@ import api from '@/lib/api';
 // ================== Constants (from PRD) ==================
 
 const MAJOR_OPTIONS = [
+  // Business & Management
   'Accounting', 'Finance', 'Economics', 'Business Administration', 'International Business',
   'Marketing', 'Management', 'Entrepreneurship', 'Supply Chain Management',
-  'Computer Science', 'Data Science', 'Artificial Intelligence', 'Machine Learning',
-  'Cybersecurity', 'Software Engineering', 'Information Technology',
+  'Operations Management', 'Human Resource Management', 'Business Analytics',
+  'Management Information Systems', 'Actuarial Science', 'Real Estate',
+  'Hospitality Management', 'Luxury Brand Management', 'Sports Management',
+  'Organizational Behavior', 'Behavioral Economics',
+  // Engineering
   'Mechanical Engineering', 'Electrical Engineering', 'Computer Engineering',
   'Civil Engineering', 'Chemical Engineering', 'Aerospace Engineering',
-  'Biomedical Engineering', 'Environmental Engineering',
+  'Biomedical Engineering', 'Environmental Engineering', 'Materials Science & Engineering',
+  'Industrial Engineering', 'Systems Engineering', 'Robotics Engineering',
+  'Mechatronics', 'Nuclear Engineering', 'Petroleum Engineering',
+  'Automotive Engineering', 'Marine Engineering', 'Agricultural Engineering',
+  'Structural Engineering', 'Manufacturing Engineering',
+  // Computer Science & Technology
+  'Computer Science', 'Data Science', 'Artificial Intelligence', 'Machine Learning',
+  'Cybersecurity', 'Software Engineering', 'Information Technology',
+  'Information Systems', 'Human-Computer Interaction', 'Computational Science',
+  'Robotics', 'Bioinformatics', 'Blockchain', 'Cloud Computing',
+  'Quantum Computing', 'Game Development', 'Computer Graphics',
+  'Computational Linguistics', 'Digital Transformation', 'Product Management (Tech)',
+  // Natural Sciences
   'Physics', 'Chemistry', 'Biology', 'Mathematics', 'Statistics',
-  'Biochemistry', 'Biotechnology', 'Neuroscience',
-  'Psychology', 'Sociology', 'Political Science', 'International Relations',
-  'Public Policy', 'Public Administration',
-  'English Literature', 'History', 'Philosophy', 'Linguistics',
-  'Pre-Medical Studies', 'Public Health', 'Nursing', 'Pharmacy',
-  'Architecture', 'Interior Design', 'Graphic Design', 'UX/UI Design',
-  'Fine Arts', 'Film Studies', 'Communications', 'Journalism',
-  'Education', 'Law / Pre-Law', 'Sustainability Studies',
-  'Agriculture', 'Food Science',
+  'Applied Mathematics', 'Biochemistry', 'Biotechnology', 'Neuroscience',
+  'Environmental Science', 'Ecology', 'Geology', 'Earth Sciences',
+  'Astronomy', 'Astrophysics', 'Marine Science', 'Genetics',
+  'Microbiology', 'Molecular Biology', 'Cognitive Science',
+  // Social Sciences
+  'Psychology', 'Sociology', 'Anthropology', 'Political Science',
+  'International Relations', 'Public Policy', 'Public Administration',
+  'Development Studies', 'Gender Studies', 'Urban Studies', 'Criminology',
+  'Human Geography', 'Behavioral Science', 'Migration Studies',
+  'Peace & Conflict Studies', 'Area Studies (South Asian, Middle Eastern, etc.)',
+  'Global Studies', 'Social Work', 'Demography', 'Public Affairs',
+  // Humanities
+  'English Literature', 'Comparative Literature', 'History', 'Philosophy',
+  'Religious Studies', 'Classics', 'Linguistics', 'Languages (French, Spanish, German, etc.)',
+  'Creative Writing', 'Ethics', 'Archaeology', 'Cultural Studies',
+  'Rhetoric', 'Journalism', 'Media Studies',
+  // Health & Medicine
+  'Pre-Medical Studies', 'Public Health', 'Biomedical Sciences', 'Nursing',
+  'Pharmacy', 'Kinesiology', 'Nutrition', 'Epidemiology', 'Health Sciences',
+  'Occupational Therapy', 'Physical Therapy', 'Clinical Psychology',
+  'Global Health', 'Health Policy', 'Speech Pathology',
+  // Law & Governance
+  'Pre-Law', 'Legal Studies', 'Jurisprudence', 'International Law',
+  'Human Rights', 'Constitutional Studies', 'Governance',
+  'Security Studies', 'Diplomacy',
+  // Design & Architecture
+  'Architecture', 'Interior Design', 'Industrial Design', 'Graphic Design',
+  'UX/UI Design', 'Product Design', 'Fashion Design', 'Fine Arts',
+  'Illustration', 'Animation', 'Film Studies', 'Photography',
+  'Visual Arts', 'Game Design', 'Urban Design', 'Landscape Architecture',
+  // Media & Communication
+  'Communications', 'Advertising', 'Public Relations', 'Digital Media',
+  'Film Production', 'Screenwriting', 'Broadcast Media',
+  'Content Strategy', 'Media Management',
+  // Education
+  'Education', 'Early Childhood Education', 'Secondary Education',
+  'Educational Leadership', 'Curriculum & Instruction', 'Special Education',
+  'Learning Sciences', 'Education Policy',
+  // Environment & Sustainability
+  'Sustainability Studies', 'Climate Science', 'Environmental Policy',
+  'Renewable Energy', 'Conservation Biology', 'Sustainable Development',
+  'Energy Systems', 'Circular Economy',
+  // Agriculture & Food
+  'Agriculture', 'Food Science', 'Agribusiness', 'Animal Science',
+  'Veterinary Science', 'Plant Science', 'Horticulture', 'Soil Science',
+  // Interdisciplinary & Emerging Fields
+  'PPE (Philosophy, Politics, Economics)', 'Science, Technology & Society (STS)',
+  'Computational Biology', 'Environmental Economics', 'Mathematical Economics',
+  'Digital Humanities', 'Entrepreneurship & Innovation', 'Global Health Policy',
+  'Ethics, Politics & Economics', 'Data + Public Policy', 'AI & Society',
+  'Human-Centered Design', 'Technology Management', 'Climate Technology',
+  'AI Ethics', 'Responsible Innovation', 'Synthetic Biology',
+  'Quantum Information Science', 'Space Studies', 'Computational Social Science',
+  'Digital Health', 'FinTech', 'Web3 / Decentralized Systems',
   'Other',
 ];
 
-const COUNTRY_OPTIONS = [
-  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
-  'Netherlands', 'France', 'Ireland', 'New Zealand', 'Singapore',
-  'Switzerland', 'Sweden', 'Denmark', 'Japan', 'South Korea',
-  'Hong Kong', 'Italy', 'Spain', 'Austria', 'Belgium',
-  'Finland', 'Norway', 'United Arab Emirates', 'India', 'Malaysia',
-];
+const COUNTRY_CODES: Record<string, string> = {
+  Afghanistan: 'AF',
+  Albania: 'AL',
+  Algeria: 'DZ',
+  Andorra: 'AD',
+  Angola: 'AO',
+  'Antigua and Barbuda': 'AG',
+  Argentina: 'AR',
+  Armenia: 'AM',
+  Australia: 'AU',
+  Austria: 'AT',
+  Azerbaijan: 'AZ',
+  Bahamas: 'BS',
+  Bahrain: 'BH',
+  Bangladesh: 'BD',
+  Barbados: 'BB',
+  Belarus: 'BY',
+  Belgium: 'BE',
+  Belize: 'BZ',
+  Benin: 'BJ',
+  Bhutan: 'BT',
+  Bolivia: 'BO',
+  'Bosnia and Herzegovina': 'BA',
+  Botswana: 'BW',
+  Brazil: 'BR',
+  Brunei: 'BN',
+  Bulgaria: 'BG',
+  'Burkina Faso': 'BF',
+  Burundi: 'BI',
+  'Cabo Verde': 'CV',
+  Cambodia: 'KH',
+  Cameroon: 'CM',
+  Canada: 'CA',
+  'Central African Republic': 'CF',
+  Chad: 'TD',
+  Chile: 'CL',
+  China: 'CN',
+  Colombia: 'CO',
+  Comoros: 'KM',
+  Congo: 'CG',
+  'Costa Rica': 'CR',
+  "Côte d'Ivoire": 'CI',
+  Croatia: 'HR',
+  Cuba: 'CU',
+  Cyprus: 'CY',
+  Czechia: 'CZ',
+  'Democratic Republic of the Congo': 'CD',
+  Denmark: 'DK',
+  Djibouti: 'DJ',
+  Dominica: 'DM',
+  'Dominican Republic': 'DO',
+  Ecuador: 'EC',
+  Egypt: 'EG',
+  'El Salvador': 'SV',
+  'Equatorial Guinea': 'GQ',
+  Eritrea: 'ER',
+  Estonia: 'EE',
+  Eswatini: 'SZ',
+  Ethiopia: 'ET',
+  Fiji: 'FJ',
+  Finland: 'FI',
+  France: 'FR',
+  Gabon: 'GA',
+  Gambia: 'GM',
+  Georgia: 'GE',
+  Germany: 'DE',
+  Ghana: 'GH',
+  Greece: 'GR',
+  Grenada: 'GD',
+  Guatemala: 'GT',
+  Guinea: 'GN',
+  'Guinea-Bissau': 'GW',
+  Guyana: 'GY',
+  Haiti: 'HT',
+  Honduras: 'HN',
+  Hungary: 'HU',
+  Iceland: 'IS',
+  India: 'IN',
+  Indonesia: 'ID',
+  Iran: 'IR',
+  Iraq: 'IQ',
+  Ireland: 'IE',
+  Israel: 'IL',
+  Italy: 'IT',
+  Jamaica: 'JM',
+  Japan: 'JP',
+  Jordan: 'JO',
+  Kazakhstan: 'KZ',
+  Kenya: 'KE',
+  Kiribati: 'KI',
+  Kuwait: 'KW',
+  Kyrgyzstan: 'KG',
+  Laos: 'LA',
+  Latvia: 'LV',
+  Lebanon: 'LB',
+  Lesotho: 'LS',
+  Liberia: 'LR',
+  Libya: 'LY',
+  Liechtenstein: 'LI',
+  Lithuania: 'LT',
+  Luxembourg: 'LU',
+  Madagascar: 'MG',
+  Malawi: 'MW',
+  Malaysia: 'MY',
+  Maldives: 'MV',
+  Mali: 'ML',
+  Malta: 'MT',
+  'Marshall Islands': 'MH',
+  Mauritania: 'MR',
+  Mauritius: 'MU',
+  Mexico: 'MX',
+  Micronesia: 'FM',
+  Moldova: 'MD',
+  Monaco: 'MC',
+  Mongolia: 'MN',
+  Montenegro: 'ME',
+  Morocco: 'MA',
+  Mozambique: 'MZ',
+  Myanmar: 'MM',
+  Namibia: 'NA',
+  Nauru: 'NR',
+  Nepal: 'NP',
+  Netherlands: 'NL',
+  'New Zealand': 'NZ',
+  Nicaragua: 'NI',
+  Niger: 'NE',
+  Nigeria: 'NG',
+  'North Korea': 'KP',
+  'North Macedonia': 'MK',
+  Norway: 'NO',
+  Oman: 'OM',
+  Pakistan: 'PK',
+  Palau: 'PW',
+  Panama: 'PA',
+  'Papua New Guinea': 'PG',
+  Paraguay: 'PY',
+  Peru: 'PE',
+  Philippines: 'PH',
+  Poland: 'PL',
+  Portugal: 'PT',
+  Qatar: 'QA',
+  Romania: 'RO',
+  Russia: 'RU',
+  Rwanda: 'RW',
+  'Saint Kitts and Nevis': 'KN',
+  'Saint Lucia': 'LC',
+  'Saint Vincent and the Grenadines': 'VC',
+  Samoa: 'WS',
+  'San Marino': 'SM',
+  'Sao Tome and Principe': 'ST',
+  'Saudi Arabia': 'SA',
+  Senegal: 'SN',
+  Serbia: 'RS',
+  Seychelles: 'SC',
+  'Sierra Leone': 'SL',
+  Singapore: 'SG',
+  Slovakia: 'SK',
+  Slovenia: 'SI',
+  'Solomon Islands': 'SB',
+  Somalia: 'SO',
+  'South Africa': 'ZA',
+  'South Korea': 'KR',
+  'South Sudan': 'SS',
+  Spain: 'ES',
+  'Sri Lanka': 'LK',
+  Sudan: 'SD',
+  Suriname: 'SR',
+  Sweden: 'SE',
+  Switzerland: 'CH',
+  Syria: 'SY',
+  Tajikistan: 'TJ',
+  Tanzania: 'TZ',
+  Thailand: 'TH',
+  'Timor-Leste': 'TL',
+  Togo: 'TG',
+  Tonga: 'TO',
+  'Trinidad and Tobago': 'TT',
+  Tunisia: 'TN',
+  Türkiye: 'TR',
+  Turkmenistan: 'TM',
+  Tuvalu: 'TV',
+  Uganda: 'UG',
+  Ukraine: 'UA',
+  'United Arab Emirates': 'AE',
+  'United Kingdom': 'GB',
+  'United States': 'US',
+  Uruguay: 'UY',
+  Uzbekistan: 'UZ',
+  Vanuatu: 'VU',
+  Venezuela: 'VE',
+  Vietnam: 'VN',
+  Yemen: 'YE',
+  Zambia: 'ZM',
+  Zimbabwe: 'ZW',
+};
+
+const COUNTRY_OPTIONS = Object.keys(COUNTRY_CODES);
+
+const getCountryFlag = (country: string) => {
+  const code = COUNTRY_CODES[country];
+  if (!code) return '';
+  return code
+    .toUpperCase()
+    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
+};
+
+const COUNTRY_FLAGS: Record<string, string> = {};
+COUNTRY_OPTIONS.forEach((country) => {
+  COUNTRY_FLAGS[country] = getCountryFlag(country);
+});
+
+const DEGREE_LEVEL_ICONS: Record<string, string> = {
+  'undergraduate': '🎓',
+  'postgraduate': '🏅',
+  'doctorate': '📚',
+};
 
 const CAMPUS_SETTINGS = [
-  { value: 'urban', label: 'Urban', desc: 'City-based campus with access to internships, culture, nightlife' },
-  { value: 'suburban', label: 'Suburban', desc: 'Balanced campus-town environment' },
-  { value: 'rural', label: 'Rural', desc: 'Traditional campus, quieter and close-knit community' },
-  { value: 'no_preference', label: 'Open to Either', desc: 'No preference' },
+  { value: 'urban', label: 'Urban', desc: 'City-based campus with access to internships, culture, nightlife', icon: '🏙️' },
+  { value: 'suburban', label: 'Suburban', desc: 'Balanced campus-town environment', icon: '🏘️' },
+  { value: 'rural', label: 'Rural', desc: 'Traditional campus, quieter and close-knit community', icon: '🌿' },
+  { value: 'no_preference', label: 'No preference, I am flexible', desc: '', icon: '🤷' },
 ];
 
 const CAMPUS_IMPORTANCE = [
@@ -59,18 +330,37 @@ const CAMPUS_IMPORTANCE = [
 ];
 
 const CLIMATE_OPTIONS = [
-  { value: 'warm', label: 'Warm weather' },
-  { value: 'four_seasons', label: 'All four seasons' },
-  { value: 'cold', label: 'Cold/snowy' },
-  { value: 'no_preference', label: 'No preference' },
+  { value: 'warm', label: 'Need warm weather only', icon: '☀️' },
+  { value: 'cold', label: 'Want to be in a cold/snowy place', icon: '❄️' },
+  { value: 'no_preference', label: 'No preference, I am flexible', icon: '🤷' },
 ];
 
 const COLLEGE_TYPES = [
-  { value: 'public', label: 'Public / State University' },
-  { value: 'private', label: 'Private University' },
-  { value: 'specialized', label: 'Specialized Institution (Liberal Arts, Tech, Design, Business, etc.)' },
-  { value: 'no_preference', label: 'No preference' },
+  { value: 'public', label: 'Public / State University', icon: '🏛️' },
+  { value: 'private', label: 'Private University', icon: '🏫' },
+  { value: 'specialized', label: 'Specialized Institution (Liberal Arts, Tech, Design, Business, etc.)', icon: '🎨' },
+  { value: 'no_preference', label: 'No preference, I am flexible', icon: '🤷' },
 ];
+
+const CHIP_ICONS: Record<string, string> = {
+  'Lower tuition': '💸',
+  'Smaller community': '👥',
+  'Prestige/reputation': '⭐',
+  'Research opportunities': '🔬',
+  'Strong teaching focus': '👩‍🏫',
+  'Undergraduate research opportunities': '🧪',
+  'Access to labs and faculty research': '🥼',
+  'Strong PhD/research ecosystem': '📚',
+  'Industry-led applied research': '🏭',
+  'No preference': '🤷',
+  'Collaborative and supportive': '🤝',
+  'Competitive and ambitious': '🚀',
+  'Academically rigorous / intense': '🧠',
+  'Academically rigorous / intense / ambitious': '🧠',
+  'Social and spirited (sports, traditions, campus events)': '🎉',
+  'Diverse and globally minded': '🌍',
+  'Close-knit and community oriented': '🏡',
+};
 
 const COLLEGE_TYPE_REASONS = [
   'Lower tuition', 'Smaller community', 'Prestige/reputation',
@@ -78,47 +368,46 @@ const COLLEGE_TYPE_REASONS = [
 ];
 
 const RESEARCH_LEVELS = [
-  { value: 'very_important', label: 'Very Important — I want a research-heavy institution' },
-  { value: 'moderately_important', label: 'Moderately Important — Some research access matters' },
-  { value: 'low_importance', label: 'Low Importance — I prefer teaching-focused institutions' },
-  { value: 'unsure', label: 'Unsure / Open to Recommendations' },
+  { value: 'very_important', label: 'Very Important — I want a research-heavy institution', icon: '🔬' },
+  { value: 'moderately_important', label: 'Moderately Important — Some research access matters', icon: '🧪' },
+  { value: 'low_importance', label: 'Low Importance', icon: '👩‍🏫' },
+  { value: 'no_preference', label: 'No preference, I am flexible', icon: '🤷' },
 ];
 
-const RESEARCH_EXPOSURE = [
-  'Undergraduate research opportunities', 'Access to labs and faculty research',
-  'Strong PhD/research ecosystem', 'Industry-led applied research', 'No preference',
-];
-
-const CULTURAL_FIT_ACADEMIC = [
-  'Collaborative and supportive', 'Competitive and ambitious', 'Academically rigorous / intense',
-];
-
-const CULTURAL_FIT_SOCIAL = [
+const CULTURAL_FIT_OPTIONS = [
+  'Collaborative and supportive',
+  'Academically rigorous / intense / ambitious',
   'Social and spirited (sports, traditions, campus events)',
-  'Diverse and globally minded', 'Close-knit and community oriented',
+  'No preference, I am flexible',
 ];
 
 const FIT_IMPORTANCE = [
-  { value: 'critical', label: 'Critical' },
-  { value: 'important', label: 'Important' },
-  { value: 'somewhat_important', label: 'Somewhat Important' },
+  { value: 'critical', label: 'Critical', icon: '🔥' },
+  { value: 'important', label: 'Important', icon: '⭐' },
+  { value: 'somewhat_important', label: 'Somewhat Important', icon: '🙂' },
 ];
 
 const CLASS_SIZES = [
-  { value: 'small', label: 'Small classes (under 20 students)' },
-  { value: 'medium', label: 'Medium classes (20–50 students)' },
-  { value: 'large', label: 'Large lectures with smaller discussion sections' },
-  { value: 'no_preference', label: 'No strong preference' },
+  { value: 'small', label: 'Small classes (under 20 students)', icon: '👥' },
+  { value: 'medium', label: 'Medium classes (20–50 students)', icon: '🏫' },
+  { value: 'large', label: 'Large lectures with smaller discussion sections', icon: '🎤' },
+  { value: 'no_preference', label: 'No preference, I am flexible', icon: '🤷' },
 ];
 
 const TEACHING_STYLES = [
-  { value: 'seminar', label: 'Seminar-style discussion' },
-  { value: 'personalized', label: 'Personalized faculty attention' },
-  { value: 'independent', label: 'Independent/self-directed learning' },
-  { value: 'large_ecosystem', label: 'Large university ecosystem with flexibility' },
+  { value: 'seminar', label: 'Seminar-style discussion', icon: '💬' },
+  { value: 'personalized', label: 'Personalized faculty attention', icon: '🧑‍🏫' },
+  { value: 'independent', label: 'Independent/self-directed learning', icon: '🧭' },
+  { value: 'large_ecosystem', label: 'Large university ecosystem with flexibility', icon: '🌐' },
 ];
 
-const TOTAL_STEPS = 7;
+const IMPORTANCE_OPTIONS = [
+  { value: 'yes_important', label: 'Yes, absolutely important', icon: '✅' },
+  { value: 'somewhat_important', label: 'Somewhat important', icon: '⭐' },
+  { value: 'no_preference', label: 'No preference, I am flexible', icon: '🤷' },
+];
+
+const TOTAL_STEPS = 9;
 
 // ================== Profile → Preferences Mappings ==================
 
@@ -219,8 +508,8 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
   );
 }
 
-function MCQOption({ value, label, desc, selected, onSelect }: {
-  value: string; label: string; desc?: string; selected: boolean; onSelect: (v: string) => void;
+function MCQOption({ value, label, desc, icon, selected, onSelect }: {
+  value: string; label: string; desc?: string; icon?: string; selected: boolean; onSelect: (v: string) => void;
 }) {
   return (
     <Button
@@ -238,6 +527,7 @@ function MCQOption({ value, label, desc, selected, onSelect }: {
       )}>
         {selected && <span className="size-2.5 rounded-full bg-primary" />}
       </span>
+      {icon && <span className="text-xl shrink-0">{icon}</span>}
       <span className="grid gap-1">
         <span className="font-medium text-neutral-900">{label}</span>
         {desc && <span className="text-sm font-normal text-neutral-500">{desc}</span>}
@@ -246,8 +536,8 @@ function MCQOption({ value, label, desc, selected, onSelect }: {
   );
 }
 
-function MultiSelectChip({ label, selected, onToggle }: {
-  label: string; selected: boolean; onToggle: () => void;
+function MultiSelectChip({ label, icon, selected, onToggle }: {
+  label: string; icon?: string; selected: boolean; onToggle: () => void;
 }) {
   return (
     <Button
@@ -257,6 +547,7 @@ function MultiSelectChip({ label, selected, onToggle }: {
       onClick={onToggle}
       className="rounded-full"
     >
+      {icon && <span className="mr-1.5">{icon}</span>}
       {label}
     </Button>
   );
@@ -292,8 +583,11 @@ export default function PreferencesPage() {
   // Step 1: Degree Goals
   const [degreeLevel, setDegreeLevel] = useState('');
   const [degreeType, setDegreeType] = useState('');
+  const [degreeTypeOther, setDegreeTypeOther] = useState('');
   const [primaryMajor, setPrimaryMajor] = useState('');
+  const [primaryMajorOther, setPrimaryMajorOther] = useState('');
   const [secondaryMajor, setSecondaryMajor] = useState('');
+  const [secondaryMajorOther, setSecondaryMajorOther] = useState('');
 
   // Step 2: Countries
   const [countries, setCountries] = useState<string[]>([]);
@@ -306,20 +600,25 @@ export default function PreferencesPage() {
   // Step 4: College Type
   const [collegeType, setCollegeType] = useState('no_preference');
   const [collegeTypeReasons, setCollegeTypeReasons] = useState<string[]>([]);
+  const [collegeTypeOther, setCollegeTypeOther] = useState('');
+  const [collegeTypeOtherReason, setCollegeTypeOtherReason] = useState('');
 
   // Step 5: Research
   const [researchImportance, setResearchImportance] = useState('unsure');
-  const [researchExposure, setResearchExposure] = useState<string[]>([]);
 
   // Step 6: Cultural Fit
   const [culturalFit, setCulturalFit] = useState<string[]>([]);
   const [fitImportance, setFitImportance] = useState('important');
 
-  // Step 7: Class Size & Final
+  // Step 7: Class Size Preference
   const [classSize, setClassSize] = useState('no_preference');
   const [teachingStyle, setTeachingStyle] = useState('');
-  const [financialAidRequired, setFinancialAidRequired] = useState(false);
-  const [prestigeImportant, setPrestigeImportant] = useState(false);
+
+  // Step 8: Brand Preference
+  const [brandPreference, setBrandPreference] = useState('no_preference');
+
+  // Step 9: Financing your Education
+  const [financialAidPreference, setFinancialAidPreference] = useState('no_preference');
   const [additionalNotes, setAdditionalNotes] = useState('');
 
   // Reset degree type when degree level changes
@@ -356,6 +655,38 @@ export default function PreferencesPage() {
         const data = await collegeSelectorApi.getPreferences(sessionId);
         if (data.preferences_completed) {
           router.push(`/college-selector/${sessionId}/conversations`);
+          return;
+        }
+        // Restore saved progress
+        const saved = data.preferences;
+        if (saved && Object.keys(saved).length > 0) {
+          const p = saved as unknown as Record<string, unknown>;
+          if (p.degree_level) setDegreeLevel(p.degree_level as string);
+          if (p.degree_type) setDegreeType(p.degree_type as string);
+          if (p.degree_type_other) setDegreeTypeOther(p.degree_type_other as string);
+          if (p.primary_major) setPrimaryMajor(p.primary_major as string);
+          if (p.primary_major_other) setPrimaryMajorOther(p.primary_major_other as string);
+          if (p.secondary_major) setSecondaryMajor(p.secondary_major as string);
+          if (p.secondary_major_other) setSecondaryMajorOther(p.secondary_major_other as string);
+          if (Array.isArray(p.countries) && p.countries.length > 0) setCountries(p.countries as string[]);
+          if (p.campus_setting) setCampusSetting(p.campus_setting as string);
+          if (p.campus_importance) setCampusImportance(p.campus_importance as string);
+          if (p.climate_preference) setClimatePreference(p.climate_preference as string);
+          if (p.college_type) setCollegeType(p.college_type as string);
+          if (Array.isArray(p.college_type_reasons)) setCollegeTypeReasons(p.college_type_reasons as string[]);
+          if (p.research_importance) setResearchImportance(p.research_importance as string);
+          if (Array.isArray(p.cultural_fit)) setCulturalFit(p.cultural_fit as string[]);
+          if (p.fit_importance) setFitImportance(p.fit_importance as string);
+          if (p.class_size) setClassSize(p.class_size as string);
+          if (p.teaching_style) setTeachingStyle(p.teaching_style as string);
+          if (p.brand_preference) setBrandPreference(p.brand_preference as string);
+          else if (typeof p.prestige_important === 'boolean') setBrandPreference(p.prestige_important ? 'yes_important' : 'no_preference');
+          if (p.financial_aid_preference) setFinancialAidPreference(p.financial_aid_preference as string);
+          else if (typeof p.financial_aid_required === 'boolean') setFinancialAidPreference(p.financial_aid_required ? 'yes_important' : 'no_preference');
+          if (p.additional_notes) setAdditionalNotes(p.additional_notes as string);
+          if (typeof p._step === 'number' && p._step >= 1 && p._step <= TOTAL_STEPS) {
+            setStep(p._step as number);
+          }
         }
       } catch {
         // Session doesn't exist or error — stay on page
@@ -405,14 +736,19 @@ export default function PreferencesPage() {
     }
   }, [degreeOptionsLoading, degreeTypesByLevel]);
 
-  const getDegreeTypes = () => degreeTypesByLevel[degreeLevel] ?? [];
+  const getDegreeTypes = () => {
+    const types = degreeTypesByLevel[degreeLevel] ?? [];
+    return types.includes('Other') ? types : [...types, 'Other'];
+  };
 
-  const toggleCountry = (country: string) => {
-    if (countries.includes(country)) {
-      setCountries(countries.filter((c) => c !== country));
-    } else if (countries.length < 5) {
+  const addCountry = (country: string) => {
+    if (country && !countries.includes(country) && countries.length < 5) {
       setCountries([...countries, country]);
     }
+  };
+
+  const removeCountry = (country: string) => {
+    setCountries(countries.filter((c) => c !== country));
   };
 
   const toggleMultiSelect = (item: string, list: string[], setList: (v: string[]) => void) => {
@@ -422,10 +758,86 @@ export default function PreferencesPage() {
 
   const canProceed = () => {
     switch (step) {
-      case 1: return degreeLevel && degreeType && primaryMajor;
+      case 1: return degreeLevel && degreeType && (degreeType !== 'Other' || degreeTypeOther.trim()) && primaryMajor && (primaryMajor !== 'Other' || primaryMajorOther.trim());
       case 2: return countries.length > 0;
       default: return true;
     }
+  };
+
+  const getStepData = useCallback((currentStep: number): Record<string, unknown> => {
+    switch (currentStep) {
+      case 1:
+        return {
+          degree_level: degreeLevel,
+          degree_type: degreeType,
+          degree_type_other: degreeTypeOther,
+          primary_major: primaryMajor,
+          primary_major_other: primaryMajorOther,
+          secondary_major: secondaryMajor,
+          secondary_major_other: secondaryMajorOther,
+        };
+      case 2:
+        return { countries };
+      case 3:
+        return {
+          campus_setting: campusSetting,
+          campus_importance: campusImportance,
+          climate_preference: climatePreference,
+        };
+      case 4:
+        return {
+          college_type: collegeType,
+          college_type_reasons: collegeTypeReasons,
+        };
+      case 5:
+        return {
+          research_importance: researchImportance,
+        };
+      case 6:
+        return {
+          cultural_fit: culturalFit,
+          fit_importance: fitImportance,
+        };
+      case 7:
+        return {
+          class_size: classSize,
+          teaching_style: teachingStyle,
+        };
+      case 8:
+        return {
+          brand_preference: brandPreference,
+          prestige_important: brandPreference === 'yes_important',
+        };
+      case 9:
+        return {
+          financial_aid_preference: financialAidPreference,
+          financial_aid_required: financialAidPreference === 'yes_important',
+          additional_notes: additionalNotes,
+        };
+      default:
+        return {};
+    }
+  }, [
+    degreeLevel, degreeType, degreeTypeOther, primaryMajor, primaryMajorOther,
+    secondaryMajor, secondaryMajorOther, countries, campusSetting, campusImportance,
+    climatePreference, collegeType, collegeTypeReasons, researchImportance,
+    culturalFit, fitImportance, classSize, teachingStyle,
+    brandPreference, financialAidPreference, additionalNotes,
+  ]);
+
+  const saveStepProgress = useCallback(async (currentStep: number, nextStep: number) => {
+    try {
+      const stepData = getStepData(currentStep);
+      await collegeSelectorApi.saveProgress(sessionId, { ...stepData, _step: nextStep } as never);
+    } catch {
+      // Silent fail — progress save is best-effort
+    }
+  }, [sessionId, getStepData]);
+
+  const handleNext = async () => {
+    const nextStep = step + 1;
+    await saveStepProgress(step, nextStep);
+    setStep(nextStep);
   };
 
   const handleSubmit = async () => {
@@ -434,9 +846,9 @@ export default function PreferencesPage() {
     try {
       const preferences: CollegeSelectorPreferences = {
         degree_level: degreeLevel,
-        degree_type: degreeType,
-        primary_major: primaryMajor,
-        secondary_major: secondaryMajor,
+        degree_type: degreeType === 'Other' ? degreeTypeOther.trim() : degreeType,
+        primary_major: primaryMajor === 'Other' ? primaryMajorOther.trim() : primaryMajor,
+        secondary_major: secondaryMajor === 'Other' ? secondaryMajorOther.trim() : secondaryMajor,
         countries,
         campus_setting: campusSetting,
         campus_importance: campusImportance,
@@ -444,13 +856,15 @@ export default function PreferencesPage() {
         college_type: collegeType,
         college_type_reasons: collegeTypeReasons,
         research_importance: researchImportance,
-        research_exposure: researchExposure,
+        research_exposure: [],
         cultural_fit: culturalFit,
         fit_importance: fitImportance,
         class_size: classSize,
         teaching_style: teachingStyle,
-        financial_aid_required: financialAidRequired,
-        prestige_important: prestigeImportant,
+        brand_preference: brandPreference,
+        financial_aid_preference: financialAidPreference,
+        financial_aid_required: financialAidPreference === 'yes_important',
+        prestige_important: brandPreference === 'yes_important',
         additional_notes: additionalNotes,
       };
       await collegeSelectorApi.savePreferences(sessionId, preferences);
@@ -486,7 +900,7 @@ export default function PreferencesPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {degreeLevels.map((d) => (
-                    <MCQOption key={d.value} value={d.value} label={d.label}
+                    <MCQOption key={d.value} value={d.value} label={d.label} icon={DEGREE_LEVEL_ICONS[d.value]}
                       selected={degreeLevel === d.value} onSelect={setDegreeLevel} />
                   ))}
                 </div>
@@ -496,27 +910,66 @@ export default function PreferencesPage() {
             {degreeLevel && (
               <div>
                 <Label className="mb-2">Degree Type *</Label>
-                <SearchableSelect
-                  options={getDegreeTypes()} value={degreeType}
-                  onChange={setDegreeType} placeholder="Search degree type..."
-                />
+                <div className="flex gap-3">
+                  <div className={degreeType === 'Other' ? 'w-1/3' : 'w-full'}>
+                    <SearchableSelect
+                      options={getDegreeTypes()} value={degreeType}
+                      onChange={setDegreeType} placeholder="Search degree type..."
+                    />
+                  </div>
+                  {degreeType === 'Other' && (
+                    <div className="w-2/3">
+                      <Input
+                        value={degreeTypeOther}
+                        onChange={(e) => setDegreeTypeOther(e.target.value)}
+                        placeholder="Enter your degree type..."
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             <div>
               <Label className="mb-2">Primary Major / Area of Concentration *</Label>
-              <SearchableSelect
-                options={MAJOR_OPTIONS} value={primaryMajor}
-                onChange={setPrimaryMajor} placeholder="Search major..."
-              />
+              <div className="flex gap-3">
+                <div className={primaryMajor === 'Other' ? 'w-1/3' : 'w-full'}>
+                  <SearchableSelect
+                    options={MAJOR_OPTIONS} value={primaryMajor}
+                    onChange={setPrimaryMajor} placeholder="Search major..."
+                  />
+                </div>
+                {primaryMajor === 'Other' && (
+                  <div className="w-2/3">
+                    <Input
+                      value={primaryMajorOther}
+                      onChange={(e) => setPrimaryMajorOther(e.target.value)}
+                      placeholder="Enter your major..."
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
               <Label className="mb-2">Secondary Major / Minor (Optional)</Label>
-              <SearchableSelect
-                options={['Not Applicable', ...MAJOR_OPTIONS]} value={secondaryMajor}
-                onChange={setSecondaryMajor} placeholder="Not Applicable"
-              />
+              <div className="flex gap-3">
+                <div className={secondaryMajor === 'Other' ? 'w-1/3' : 'w-full'}>
+                  <SearchableSelect
+                    options={['Not Applicable', ...MAJOR_OPTIONS]} value={secondaryMajor}
+                    onChange={setSecondaryMajor} placeholder="Not Applicable"
+                  />
+                </div>
+                {secondaryMajor === 'Other' && (
+                  <div className="w-2/3">
+                    <Input
+                      value={secondaryMajorOther}
+                      onChange={(e) => setSecondaryMajorOther(e.target.value)}
+                      placeholder="Enter your minor..."
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -527,20 +980,41 @@ export default function PreferencesPage() {
             <h2 className="text-xl font-semibold text-neutral-900">2. Country Preferences</h2>
             <p className="text-neutral-600">
               We will shortlist 20 colleges from across the countries you pick. Select up to 5.
-              <Badge variant="secondary" className="ml-2">{countries.length}/5 selected</Badge>
             </p>
-            <div className="flex flex-wrap gap-2">
-              {COUNTRY_OPTIONS.map((country) => (
-                <MultiSelectChip key={country} label={country}
-                  selected={countries.includes(country)}
-                  onToggle={() => toggleCountry(country)}
+
+            {countries.length < 5 && (
+              <div>
+                <Label className="mb-2">Add a country</Label>
+                <SearchableSelect
+                  options={COUNTRY_OPTIONS.filter((c) => !countries.includes(c)).map((c) => `${COUNTRY_FLAGS[c] || ''} ${c}`)}
+                  value=""
+                  onChange={(v) => addCountry(v.replace(/^\p{So}\p{So}?\s*/u, ''))}
+                  placeholder="Search country..."
                 />
-              ))}
-            </div>
+              </div>
+            )}
+
             {countries.length > 0 && (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                <p className="text-sm font-medium text-primary">Your selection:</p>
-                <p className="mt-1 text-sm text-neutral-700">{countries.join(', ')}</p>
+              <div>
+                <Label className="mb-2">Selected countries ({countries.length}/5)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {countries.map((country) => (
+                    <Badge key={country} variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+                      {COUNTRY_FLAGS[country] && <span>{COUNTRY_FLAGS[country]}</span>}
+                      {country}
+                      <button
+                        type="button"
+                        onClick={() => removeCountry(country)}
+                        className="ml-1 rounded-full p-0.5 hover:bg-neutral-300"
+                      >
+                        <span className="sr-only">Remove {country}</span>
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -553,7 +1027,7 @@ export default function PreferencesPage() {
             <p className="text-neutral-600">What kind of campus environment do you prefer?</p>
             <div className="space-y-3">
               {CAMPUS_SETTINGS.map((s) => (
-                <MCQOption key={s.value} value={s.value} label={s.label} desc={s.desc}
+                <MCQOption key={s.value} value={s.value} label={s.label} desc={s.desc} icon={s.icon}
                   selected={campusSetting === s.value} onSelect={setCampusSetting} />
               ))}
             </div>
@@ -570,10 +1044,10 @@ export default function PreferencesPage() {
             </div>
 
             <div>
-              <Label className="mb-2">Geographic Climate Preference</Label>
+              <Label className="mb-2">What weather works for you?</Label>
               <div className="grid grid-cols-2 gap-3">
                 {CLIMATE_OPTIONS.map((c) => (
-                  <MCQOption key={c.value} value={c.value} label={c.label}
+                  <MCQOption key={c.value} value={c.value} label={c.label} icon={c.icon}
                     selected={climatePreference === c.value} onSelect={setClimatePreference} />
                 ))}
               </div>
@@ -588,19 +1062,19 @@ export default function PreferencesPage() {
             <p className="text-neutral-600">What type of institution are you interested in?</p>
             <div className="space-y-3">
               {COLLEGE_TYPES.map((t) => (
-                <MCQOption key={t.value} value={t.value} label={t.label}
+                <MCQOption key={t.value} value={t.value} label={t.label} icon={t.icon}
                   selected={collegeType === t.value} onSelect={setCollegeType} />
               ))}
             </div>
-            <div>
+            {/* <div>
               <Label className="mb-2">Why does this matter to you most? (select all that apply)</Label>
               <div className="flex flex-wrap gap-2">
                 {COLLEGE_TYPE_REASONS.map((r) => (
-                  <MultiSelectChip key={r} label={r} selected={collegeTypeReasons.includes(r)}
+                  <MultiSelectChip key={r} label={r} icon={CHIP_ICONS[r]} selected={collegeTypeReasons.includes(r)}
                     onToggle={() => toggleMultiSelect(r, collegeTypeReasons, setCollegeTypeReasons)} />
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
         )}
 
@@ -608,21 +1082,12 @@ export default function PreferencesPage() {
         {step === 5 && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-neutral-900">5. Research Intensity</h2>
-            <p className="text-neutral-600">How important are research opportunities in your college experience?</p>
+            <p className="text-neutral-600">How important are research opportunities to you?</p>
             <div className="space-y-3">
               {RESEARCH_LEVELS.map((r) => (
-                <MCQOption key={r.value} value={r.value} label={r.label}
+                <MCQOption key={r.value} value={r.value} label={r.label} icon={r.icon}
                   selected={researchImportance === r.value} onSelect={setResearchImportance} />
               ))}
-            </div>
-            <div>
-              <Label className="mb-2">Preferred research exposure (select all that apply)</Label>
-              <div className="flex flex-wrap gap-2">
-                {RESEARCH_EXPOSURE.map((r) => (
-                  <MultiSelectChip key={r} label={r} selected={researchExposure.includes(r)}
-                    onToggle={() => toggleMultiSelect(r, researchExposure, setResearchExposure)} />
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -631,95 +1096,58 @@ export default function PreferencesPage() {
         {step === 6 && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-neutral-900">6. Cultural Fit</h2>
-            <p className="text-neutral-600">What kind of campus culture would you thrive in? (select all that apply)</p>
+            <p className="text-neutral-600">What kind of campus culture would you thrive in? (Multi-select)</p>
 
-            <div>
-              <Label className="mb-2">Academic & Intellectual</Label>
-              <div className="flex flex-wrap gap-2">
-                {CULTURAL_FIT_ACADEMIC.map((c) => (
-                  <MultiSelectChip key={c} label={c} selected={culturalFit.includes(c)}
-                    onToggle={() => toggleMultiSelect(c, culturalFit, setCulturalFit)} />
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-2">
+              {CULTURAL_FIT_OPTIONS.map((c) => (
+                <MultiSelectChip key={c} label={c} icon={CHIP_ICONS[c]} selected={culturalFit.includes(c)}
+                  onToggle={() => toggleMultiSelect(c, culturalFit, setCulturalFit)} />
+              ))}
             </div>
+          </div>
+        )}
+
+        {/* Step 7: Class Size Preference */}
+        {step === 7 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-neutral-900">7. Class Size Preference</h2>
 
             <div>
-              <Label className="mb-2">Social Environment</Label>
-              <div className="flex flex-wrap gap-2">
-                {CULTURAL_FIT_SOCIAL.map((c) => (
-                  <MultiSelectChip key={c} label={c} selected={culturalFit.includes(c)}
-                    onToggle={() => toggleMultiSelect(c, culturalFit, setCulturalFit)} />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-2">How important is &quot;fit&quot; in your final decision?</Label>
-              <div className="flex flex-wrap gap-3">
-                {FIT_IMPORTANCE.map((f) => (
-                  <Button key={f.value} type="button" variant={fitImportance === f.value ? 'default' : 'outline'} onClick={() => setFitImportance(f.value)}>
-                    {f.label}
-                  </Button>
+              <Label className="mb-2">What learning environment do you prefer?</Label>
+              <div className="space-y-3">
+                {CLASS_SIZES.map((s) => (
+                  <MCQOption key={s.value} value={s.value} label={s.label} icon={s.icon}
+                    selected={classSize === s.value} onSelect={setClassSize} />
                 ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* Step 7: Class Size, Teaching & Final */}
-        {step === 7 && (
+        {/* Step 8: Brand Preference */}
+        {step === 8 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">7. Class Size, Teaching & Final Preferences</h2>
-
-            <div>
-              <Label className="mb-2">What learning environment do you prefer?</Label>
-              <div className="space-y-3">
-                {CLASS_SIZES.map((s) => (
-                  <MCQOption key={s.value} value={s.value} label={s.label}
-                    selected={classSize === s.value} onSelect={setClassSize} />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-2">Which teaching style appeals more to you?</Label>
-              <div className="space-y-3">
-                {TEACHING_STYLES.map((t) => (
-                  <MCQOption key={t.value} value={t.value} label={t.label}
-                    selected={teachingStyle === t.value} onSelect={setTeachingStyle} />
-                ))}
-              </div>
-            </div>
-
+            <h2 className="text-xl font-semibold text-neutral-900">8. Brand Preference</h2>
+            <p className="text-neutral-600">Is the college’s global brand recognition an important factor in your decision?</p>
             <div className="space-y-3">
-              <Label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-neutral-200 p-4 hover:border-neutral-300">
-                <Checkbox
-                  checked={financialAidRequired}
-                  onCheckedChange={(checked) => setFinancialAidRequired(checked === true)}
-                  className="size-5"
-                />
-                <span className="text-neutral-900">I require financial aid or scholarship</span>
-              </Label>
-
-              <Label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-neutral-200 p-4 hover:border-neutral-300">
-                <Checkbox
-                  checked={prestigeImportant}
-                  onCheckedChange={(checked) => setPrestigeImportant(checked === true)}
-                  className="size-5"
-                />
-                <span className="text-neutral-900">The prestige of the college is an important factor in my decision</span>
-              </Label>
+              {IMPORTANCE_OPTIONS.map((option) => (
+                <MCQOption key={option.value} value={option.value} label={option.label} icon={option.icon}
+                  selected={brandPreference === option.value} onSelect={setBrandPreference} />
+              ))}
             </div>
+          </div>
+        )}
 
-            <div>
-              <Label className="mb-2">
-                Is there anything else you would like us to consider? (Optional)
-              </Label>
-              <Textarea
-                value={additionalNotes} onChange={(e) => setAdditionalNotes(e.target.value)}
-                placeholder="E.g., specific colleges you're interested in, budget constraints, location preferences..."
-                rows={4}
-              />
+        {/* Step 9: Financing your Education */}
+        {step === 9 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-neutral-900">9. Financing your Education</h2>
+            <p className="text-neutral-600">Do you require financial aid or scholarship?</p>
+            <div className="space-y-3">
+              {IMPORTANCE_OPTIONS.map((option) => (
+                <MCQOption key={option.value} value={option.value} label={option.label} icon={option.icon}
+                  selected={financialAidPreference === option.value} onSelect={setFinancialAidPreference} />
+              ))}
             </div>
           </div>
         )}
@@ -741,7 +1169,7 @@ export default function PreferencesPage() {
           {step < TOTAL_STEPS ? (
             <Button
               size="lg"
-              onClick={() => setStep(step + 1)}
+              onClick={handleNext}
               disabled={!canProceed()}
             >
               Next

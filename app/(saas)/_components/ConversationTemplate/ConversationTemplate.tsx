@@ -324,6 +324,13 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
             }
           }
 
+          if (!sessionInfo?.created_at) {
+            const firstMessageTimestamp = historyResponse.messages[0]?.timestamp;
+            if (firstMessageTimestamp) {
+              setSessionCreatedAt(firstMessageTimestamp);
+            }
+          }
+
           const parsed = callbacks.parseHistory(historyResponse, sessionInfo);
           setMessages(parsed.messages);
           setQuestionsCompleted(parsed.questionsCompleted);
@@ -709,7 +716,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                       <Paragraph className="text-white">{m.content}</Paragraph>
                     ) : (
                       <div
-                        className="prose prose-sm max-w-none text-gray-900 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mt-0 [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6"
+                        className="prose prose-sm max-w-none text-gray-900 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mt-0 [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_table]:w-full [&_table]:border-collapse [&_table]:my-4 [&_table]:text-sm [&_table]:rounded-xl [&_table]:overflow-hidden [&_table]:shadow-md [&_table]:border [&_table]:border-gray-200 [&_thead]:bg-linear-to-r [&_thead]:from-emerald-600 [&_thead]:to-green-500 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-semibold [&_th]:text-white [&_th]:text-xs [&_th]:uppercase [&_th]:tracking-wider [&_th]:border-0 [&_th]:border-b [&_th]:border-emerald-400/30 [&_tbody_tr]:transition-colors [&_tbody_tr]:duration-150 [&_tbody_tr:hover]:bg-emerald-50 [&_tbody_tr:nth-child(even)]:bg-gray-50/60 [&_tbody_tr:nth-child(even):hover]:bg-emerald-50 [&_td]:px-4 [&_td]:py-3 [&_td]:border-0 [&_td]:border-b [&_td]:border-gray-100 [&_td:first-child]:font-semibold [&_td:first-child]:text-gray-800 [&_tbody_tr:last-child_td]:border-b-0"
                         dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }}
                       />
                     )}

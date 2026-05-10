@@ -47,6 +47,8 @@ export interface CollegeSelectorPreferences {
   fit_importance: string;
   class_size: string;
   teaching_style: string;
+  brand_preference?: string;
+  financial_aid_preference?: string;
   financial_aid_required: boolean;
   prestige_important: boolean;
   additional_notes: string;
@@ -222,6 +224,20 @@ class CollegeSelectorAPI {
     preferences_completed: boolean;
   }> {
     return api(`${this.baseUrl}/${sessionId}/preferences/`);
+  }
+
+  async saveProgress(
+    sessionId: string,
+    partialPreferences: Partial<CollegeSelectorPreferences> & { _step?: number }
+  ): Promise<{
+    session_id: string;
+    preferences: Partial<CollegeSelectorPreferences> & { _step?: number };
+    preferences_completed: boolean;
+  }> {
+    return api(`${this.baseUrl}/${sessionId}/preferences/`, {
+      method: 'PATCH',
+      body: partialPreferences,
+    });
   }
 
   async sendMessage(
