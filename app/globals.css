@@ -1,10 +1,9 @@
+/* stylelint-disable-file */
 @import '@flaticon/flaticon-uicons/css/all/all';
 
 @import 'tailwindcss';
 
-@source "../node_modules/tw-animate-css/dist/tw-animate.css";
-
-@custom-variant dark (&:is(.dark *));
+@import "../node_modules/tw-animate-css/dist/tw-animate.css";
 
 @theme {
   /* General */
@@ -317,23 +316,23 @@ input::placeholder {
 }
 
 .btn-primary {
-  @apply text-white bg-[image:var(--color-action-gradient-800)];
+  @apply text-white bg-(image:--color-action-gradient-800);
 }
 .btn-primary:hover {
-  @apply bg-[image:var(--color-action-gradient-900)];
+  @apply bg-(image:--color-action-gradient-900);
 }
 .btn-primary:focus {
   @apply ring-4 ring-blue-300 outline-none;
 }
 .btn-primary:active {
-  @apply bg-[image:var(--color-action-gradient-900)];
+  @apply bg-(image:--color-action-gradient-900);
 }
 .btn-primary---disabled {
   @apply cursor-not-allowed opacity-25;
 }
 
 .btn-secondary {
-  @apply border border-transparent bg-clip-text text-transparent bg-[image:var(--color-action-gradient-900)];
+  @apply border border-transparent bg-clip-text text-transparent bg-(image:--color-action-gradient-900);
 }
 .btn-secondary:hover {
   @apply bg-blue-50;
