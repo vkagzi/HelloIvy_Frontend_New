@@ -93,9 +93,9 @@ const EducationalDetailsForm: React.FC = () => {
   }, [contextEducationalDetails, defaultValues]);
 
   const UG_PG_LEVELS = [
-    'Undergraduate',
+    'College/Undergraduate',
     'Postgraduate',
-    'Working Professional',
+    'Working/Completed College',
   ];
   const SCHOOL_LEVELS = ['High School (8th–12th grade)'];
 
@@ -450,8 +450,8 @@ const EducationalDetailsForm: React.FC = () => {
       const topLevel = parsedTranscriptData.academicLevel;
       if (topLevel.includes('High School')) newDefaults.academicLevel = 'High School (8th–12th grade)';
       else if (topLevel.includes('Postgraduate')) newDefaults.academicLevel = 'Postgraduate';
-      else if (topLevel.includes('Working')) newDefaults.academicLevel = 'Working Professional';
-      else newDefaults.academicLevel = 'Undergraduate';
+      else if (topLevel.includes('Working')) newDefaults.academicLevel = 'Working/Completed College';
+      else newDefaults.academicLevel = 'College/Undergraduate';
     }
 
     // Support grade level specifically
@@ -508,16 +508,16 @@ const EducationalDetailsForm: React.FC = () => {
       const academicLevel = transformedData.academicLevel as string | undefined;
       const sectionKey: Record<string, string> = {
         'High School (8th–12th grade)': 'highSchool',
-        'Undergraduate': 'undergraduate',
+        'College/Undergraduate': 'undergraduate',
         'Postgraduate': 'postgraduate',
-        'Working Professional': 'tenPlus',
+        'Working/Completed College': 'tenPlus',
       };
       const relevantSection = academicLevel
         ? sectionKey[academicLevel]
         : undefined;
 
       // Also handle prerequisite section
-      const prereqSection = (academicLevel === 'Postgraduate' || academicLevel === 'Working Professional')
+      const prereqSection = (academicLevel === 'Postgraduate' || academicLevel === 'Working/Completed College')
         ? 'undergraduate_prereq'
         : undefined;
 
@@ -607,8 +607,8 @@ const EducationalDetailsForm: React.FC = () => {
   useEffect(() => {
     if (educationalDetails && Object.keys(educationalDetails).length > 0) {
       setFormDefaults((prev) => ({
-        ...educationalDetails,
         ...prev,
+        ...educationalDetails,
       }));
     }
   }, [defaultValues]); // eslint-disable-line react-hooks/exhaustive-deps

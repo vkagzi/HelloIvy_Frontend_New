@@ -660,9 +660,9 @@ export const educationalFieldDefs: FieldDefinition[] = [
     placeholder: 'Select academic level',
     options: [
       'High School (8th–12th grade)',
-      'Undergraduate',
+      'College/Undergraduate',
       'Postgraduate',
-      'Working Professional',
+      'Working/Completed College',
     ],
     required: true,
   },
@@ -682,7 +682,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
           'Grade 11',
           'Grade 12',
         ],
-        Undergraduate: [
+        'College/Undergraduate': [
           'Year 1',
           'Year 2',
           'Year 3',
@@ -690,7 +690,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
           'Year 5',
         ],
         Postgraduate: ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
-        'Working Professional': ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+        'Working/Completed College': ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
       },
     },
     visibility: {
@@ -698,9 +698,9 @@ export const educationalFieldDefs: FieldDefinition[] = [
         field_id: 'academicLevel',
         value: [
           'High School (8th–12th grade)',
-          'Undergraduate',
+          'College/Undergraduate',
           'Postgraduate',
-          'Working Professional',
+          'Working/Completed College',
         ],
       },
     },
@@ -870,10 +870,10 @@ export const educationalFieldDefs: FieldDefinition[] = [
     optionsDependsOn: {
       fieldId: 'academicLevel',
       map: {
-        'Undergraduate': UNDERGRADUATE_DEGREE_PROGRAMS,
+        'College/Undergraduate': UNDERGRADUATE_DEGREE_PROGRAMS,
         Postgraduate: POSTGRADUATE_DEGREE_PROGRAMS,
         Doctorate: DOCTORATE_DEGREE_PROGRAMS,
-        'Working Professional': [
+        'Working/Completed College': [
           ...UNDERGRADUATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
           ...POSTGRADUATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
           ...DOCTORATE_DEGREE_PROGRAMS.filter((p) => p !== 'Other'),
@@ -924,7 +924,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
           { length: 2035 - 1960 + 1 },
           (_, i) => (1960 + i).toString()
         ),
-        'Undergraduate': Array.from(
+        'College/Undergraduate': Array.from(
           { length: 2035 - 1960 + 1 },
           (_, i) => (1960 + i).toString()
         ),
@@ -932,7 +932,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
           { length: 2035 - 1960 + 1 },
           (_, i) => (1960 + i).toString()
         ),
-        'Working Professional': Array.from(
+        'Working/Completed College': Array.from(
           { length: 2035 - 1960 + 1 },
           (_, i) => (1960 + i).toString()
         ),
@@ -1469,7 +1469,7 @@ export const educationalLayout: LayoutBlock[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['Undergraduate'],
+        value: ['College/Undergraduate'],
       },
     },
     repeatables: {
@@ -1533,7 +1533,7 @@ export const educationalLayout: LayoutBlock[] = [
     visibility: {
       depends_on: {
         field_id: 'academicLevel',
-        value: ['Working Professional'],
+        value: ['Working/Completed College'],
       },
     },
     repeatables: {
@@ -2207,12 +2207,12 @@ export const getExtracurricularTitle = (
 ): string => {
   if (!academicLevel) return 'Extra Curricular Activities';
   const levels = Array.isArray(academicLevel) ? academicLevel : [academicLevel];
-  if (levels.includes('Working Professional')) {
+  if (levels.includes('Working/Completed College')) {
     return 'Extracurriculars during UG/PG, Work/Internship/Startup Experience';
   }
   if (
     levels.includes('Postgraduate') ||
-    levels.includes('Undergraduate')
+    levels.includes('College/Undergraduate')
   ) {
     return 'Extracurriculars during School/Highschool, UG/PG, Work/Internship/Startup Experience';
   }
