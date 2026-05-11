@@ -7,7 +7,10 @@ const API_BASE_URL =
 const nextConfig: NextConfig = {
   /* config options here */
   env: {
-    NEXT_PUBLIC_GIT_COMMIT_SHA: process.env.NEXT_PUBLIC_GIT_COMMIT_SHA || '',
+    NEXT_PUBLIC_GIT_COMMIT_SHA:
+      process.env.NEXT_PUBLIC_GIT_COMMIT_SHA ||
+      process.env.VERCEL_GIT_COMMIT_SHA ||
+      '',
   },
   allowedDevOrigins: ['0.0.0.0'],
   crossOrigin: 'anonymous',
