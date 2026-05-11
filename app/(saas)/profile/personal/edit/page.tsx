@@ -17,12 +17,12 @@ import {
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import ResumeUploader from '@/app/_components/ResumeUploader';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import TranscriptUploader from '@/app/_components/TranscriptUploader';
 
 const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse, loading, error, refetch } = useProfile();
-  const [parsedResumeData, setParsedResumeData] = useState<any>(null);
+  const { rawApiResponse, loading, error, refetch, parsedTranscriptData } = useProfile();
   const [resumeFormDefaults, setResumeFormDefaults] = useState<
     Record<string, unknown>
   >({});
@@ -119,24 +119,39 @@ const PersonalDetailsForm: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!parsedResumeData?.personal) return;
-    const p = parsedResumeData.personal;
+    if (!parsedTranscriptData) return;
+    console.log('!!! [PersonalDetailsForm] Received parsed data:', parsedTranscriptData);
+    
+    if (!parsedTranscriptData.personalDetails) {
+      console.warn('!!! [PersonalDetailsForm] No personalDetails found in parsed data');
+      return;
+    }
+    
+    const p = parsedTranscriptData.personalDetails;
+    console.log('!!! [PersonalDetailsForm] Mapping personal details:', p);
 
-    setResumeFormDefaults((prev) => ({
-      ...prev,
-      firstName: p.first_name ?? prev.firstName,
-      lastName: p.last_name ?? prev.lastName,
-      phoneNumber: p.phone ?? prev.phoneNumber,
-      city: p.city ?? prev.city,
-      citizenship: p.citizenship ?? prev.citizenship,
-      gender: p.gender ?? prev.gender,
-      dob: p.dob ?? prev.dob,
-      addressLine: p.address ?? prev.addressLine,
-      zipCode: p.zip_code ?? prev.zipCode,
-      motherProfession: p.mother_profession ?? prev.motherProfession,
-      fatherProfession: p.father_profession ?? prev.fatherProfession,
-    }));
-  }, [parsedResumeData]);
+    setResumeFormDefaults((prev) => {
+      const normalizedGender = p.gender ? p.gender.charAt(0).toUpperCase() + p.gender.slice(1).toLowerCase() : prev.gender;
+      
+      return {
+        ...prev,
+        ...p,
+        // fallback in case transcript AI uses old resume keys
+        firstName: p.firstName ?? p.first_name ?? prev.firstName,
+        lastName: p.lastName ?? p.last_name ?? prev.lastName,
+        phoneNumber: p.phoneNumber ?? p.phone ?? prev.phoneNumber,
+        countryCode: p.countryCode ?? p.country_code ?? prev.countryCode,
+        city: p.city ?? prev.city,
+        citizenShip: p.citizenShip ?? p.citizenship ?? prev.citizenShip,
+        gender: normalizedGender,
+        dob: p.dob ?? prev.dob,
+        addressline: p.addressline ?? p.address ?? prev.addressline,
+        zipcode: p.zipcode ?? p.zip_code ?? prev.zipcode,
+        mothersProfession: p.mothersProfession ?? p.mother_profession ?? prev.mothersProfession,
+        fathersProfession: p.fathersProfession ?? p.father_profession ?? prev.fathersProfession,
+      };
+    });
+  }, [parsedTranscriptData]);
 
   if (loading) {
     return (
@@ -234,6 +249,9 @@ const PersonalDetailsForm: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
+      <div className="mt-2">
+        <ResumeUploader />
+      </div>
       <Tabs />
       <DynamicForm
         key={JSON.stringify(formDefaults)}
@@ -258,6 +276,16 @@ const PersonalDetailsForm: React.FC = () => {
           }, 500);
         }}
       />
+
+      {/* TEMPORARY DEBUG VIEW - REMOVE AFTER FIXING */}
+      {parsedTranscriptData && (
+        <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-4">
+          <h3 className="mb-2 text-sm font-bold text-red-800">DEBUG: Raw Parsed Data (Personal Details)</h3>
+          <pre className="max-h-60 overflow-auto text-xs text-red-700">
+            {JSON.stringify(parsedTranscriptData.personalDetails, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
 };

@@ -109,7 +109,7 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
     : timeRemaining <= 60
       ? 'border-red-300 bg-red-50'
       : timeRemaining <= 300
-        ? 'border-orange-300 bg-orange-50'
+        ? 'border-violet-300 bg-violet-50'
         : defaultContainerClass;
 
   const textClass = isPaused
@@ -117,7 +117,7 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
     : timeRemaining <= 60
       ? 'text-red-700'
       : timeRemaining <= 300
-        ? 'text-orange-700'
+        ? 'text-violet-700'
         : defaultTextClass;
 
   return (

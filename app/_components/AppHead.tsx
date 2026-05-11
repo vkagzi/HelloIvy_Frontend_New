@@ -19,6 +19,7 @@ import { navItems } from '@/app/_constants/navItems';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
 import api from '@/lib/api-client';
 
+
 type AppHeadProps = {
   session: Session | null;
 };
@@ -103,6 +104,7 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
         </div>
         {(!isPayAsStudent || session) && (
         <div className="flex items-center gap-4">
+
           <Link
             href="/documents"
             className="rounded-md p-1.5 transition hover:bg-neutral-100"

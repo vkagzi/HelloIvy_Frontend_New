@@ -14,6 +14,7 @@ import { additionalFieldDefs as fieldDefs, additionalLayout as layout } from '@/
 import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import ResumeUploader from '@/app/_components/ResumeUploader';
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,7 @@ import { Button } from '@/components/ui/button';
 const AdditionalFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse, refetch } = useProfile();
+  const { rawApiResponse, refetch, parsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [pendingData, setPendingData] = React.useState<Record<string, unknown> | null>(null);
@@ -145,13 +146,22 @@ const AdditionalFormDetails: React.FC = () => {
 
   console.log('Additional details for form:', additionalDetails); // Debug log
 
+  const formDefaults = {
+    ...additionalDetails,
+    ...parsedTranscriptData?.additional,
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
+      <div className="mt-2">
+        <ResumeUploader />
+      </div>
       <Tabs />
       <DynamicForm
+        key={JSON.stringify(formDefaults)}
         fieldDefs={fieldDefs}
-        defaultValues={additionalDetails}
+        defaultValues={formDefaults}
         layout={layout}
         onSubmit={onSubmit}
         formClassName="space-y-6"

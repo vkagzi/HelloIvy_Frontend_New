@@ -6,11 +6,11 @@ import { usePathname } from 'next/navigation';
 import { Label } from '@/app/_components/Typography';
 interface IconProps {
   type:
-    | 'educational'
-    | 'professional'
-    | 'extra-curricular'
-    | 'additional'
-    | 'personal';
+  | 'educational'
+  | 'professional'
+  | 'extra-curricular'
+  | 'additional'
+  | 'personal';
   isActive?: boolean;
 }
 type SidebarItem = {
@@ -80,33 +80,38 @@ const GradientIcon: React.FC<IconProps> = ({ type, isActive = false }) => {
   );
 };
 
-const sidebarItems: SidebarItem[] = [
+const sidebarItems: (SidebarItem & { timeEstimate: string })[] = [
   {
     label: 'Personal',
+    timeEstimate: '2-5 mins',
     icon: GradientIcon,
     href: '/profile/personal',
     type: 'personal',
   },
   {
     label: 'Educational',
+    timeEstimate: '5-7 mins',
     icon: GradientIcon,
     href: '/profile/educational',
     type: 'educational',
   },
   {
     label: 'Professional',
+    timeEstimate: '2-7 mins',
     icon: GradientIcon,
     href: '/profile/professional',
     type: 'professional',
   },
   {
     label: 'Extra Curricular',
+    timeEstimate: '2-5 mins',
     icon: GradientIcon,
     href: '/profile/extra-curricular',
     type: 'extra-curricular',
   },
   {
     label: 'Additional',
+    timeEstimate: '2-5 mins',
     icon: GradientIcon,
     href: '/profile/additional',
     type: 'additional',
@@ -117,19 +122,18 @@ const Sidebar: React.FC = () => {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden  w-56 shrink-0 border-r border-neutral-200 bg-white md:block">
-      <nav className="flex flex-col gap-1">
+    <aside className="hidden  w-64 shrink-0 border-r border-neutral-200 bg-white md:block">
+      <nav className="flex flex-col gap-1 py-4">
         {sidebarItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-2 transition-colors ${
-                isActive
-                  ? 'border-l-4 border-blue-500 bg-blue-200 text-blue-700'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
+              className={`flex items-center gap-3 px-4 py-3 transition-colors ${isActive
+                ? 'border-l-4 border-blue-500 bg-blue-100 text-blue-700'
+                : 'text-neutral-700 hover:bg-neutral-100'
+                }`}
             >
               <span className="flex h-7 w-7 items-center justify-center">
                 {React.createElement(item.icon, {
@@ -137,16 +141,20 @@ const Sidebar: React.FC = () => {
                   isActive,
                 })}
               </span>
-              <Label
-                size="md"
-                className={`${
-                  isActive
+              <div className="flex flex-1 items-center justify-between gap-2 pr-1">
+                <Label
+                  size="md"
+                  className={`${isActive
                     ? 'font-semibold text-blue-700'
-                    : 'font-normal text-neutral-700'
-                }`}
-              >
-                {item.label}
-              </Label>
+                    : 'font-medium text-neutral-700'
+                    } whitespace-nowrap`}
+                >
+                  {item.label}
+                </Label>
+                <span className="text-violet-700 text-[11px] whitespace-nowrap">
+                  ⏳ {item.timeEstimate}
+                </span>
+              </div>
             </Link>
           );
         })}

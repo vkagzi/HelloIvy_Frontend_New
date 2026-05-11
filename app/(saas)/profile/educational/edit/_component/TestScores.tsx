@@ -8,6 +8,7 @@ import { FieldRenderer } from '@/app/_components/dynamic-form/FieldRenderer';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
 import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
+import TranscriptUploader from '@/app/_components/TranscriptUploader';
 
 interface TestScoresBlockProps {
   testTypeOptions: string[];
@@ -24,12 +25,13 @@ interface TestScoreInstance {
 
 // List of test type layout block types
 const TEST_TYPE_LAYOUT_TYPES = [
-  'SAT',
-  'TOEFL',
-  'IELTS',
   'GRE',
   'GMAT',
+  'SAT',
   'ACT',
+  'AP',
+  'TOEFL',
+  'IELTS',
   'Executive Assessment',
   'Others',
 ];
@@ -72,11 +74,12 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
     return [];
   });
 
+  const watchedAllTestScores = form.watch('testScores');
+
   // Sync testScores state with form data when form data changes
   useEffect(() => {
-    const formTestScores = form.getValues('testScores') as unknown[];
-    if (Array.isArray(formTestScores) && formTestScores.length > 0) {
-      const filteredScores = formTestScores
+    if (Array.isArray(watchedAllTestScores) && watchedAllTestScores.length > 0) {
+      const filteredScores = watchedAllTestScores
         .filter((score) => {
           const testType = (score as Record<string, unknown>)?.testType as string | undefined;
           return testType && testType.length > 0;
@@ -85,16 +88,17 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
           key: nanoid(),
           testType: (score as Record<string, unknown>)?.testType as string ?? '',
         }));
-      
-      // Only update if the number of test scores changed
-      if (filteredScores.length !== testScores.length) {
+
+      // Update if the number of test scores changed or if we have no test scores
+      if (filteredScores.length !== testScores.length || (testScores.length === 0 && filteredScores.length > 0)) {
         setTestScores(filteredScores);
       }
     } else if (testScores.length > 0) {
       // If form data is empty but we have local state, clear it
       setTestScores([]);
     }
-  }, [form.getValues('testScores')]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(watchedAllTestScores)]);
 
   // Add a new test score
   const handleAddTestScore = (): void => {
@@ -119,7 +123,6 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
       });
     }
     form.setValue(`testScores.${testIdx}.testType` as keyof Record<string, unknown>, undefined as never);
-    
     setTestScores((prev) => prev.filter((test) => test.key !== key));
   };
 
@@ -145,48 +148,42 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
             className="flex flex-col space-y-4 rounded-xl border border-neutral-200 p-4"
           >
             {/* Test Score Header */}
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex items-start justify-between">
               <Label size="lg" className="font-semibold text-neutral-900">
                 Test Score {testIdx + 1}
               </Label>
-              {testScores.length > minTests && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  label="Remove"
-                  className="text-blue-500"
-                  onClick={() => handleRemoveTestScore(test.key, testIdx)}
-                />
-              )}
+              <div className="flex flex-col items-end gap-2">
+                {testScores.length > minTests && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    label="Remove"
+                    className="text-blue-500"
+                    onClick={() => handleRemoveTestScore(test.key, testIdx)}
+                  />
+                )}
+                <TranscriptUploader targetSection="testScores" targetIndex={testIdx} />
+              </div>
             </div>
 
             {/* Test Type Selection */}
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Controller
-                  name={`testScores.${testIdx}.testType` as keyof Record<string, unknown>}
-                  control={form.control}
-                  render={() => {
-                    const testTypeField: FieldDefinition = {
-                      id: `testScores.${testIdx}.testType`,
-                      type: 'select',
-                      label: 'Test Type',
-                      placeholder: 'Select test type',
-                      options: testTypeOptions,
-                      required: false,
-                    };
-                    return (
-                      <FieldRenderer
-                        field={testTypeField}
-                        form={form}
-                        error={errors[`testScores.${testIdx}.testType`]}
-                        inputHeightClass="py-2"
-                        labelHeightClass="text-label-md"
-                        inputWidthClass="w-full"
-                      />
-                    );
+                <FieldRenderer
+                  field={{
+                    id: `testScores.${testIdx}.testType`,
+                    type: 'select',
+                    label: 'Test Type',
+                    placeholder: 'Select test type',
+                    options: testTypeOptions && testTypeOptions.length > 0 ? testTypeOptions : TEST_TYPE_LAYOUT_TYPES,
+                    required: false,
                   }}
+                  form={form}
+                  error={errors[`testScores.${testIdx}.testType`]}
+                  inputHeightClass="py-2"
+                  labelHeightClass="text-label-md"
+                  inputWidthClass="w-full"
                 />
               </div>
             </div>
@@ -227,20 +224,13 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
 
                     return (
                       <div key={fieldDef.id}>
-                        <Controller
-                          name={controllerName}
-                          control={form.control}
-                          defaultValue={form.getValues(controllerName) ?? ''}
-                          render={() => (
-                            <FieldRenderer
-                              field={repeatableField}
-                              form={form}
-                              error={errors[controllerName]}
-                              inputHeightClass="py-2"
-                              labelHeightClass="text-label-md"
-                              inputWidthClass="w-full"
-                            />
-                          )}
+                        <FieldRenderer
+                          field={repeatableField}
+                          form={form}
+                          error={errors[controllerName]}
+                          inputHeightClass="py-2"
+                          labelHeightClass="text-label-md"
+                          inputWidthClass="w-full"
                         />
                       </div>
                     );

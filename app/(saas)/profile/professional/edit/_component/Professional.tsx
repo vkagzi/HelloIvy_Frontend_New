@@ -164,7 +164,12 @@ export const ProfessionalBlock: React.FC<SchoolBlockProps> = ({
                   id: controllerName,
                 };
                 return (
-                  <div key={fieldDef.id}>
+                  <div 
+                    key={fieldDef.id}
+                    style={{ 
+                      gridColumn: fieldDef.width ? `span ${fieldDef.width}` : 'auto' 
+                    }}
+                  >
                     <Controller
                       name={controllerName}
                       control={form.control}

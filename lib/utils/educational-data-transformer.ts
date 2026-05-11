@@ -36,6 +36,13 @@ export function transformEducationalData(
     );
   }
 
+  // Transform undergraduate_prereq data
+  if (result.undergraduate_prereq && Array.isArray(result.undergraduate_prereq)) {
+    result.undergraduate_prereq = (result.undergraduate_prereq as Record<string, unknown>[]).map(
+      (degree) => transformDegree(degree)
+    );
+  }
+
   return result;
 }
 
@@ -125,6 +132,13 @@ export function parseEducationalData(
   // Parse tenPlus (Working/Completed College) data
   if (result.tenPlus && Array.isArray(result.tenPlus)) {
     result.tenPlus = (result.tenPlus as Record<string, unknown>[]).map(
+      (degree) => parseDegree(degree)
+    );
+  }
+
+  // Parse undergraduate_prereq data
+  if (result.undergraduate_prereq && Array.isArray(result.undergraduate_prereq)) {
+    result.undergraduate_prereq = (result.undergraduate_prereq as Record<string, unknown>[]).map(
       (degree) => parseDegree(degree)
     );
   }

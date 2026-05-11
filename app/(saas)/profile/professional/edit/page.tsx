@@ -24,10 +24,9 @@ const ProfessionalFormDetails: React.FC = () => {
   const formRef = React.useRef<ReturnType<
     typeof import('react-hook-form').useForm
   > | null>(null);
-  const { rawApiResponse, refetch } = useProfile();
+  const { rawApiResponse, refetch, parsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const [parsedResumeData, setParsedResumeData] = useState<any>(null);
   const [formDefaults, setFormDefaults] = useState<Record<string, unknown>>({});
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
@@ -91,22 +90,41 @@ const ProfessionalFormDetails: React.FC = () => {
   
 
   useEffect(() => {
-    if (!parsedResumeData?.professional?.length) return;
+    if (!parsedTranscriptData?.professional) return;
+    
+    // Support both direct array and nested experiences array
+    const professional = parsedTranscriptData.professional;
+    const experiences = Array.isArray(professional) ? professional : (professional.experiences || []);
+    
+    if (!experiences.length) return;
 
-    const exp = parsedResumeData.professional[0];
+    setFormDefaults((prev) => {
+      const existing = Array.isArray(prev.experiences) ? prev.experiences : [];
+      const mapped = experiences.map((exp: any, idx: number) => {
+        const existExp = existing[idx] || {};
+        return {
+          ...existExp,
+          experienceType: exp.experienceType ?? exp.experience_type ?? existExp.experienceType,
+          industrySector: exp.industrySector ?? exp.industry ?? existExp.industrySector,
+          currentEmployer: exp.currentEmployer ?? exp.employerName ?? exp.company ?? existExp.currentEmployer,
+          city: exp.city ?? existExp.city,
+          durationValue: exp.durationValue ?? exp.duration ?? existExp.durationValue,
+          durationUnit: exp.durationUnit ?? exp.unit ?? existExp.durationUnit,
+          startDate: exp.startDate ?? exp.start_date ?? existExp.startDate,
+          endDate: exp.endDate ?? exp.end_date ?? existExp.endDate,
+          jobTitle: exp.jobTitle ?? exp.title ?? existExp.jobTitle,
+          responsibilities: exp.responsibilities ?? existExp.responsibilities,
+          achievements: exp.achievements ?? existExp.achievements,
+        };
+      });
 
-    setFormDefaults((prev) => ({
-      ...prev,
-      experienceType: exp.experience_type ?? prev.experienceType,
-      industry: exp.industry ?? prev.industry,
-      employerName: exp.company ?? prev.employerName,
-      city: exp.city ?? prev.city,
-      duration: exp.duration ?? prev.duration,
-      title: exp.title ?? prev.title,
-      responsibilities: exp.responsibilities ?? prev.responsibilities,
-      achievements: exp.achievements ?? prev.achievements,
-    }));
-  }, [parsedResumeData]);
+      return {
+        ...prev,
+        ...professional, // merge top-level if any
+        experiences: mapped,
+      };
+    });
+  }, [parsedTranscriptData]);
 
 
 
@@ -140,7 +158,9 @@ const ProfessionalFormDetails: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
-      {/* <ResumeUploader onParsed={setParsedResumeData} /> */}
+      <div className="mt-2">
+        <ResumeUploader />
+      </div>
       <Tabs />
       <DynamicForm
         key={JSON.stringify(formDefaults)}

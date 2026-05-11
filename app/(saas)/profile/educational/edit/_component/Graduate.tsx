@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
-import { Controller, UseFormReturn } from 'react-hook-form';
+import { Controller, UseFormReturn, useWatch } from 'react-hook-form';
 import Button from '@/app/_components/Button';
 import { FieldRenderer } from '@/app/_components/dynamic-form/FieldRenderer';
 import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
+import TranscriptUploader from '@/app/_components/TranscriptUploader';
+import { UNDERGRADUATE_DEGREE_PROGRAMS, POSTGRADUATE_DEGREE_PROGRAMS } from '@/app/(saas)/profile/_config/fieldDefinitions';
 
 interface GraduateBlockProps {
   section: LayoutItem;
@@ -112,32 +114,54 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     });
   }, [degrees, form, sectionType, yearsFieldName, section.repeatables?.fields, fieldDefs]);
 
-  // Sync year rows when maximumPossibleGPA (or any defaultValueFrom source) changes
+  // Sync internal state with form data changes (e.g. from resume scan / reset)
+  const watchedSectionData = useWatch({
+    control: form.control,
+    name: sectionType as any,
+  });
+
   useEffect(() => {
-    const subscription = form.watch((_value, { name }) => {
-      if (!name) return;
-      // Check if the changed field is a source for defaultValueFrom within this section
-      degrees.forEach((degree, degreeIdx) => {
-        (section.repeatables?.fields ?? []).forEach((fid: string) => {
-          const field = fieldDefs.find((f) => f.id === fid);
-          if (!field?.defaultValueFrom) return;
-          const sourcePath = `${sectionType}.${degreeIdx}.${field.defaultValueFrom}`;
-          if (name !== sourcePath) return;
-          const sourceValue = form.getValues(sourcePath) as string;
-          if (!sourceValue) return;
-          degree.yearRows.forEach((_, yearIdx) => {
-            const targetPath = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fid}`;
-            const currentTarget = form.getValues(targetPath) as string;
-            if (!currentTarget) {
-              form.setValue(targetPath, sourceValue);
-            }
-          });
+    if (!Array.isArray(watchedSectionData) || watchedSectionData.length === 0) return;
+    
+    console.log(`[GraduateBlock] ${sectionType} watched data changed:`, watchedSectionData);
+
+    setDegrees((prev) => {
+      let changed = false;
+      const next: DegreeInstance[] = [];
+
+      watchedSectionData.forEach((formDegree, idx) => {
+        const currentDegree = prev[idx];
+        const formYears = (formDegree as Record<string, unknown>)?.[yearsFieldName] as any[];
+        
+        // If form has years, use that count, else use show_default or min
+        const yearsCount = Array.isArray(formYears) && formYears.length > 0 
+          ? formYears.length 
+          : Math.max(minYears, 1);
+
+        const newYearRows = Array.from({ length: yearsCount }, (_, yIdx) => {
+          const formYear = Array.isArray(formYears) ? formYears[yIdx] : {};
+          return {
+            ...Object.fromEntries((section.repeatables?.fields ?? []).map(fid => [fid, ''])),
+            ...(formYear || {})
+          };
         });
+
+        const newDegree: DegreeInstance = {
+          key: currentDegree?.key || nanoid(),
+          yearRows: newYearRows
+        };
+
+        if (!currentDegree || currentDegree.yearRows.length !== newYearRows.length) {
+          changed = true;
+        }
+        next.push(newDegree);
       });
+
+      if (prev.length !== next.length) changed = true;
+
+      return changed ? next : prev;
     });
-    return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [degrees, form, sectionType, yearsFieldName, fieldDefs, section.repeatables?.fields]);
+  }, [watchedSectionData, yearsFieldName, minYears, section.repeatables?.fields]);
 
   // Add a new degree block
   const handleAddDegree = (): void => {
@@ -161,16 +185,16 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     // Clear form values for this degree
     const degreeFields = section.fields ?? [];
     degreeFields.forEach((fieldId: string) => {
-      form.setValue(`${sectionType}.${degreeIdx}.${fieldId}`, undefined);
+      form.setValue(`${sectionType}.${degreeIdx}.${fieldId}` as any, undefined as any);
     });
     
     // Clear year values for this degree
     const currentYears = degrees.find((d) => d.key === key)?.yearRows ?? [];
     currentYears.forEach((_, yearIdx) => {
       (section.repeatables?.fields ?? []).forEach((fieldId: string) => {
-        form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}`, undefined);
+        form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}` as any, undefined as any);
       });
-      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year`, undefined);
+      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year` as any, undefined as any);
     });
     
     setDegrees((prev) => prev.filter((degree) => degree.key !== key));
@@ -217,9 +241,9 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     
     // Clear form values for this year
     (section.repeatables?.fields ?? []).forEach((fieldId: string) => {
-      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}`, undefined);
+      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}` as any, undefined as any);
     });
-    form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year`, undefined);
+    form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year` as any, undefined as any);
     
     setDegrees((prev) =>
       prev.map((deg, idx) =>
@@ -247,16 +271,19 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
             <Label size="lg" className="font-semibold text-neutral-900">
               Degree {degreeIdx + 1} - Basic Details
             </Label>
-            {degrees.length > minDegrees && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                label="Remove Degree"
-                className="text-blue-500"
-                onClick={() => handleRemoveDegree(degree.key, degreeIdx)}
-              />
-            )}
+            <div className="flex items-center gap-3">
+              <TranscriptUploader targetSection={sectionType} targetIndex={degreeIdx} />
+              {degrees.length > minDegrees && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  label="Remove Degree"
+                  className="text-blue-500"
+                  onClick={() => handleRemoveDegree(degree.key, degreeIdx)}
+                />
+              )}
+            </div>
           </div>
 
           {/* Degree Fields */}
@@ -276,6 +303,17 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                   ...fieldDef,
                   id: controllerName,
                 };
+                const getOptionsOverride = (fid: string) => {
+                  if (fid !== 'degree') return undefined;
+                  if (sectionType === 'undergraduate' || sectionType === 'undergraduate_prereq') {
+                    return UNDERGRADUATE_DEGREE_PROGRAMS;
+                  }
+                  if (sectionType === 'postgraduate') {
+                    return POSTGRADUATE_DEGREE_PROGRAMS;
+                  }
+                  return undefined;
+                };
+
                 return (
                   <div key={fieldDef.id}>
                     <Controller
@@ -290,6 +328,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                           inputHeightClass="py-2"
                           labelHeightClass="text-label-md"
                           inputWidthClass="w-full"
+                          optionsOverride={getOptionsOverride(fieldDef.id)}
                         />
                       )}
                     />
@@ -332,6 +371,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                   return (
                     <div key={controllerName}>
                       <Controller
+                        key={controllerName} // Force re-render if name changes
                         name={controllerName}
                         control={form.control}
                         defaultValue={form.getValues(controllerName) ?? ''}
@@ -396,6 +436,17 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                   ...fieldDef,
                   id: controllerName,
                 };
+                const getOptionsOverride = (fid: string) => {
+                  if (fid !== 'degree') return undefined;
+                  if (sectionType === 'undergraduate' || sectionType === 'undergraduate_prereq') {
+                    return UNDERGRADUATE_DEGREE_PROGRAMS;
+                  }
+                  if (sectionType === 'postgraduate') {
+                    return POSTGRADUATE_DEGREE_PROGRAMS;
+                  }
+                  return undefined;
+                };
+
                 return (
                   <div key={fieldDef.id}>
                     <Controller
@@ -410,6 +461,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                           inputHeightClass="py-2"
                           labelHeightClass="text-label-md"
                           inputWidthClass="w-full"
+                          optionsOverride={getOptionsOverride(fieldDef.id)}
                         />
                       )}
                     />

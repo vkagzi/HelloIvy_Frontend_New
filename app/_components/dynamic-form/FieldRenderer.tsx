@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
@@ -15,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import TranscriptUploader from '@/app/_components/TranscriptUploader';
 
 interface FieldRendererProps {
   field: FieldDefinition;
@@ -24,6 +27,7 @@ interface FieldRendererProps {
   labelHeightClass: string;
   inputWidthClass?: string;
   disabledField?: boolean;
+  optionsOverride?: string[];
 }
 
 export const FieldRenderer: React.FC<FieldRendererProps> = ({
@@ -33,7 +37,8 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   inputHeightClass,
   labelHeightClass,
   inputWidthClass,
-  disabledField = false, // <-- add default
+  disabledField = false,
+  optionsOverride,
 }) => {
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const anchorRef = useRef<HTMLDivElement>(null);
@@ -70,6 +75,8 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   const watchedDepValue = dependentFieldId ? form.watch(dependentFieldId) : undefined;
   
   const resolvedOptions: string[] = React.useMemo(() => {
+    if (optionsOverride) return optionsOverride;
+    
     const baseOptions = field.options ?? [];
     const od = (field as any).optionsDependsOn;
     if (!od) return baseOptions;
@@ -113,6 +120,11 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                     {field.label}
                     {field.required && (
                       <span className="ml-1 text-orange-500">*</span>
+                    )}
+                    {field.id.toLowerCase().includes('end') && (
+                      <span className="ml-1 text-[10px] text-neutral-500 font-normal italic">
+                        (If present, use today's date)
+                      </span>
                     )}
                   </Label>
                 )}
@@ -531,6 +543,19 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 error={error}
                 disabled={disabledField}
               />
+            );
+          case 'transcript_uploader':
+            return (
+              <div className="flex flex-col gap-2">
+                {field.label && (
+                  <Label className="text-sm font-medium text-neutral-900">
+                    {field.label}
+                  </Label>
+                )}
+                <div className="flex items-center h-10">
+                  <TranscriptUploader />
+                </div>
+              </div>
             );
           default:
             return (

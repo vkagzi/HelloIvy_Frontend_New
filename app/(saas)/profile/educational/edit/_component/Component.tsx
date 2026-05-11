@@ -38,7 +38,17 @@ const Component: React.FC<ComponentProps> = ({
       key={section.name}
     >
       <h2 className="text-web-h3 p-4 font-semibold text-neutral-900">
-        {section.visibility?.depends_on.value}
+        {section.type === 'undergraduate' || section.type === 'undergraduate_prereq'
+          ? 'Undergraduate' 
+          : section.type === 'postgraduate' 
+            ? 'Postgraduate'
+            : section.type === 'highSchool'
+              ? 'High School'
+              : section.type === 'tenPlus'
+                ? 'Working Professional'
+                : Array.isArray(section.visibility?.depends_on.value)
+                  ? section.visibility?.depends_on.value[0]
+                  : section.visibility?.depends_on.value}
       </h2>
       <div>
         <div className="space-y-2 p-4">
@@ -63,6 +73,7 @@ const Component: React.FC<ComponentProps> = ({
             />
           )}
           {(section.type === 'undergraduate' ||
+            section.type === 'undergraduate_prereq' ||
             section.type === 'postgraduate' ||
             section.type === 'tenPlus') && (
             <GraduateBlock
