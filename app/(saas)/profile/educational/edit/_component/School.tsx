@@ -87,10 +87,8 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     const currentGradeSet = new Set(gradesToShow);
     currentFormArray.forEach((entry) => {
       if (entry && typeof entry === 'object') {
-        const g = parseInt(
-          String((entry as Record<string, unknown>).gradeLevel),
-          10
-        );
+        const rawGrade = String((entry as Record<string, unknown>).gradeLevel || (entry as Record<string, unknown>).grade || '');
+        const g = parseInt(rawGrade.replace(/Grade\s+|th|st|nd|rd/gi, ''), 10);
         // Only snapshot data for grades that are currently allowed
         if (!isNaN(g) && currentGradeSet.has(g)) {
           gradeDataRef.current[g] = { ...(entry as Record<string, unknown>) };

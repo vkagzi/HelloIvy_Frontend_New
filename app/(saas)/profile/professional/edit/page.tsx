@@ -110,6 +110,8 @@ const ProfessionalFormDetails: React.FC = () => {
           city: exp.city ?? existExp.city,
           durationValue: exp.durationValue ?? exp.duration ?? existExp.durationValue,
           durationUnit: exp.durationUnit ?? exp.unit ?? existExp.durationUnit,
+          startDate: exp.startDate ?? exp.start_date ?? existExp.startDate,
+          endDate: exp.endDate ?? exp.end_date ?? existExp.endDate,
           jobTitle: exp.jobTitle ?? exp.title ?? existExp.jobTitle,
           responsibilities: exp.responsibilities ?? existExp.responsibilities,
           achievements: exp.achievements ?? existExp.achievements,
@@ -156,7 +158,9 @@ const ProfessionalFormDetails: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
-      {/* <ResumeUploader onParsed={setParsedResumeData} /> */}
+      <div className="mt-2">
+        <ResumeUploader />
+      </div>
       <Tabs />
       <DynamicForm
         key={JSON.stringify(formDefaults)}

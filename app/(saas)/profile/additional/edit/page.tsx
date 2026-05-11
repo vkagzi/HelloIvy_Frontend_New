@@ -14,6 +14,7 @@ import { additionalFieldDefs as fieldDefs, additionalLayout as layout } from '@/
 import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import ResumeUploader from '@/app/_components/ResumeUploader';
 import {
   Dialog,
   DialogContent,
@@ -153,6 +154,9 @@ const AdditionalFormDetails: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
+      <div className="mt-2">
+        <ResumeUploader />
+      </div>
       <Tabs />
       <DynamicForm
         key={JSON.stringify(formDefaults)}

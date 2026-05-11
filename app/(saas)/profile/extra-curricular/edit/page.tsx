@@ -14,6 +14,7 @@ import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import { extraCurricularFieldDefs as fieldDefs, getExtraCurricularLayout } from '@/app/(saas)/profile/_config/fieldDefinitions';
 import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import ResumeUploader from '@/app/_components/ResumeUploader';
 
 const ExtraCurricularFormDetails: React.FC = () => {
   const { addToast } = useToast();
@@ -128,6 +129,9 @@ const ExtraCurricularFormDetails: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
+      <div className="mt-2">
+        <ResumeUploader />
+      </div>
       <Tabs />
       <DynamicForm
         key={JSON.stringify(formDefaults)}

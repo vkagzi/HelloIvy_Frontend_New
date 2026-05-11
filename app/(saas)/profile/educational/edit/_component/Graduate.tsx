@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
-import { Controller, UseFormReturn } from 'react-hook-form';
+import { Controller, UseFormReturn, useWatch } from 'react-hook-form';
 import Button from '@/app/_components/Button';
 import { FieldRenderer } from '@/app/_components/dynamic-form/FieldRenderer';
 import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
@@ -114,32 +114,48 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     });
   }, [degrees, form, sectionType, yearsFieldName, section.repeatables?.fields, fieldDefs]);
 
-  // Sync year rows when maximumPossibleGPA (or any defaultValueFrom source) changes
+  // Sync internal state with form data changes (e.g. from resume scan / reset)
+  const watchedSectionData = useWatch({
+    control: form.control,
+    name: sectionType as any,
+  });
+
   useEffect(() => {
-    const subscription = form.watch((_value, { name }) => {
-      if (!name) return;
-      // Check if the changed field is a source for defaultValueFrom within this section
-      degrees.forEach((degree, degreeIdx) => {
-        (section.repeatables?.fields ?? []).forEach((fid: string) => {
-          const field = fieldDefs.find((f) => f.id === fid);
-          if (!field?.defaultValueFrom) return;
-          const sourcePath = `${sectionType}.${degreeIdx}.${field.defaultValueFrom}`;
-          if (name !== sourcePath) return;
-          const sourceValue = form.getValues(sourcePath) as string;
-          if (!sourceValue) return;
-          degree.yearRows.forEach((_, yearIdx) => {
-            const targetPath = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fid}`;
-            const currentTarget = form.getValues(targetPath) as string;
-            if (!currentTarget) {
-              form.setValue(targetPath, sourceValue);
-            }
-          });
+    if (!Array.isArray(watchedSectionData) || watchedSectionData.length === 0) return;
+
+    setDegrees((prev) => {
+      let changed = false;
+      const next: DegreeInstance[] = [];
+
+      watchedSectionData.forEach((formDegree, idx) => {
+        const currentDegree = prev[idx];
+        const formYears = (formDegree as Record<string, unknown>)?.[yearsFieldName] as any[];
+        const yearsCount = Array.isArray(formYears) ? formYears.length : Math.max(minYears, 1);
+
+        const newYearRows = Array.from({ length: yearsCount }, (_, yIdx) => {
+          const formYear = Array.isArray(formYears) ? formYears[yIdx] : {};
+          return {
+            ...Object.fromEntries((section.repeatables?.fields ?? []).map(fid => [fid, ''])),
+            ...(formYear || {})
+          };
         });
+
+        const newDegree: DegreeInstance = {
+          key: currentDegree?.key || nanoid(),
+          yearRows: newYearRows
+        };
+
+        if (!currentDegree || currentDegree.yearRows.length !== newYearRows.length) {
+          changed = true;
+        }
+        next.push(newDegree);
       });
+
+      if (prev.length !== next.length) changed = true;
+
+      return changed ? next : prev;
     });
-    return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [degrees, form, sectionType, yearsFieldName, fieldDefs, section.repeatables?.fields]);
+  }, [watchedSectionData, yearsFieldName, minYears, section.repeatables?.fields]);
 
   // Add a new degree block
   const handleAddDegree = (): void => {

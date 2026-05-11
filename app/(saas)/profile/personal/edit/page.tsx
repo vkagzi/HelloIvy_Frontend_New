@@ -130,22 +130,27 @@ const PersonalDetailsForm: React.FC = () => {
     const p = parsedTranscriptData.personalDetails;
     console.log('!!! [PersonalDetailsForm] Mapping personal details:', p);
 
-    setResumeFormDefaults((prev) => ({
-      ...prev,
-      ...p,
-      // fallback in case transcript AI uses old resume keys
-      firstName: p.firstName ?? p.first_name ?? prev.firstName,
-      lastName: p.lastName ?? p.last_name ?? prev.lastName,
-      phoneNumber: p.phoneNumber ?? p.phone ?? prev.phoneNumber,
-      city: p.city ?? prev.city,
-      citizenShip: p.citizenShip ?? p.citizenship ?? prev.citizenShip,
-      gender: p.gender ?? prev.gender,
-      dob: p.dob ?? prev.dob,
-      addressline: p.addressline ?? p.address ?? prev.addressline,
-      zipcode: p.zipcode ?? p.zip_code ?? prev.zipcode,
-      mothersProfession: p.mothersProfession ?? p.mother_profession ?? prev.mothersProfession,
-      fathersProfession: p.fathersProfession ?? p.father_profession ?? prev.fathersProfession,
-    }));
+    setResumeFormDefaults((prev) => {
+      const normalizedGender = p.gender ? p.gender.charAt(0).toUpperCase() + p.gender.slice(1).toLowerCase() : prev.gender;
+      
+      return {
+        ...prev,
+        ...p,
+        // fallback in case transcript AI uses old resume keys
+        firstName: p.firstName ?? p.first_name ?? prev.firstName,
+        lastName: p.lastName ?? p.last_name ?? prev.lastName,
+        phoneNumber: p.phoneNumber ?? p.phone ?? prev.phoneNumber,
+        countryCode: p.countryCode ?? p.country_code ?? prev.countryCode,
+        city: p.city ?? prev.city,
+        citizenShip: p.citizenShip ?? p.citizenship ?? prev.citizenShip,
+        gender: normalizedGender,
+        dob: p.dob ?? prev.dob,
+        addressline: p.addressline ?? p.address ?? prev.addressline,
+        zipcode: p.zipcode ?? p.zip_code ?? prev.zipcode,
+        mothersProfession: p.mothersProfession ?? p.mother_profession ?? prev.mothersProfession,
+        fathersProfession: p.fathersProfession ?? p.father_profession ?? prev.fathersProfession,
+      };
+    });
   }, [parsedTranscriptData]);
 
   if (loading) {
