@@ -289,6 +289,10 @@ export default function PrivacyPolicyPage(): React.ReactElement {
         <Paragraph size="md" className="mt-4">
           <strong>Reach Education Pvt. Ltd.</strong>
           <br />
+          7th Floor, B Wing, Mittal Tower, Nariman Point
+          <br />
+          Mumbai, Maharashtra 400021, India
+          <br />
           Email: support@reachivy.com
         </Paragraph>
       </section>
