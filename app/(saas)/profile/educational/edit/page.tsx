@@ -47,14 +47,18 @@ const EducationalDetailsForm: React.FC = () => {
 
   // Extract educational details from the context or defaultValues
   const educationalDetails = React.useMemo(() => {
-    let details: Record<string, any> = {};
+    let details: Record<string, unknown> = {};
 
     // Use the context-provided educational details if available
     if (contextEducationalDetails && Object.keys(contextEducationalDetails).length > 0) {
       details = JSON.parse(JSON.stringify(contextEducationalDetails));
-    } else if (defaultValues?.profile?.profile?.educational) {
-      // Fallback to manual extraction from defaultValues if context is empty
-      details = JSON.parse(JSON.stringify(defaultValues.profile.profile.educational));
+    } else {
+      const profile = defaultValues?.profile as Record<string, unknown> | undefined;
+      const innerProfile = profile?.profile as Record<string, unknown> | undefined;
+      if (innerProfile?.educational) {
+        // Fallback to manual extraction from defaultValues if context is empty
+        details = JSON.parse(JSON.stringify(innerProfile.educational));
+      }
     }
 
     // Un-nest shared data from section object for form compatibility
