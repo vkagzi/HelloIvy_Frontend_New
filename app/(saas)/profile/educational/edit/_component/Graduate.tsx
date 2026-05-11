@@ -122,6 +122,8 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
   useEffect(() => {
     if (!Array.isArray(watchedSectionData) || watchedSectionData.length === 0) return;
+    
+    console.log(`[GraduateBlock] ${sectionType} watched data changed:`, watchedSectionData);
 
     setDegrees((prev) => {
       let changed = false;
@@ -130,7 +132,11 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
       watchedSectionData.forEach((formDegree, idx) => {
         const currentDegree = prev[idx];
         const formYears = (formDegree as Record<string, unknown>)?.[yearsFieldName] as any[];
-        const yearsCount = Array.isArray(formYears) ? formYears.length : Math.max(minYears, 1);
+        
+        // If form has years, use that count, else use show_default or min
+        const yearsCount = Array.isArray(formYears) && formYears.length > 0 
+          ? formYears.length 
+          : Math.max(minYears, 1);
 
         const newYearRows = Array.from({ length: yearsCount }, (_, yIdx) => {
           const formYear = Array.isArray(formYears) ? formYears[yIdx] : {};
@@ -365,6 +371,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                   return (
                     <div key={controllerName}>
                       <Controller
+                        key={controllerName} // Force re-render if name changes
                         name={controllerName}
                         control={form.control}
                         defaultValue={form.getValues(controllerName) ?? ''}

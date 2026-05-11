@@ -29,7 +29,7 @@ import {
 const EducationalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { profileData, rawApiResponse, refetch, personalDetails, parsedTranscriptData } = useProfile();
+  const { profileData, rawApiResponse, refetch, personalDetails, educationalDetails: contextEducationalDetails, parsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
@@ -44,6 +44,49 @@ const EducationalDetailsForm: React.FC = () => {
   const [fieldDefs, setFieldDefs] = useState<FieldDefinition[]>(fieldDefss);
   const prevAcademicLevelRef = useRef<string | undefined>(undefined);
   const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
+
+  // Extract educational details from the context or defaultValues
+  const educationalDetails = React.useMemo(() => {
+    let details: Record<string, any> = {};
+
+    // Use the context-provided educational details if available
+    if (contextEducationalDetails && Object.keys(contextEducationalDetails).length > 0) {
+      details = JSON.parse(JSON.stringify(contextEducationalDetails));
+    } else if (defaultValues?.profile?.profile?.educational) {
+      // Fallback to manual extraction from defaultValues if context is empty
+      details = JSON.parse(JSON.stringify(defaultValues.profile.profile.educational));
+    }
+
+    // Un-nest shared data from section object for form compatibility
+    const sectionEntries = [
+      'highSchool',
+      'undergraduate',
+      'postgraduate',
+      'tenPlus',
+      'undergraduate_prereq',
+    ] as const;
+
+    for (const key of sectionEntries) {
+      const sectionData = details[key];
+      if (
+        sectionData &&
+        typeof sectionData === 'object' &&
+        !Array.isArray(sectionData)
+      ) {
+        const section = sectionData as Record<string, unknown>;
+        const arrayKey = key === 'highSchool' ? 'grades' : 'degrees';
+        if (section[arrayKey]) {
+          details[key] = section[arrayKey];
+        }
+        for (const sharedKey of ['courses', 'awards', 'testScores']) {
+          if (section[sharedKey] !== undefined) {
+            details[sharedKey] = section[sharedKey];
+          }
+        }
+      }
+    }
+    return details;
+  }, [contextEducationalDetails, defaultValues]);
 
   const UG_PG_LEVELS = [
     'Undergraduate',
@@ -114,95 +157,245 @@ const EducationalDetailsForm: React.FC = () => {
 
     return `Year ${diff}`;
   };
-
   // Sync scanned data into form state
   React.useEffect(() => {
     if (!parsedTranscriptData || Object.keys(parsedTranscriptData).length === 0) return;
 
-    console.log("Syncing scanned data to form:", parsedTranscriptData);
+    console.log("!!! [EducationalDetailsForm] Syncing scanned data to form:", parsedTranscriptData);
+    
+    const target = (parsedTranscriptData as any)._target;
+    const isTargeted = target && target.section && target.section !== 'personal';
+
+    // Get current values to preserve fields that are NOT being updated by the scan
     const currentValues = formRef.current?.getValues() || {};
-    const newDefaults: Record<string, any> = { ...currentValues };
+    
+    // Start with a merge of DB data and current values
+    const newDefaults: Record<string, any> = { 
+      ...educationalDetails,
+      ...currentValues 
+    };
 
-    // 1. Map Educational Records
-    const educationalRecords = Array.isArray(parsedTranscriptData.educational) 
-      ? parsedTranscriptData.educational 
-      : [];
+    // Support various response structures: direct object, direct array, or nested
+    // Check common root keys like 'data', 'response', 'scannedData', 'transcript_data'
+    const rootData = parsedTranscriptData.data ?? parsedTranscriptData.response ?? parsedTranscriptData.scannedData ?? parsedTranscriptData.transcript_data ?? parsedTranscriptData;
+    console.log("[EducationalDetailsForm] Raw parsed data root:", rootData);
 
-    educationalRecords.forEach((e: any) => {
-      const level = (e.academicLevel || "").toLowerCase();
-      const sections: ("highSchool" | "undergraduate" | "postgraduate" | "tenPlus")[] = [];
-      
-      if (level.includes('high school') || level.includes('12th') || level.includes('secondary')) sections.push('highSchool');
-      if (level.includes('college') || level.includes('undergraduate') || level.includes('bachelor')) {
-        sections.push('undergraduate');
-        sections.push('undergraduate_prereq'); // Also fill prerequisite if it matches
+    let educationalRecords: any[] = [];
+    if (Array.isArray(rootData.educational)) {
+      educationalRecords = rootData.educational;
+    } else if (rootData.educational?.records && Array.isArray(rootData.educational.records)) {
+      educationalRecords = rootData.educational.records;
+    } else if (rootData.records && Array.isArray(rootData.records)) {
+      educationalRecords = rootData.records;
+    } else if (rootData.educational_records && Array.isArray(rootData.educational_records)) {
+      educationalRecords = rootData.educational_records;
+    } else if (rootData.institutionName || rootData.degree || rootData.schoolName || rootData.universityName || rootData.university || rootData.school) {
+      // Single record at root
+      educationalRecords = [rootData];
+    }
+    
+    console.log(`[EducationalDetailsForm] Extracted ${educationalRecords.length} educational records.`);
+
+    const firstRec = educationalRecords[0];
+
+    // Determine Global Target Section from Resume Academic Level
+    let globalTargetSection: "highSchool" | "undergraduate" | "postgraduate" | "tenPlus" | null = null;
+    const globalLevel = (parsedTranscriptData.academicLevel || "").toLowerCase();
+    
+    if (globalLevel.includes('working') || globalLevel.includes('professional') || globalLevel.includes('completed')) {
+      globalTargetSection = 'tenPlus';
+    } else if (globalLevel.includes('postgraduate') || globalLevel.includes('master') || globalLevel.includes('phd') || globalLevel.includes('mba')) {
+      globalTargetSection = 'postgraduate';
+    } else if (globalLevel.includes('college') || globalLevel.includes('undergraduate') || globalLevel.includes('bachelor')) {
+      globalTargetSection = 'undergraduate';
+    } else if (globalLevel.includes('high school') || globalLevel.includes('12th') || globalLevel.includes('secondary')) {
+      globalTargetSection = 'highSchool';
+    }
+
+    // Helper for case-insensitive and multi-key extraction
+    const getValue = (obj: any, keys: string[]) => {
+      if (!obj) return undefined;
+      for (const k of keys) {
+        if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+        const lowerK = k.toLowerCase();
+        const foundKey = Object.keys(obj).find(key => key.toLowerCase() === lowerK);
+        if (foundKey) return obj[foundKey];
       }
-      if (level.includes('postgraduate') || level.includes('master') || level.includes('phd') || level.includes('mba')) sections.push('postgraduate');
-      if (level.includes('working') || level.includes('professional') || level.includes('completed')) sections.push('tenPlus');
+      return undefined;
+    };
 
-      sections.forEach(s => {
-        const existingArray = Array.isArray(currentValues[s]) ? currentValues[s] : [];
-        let degreeIdx = existingArray.findIndex((d: any) => !d.institutionName);
-        if (degreeIdx === -1) degreeIdx = existingArray.length;
-
-        const updatedArray = [...existingArray];
-        const existing = updatedArray[degreeIdx] || {};
-
-        updatedArray[degreeIdx] = {
-          ...existing,
-          gradeLevel: e.gradeLevel ?? e.grade ?? existing.gradeLevel,
-          institutionName: e.institutionName ?? e.schoolName ?? e.institution ?? existing.institutionName ?? existing.schoolName,
-          schoolName: e.schoolName ?? e.institutionName ?? e.institution ?? existing.schoolName ?? existing.institutionName,
-          city: e.city ?? existing.city,
-          degree: e.degree ?? existing.degree,
-          major: e.major ?? e.subject ?? existing.major,
-          startYear: e.startYear ?? e.start_year ?? existing.startYear,
-          endYear: e.endYear ?? e.end_year ?? e.yearOfCompletion ?? existing.endYear,
+    // Helper to map a single record to form keys
+    const mapRecord = (e: any, section: string) => {
+      console.log(`[mapRecord] Mapping record for section ${section}:`, e);
+      
+      const cleanScoreValue = (val: any) => {
+        if (!val) return "";
+        let s = String(val).trim();
+        // Remove common suffixes like "/ 10 CGPA", "/ 100", "%"
+        s = s.replace(/\/\s*\d+(\.\d+)?\s*(CGPA|GPA|%|marks)?/i, "");
+        s = s.replace(/(CGPA|GPA|%|marks)/i, "");
+        return s.trim();
+      };
+      
+      const score = cleanScoreValue(getValue(e, ['yourTotalScore', 'score', 'percentage', 'cgpa', 'overallPercentage', 'totalScore', 'overallGPA', 'gpa', 'aggregateScore', 'marks']) ?? "");
+      let maxScore = cleanScoreValue(getValue(e, ['highestTotalScore', 'maximumPossibleGPA', 'maxScore', 'maxGPA', 'maxPossibleScore', 'outOf']) ?? "");
+      
+      // Smart default for max score if missing
+      if (!maxScore && score) {
+        const numScore = parseFloat(String(score));
+        if (!isNaN(numScore)) {
+          if (numScore <= 10) maxScore = "10";
+          else if (numScore <= 100) maxScore = "100";
+        }
+      }
+      
+      const mapped: any = {
+        city: getValue(e, ['city', 'location', 'town', 'address']) ?? "",
+        // Common fields with different names
+        ...(section === 'highSchool' ? {
+          schoolName: getValue(e, ['schoolName', 'institutionName', 'universityName', 'university', 'collegeName', 'college', 'school', 'nameOfInstitution']) ?? "",
           yearOfCompletion: (() => {
-            const raw = e.yearOfCompletion ?? e.endYear ?? e.end_year ?? existing.yearOfCompletion;
+            const raw = getValue(e, ['yearOfCompletion', 'graduationYear', 'endYear', 'end_year', 'endDate', 'end_date', 'year']) ?? "";
             if (!raw) return '';
-            // If just YYYY, assume June (06/YYYY)
             if (/^\d{4}$/.test(String(raw))) return `06/${raw}`;
-            // If YYYY-MM-DD or YYYY-MM, convert to MM/YYYY
             const dashMatch = String(raw).match(/^(\d{4})-(\d{2})/);
             if (dashMatch) return `${dashMatch[2]}/${dashMatch[1]}`;
             return String(raw);
           })(),
-          board: e.board ?? existing.board,
-          overallPercentage: e.overallPercentage ?? e.yourTotalScore ?? existing.overallPercentage,
-          maximumPossibleGPA: e.maximumPossibleGPA ?? e.highestTotalScore ?? existing.maximumPossibleGPA,
-          // Support high school specific field names
-          yourTotalScore: e.yourTotalScore ?? e.overallPercentage ?? existing.yourTotalScore,
-          highestTotalScore: e.highestTotalScore ?? e.maximumPossibleGPA ?? existing.highestTotalScore,
-        };
+          board: getValue(e, ['board', 'university', 'council', 'affiliation']) ?? "",
+          yourTotalScore: score,
+          highestTotalScore: maxScore,
+        } : {
+          institutionName: getValue(e, ['institutionName', 'schoolName', 'universityName', 'university', 'collegeName', 'college', 'school', 'nameOfInstitution']) ?? "",
+          degree: getValue(e, ['degree', 'program', 'degreeName', 'qualification']) ?? "",
+          major: getValue(e, ['major', 'fieldOfStudy', 'stream', 'specialization', 'department', 'branch']) ?? "",
+          startYear: (() => {
+            const raw = getValue(e, ['startYear', 'start_year', 'startDate', 'start_date', 'startYear']) ?? "";
+            if (raw) return String(raw);
+            const dur = getValue(e, ['duration', 'period', 'years']) || "";
+            const match = String(dur).split(/[-—]/)[0]?.match(/\d{4}/);
+            return match ? match[0] : "";
+          })(),
+          endYear: (() => {
+            const raw = getValue(e, ['endYear', 'end_year', 'yearOfCompletion', 'graduationYear', 'endDate', 'end_date', 'endYear']) ?? "";
+            if (raw) return String(raw);
+            const dur = getValue(e, ['duration', 'period', 'years']) || "";
+            const parts = String(dur).split(/[-—]/);
+            const match = (parts[1] || parts[0])?.match(/\d{4}/);
+            return match ? match[0] : "";
+          })(),
+          overallPercentage: score,
+          maximumPossibleGPA: maxScore,
+        })
+      };
 
-        if (s === 'highSchool' && e.subjects) {
-          updatedArray[degreeIdx].subjects = e.subjects.map((subj: any) => ({
-            subject: subj.subject || "",
-            level: subj.level || "",
-            yourTotalScore: subj.yourTotalScore || "",
-            highestTotalScore: subj.highestTotalScore || ""
-          }));
+      // Map repeatable years/semesters for university
+      if (section !== 'highSchool') {
+        const yearsData = getValue(e, ['years', 'semesters', 'scoreDetails', 'academicDetails', 'results']) ?? [];
+        if (Array.isArray(yearsData) && yearsData.length > 0) {
+          mapped.years = yearsData.map((y: any, idx: number) => {
+            const rawYScore = getValue(y, ['score', 'cgpa', 'gpa', 'percentage', 'yourTotalScore', 'marks', 'result']) ?? "";
+            const yScore = cleanScoreValue(rawYScore);
+            return {
+              year: getValue(y, ['year', 'semester', 'period', 'level']) ?? (idx + 1),
+              score: yScore,
+              highestTotalScore: cleanScoreValue(getValue(y, ['highestTotalScore', 'maxScore', 'maxGPA', 'maxPossibleScore', 'outOf']) ?? (parseFloat(String(yScore)) <= 10 ? "10" : "100"))
+            };
+          });
+          console.log(`[mapRecord] Mapped ${mapped.years.length} years for section ${section}`);
         }
+      }
 
-        newDefaults[s] = updatedArray;
-      });
-    });
+      if (section === 'highSchool' && e.subjects) {
+        mapped.subjects = e.subjects.map((subj: any) => ({
+          subject: getValue(subj, ['subject', 'name', 'subjectName']) || "",
+          level: getValue(subj, ['level', 'grade', 'standard']) || "",
+          yourTotalScore: getValue(subj, ['yourTotalScore', 'score', 'marks']) || "",
+          highestTotalScore: getValue(subj, ['highestTotalScore', 'maxScore', 'outOf']) || "100"
+        }));
+      }
+      
+      console.log(`[mapRecord] Resulting mapped record for ${section}:`, mapped);
+      return mapped;
+    };
+
+    // 1. Map Educational Records
+    if (educationalRecords.length > 0) {
+      if (isTargeted) {
+        // Targeted Update: Only update the specific row in the target section
+        const sectionName = target.section;
+        const index = target.index ?? 0;
+        console.log(`[EducationalDetailsForm] Targeted scan detected for ${sectionName} index ${index}`);
+        
+        const currentArray = Array.isArray(newDefaults[sectionName]) ? [...newDefaults[sectionName]] : [];
+        
+        // Use the first record from the scan for the targeted row
+        if (!currentArray[index]) currentArray[index] = {};
+        const mappedData = mapRecord(firstRec, sectionName);
+        currentArray[index] = { ...currentArray[index], ...mappedData };
+        
+        newDefaults[sectionName] = currentArray;
+        console.log(`[EducationalDetailsForm] Updated ${sectionName}[${index}] with mapped data.`, newDefaults[sectionName]);
+      } else {
+        // Global Update: Intelligence mapping for the entire section
+        // We will reset sections that we find data for to ensure "Renewal"
+        const sectionsToClear = new Set<string>();
+        
+        educationalRecords.forEach((e: any) => {
+          const searchLevel = (getValue(e, ['academicLevel', 'level', 'degree', 'program', 'institutionName']) || "").toLowerCase();
+          const sections: string[] = [];
+
+          // Heuristic classification per record
+          if (searchLevel.includes('postgraduate') || searchLevel.includes('master') || searchLevel.includes('phd') || 
+              searchLevel.includes('mba') || searchLevel.includes('m.e') || searchLevel.includes('m.tech') || 
+              searchLevel.includes('me') || searchLevel.includes('mtech')) {
+            sections.push('postgraduate');
+          } else if (searchLevel.includes('college') || searchLevel.includes('undergraduate') || searchLevel.includes('bachelor') ||
+              searchLevel.includes('b.e') || searchLevel.includes('b.tech') || searchLevel.includes('be') || searchLevel.includes('btech')) {
+            sections.push('undergraduate');
+            sections.push('undergraduate_prereq');
+          } else if (searchLevel.includes('high school') || searchLevel.includes('12th') || searchLevel.includes('secondary') || searchLevel.includes('school')) {
+            sections.push('highSchool');
+          } else if (searchLevel.includes('working') || searchLevel.includes('professional') || searchLevel.includes('completed')) {
+            sections.push('tenPlus');
+          } else if (globalTargetSection) {
+            // Fallback to global target if record doesn't have enough info
+            sections.push(globalTargetSection);
+            if (globalTargetSection === 'undergraduate') sections.push('undergraduate_prereq');
+          }
+
+          sections.forEach(s => {
+            // If this is the first time we see this section in this scan, clear it for renewal
+            if (!sectionsToClear.has(s)) {
+              newDefaults[s] = [];
+              sectionsToClear.add(s);
+            }
+            
+            const updatedArray = Array.isArray(newDefaults[s]) ? [...newDefaults[s]] : [];
+            updatedArray.push(mapRecord(e, s));
+            newDefaults[s] = updatedArray;
+          });
+        });
+        
+        console.log(`[EducationalDetailsForm] Global update complete. Cleared and updated:`, Array.from(sectionsToClear));
+      }
+    }
 
     // Helper to find data in common variations of keys
     const findKey = (data: any, options: string[]) => {
       for (const opt of options) {
         if (data[opt] && Array.isArray(data[opt])) return data[opt];
-        const lowerOpt = opt.toLowerCase();
-        const found = Object.keys(data).find(k => k.toLowerCase() === lowerOpt);
+        const found = Object.keys(data).find(k => k.toLowerCase() === opt.toLowerCase());
         if (found && Array.isArray(data[found])) return data[found];
       }
       return null;
     };
 
     // 2. Map Courses & Certifications
-    const coursesData = findKey(parsedTranscriptData, ['courses', 'certifications', 'coursesAndCertifications', 'certificates']);
-    if (coursesData) {
+    const coursesKeys = ['courses', 'certifications', 'coursesAndCertifications', 'certificates', 'certificationsAndAwards', 'achievementsAndCertifications', 'achievements'];
+    const coursesData = findKey(parsedTranscriptData, coursesKeys);
+    
+    if (coursesData && Array.isArray(coursesData) && coursesData.length > 0) {
       newDefaults.courses = coursesData.map((c: any) => ({
         courseType: c.courseType || "Certificate",
         description: c.description || c.name || c.title || "N/A",
@@ -214,8 +407,10 @@ const EducationalDetailsForm: React.FC = () => {
     }
 
     // 3. Map Awards & Scholarships
-    const awardsData = findKey(parsedTranscriptData, ['awards', 'scholarships', 'honors', 'achievements', 'awardsAndScholarships', 'awardsAndFellowships']);
-    if (awardsData) {
+    const awardsKeys = ['awards', 'scholarships', 'honors', 'achievements', 'awardsAndScholarships', 'awardsAndFellowships', 'certificationsAndAwards', 'achievementsAndCertifications'];
+    const awardsData = findKey(parsedTranscriptData, awardsKeys);
+    
+    if (awardsData && Array.isArray(awardsData) && awardsData.length > 0) {
       newDefaults.awards = awardsData.map((a: any) => ({
         nameOfHonorReceived: a.nameOfHonorReceived || a.name || a.honor || a.title || "Award/Achievement",
         description: a.description || a.name || a.title || "N/A",
@@ -226,61 +421,48 @@ const EducationalDetailsForm: React.FC = () => {
     }
 
     // 4. Map Test Scores
-    if (parsedTranscriptData.testScores && Array.isArray(parsedTranscriptData.testScores)) {
-      const existingTestScores = Array.isArray(currentValues.testScores) ? [...currentValues.testScores] : [];
-      const targetIdx = (parsedTranscriptData as any)._target?.index;
-      
-      parsedTranscriptData.testScores.forEach((newScore: any, i: number) => {
-        const idx = targetIdx !== undefined ? targetIdx + i : existingTestScores.length;
-        
-        // Map all potential sub-score fields from AI to form fields
-        existingTestScores[idx] = { 
-          ...existingTestScores[idx], 
-          testType: newScore.testType || existingTestScores[idx]?.testType,
-          testDate: newScore.testDate || existingTestScores[idx]?.testDate,
-          totalScore: newScore.totalScore || newScore.yourScore || existingTestScores[idx]?.totalScore,
-          yourScore: newScore.yourScore || newScore.totalScore || existingTestScores[idx]?.yourScore,
-          // Sub-scores
-          writingYourScore: newScore.writingYourScore || existingTestScores[idx]?.writingYourScore,
-          mathYourScore: newScore.mathYourScore || existingTestScores[idx]?.mathYourScore,
-          criticalReadingYourScore: newScore.criticalReadingYourScore || existingTestScores[idx]?.criticalReadingYourScore,
-          analyticalWritingScore: newScore.analyticalWritingScore || existingTestScores[idx]?.analyticalWritingScore,
-          verbalReasoningScore: newScore.verbalReasoningScore || existingTestScores[idx]?.verbalReasoningScore,
-          quantitativeReasoningScore: newScore.quantitativeReasoningScore || existingTestScores[idx]?.quantitativeReasoningScore,
-          dataInsightsScore: newScore.dataInsightsScore || existingTestScores[idx]?.dataInsightsScore,
-          englishYourScore: newScore.englishYourScore || existingTestScores[idx]?.englishYourScore,
-          readingYourScore: newScore.readingYourScore || existingTestScores[idx]?.readingYourScore,
-          scienceYourScore: newScore.scienceYourScore || existingTestScores[idx]?.scienceYourScore,
-          integratedReasoningScore: newScore.integratedReasoningScore || existingTestScores[idx]?.integratedReasoningScore,
-        };
-      });
-      newDefaults.testScores = existingTestScores;
+    if (parsedTranscriptData.testScores && Array.isArray(parsedTranscriptData.testScores) && parsedTranscriptData.testScores.length > 0) {
+      newDefaults.testScores = parsedTranscriptData.testScores.map((newScore: any) => ({
+        testType: newScore.testType || "",
+        testDate: newScore.testDate || "",
+        totalScore: newScore.totalScore || newScore.yourScore || "",
+        yourScore: newScore.yourScore || newScore.totalScore || "",
+        writingYourScore: newScore.writingYourScore || "",
+        mathYourScore: newScore.mathYourScore || "",
+        criticalReadingYourScore: newScore.criticalReadingYourScore || "",
+        analyticalWritingScore: newScore.analyticalWritingScore || "",
+        verbalReasoningScore: newScore.verbalReasoningScore || "",
+        quantitativeReasoningScore: newScore.quantitativeReasoningScore || "",
+        dataInsightsScore: newScore.dataInsightsScore || "",
+        englishYourScore: newScore.englishYourScore || "",
+        readingYourScore: newScore.readingYourScore || "",
+        scienceYourScore: newScore.scienceYourScore || "",
+        integratedReasoningScore: newScore.integratedReasoningScore || "",
+      }));
     }
 
-
-    // 5. Academic Level & Grade Level Sync
-    const firstRec = educationalRecords[0];
-    if (firstRec?.academicLevel) {
-      const topLevel = firstRec.academicLevel;
+    // 5. Academic Level Sync
+    if (parsedTranscriptData.academicLevel && !isTargeted) {
+      const topLevel = parsedTranscriptData.academicLevel;
       if (topLevel.includes('High School')) newDefaults.academicLevel = 'High School (8th–12th grade)';
       else if (topLevel.includes('Postgraduate')) newDefaults.academicLevel = 'Postgraduate';
       else if (topLevel.includes('Working')) newDefaults.academicLevel = 'Working Professional';
       else newDefaults.academicLevel = 'Undergraduate';
+    }
 
-      if (firstRec.gradeLevel) {
-        newDefaults.gradeLevel = firstRec.gradeLevel;
-        if (newDefaults.academicLevel === 'High School (8th–12th grade)') {
-          newDefaults.hasCurrentGradeScores = 'Yes';
-        }
+    // Support grade level specifically
+    if (firstRec?.gradeLevel && !isTargeted) {
+      newDefaults.gradeLevel = firstRec.gradeLevel;
+      if (newDefaults.academicLevel && newDefaults.academicLevel.includes('High School')) {
+        newDefaults.hasCurrentGradeScores = 'Yes';
       }
     }
 
-    // Apply the update
     setFormDefaults(newDefaults);
     if (formRef.current) {
       formRef.current.reset(newDefaults);
     }
-  }, [parsedTranscriptData]);
+  }, [parsedTranscriptData, educationalDetails]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Apply DOB-based year lower bounds: school yearOfCompletion >= DOB+1, college startYear >= DOB+10
   React.useEffect(() => {
@@ -331,8 +513,8 @@ const EducationalDetailsForm: React.FC = () => {
         : undefined;
 
       // Also handle prerequisite section
-      const prereqSection = (academicLevel === 'Postgraduate' || academicLevel === 'Working Professional') 
-        ? 'undergraduate_prereq' 
+      const prereqSection = (academicLevel === 'Postgraduate' || academicLevel === 'Working Professional')
+        ? 'undergraduate_prereq'
         : undefined;
 
       const cleanEducational: Record<string, unknown> = {
@@ -416,64 +598,13 @@ const EducationalDetailsForm: React.FC = () => {
     }
   };
 
-  // Extract educational details from the nested structure
-  let educationalDetails: Record<string, unknown> = {};
-
-  if (
-    defaultValues &&
-    typeof defaultValues.profile === 'object' &&
-    defaultValues.profile !== null
-  ) {
-    const profileObj = defaultValues.profile as Record<string, unknown>;
-
-    if (typeof profileObj.profile === 'object' && profileObj.profile !== null) {
-      const nestedProfile = profileObj.profile as Record<string, unknown>;
-
-      if (
-        typeof nestedProfile.educational === 'object' &&
-        nestedProfile.educational !== null
-      ) {
-        educationalDetails = nestedProfile.educational as Record<
-          string,
-          unknown
-        >;
-      }
-    }
-  }
-  // Un-nest shared data from section object for form compatibility
-  const sectionEntries = [
-    'highSchool',
-    'undergraduate',
-    'postgraduate',
-    'tenPlus',
-    'undergraduate_prereq',
-  ] as const;
-  for (const key of sectionEntries) {
-    const sectionData = educationalDetails[key];
-    if (
-      sectionData &&
-      typeof sectionData === 'object' &&
-      !Array.isArray(sectionData)
-    ) {
-      const section = sectionData as Record<string, unknown>;
-      const arrayKey = key === 'highSchool' ? 'grades' : 'degrees';
-      if (section[arrayKey]) {
-        educationalDetails[key] = section[arrayKey];
-      }
-      for (const sharedKey of ['courses', 'awards', 'testScores']) {
-        if (section[sharedKey] !== undefined) {
-          educationalDetails[sharedKey] = section[sharedKey];
-        }
-      }
-    }
-  }
 
   // Populate form defaults from existing educational data
   useEffect(() => {
     if (educationalDetails && Object.keys(educationalDetails).length > 0) {
       setFormDefaults((prev) => ({
-        ...prev,
         ...educationalDetails,
+        ...prev,
       }));
     }
   }, [defaultValues]); // eslint-disable-line react-hooks/exhaustive-deps
