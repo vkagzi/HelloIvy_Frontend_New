@@ -227,7 +227,7 @@ const CareerResultsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-linear-to-br from-[#f3e8ff] to-[#ebf2ff]">
+      <div className="flex h-full items-center justify-center bg-linear-to-br from-[#f3e8ff] to-action-gradient-50-left">
         <div className="text-center">
           <div className="relative mx-auto mb-6 h-20 w-20">
             <div className="absolute inset-0 animate-ping rounded-full bg-[#d8b4fe] opacity-75"></div>
@@ -251,7 +251,7 @@ const CareerResultsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center bg-linear-to-br from-[#f3e8ff] to-[#ebf2ff]">
+      <div className="flex h-full items-center justify-center bg-linear-to-br from-[#f3e8ff] to-action-gradient-50-left">
         <div className="mx-auto max-w-md text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 p-3">
             <svg
@@ -292,7 +292,7 @@ const CareerResultsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full bg-linear-to-br from-[#f3e8ff] via-white to-[#ebf2ff]">
+    <div className="min-h-full bg-linear-to-br from-[#f3e8ff] via-white to-action-gradient-50-left">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-10 text-center">
@@ -465,7 +465,7 @@ const CareerResultsPage: React.FC = () => {
 
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
+                            <span className="mr-2 rounded-lg bg-action-gradient-100-right p-1.5">
                               <svg className="h-4 w-4 text-[#40c795]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
@@ -574,8 +574,8 @@ const CareerResultsPage: React.FC = () => {
                         {career.degrees?.length > 0 && (
                           <div>
                             <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                              <span className="mr-2 rounded-lg bg-[#fef3c7] p-1.5">
-                                <svg className="h-4 w-4 text-[#d97706]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <span className="mr-2 rounded-lg bg-yellow-100 p-1.5">
+                                <svg className="h-4 w-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" />
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
@@ -588,7 +588,7 @@ const CareerResultsPage: React.FC = () => {
                                 // Backward compat: handle old string[] data
                                 if (typeof deg === 'string') {
                                   return (
-                                    <span key={degIndex} className="inline-block rounded-full bg-linear-to-r from-[#fef3c7] to-[#fde68a] px-3 py-1.5 text-sm font-medium text-[#92400e] shadow-sm mr-2">
+                                    <span key={degIndex} className="inline-block rounded-full bg-linear-to-r from-yellow-100 to-yellow-200 px-3 py-1.5 text-sm font-medium text-yellow-800 shadow-sm mr-2">
                                       {deg}
                                     </span>
                                   );
@@ -630,7 +630,7 @@ const CareerResultsPage: React.FC = () => {
 
                         <div>
                           <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                            <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
+                            <span className="mr-2 rounded-lg bg-action-gradient-100-right p-1.5">
                               <svg className="h-4 w-4 text-[#40c795]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                               </svg>
@@ -643,7 +643,7 @@ const CareerResultsPage: React.FC = () => {
                                 key={stepIndex}
                                 className="flex items-start space-x-3"
                               >
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d0f5f5] text-xs font-bold text-[#40c795]">
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-action-gradient-100-right text-xs font-bold text-[#40c795]">
                                   {stepIndex + 1}
                                 </span>
                                 <span className="text-gray-700">{step}</span>
@@ -702,7 +702,7 @@ const CareerResultsPage: React.FC = () => {
                         {career.work_life_balance && (
                           <div>
                             <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
-                              <span className="mr-2 rounded-lg bg-[#d0f5f5] p-1.5">
+                              <span className="mr-2 rounded-lg bg-action-gradient-100-right p-1.5">
                                 <svg className="h-4 w-4 text-[#14cecf]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                 </svg>

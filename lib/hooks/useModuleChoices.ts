@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import useSWR from 'swr';
 import api from '@/lib/api-client';
 
 export interface ModuleChoice {
@@ -11,24 +11,37 @@ export interface ModuleChoice {
   price?: number;
 }
 
-let cachedModules: ModuleChoice[] | null = null;
+interface ModuleChoicesResponse {
+  modules: ModuleChoice[];
+  currency?: string;
+  default_price?: number;
+}
+
+const DEFAULT_PRICE = 999;
+const DEFAULT_CURRENCY = 'INR';
+
+// TODO: restore API call once backend is ready
+// const fetcher = () => api<ModuleChoicesResponse>('/api/accounts/module-choices/');
+const STATIC_MODULES: ModuleChoice[] = [
+  { value: 'college_selector', label: 'College Selector', price: 4500, icon: 'school', color: 'bg-green-100 text-green-700' },
+  { value: 'career_discovery', label: 'Career & Degree Selection', price: 999, icon: 'briefcase', color: 'bg-purple-100 text-purple-700' },
+  { value: 'domain_discovery', label: 'Stream & Subject Selection', price: 999, icon: 'world', color: 'bg-cyan-100 text-cyan-700' },
+];
 
 export function useModuleChoices() {
-  const [modules, setModules] = useState<ModuleChoice[]>(cachedModules ?? []);
-  const [loading, setLoading] = useState(cachedModules === null);
+  const modules = STATIC_MODULES;
+  const loading = false;
+  const currency = DEFAULT_CURRENCY;
+  const defaultPrice = DEFAULT_PRICE;
 
-  useEffect(() => {
-    if (cachedModules !== null) return;
-    api<{ modules: ModuleChoice[] }>('/api/accounts/module-choices/')
-      .then((d) => {
-        cachedModules = d.modules;
-        setModules(d.modules);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const prices: Record<string, number> = {};
+  for (const m of modules) {
+    if (m.price != null) prices[m.value] = m.price;
+  }
 
-  return { modules, loading };
+  const getPrice = (moduleName: string): number => prices[moduleName] ?? defaultPrice;
+
+  return { modules, currency, defaultPrice, getPrice, loading };
 }
 
 /** Build lookup maps from the modules array returned by useModuleChoices(). */

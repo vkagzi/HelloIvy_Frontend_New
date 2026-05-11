@@ -98,6 +98,9 @@ export default function AdminCounselorConnectPage() {
             apiEndpoint={`/api/accounts/admin/users/${selectedStudent.id}/comments/`}
             editableRole="counselor"
           />
+
+          {/* Email Section */}
+          <EmailStudentSection studentId={selectedStudent.id} studentEmail={selectedStudent.email} />
         </div>
       ) : (
         <>
@@ -155,6 +158,82 @@ export default function AdminCounselorConnectPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// ── Inline email section component ───────────────────────────────────
+function EmailStudentSection({ studentId, studentEmail }: { studentId: number; studentEmail: string }) {
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [sending, setSending] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSend = async () => {
+    if (!body.trim()) return;
+    setSending(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await api<{ message: string; sent_to: string }>(
+        `/api/accounts/admin/users/${studentId}/send-email/`,
+        { method: 'POST', body: { subject, body } }
+      );
+      setSuccess(`Email sent to ${res.sent_to}`);
+      setBody('');
+      setSubject('');
+      setTimeout(() => setSuccess(null), 4000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to send email');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="border-b border-gray-100 bg-gradient-to-r from-amber-50/60 to-orange-50/40 px-6 py-3.5">
+        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
+          Email the Student
+          <span className="text-xs font-normal text-gray-400 ml-1">({studentEmail})</span>
+        </h3>
+      </div>
+      <div className="px-5 py-4 space-y-3">
+        <input
+          type="text"
+          className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+          placeholder="Subject (optional — defaults to 'Message from your Counselor')"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+        />
+        <textarea
+          rows={4}
+          className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-vertical"
+          placeholder="Compose your email message..."
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
+        {error && <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{error}</p>}
+        {success && (
+          <p className="text-xs text-green-600 bg-green-50 rounded px-2 py-1 flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+            {success}
+          </p>
+        )}
+        <div className="flex justify-end">
+          <Button
+            onClick={handleSend}
+            disabled={!body.trim() || sending}
+            className="bg-amber-600 hover:bg-amber-700 shadow-sm gap-1.5"
+            size="sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+            {sending ? 'Sending...' : 'Send Email'}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

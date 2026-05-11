@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
-import { useModulePrices } from '@/lib/hooks/useModulePrices';
 import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
 import Link from 'next/link';
 
@@ -54,8 +53,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
-  const { modules: moduleChoices, loading: modulesLoading } = useModuleChoices();
-  const { getPrice, currency: priceCurrency, loading: pricesLoading } = useModulePrices();
+  const { modules: moduleChoices, loading: modulesLoading, getPrice, currency: priceCurrency } = useModuleChoices();
   const { modules: activeModules, loading: accessLoading } = useModuleAccess();
 
   const [rows, setRows] = useState<ModuleRow[]>([]);
@@ -153,7 +151,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
     router.push(`${config.checkoutUrl}?${params.toString()}`);
   };
 
-  const loading = modulesLoading || pricesLoading || (config.showActiveModules ? accessLoading : false) || status === 'loading';
+  const loading = modulesLoading || (config.showActiveModules ? accessLoading : false) || status === 'loading';
 
   // Access-denied guard for student mode (school admins can't buy as student)
   if (config.mode === 'student' && status === 'authenticated' && session?.user?.school_id) {

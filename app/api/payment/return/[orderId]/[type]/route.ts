@@ -14,7 +14,13 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+// Ensure the base URL always ends with /api for backend calls
+function getApiBase(): string {
+  const base = API_BASE_URL.replace(/\/+$/, '');
+  return base.endsWith('/api') ? base : `${base}/api`;
+}
 
 export async function GET(
   request: NextRequest,
@@ -35,17 +41,19 @@ async function handleReturn(
   params: Promise<{ orderId: string; type: string }>,
 ) {
   const { orderId, type: paymentType } = await params;
-  const baseUrl = request.nextUrl.origin;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
 
   // Default: redirect to status page in pending state
   let paymentId = '';
   let status = 'pending';
   let amount = '';
   let currency = '';
+  // orderId is the HDFC order reference: "{paymentId}_{randomHex}"
+  const orderIdForStatus = orderId;
 
   try {
     // Call Django's unauthenticated return-verify endpoint
-    const verifyUrl = `${API_BASE_URL}/accounts/payment/return-verify/${orderId}/${paymentType}/`;
+    const verifyUrl = `${getApiBase()}/accounts/payment/return-verify/${orderId}/${paymentType}/`;
     const res = await fetch(verifyUrl, { cache: 'no-store' });
 
     if (res.ok) {
@@ -78,6 +86,8 @@ async function handleReturn(
   redirectUrl.searchParams.set('type', paymentType);
   if (amount) redirectUrl.searchParams.set('amount', amount);
   if (currency) redirectUrl.searchParams.set('currency', currency);
+  // Pass order_id so the guest status page can verify without auth
+  if (orderIdForStatus) redirectUrl.searchParams.set('order_id', orderIdForStatus);
 
   return NextResponse.redirect(redirectUrl);
 }

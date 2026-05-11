@@ -47,9 +47,21 @@ export interface CollegeSelectorPreferences {
   fit_importance: string;
   class_size: string;
   teaching_style: string;
+  brand_preference?: string;
+  financial_aid_preference?: string;
   financial_aid_required: boolean;
   prestige_important: boolean;
   additional_notes: string;
+}
+
+export interface DegreeLevelOption {
+  value: string;
+  label: string;
+}
+
+export interface DegreeOptionsResponse {
+  degree_levels: DegreeLevelOption[];
+  degree_types: Record<string, string[]>;
 }
 
 export interface SendMessageResponse {
@@ -159,6 +171,10 @@ export interface TranscriptData {
 class CollegeSelectorAPI {
   private baseUrl = '/api/college-selector';
 
+  async getDegreeOptions(): Promise<DegreeOptionsResponse> {
+    return api<DegreeOptionsResponse>(`${this.baseUrl}/degree-options/`);
+  }
+
   async createSession(): Promise<CollegeSelectorSession> {
     return api<CollegeSelectorSession>(`${this.baseUrl}/`, {
       method: 'POST',
@@ -208,6 +224,20 @@ class CollegeSelectorAPI {
     preferences_completed: boolean;
   }> {
     return api(`${this.baseUrl}/${sessionId}/preferences/`);
+  }
+
+  async saveProgress(
+    sessionId: string,
+    partialPreferences: Partial<CollegeSelectorPreferences> & { _step?: number }
+  ): Promise<{
+    session_id: string;
+    preferences: Partial<CollegeSelectorPreferences> & { _step?: number };
+    preferences_completed: boolean;
+  }> {
+    return api(`${this.baseUrl}/${sessionId}/preferences/`, {
+      method: 'PATCH',
+      body: partialPreferences,
+    });
   }
 
   async sendMessage(
