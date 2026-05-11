@@ -295,7 +295,15 @@ const COUNTRY_CODES: Record<string, string> = {
   Zimbabwe: 'ZW',
 };
 
-const COUNTRY_OPTIONS = Object.keys(COUNTRY_CODES);
+// Prioritized country options - top countries first, followed by rest alphabetically
+const PRIORITIZED_COUNTRIES = [
+  "United States", "United Kingdom", "Canada", "Singapore", "Australia",
+  "France", "Spain", "Ireland", "Germany", "India",
+];
+const OTHER_COUNTRIES = Object.keys(COUNTRY_CODES)
+  .filter((country) => !PRIORITIZED_COUNTRIES.includes(country))
+  .sort();
+const COUNTRY_OPTIONS = [...PRIORITIZED_COUNTRIES, ...OTHER_COUNTRIES];
 
 const getCountryFlag = (country: string) => {
   const code = COUNTRY_CODES[country];
