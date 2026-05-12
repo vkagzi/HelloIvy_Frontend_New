@@ -79,17 +79,17 @@ export const ProfessionalBlock: React.FC<SchoolBlockProps> = ({
       prev.map((school, idx) =>
         idx === schoolIdx
           ? {
-              ...school,
-              subjectRows: [
-                ...school.subjectRows,
-                Object.fromEntries(
-                  (section.repeatables?.fields ?? []).map((fid: string) => [
-                    fid,
-                    '',
-                  ])
-                ),
-              ],
-            }
+            ...school,
+            subjectRows: [
+              ...school.subjectRows,
+              Object.fromEntries(
+                (section.repeatables?.fields ?? []).map((fid: string) => [
+                  fid,
+                  '',
+                ])
+              ),
+            ],
+          }
           : school
       )
     );
@@ -101,9 +101,9 @@ export const ProfessionalBlock: React.FC<SchoolBlockProps> = ({
       prev.map((school, idx) =>
         idx === schoolIdx
           ? {
-              ...school,
-              subjectRows: school.subjectRows.filter((_, i) => i !== rowIdx),
-            }
+            ...school,
+            subjectRows: school.subjectRows.filter((_, i) => i !== rowIdx),
+          }
           : school
       )
     );
@@ -152,8 +152,8 @@ export const ProfessionalBlock: React.FC<SchoolBlockProps> = ({
                   (formValues as Record<string, unknown>)[sectionType]
                 )
                   ? ((formValues as Record<string, unknown>)[
-                      sectionType
-                    ] as Record<string, unknown>[])
+                    sectionType
+                  ] as Record<string, unknown>[])
                   : [];
 
                 const currentJobValues = sectionValues[schoolIdx] ?? {};
@@ -164,10 +164,10 @@ export const ProfessionalBlock: React.FC<SchoolBlockProps> = ({
                   id: controllerName,
                 };
                 return (
-                  <div 
+                  <div
                     key={fieldDef.id}
-                    style={{ 
-                      gridColumn: fieldDef.width ? `span ${fieldDef.width}` : 'auto' 
+                    style={{
+                      gridColumn: fieldDef.width ? `span ${fieldDef.width}` : 'auto'
                     }}
                   >
                     <Controller

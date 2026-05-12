@@ -434,7 +434,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     label: 'Type',
     placeholder: 'Select skills',
     options: ['Read', 'Write', 'Speak'],
-    required: true,
+    required: false,
   },
   {
     id: 'proficiency',
@@ -832,7 +832,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'yourTotalScore',
     type: 'text',
-    label: 'Total/Cumulative Score',
+    label: 'Your Score / GPA / Percentage / Grades',
     placeholder: 'Enter your total score',
     required: false,
   },
@@ -944,7 +944,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'overallPercentage',
     type: 'text',
-    label: 'Your Score / GPA / Percentage',
+    label: 'Your Score / GPA / Percentage / Grades',
     placeholder: 'Enter your score, GPA, or percentage',
     required: true,
   },
@@ -952,7 +952,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     id: 'maximumPossibleGPA',
     type: 'text',
     label: 'Max possible score /GPA/ Percentage / Grades',
-    placeholder: 'Enter maximum possible score, GPA, or percentage',
+    placeholder: 'Enter maximum possible score, GPA, percentage or Grades',
     required: true,
   },
   {
@@ -966,8 +966,8 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'score',
     type: 'text',
-    label: 'Your Score/ GPA/ Percentage',
-    placeholder: 'Enter your score, GPA, or percentage',
+    label: 'Your Score / GPA / Percentage / Grades',
+    placeholder: 'Enter your score, GPA, percentage or Grades',
     required: true,
   },
 
@@ -1857,7 +1857,7 @@ export const professionalFieldDefs: FieldDefinition[] = [
     type: 'select',
     label: 'Duration',
     placeholder: 'Select',
-    required: true,
+    required: false,
     options: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
   },
   {
@@ -1865,7 +1865,7 @@ export const professionalFieldDefs: FieldDefinition[] = [
     type: 'select',
     label: 'Unit',
     placeholder: 'Select unit',
-    required: true,
+    required: false,
     options: ['Weeks', 'Months', 'Years'],
   },
   {

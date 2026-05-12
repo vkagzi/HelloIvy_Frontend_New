@@ -138,8 +138,8 @@ const ExtraCurricularFormDetails: React.FC = () => {
         defaultValues={formDefaults}
         fieldDefs={fieldDefs}
         layout={layout}
-        onSubmit={(values) => {
-          onSubmit(values);
+        onSubmit={async (values) => {
+          await onSubmit(values);
         }}
         buttonName="Add Additional Details"
         formClassName="space-y-6"
