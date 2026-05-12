@@ -170,8 +170,8 @@ const ProfessionalFormDetails: React.FC = () => {
         }}
         fieldDefs={fieldDefs}
         layout={layout}
-        onSubmit={(values) => {
-          onSubmit(values);
+        onSubmit={async (values) => {
+          await onSubmit(values);
         }}
         formClassName="space-y-6"
         buttonName="Add Extra Curricular Details"

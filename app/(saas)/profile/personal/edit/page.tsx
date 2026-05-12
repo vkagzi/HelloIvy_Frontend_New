@@ -276,16 +276,6 @@ const PersonalDetailsForm: React.FC = () => {
           }, 500);
         }}
       />
-
-      {/* TEMPORARY DEBUG VIEW - REMOVE AFTER FIXING */}
-      {parsedTranscriptData && (
-        <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-4">
-          <h3 className="mb-2 text-sm font-bold text-red-800">DEBUG: Raw Parsed Data (Personal Details)</h3>
-          <pre className="max-h-60 overflow-auto text-xs text-red-700">
-            {JSON.stringify(parsedTranscriptData.personalDetails, null, 2)}
-          </pre>
-        </div>
-      )}
     </div>
   );
 };
