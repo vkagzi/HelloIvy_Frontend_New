@@ -195,8 +195,8 @@ export function InvoicePDF({ data }: { data: InvoiceData }) {
           <Image src={LOGO_APP_BASE64} style={s.logo} />
           <View style={s.companyBlock}>
             <Text style={s.companyName}>Reach Education Pvt. Ltd.</Text>
-            <Text style={s.companyLine}>Mittal Tower, B Wing, 7th Floor, No. 71</Text>
-            <Text style={s.companyLine}>Nariman Point, Mumbai 400 021, India</Text>
+            <Text style={s.companyLine}>7th Floor, B Wing, Mittal Tower, Nariman Point</Text>
+            <Text style={s.companyLine}>Mumbai, Maharashtra 400021, India</Text>
             <Text style={s.companyLine}>PAN: AAFCR7995F | GST: 27AAFCR7995F1ZS</Text>
           </View>
         </View>

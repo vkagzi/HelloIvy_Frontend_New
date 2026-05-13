@@ -546,6 +546,11 @@ export default function LandingPageContent(): React.ReactElement {
               >
                 Get in Touch
               </Link>
+              <div className="mt-8 border-t border-neutral-100 pt-8 text-sm text-neutral-500">
+                <p className="mb-2 font-semibold text-neutral-700">Reach Education Pvt. Ltd.</p>
+                <p>7th Floor, B Wing, Mittal Tower, Nariman Point</p>
+                <p>Mumbai, Maharashtra 400021, India</p>
+              </div>
             </div>
           </div>
         </section>

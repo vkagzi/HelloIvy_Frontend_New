@@ -47,14 +47,18 @@ const EducationalDetailsForm: React.FC = () => {
 
   // Extract educational details from the context or defaultValues
   const educationalDetails = React.useMemo(() => {
-    let details: Record<string, any> = {};
+    let details: Record<string, unknown> = {};
 
     // Use the context-provided educational details if available
     if (contextEducationalDetails && Object.keys(contextEducationalDetails).length > 0) {
       details = JSON.parse(JSON.stringify(contextEducationalDetails));
-    } else if (defaultValues?.profile?.profile?.educational) {
-      // Fallback to manual extraction from defaultValues if context is empty
-      details = JSON.parse(JSON.stringify(defaultValues.profile.profile.educational));
+    } else {
+      const profile = defaultValues?.profile as Record<string, unknown> | undefined;
+      const innerProfile = profile?.profile as Record<string, unknown> | undefined;
+      if (innerProfile?.educational) {
+        // Fallback to manual extraction from defaultValues if context is empty
+        details = JSON.parse(JSON.stringify(innerProfile.educational));
+      }
     }
 
     // Un-nest shared data from section object for form compatibility
@@ -89,9 +93,9 @@ const EducationalDetailsForm: React.FC = () => {
   }, [contextEducationalDetails, defaultValues]);
 
   const UG_PG_LEVELS = [
-    'Undergraduate',
+    'College/Undergraduate',
     'Postgraduate',
-    'Working Professional',
+    'Working/Completed College',
   ];
   const SCHOOL_LEVELS = ['High School (8th–12th grade)'];
 
@@ -360,7 +364,7 @@ const EducationalDetailsForm: React.FC = () => {
                  degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
         });
 
-        const isWorkingProf = currentAcademicLevel === 'Working Professional' || 
+        const isWorkingProf = currentAcademicLevel === 'Working/Completed College' || 
                              detectedAcademicLevel.includes('working') || 
                              hasFullTimeExp;
                              
@@ -535,7 +539,7 @@ const EducationalDetailsForm: React.FC = () => {
                degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
       });
 
-      const isCurrentlyProfessional = currentAcademicLevel === 'Working Professional' || 
+      const isCurrentlyProfessional = currentAcademicLevel === 'Working/Completed College' || 
                                      currentAcademicLevel === 'Postgraduate' || 
                                      hasFullTimeExp || 
                                      hasPGDegree;
@@ -544,19 +548,19 @@ const EducationalDetailsForm: React.FC = () => {
       
       if (topLevel.includes('High School')) {
         // Only set to high school if we are currently in HS or nothing
-        if (!isCurrentlyProfessional && currentAcademicLevel !== 'Undergraduate') {
+        if (!isCurrentlyProfessional && currentAcademicLevel !== 'College/Undergraduate') {
           newDefaults.academicLevel = 'High School (8th–12th grade)';
         }
       } else if (topLevel.includes('Postgraduate') || hasPGDegree) {
         // Only set to postgrad if we aren't already a Working Professional
-        if (currentAcademicLevel !== 'Working Professional' && !hasFullTimeExp) {
+        if (currentAcademicLevel !== 'Working/Completed College' && !hasFullTimeExp) {
           newDefaults.academicLevel = 'Postgraduate';
         }
       } else if (topLevel.includes('Working') || hasFullTimeExp) {
-        newDefaults.academicLevel = 'Working Professional';
+        newDefaults.academicLevel = 'Working/Completed College';
       } else if (!isCurrentlyProfessional || !isAiSayingUndergrad) {
         // Only set to undergraduate if we aren't already in a "higher" level or if the AI is specifically saying undergrad
-        newDefaults.academicLevel = 'Undergraduate';
+        newDefaults.academicLevel = 'College/Undergraduate';
       }
     }
 
@@ -614,16 +618,16 @@ const EducationalDetailsForm: React.FC = () => {
       const academicLevel = transformedData.academicLevel as string | undefined;
       const sectionKey: Record<string, string> = {
         'High School (8th–12th grade)': 'highSchool',
-        'Undergraduate': 'undergraduate',
+        'College/Undergraduate': 'undergraduate',
         'Postgraduate': 'postgraduate',
-        'Working Professional': 'tenPlus',
+        'Working/Completed College': 'tenPlus',
       };
       const relevantSection = academicLevel
         ? sectionKey[academicLevel]
         : undefined;
 
       // Also handle prerequisite section
-      const prereqSection = (academicLevel === 'Postgraduate' || academicLevel === 'Working Professional')
+      const prereqSection = (academicLevel === 'Postgraduate' || academicLevel === 'Working/Completed College')
         ? 'undergraduate_prereq'
         : undefined;
 
@@ -658,7 +662,7 @@ const EducationalDetailsForm: React.FC = () => {
       // PROTECTION AGAINST DATA POLLUTION:
       // If we are in Working Professional mode, we should explicitly clear UG/PG sections 
       // if they aren't provided in the current form data (which they shouldn't be).
-      if (academicLevel === 'Working Professional') {
+      if (academicLevel === 'Working/Completed College') {
         cleanEducational.undergraduate = [];
         cleanEducational.postgraduate = [];
         cleanEducational.undergraduate_prereq = [];
@@ -728,8 +732,8 @@ const EducationalDetailsForm: React.FC = () => {
   useEffect(() => {
     if (educationalDetails && Object.keys(educationalDetails).length > 0) {
       setFormDefaults((prev) => ({
-        ...educationalDetails,
         ...prev,
+        ...educationalDetails,
       }));
     }
   }, [defaultValues]); // eslint-disable-line react-hooks/exhaustive-deps

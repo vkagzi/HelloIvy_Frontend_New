@@ -125,7 +125,7 @@ const Sidebar: React.FC = () => {
     <aside className="hidden  w-64 shrink-0 border-r border-neutral-200 bg-white md:block">
       <nav className="flex flex-col gap-1 py-4">
         {sidebarItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive = pathname?.startsWith(item.href) ?? false;
           return (
             <Link
               key={item.href}

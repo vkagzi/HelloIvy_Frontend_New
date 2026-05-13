@@ -39,13 +39,13 @@ const Component: React.FC<ComponentProps> = ({
     >
       <h2 className="text-web-h3 p-4 font-semibold text-neutral-900">
         {section.type === 'undergraduate' || section.type === 'undergraduate_prereq'
-          ? 'Undergraduate' 
+          ? 'College/Undergraduate' 
           : section.type === 'postgraduate' 
             ? 'Postgraduate'
             : section.type === 'highSchool'
               ? 'High School'
               : section.type === 'tenPlus'
-                ? 'Working Professional'
+                ? 'Working/Completed College'
                 : Array.isArray(section.visibility?.depends_on.value)
                   ? section.visibility?.depends_on.value[0]
                   : section.visibility?.depends_on.value}
