@@ -423,7 +423,7 @@ function PaymentHistoryTable({
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">
                   {p.currency === 'INR' ? '₹' : p.currency}{' '}
-                  {Number(p.amount).toLocaleString('en-IN')}
+                  {Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
                 <td className="px-4 py-3">
                   <span

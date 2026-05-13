@@ -7,12 +7,7 @@ import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
 import Link from 'next/link';
 
-// Demo coupon codes — replace with real API validation when ready
-const VALID_COUPONS: Record<string, number> = {
-  SAVE10: 10,
-  SAVE20: 20,
-  IVY15: 15,
-};
+import api from '@/lib/api-client';
 
 const TAX_CONFIG = {
   maharashtra: { cgst: 9, sgst: 9, igst: 0 },
@@ -58,9 +53,6 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
   const [rows, setRows] = useState<ModuleRow[]>([]);
   const [selectedState, setSelectedState] = useState<StateOption | ''>('');
-  const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPct: number } | null>(null);
-  const [couponError, setCouponError] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   useEffect(() => {
@@ -92,13 +84,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
         setSelectedState(stateParam);
       }
 
-      // Restore coupon
-      const couponParam = searchParams?.get('coupon');
-      if (couponParam && VALID_COUPONS[couponParam.toUpperCase()]) {
-        const code = couponParam.toUpperCase();
-        setCouponInput(code);
-        setAppliedCoupon({ code, discountPct: VALID_COUPONS[code] });
-      }
+
     } else {
       setRows(moduleChoices.map((m) => ({ value: m.value, label: m.label, quantity: 0 })));
     }
@@ -111,32 +97,26 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
   const selectedRows = rows.filter((r) => r.quantity > 0);
   const totalUnits = selectedRows.reduce((s, r) => s + r.quantity, 0);
   const subtotal = selectedRows.reduce((s, r) => s + getPrice(r.value) * r.quantity, 0);
-  const discountAmount = appliedCoupon ? Math.round((subtotal * appliedCoupon.discountPct) / 100) : 0;
+
+  const discountAmount = 0;
+
+  const formatCurrency = (num: number) => {
+    return num.toLocaleString('en-IN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  };
+
   const taxableAmount = subtotal - discountAmount;
 
   const taxes = selectedState ? TAX_CONFIG[selectedState] : { cgst: 0, sgst: 0, igst: 0 };
-  const cgstAmount = Math.round((taxableAmount * taxes.cgst) / 100);
-  const sgstAmount = Math.round((taxableAmount * taxes.sgst) / 100);
-  const igstAmount = Math.round((taxableAmount * taxes.igst) / 100);
+  const cgstAmount = (taxableAmount * taxes.cgst) / 100;
+  const sgstAmount = (taxableAmount * taxes.sgst) / 100;
+  const igstAmount = (taxableAmount * taxes.igst) / 100;
   const totalTax = cgstAmount + sgstAmount + igstAmount;
   const grandTotal = taxableAmount + totalTax;
 
-  const handleApplyCoupon = () => {
-    const code = couponInput.trim().toUpperCase();
-    if (VALID_COUPONS[code]) {
-      setAppliedCoupon({ code, discountPct: VALID_COUPONS[code] });
-      setCouponError('');
-    } else {
-      setAppliedCoupon(null);
-      setCouponError('Invalid or expired coupon code.');
-    }
-  };
 
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponInput('');
-    setCouponError('');
-  };
 
   const canCheckout = selectedRows.length > 0 && selectedState !== '' && agreeTerms;
 
@@ -144,7 +124,6 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
     if (!canCheckout) return;
     const modulesParam = selectedRows.map((r) => `${r.value}:${r.quantity}`).join(',');
     const params = new URLSearchParams({ modules: modulesParam, state: selectedState });
-    if (appliedCoupon) params.set('coupon', appliedCoupon.code);
     params.set('discount', String(discountAmount));
     params.set('tax', String(totalTax));
     params.set('total', String(grandTotal));
@@ -217,9 +196,8 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
           return (
             <div
               key={row.value}
-              className={`grid grid-cols-[1fr_100px_130px_100px] gap-4 items-center px-5 py-4 transition-colors ${
-                idx !== rows.length - 1 ? 'border-b border-neutral-100' : ''
-              } ${isActive && !isSelected ? 'bg-green-50' : isSelected ? 'bg-purple-50' : 'hover:bg-neutral-50'}`}
+              className={`grid grid-cols-[1fr_100px_130px_100px] gap-4 items-center px-5 py-4 transition-colors ${idx !== rows.length - 1 ? 'border-b border-neutral-100' : ''
+                } ${isActive && !isSelected ? 'bg-green-50' : isSelected ? 'bg-purple-50' : 'hover:bg-neutral-50'}`}
             >
               {/* Module name */}
               <div className="flex items-center gap-2 min-w-0">
@@ -272,52 +250,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
         <div className="border-t border-neutral-100" />
 
-        {/* Coupon */}
-        <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">Discount Coupon</label>
-          {appliedCoupon ? (
-            <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-2.5">
-              <span className="text-sm font-medium text-green-700">
-                ✓ &ldquo;{appliedCoupon.code}&rdquo; — {appliedCoupon.discountPct}% off
-              </span>
-              <button
-                onClick={handleRemoveCoupon}
-                className="cursor-pointer text-xs text-gray-400 hover:text-red-500 transition-colors"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Enter coupon code"
-                value={couponInput}
-                onChange={(e) => {
-                  setCouponInput(e.target.value);
-                  setCouponError('');
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
-                className="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-300"
-              />
-              <button
-                onClick={handleApplyCoupon}
-                className="cursor-pointer rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700"
-              >
-                Apply
-              </button>
-            </div>
-          )}
-          {couponError && <p className="mt-1.5 text-xs text-red-500">{couponError}</p>}
-        </div>
 
-        {/* Discount line */}
-        {appliedCoupon && discountAmount > 0 && (
-          <div className="flex items-center justify-between text-sm text-green-600">
-            <span>Discount ({appliedCoupon.discountPct}%)</span>
-            <span>−₹{discountAmount}</span>
-          </div>
-        )}
 
         <div className="border-t border-neutral-100" />
 
@@ -332,11 +265,10 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
               <button
                 key={opt.value}
                 onClick={() => setSelectedState(opt.value)}
-                className={`cursor-pointer rounded-lg border px-4 py-3 text-left transition ${
-                  selectedState === opt.value
-                    ? 'border-purple-400 bg-purple-50'
-                    : 'border-neutral-200 bg-white hover:border-purple-300'
-                }`}
+                className={`cursor-pointer rounded-lg border px-4 py-3 text-left transition ${selectedState === opt.value
+                  ? 'border-purple-400 bg-purple-50'
+                  : 'border-neutral-200 bg-white hover:border-purple-300'
+                  }`}
               >
                 <p className={`text-sm font-semibold ${selectedState === opt.value ? 'text-purple-700' : 'text-gray-800'}`}>
                   {opt.label}
@@ -354,17 +286,17 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
               <>
                 <div className="flex items-center justify-between text-sm text-gray-500">
                   <span>CGST (9%)</span>
-                  <span>₹{cgstAmount}</span>
+                  <span>₹{formatCurrency(cgstAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-500">
                   <span>SGST (9%)</span>
-                  <span>₹{sgstAmount}</span>
+                  <span>₹{formatCurrency(sgstAmount)}</span>
                 </div>
               </>
             ) : (
               <div className="flex items-center justify-between text-sm text-gray-500">
                 <span>IGST (18%)</span>
-                <span>₹{igstAmount}</span>
+                <span>₹{formatCurrency(igstAmount)}</span>
               </div>
             )}
           </div>
@@ -373,7 +305,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
         {/* Grand total */}
         <div className="flex items-center justify-between border-t border-neutral-200 pt-4">
           <span className="text-base font-semibold text-gray-900">Total</span>
-          <span className="text-xl font-bold text-purple-700">₹{grandTotal}</span>
+          <span className="text-xl font-bold text-purple-700">₹{formatCurrency(grandTotal)}</span>
         </div>
 
         {/* Terms & Conditions */}
@@ -398,7 +330,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
           disabled={!canCheckout}
           className="w-full cursor-pointer rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Pay Now — ₹{grandTotal}
+          Pay Now — ₹{formatCurrency(grandTotal)}
         </button>
 
         {/* Inline hints */}

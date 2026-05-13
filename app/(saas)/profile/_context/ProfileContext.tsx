@@ -28,7 +28,7 @@ type ProfileContextType = {
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [rawApiResponse, setRawApiResponse] = useState<{ profile: Record<string, unknown> } | null>(null);
   const [personalDetails, setPersonalDetails] = useState<ProfileData>({});
@@ -42,7 +42,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   const [missingSections, setMissingSections] = useState<string[]>([]);
   const [parsedTranscriptData, setParsedTranscriptData] = useState<Record<string, any> | null>(null);
-  const hasFetchedRef = useRef(false);
+  const currentUserIdRef = useRef<string | null>(null);
 
   const fetchProfileData = useCallback(async (): Promise<void> => {
     try {
@@ -121,11 +121,34 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   useEffect(() => {
-    if (status !== 'authenticated') return;
-    if (hasFetchedRef.current) return;
-    hasFetchedRef.current = true;
-    fetchProfileData();
-  }, [status, fetchProfileData]);
+    if (status === 'loading') return;
+
+    if (status === 'unauthenticated') {
+      // Clear all state on logout
+      setProfileData(null);
+      setRawApiResponse(null);
+      setPersonalDetails({});
+      setEducationalDetails({});
+      setProfessionalDetails({});
+      setAdditionalDetails({});
+      setExtraCurricularDetails({});
+      setCompletionPercentage(0);
+      setIsProfileComplete(false);
+      setMissingSections([]);
+      setParsedTranscriptData(null);
+      currentUserIdRef.current = null;
+      setLoading(false);
+      return;
+    }
+
+    if (status === 'authenticated' && session?.user?.id) {
+      // Only fetch if the user ID has changed or we haven't fetched for this user yet
+      if (currentUserIdRef.current !== session.user.id) {
+        currentUserIdRef.current = session.user.id;
+        fetchProfileData();
+      }
+    }
+  }, [status, session?.user?.id, fetchProfileData]);
 
   return (
     <ProfileContext.Provider

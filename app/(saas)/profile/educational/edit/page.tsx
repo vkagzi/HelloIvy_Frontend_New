@@ -168,6 +168,9 @@ const EducationalDetailsForm: React.FC = () => {
 
     // Get current values to preserve fields that are NOT being updated by the scan
     const currentValues = formRef.current?.getValues() || {};
+    const currentAcademicLevel = currentValues.academicLevel as string;
+    
+    console.log("!!! [EducationalDetailsForm] Syncing scanned data. Current academicLevel in form:", currentAcademicLevel);
     
     // Start with a merge of DB data and current values
     const newDefaults: Record<string, any> = { 
@@ -341,31 +344,102 @@ const EducationalDetailsForm: React.FC = () => {
         // We will reset sections that we find data for to ensure "Renewal"
         const sectionsToClear = new Set<string>();
         
+        const detectedAcademicLevel = (parsedTranscriptData.academicLevel || "").toLowerCase();
+        
+        // SMART DETECTION: Check if there are any full-time professional experiences in the data
+        const professionalExperiences = rootData.professional?.experiences || rootData.professional || [];
+        const hasFullTimeExp = Array.isArray(professionalExperiences) && professionalExperiences.some((exp: any) => {
+          const type = (exp.experienceType || exp.experience_type || "").toLowerCase();
+          return type.includes('full-time') || type.includes('working') || type.includes('job');
+        });
+
+        // SMART PG DETECTION: Check for PG degrees in the educational records
+        const hasPGDegree = educationalRecords.some((e: any) => {
+          const degree = (getValue(e, ['degree', 'program']) || "").toLowerCase();
+          return degree.includes('master') || degree.includes('m.tech') || degree.includes('mba') || 
+                 degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
+        });
+
+        const isWorkingProf = currentAcademicLevel === 'Working Professional' || 
+                             detectedAcademicLevel.includes('working') || 
+                             hasFullTimeExp;
+                             
+        const isPostgrad = currentAcademicLevel === 'Postgraduate' || 
+                           detectedAcademicLevel.includes('postgraduate') || 
+                           hasPGDegree;
+
+        const isHighSchool = currentAcademicLevel === 'High School (8th–12th grade)' || detectedAcademicLevel.includes('high school');
+        
+        console.log(`[EducationalDetailsForm] Sync Logic - isWorkingProf: ${isWorkingProf}, isPostgrad: ${isPostgrad} (hasPG: ${hasPGDegree}), current: ${currentAcademicLevel}, detected: ${detectedAcademicLevel}`);
+        
+        // CLEANUP: Reset sections that should be mutually exclusive with the current mode
+        // to prevent "Data Pollution" as requested by the user.
+        if (isWorkingProf) {
+          newDefaults['undergraduate'] = [];
+          newDefaults['undergraduate_prereq'] = [];
+          newDefaults['postgraduate'] = [];
+          sectionsToClear.add('undergraduate');
+          sectionsToClear.add('undergraduate_prereq');
+          sectionsToClear.add('postgraduate');
+        } else if (isPostgrad) {
+          newDefaults['tenPlus'] = [];
+          sectionsToClear.add('tenPlus');
+        } else {
+          // Undergraduate mode
+          newDefaults['postgraduate'] = [];
+          newDefaults['tenPlus'] = [];
+          sectionsToClear.add('postgraduate');
+          sectionsToClear.add('tenPlus');
+        }
+
         educationalRecords.forEach((e: any) => {
           const searchLevel = (getValue(e, ['academicLevel', 'level', 'degree', 'program', 'institutionName']) || "").toLowerCase();
+          const degreeName = (getValue(e, ['degree', 'program']) || "").toLowerCase();
           const sections: string[] = [];
 
-          // Heuristic classification per record
-          if (searchLevel.includes('postgraduate') || searchLevel.includes('master') || searchLevel.includes('phd') || 
-              searchLevel.includes('mba') || searchLevel.includes('m.e') || searchLevel.includes('m.tech') || 
-              searchLevel.includes('me') || searchLevel.includes('mtech')) {
-            sections.push('postgraduate');
-          } else if (searchLevel.includes('college') || searchLevel.includes('undergraduate') || searchLevel.includes('bachelor') ||
-              searchLevel.includes('b.e') || searchLevel.includes('b.tech') || searchLevel.includes('be') || searchLevel.includes('btech')) {
-            sections.push('undergraduate');
-            sections.push('undergraduate_prereq');
-          } else if (searchLevel.includes('high school') || searchLevel.includes('12th') || searchLevel.includes('secondary') || searchLevel.includes('school')) {
+          // 1. Strict High School check
+          const isHS = searchLevel.includes('high school') || searchLevel.includes('12th') || 
+                       searchLevel.includes('secondary') || searchLevel.includes('school') ||
+                       degreeName.includes('grade') || degreeName.includes('standard');
+
+          if (isHS) {
             sections.push('highSchool');
-          } else if (searchLevel.includes('working') || searchLevel.includes('professional') || searchLevel.includes('completed')) {
-            sections.push('tenPlus');
-          } else if (globalTargetSection) {
-            // Fallback to global target if record doesn't have enough info
-            sections.push(globalTargetSection);
-            if (globalTargetSection === 'undergraduate') sections.push('undergraduate_prereq');
+          } else {
+            // 2. Routing for Degrees (UG/PG)
+            if (isWorkingProf) {
+              // FOR WORKING PROFESSIONALS: EVERYTHING non-HS goes ONLY to tenPlus
+              // This is what the user wants: "working prof should apper only in working prof section"
+              sections.push('tenPlus');
+            } else if (isPostgrad) {
+              // FOR POSTGRADUATES: Route based on degree type
+              const isPG = degreeName.includes('master') || degreeName.includes('mba') || degreeName.includes('msc') || 
+                           degreeName.includes('m.a') || degreeName.includes('m.tech') || degreeName.includes('pg') ||
+                           searchLevel.includes('postgraduate');
+              
+              if (isPG) {
+                sections.push('postgraduate');
+              } else {
+                sections.push('undergraduate');
+                sections.push('undergraduate_prereq');
+              }
+            } else {
+              // FOR UNDERGRADUATES: Default to undergraduate
+              sections.push('undergraduate');
+            }
+          }
+
+          // Fallback if no sections were identified but we have a global target
+          if (sections.length === 0 && globalTargetSection) {
+            // Respect Working Professional priority even in fallback
+            if (isWorkingProf) sections.push('tenPlus');
+            else {
+              sections.push(globalTargetSection);
+              if (globalTargetSection === 'undergraduate') sections.push('undergraduate_prereq');
+            }
           }
 
           sections.forEach(s => {
-            // If this is the first time we see this section in this scan, clear it for renewal
+            // Ensure we don't clear a section we already added data to in this same scan
             if (!sectionsToClear.has(s)) {
               newDefaults[s] = [];
               sectionsToClear.add(s);
@@ -444,10 +518,46 @@ const EducationalDetailsForm: React.FC = () => {
     // 5. Academic Level Sync
     if (parsedTranscriptData.academicLevel && !isTargeted) {
       const topLevel = parsedTranscriptData.academicLevel;
-      if (topLevel.includes('High School')) newDefaults.academicLevel = 'High School (8th–12th grade)';
-      else if (topLevel.includes('Postgraduate')) newDefaults.academicLevel = 'Postgraduate';
-      else if (topLevel.includes('Working')) newDefaults.academicLevel = 'Working Professional';
-      else newDefaults.academicLevel = 'Undergraduate';
+      
+      // PROTECTION: If the user has manually selected Working Professional or Postgraduate, 
+      // do not let the AI downgrade them to Undergraduate unless they were originally in HS.
+      // Also respect the smart detection from above.
+      const professionalExperiences = rootData.professional?.experiences || rootData.professional || [];
+      const hasFullTimeExp = Array.isArray(professionalExperiences) && professionalExperiences.some((exp: any) => {
+        const type = (exp.experienceType || exp.experience_type || "").toLowerCase();
+        return type.includes('full-time') || type.includes('working') || type.includes('job');
+      });
+
+      // SMART PG DETECTION
+      const hasPGDegree = educationalRecords.some((e: any) => {
+        const degree = (getValue(e, ['degree', 'program']) || "").toLowerCase();
+        return degree.includes('master') || degree.includes('m.tech') || degree.includes('mba') || 
+               degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
+      });
+
+      const isCurrentlyProfessional = currentAcademicLevel === 'Working Professional' || 
+                                     currentAcademicLevel === 'Postgraduate' || 
+                                     hasFullTimeExp || 
+                                     hasPGDegree;
+                                     
+      const isAiSayingUndergrad = topLevel.toLowerCase().includes('undergraduate') || topLevel.toLowerCase().includes('college');
+      
+      if (topLevel.includes('High School')) {
+        // Only set to high school if we are currently in HS or nothing
+        if (!isCurrentlyProfessional && currentAcademicLevel !== 'Undergraduate') {
+          newDefaults.academicLevel = 'High School (8th–12th grade)';
+        }
+      } else if (topLevel.includes('Postgraduate') || hasPGDegree) {
+        // Only set to postgrad if we aren't already a Working Professional
+        if (currentAcademicLevel !== 'Working Professional' && !hasFullTimeExp) {
+          newDefaults.academicLevel = 'Postgraduate';
+        }
+      } else if (topLevel.includes('Working') || hasFullTimeExp) {
+        newDefaults.academicLevel = 'Working Professional';
+      } else if (!isCurrentlyProfessional || !isAiSayingUndergrad) {
+        // Only set to undergraduate if we aren't already in a "higher" level or if the AI is specifically saying undergrad
+        newDefaults.academicLevel = 'Undergraduate';
+      }
     }
 
     // Support grade level specifically
@@ -544,9 +654,24 @@ const EducationalDetailsForm: React.FC = () => {
       // Include ALL educational sections that have data, not just the relevant one.
       // This ensures that scanned resume data for multiple levels is preserved.
       const allSections = ['highSchool', 'undergraduate', 'postgraduate', 'tenPlus', 'undergraduate_prereq'];
+      
+      // PROTECTION AGAINST DATA POLLUTION:
+      // If we are in Working Professional mode, we should explicitly clear UG/PG sections 
+      // if they aren't provided in the current form data (which they shouldn't be).
+      if (academicLevel === 'Working Professional') {
+        cleanEducational.undergraduate = [];
+        cleanEducational.postgraduate = [];
+        cleanEducational.undergraduate_prereq = [];
+      } else if (academicLevel === 'Postgraduate') {
+        cleanEducational.tenPlus = [];
+      }
+
       allSections.forEach((section) => {
-        if (transformedData[section] !== undefined && Array.isArray(transformedData[section]) && (transformedData[section] as any[]).length > 0) {
-          cleanEducational[section] = transformedData[section];
+        if (transformedData[section] !== undefined && Array.isArray(transformedData[section])) {
+           // Only include if it's not empty, OR if we explicitly cleared it above
+           if ((transformedData[section] as any[]).length > 0 || cleanEducational[section] !== undefined) {
+             cleanEducational[section] = transformedData[section];
+           }
         }
       });
 
