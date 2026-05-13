@@ -1,4 +1,4 @@
-# Hello Ivy — Web
+# Hello Ivy Web
 
 A Next.js 16 web application for the Hello Ivy platform. Built with React 19, TypeScript, Tailwind CSS v4, and Auth.js.
 
