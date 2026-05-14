@@ -82,7 +82,7 @@ const api = async <T = any>(
   let token = options.tokenOverride;
 
   // Get token from Auth.js session if not overridden
-  if (!token && typeof window !== 'undefined') {
+  if (token === undefined && typeof window !== 'undefined') {
     token = (await getAuthToken()) || undefined;
   }
 
