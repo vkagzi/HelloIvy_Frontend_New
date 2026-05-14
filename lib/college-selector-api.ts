@@ -312,6 +312,15 @@ class CollegeSelectorAPI {
   async healthCheck(): Promise<{ status: string; service: string }> {
     return api<{ status: string; service: string }>(`${this.baseUrl}/health/`);
   }
+
+  async updateTestScores(
+    testScores: Array<Record<string, unknown>>
+  ): Promise<{ test_scores: Array<Record<string, unknown>>; message: string }> {
+    return api<{ test_scores: Array<Record<string, unknown>>; message: string }>(
+      `${this.baseUrl}/test-scores/`,
+      { method: 'PUT', body: { test_scores: testScores } }
+    );
+  }
 }
 
 export const collegeSelectorApi = new CollegeSelectorAPI();

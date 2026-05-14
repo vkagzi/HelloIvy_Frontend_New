@@ -14,6 +14,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { FiIcon } from '@/app/_components/Icons';
 import api from '@/lib/api';
+import { useForm } from 'react-hook-form';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
+import { TestScoresBlock } from '@/app/(saas)/profile/educational/edit/_component/TestScores';
+import {
+  educationalFieldDefs,
+  educationalLayout,
+  ugPgTestTypeOptions,
+} from '@/app/(saas)/profile/_config/fieldDefinitions';
 
 // ================== Constants (from PRD) ==================
 
@@ -415,7 +423,7 @@ const IMPORTANCE_OPTIONS = [
   { value: 'no_preference', label: 'No preference, I am flexible', icon: '🤷' },
 ];
 
-const TOTAL_STEPS = 9;
+const TOTAL_STEPS = 10;
 
 // ================== Profile → Preferences Mappings ==================
 
@@ -499,6 +507,23 @@ const DOMAIN_TO_MAJOR_MAP: Record<string, string> = {
   'Retail & E-commerce': 'Marketing',
   'Manufacturing': 'Mechanical Engineering',
 };
+
+// ================== Helpers ==================
+
+function extractTestScores(edu: Record<string, unknown> | undefined): Array<Record<string, unknown>> {
+  if (!edu) return [];
+  if (Array.isArray(edu.testScores) && edu.testScores.length > 0)
+    return edu.testScores as Array<Record<string, unknown>>;
+  for (const key of ['highSchool', 'undergraduate', 'postgraduate', 'tenPlus']) {
+    const section = edu[key];
+    if (section && typeof section === 'object' && !Array.isArray(section)) {
+      const nested = (section as Record<string, unknown>).testScores;
+      if (Array.isArray(nested) && nested.length > 0)
+        return nested as Array<Record<string, unknown>>;
+    }
+  }
+  return [];
+}
 
 // ================== Helper Components ==================
 
@@ -588,6 +613,13 @@ export default function PreferencesPage() {
   const [degreeTypesByLevel, setDegreeTypesByLevel] = useState<Record<string, string[]>>({});
   const [degreeOptionsLoading, setDegreeOptionsLoading] = useState(true);
 
+  // Test scores (step 2)
+  const { educationalDetails, loading: profileLoading, refetch } = useProfile();
+  const testScoresForm = useForm<Record<string, unknown>>({
+    defaultValues: { testScores: [] },
+  });
+  const [testScoresInitialized, setTestScoresInitialized] = useState(false);
+
   // Step 1: Degree Goals
   const [degreeLevel, setDegreeLevel] = useState('');
   const [degreeType, setDegreeType] = useState('');
@@ -637,6 +669,17 @@ export default function PreferencesPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [degreeLevel, degreeTypesByLevel]);
+
+  // Populate test scores from profile
+  useEffect(() => {
+    if (!profileLoading && !testScoresInitialized) {
+      const scores = extractTestScores(educationalDetails as Record<string, unknown> | undefined);
+      if (scores.length > 0) {
+        testScoresForm.reset({ testScores: scores });
+      }
+      setTestScoresInitialized(true);
+    }
+  }, [profileLoading, educationalDetails, testScoresForm, testScoresInitialized]);
 
   // Fetch degree levels and degree types from Django
   useEffect(() => {
@@ -775,7 +818,8 @@ export default function PreferencesPage() {
   const canProceed = () => {
     switch (step) {
       case 1: return degreeLevel && degreeType && (degreeType !== 'Other' || degreeTypeOther.trim()) && primaryMajor && (primaryMajor !== 'Other' || primaryMajorOther.trim());
-      case 2: return countries.length > 0;
+      case 2: return true; // Test scores are optional
+      case 3: return countries.length > 0;
       default: return true;
     }
   };
@@ -793,38 +837,40 @@ export default function PreferencesPage() {
           secondary_major_other: secondaryMajorOther,
         };
       case 2:
-        return { countries };
+        return {}; // Test scores saved separately to profile
       case 3:
+        return { countries };
+      case 4:
         return {
           campus_setting: campusSetting,
           campus_importance: campusImportance,
           climate_preference: climatePreference,
         };
-      case 4:
+      case 5:
         return {
           college_type: collegeType,
           college_type_reasons: collegeTypeReasons,
         };
-      case 5:
+      case 6:
         return {
           research_importance: researchImportance,
         };
-      case 6:
+      case 7:
         return {
           cultural_fit: culturalFit,
           fit_importance: fitImportance,
         };
-      case 7:
+      case 8:
         return {
           class_size: classSize,
           teaching_style: teachingStyle,
         };
-      case 8:
+      case 9:
         return {
           brand_preference: brandPreference,
           prestige_important: brandPreference === 'yes_important',
         };
-      case 9:
+      case 10:
         return {
           financial_aid_preference: financialAidPreference,
           financial_aid_required: financialAidPreference === 'yes_important',
@@ -852,7 +898,26 @@ export default function PreferencesPage() {
 
   const handleNext = async () => {
     const nextStep = step + 1;
-    await saveStepProgress(step, nextStep);
+    if (step === 2) {
+      // Save test scores to profile
+      try {
+        const formValues = testScoresForm.getValues();
+        const testScores = (formValues.testScores as Array<Record<string, unknown>> | undefined) ?? [];
+        const validScores = testScores.filter(
+          (score) => score && score.testType && String(score.testType).trim() !== ''
+        );
+        await collegeSelectorApi.updateTestScores(validScores);
+        await refetch();
+      } catch {
+        // Silent fail — test scores are optional
+      }
+      // Save step progress for navigation restoration
+      try {
+        await collegeSelectorApi.saveProgress(sessionId, { _step: nextStep } as never);
+      } catch { /* best effort */ }
+    } else {
+      await saveStepProgress(step, nextStep);
+    }
     setStep(nextStep);
   };
 
@@ -990,10 +1055,30 @@ export default function PreferencesPage() {
           </div>
         )}
 
-        {/* Step 2: Country Selection */}
+        {/* Step 2: Standardized Test Scores */}
         {step === 2 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">2. Country Preferences</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">2. Standardized Test Scores</h2>
+            <p className="text-neutral-600">
+              Add your standardized test scores for more accurate college recommendations.
+              These scores will also be saved to your profile.
+            </p>
+            <div className="rounded-lg border border-neutral-200 p-6">
+              <TestScoresBlock
+                testTypeOptions={ugPgTestTypeOptions}
+                fieldDefs={educationalFieldDefs}
+                layout={educationalLayout}
+                form={testScoresForm}
+                errors={{}}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Country Selection */}
+        {step === 3 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-neutral-900">3. Country Preferences</h2>
             <p className="text-neutral-600">
               We will shortlist 20 colleges from across the countries you pick. Select up to 5.
             </p>
@@ -1068,10 +1153,10 @@ export default function PreferencesPage() {
           </div>
         )}
 
-        {/* Step 3: Campus Setting */}
-        {step === 3 && (
+        {/* Step 4: Campus Setting */}
+        {step === 4 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">3. Campus Setting</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">4. Campus Setting</h2>
             <p className="text-neutral-600">What kind of campus environment do you prefer?</p>
             <div className="space-y-3">
               {CAMPUS_SETTINGS.map((s) => (
@@ -1103,10 +1188,10 @@ export default function PreferencesPage() {
           </div>
         )}
 
-        {/* Step 4: Type of College */}
-        {step === 4 && (
+        {/* Step 5: Type of College */}
+        {step === 5 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">4. Type of College</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">5. Type of College</h2>
             <p className="text-neutral-600">What type of institution are you interested in?</p>
             <div className="space-y-3">
               {COLLEGE_TYPES.map((t) => (
@@ -1126,10 +1211,10 @@ export default function PreferencesPage() {
           </div>
         )}
 
-        {/* Step 5: Research Intensity */}
-        {step === 5 && (
+        {/* Step 6: Research Intensity */}
+        {step === 6 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">5. Research Intensity</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">6. Research Intensity</h2>
             <p className="text-neutral-600">How important are research opportunities to you?</p>
             <div className="space-y-3">
               {RESEARCH_LEVELS.map((r) => (
@@ -1140,10 +1225,10 @@ export default function PreferencesPage() {
           </div>
         )}
 
-        {/* Step 6: Cultural Fit */}
-        {step === 6 && (
+        {/* Step 7: Cultural Fit */}
+        {step === 7 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">6. Cultural Fit</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">7. Cultural Fit</h2>
             <p className="text-neutral-600">What kind of campus culture would you thrive in? (Multi-select)</p>
 
             <div className="flex flex-wrap gap-2">
@@ -1155,10 +1240,10 @@ export default function PreferencesPage() {
           </div>
         )}
 
-        {/* Step 7: Class Size Preference */}
-        {step === 7 && (
+        {/* Step 8: Class Size Preference */}
+        {step === 8 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">7. Class Size Preference</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">8. Class Size Preference</h2>
 
             <div>
               <Label className="mb-2">What learning environment do you prefer?</Label>
@@ -1172,10 +1257,10 @@ export default function PreferencesPage() {
           </div>
         )}
 
-        {/* Step 8: Brand Preference */}
-        {step === 8 && (
+        {/* Step 9: Brand Preference */}
+        {step === 9 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">8. Brand Preference</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">9. Brand Preference</h2>
             <p className="text-neutral-600">Is the college’s global brand recognition an important factor in your decision?</p>
             <div className="space-y-3">
               {IMPORTANCE_OPTIONS.map((option) => (
@@ -1186,10 +1271,10 @@ export default function PreferencesPage() {
           </div>
         )}
 
-        {/* Step 9: Financing your Education */}
-        {step === 9 && (
+        {/* Step 10: Financing your Education */}
+        {step === 10 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">9. Financing your Education</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">10. Financing your Education</h2>
             <p className="text-neutral-600">Do you require financial aid or scholarship?</p>
             <div className="space-y-3">
               {IMPORTANCE_OPTIONS.map((option) => (

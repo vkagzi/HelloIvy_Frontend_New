@@ -40,24 +40,9 @@ function CollegeSelectorPage() {
     isProfileComplete,
     completionPercentage,
     missingSections,
-    educationalDetails,
     loading: profileLoading,
   } = useProfile();
 
-  const testScores = (() => {
-    const edu = educationalDetails as Record<string, unknown> | undefined;
-    if (!edu) return [];
-    // testScores may be at the top level or nested inside a section (highSchool, undergraduate, postgraduate, tenPlus)
-    if (Array.isArray(edu.testScores) && edu.testScores.length > 0) return edu.testScores as Array<Record<string, string | number | undefined>>;
-    for (const key of ['highSchool', 'undergraduate', 'postgraduate', 'tenPlus']) {
-      const section = edu[key];
-      if (section && typeof section === 'object' && !Array.isArray(section)) {
-        const nested = (section as Record<string, unknown>).testScores;
-        if (Array.isArray(nested) && nested.length > 0) return nested as Array<Record<string, string | number | undefined>>;
-      }
-    }
-    return [];
-  })();
 
   useEffect(() => {
     let isCancelled = false;
@@ -115,11 +100,6 @@ function CollegeSelectorPage() {
 
       if (!isProfileComplete) {
         setError('Please complete your profile before starting a session.');
-        return;
-      }
-
-      if (testScores.length === 0) {
-        setError('Please add your standardized test scores before starting a session.');
         return;
       }
 
@@ -323,63 +303,6 @@ function CollegeSelectorPage() {
             </div>
           ) : (
             <>
-              {/* Standardized Test Scores */}
-              {!profileLoading && (
-                <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-5">
-                  <h3 className="mb-3 text-base font-semibold text-gray-900">Standardized Test Scores</h3>
-                  {testScores.length > 0 ? (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {testScores.map((score, idx) => (
-                        <div
-                          key={idx}
-                          className="rounded-lg border border-gray-100 bg-white p-4"
-                        >
-                          <div className="mb-2 flex items-center justify-between">
-                            <span className="text-sm font-semibold text-gray-800">
-                              {score.testType || 'Test'}
-                            </span>
-                            {score.testDate && (
-                              <span className="text-xs text-gray-500">{score.testDate}</span>
-                            )}
-                          </div>
-                          {(score.totalScore || score.yourScore) && (
-                            <p className="text-2xl font-bold text-green-600">
-                              {score.totalScore || score.yourScore}
-                            </p>
-                          )}
-                          <div className="mt-2 space-y-1 text-sm text-gray-600">
-                            {score.mathYourScore && <p>Math: {score.mathYourScore}</p>}
-                            {score.writingYourScore && <p>Writing: {score.writingYourScore}</p>}
-                            {score.criticalReadingYourScore && <p>Reading: {score.criticalReadingYourScore}</p>}
-                            {score.verbalReasoningScore && <p>Verbal: {score.verbalReasoningScore}</p>}
-                            {score.quantitativeReasoningScore && <p>Quant: {score.quantitativeReasoningScore}</p>}
-                            {score.analyticalWritingScore && <p>AWA: {score.analyticalWritingScore}</p>}
-                            {score.englishYourScore && <p>English: {score.englishYourScore}</p>}
-                            {score.scienceYourScore && <p>Science: {score.scienceYourScore}</p>}
-                            {score.readingYourScore && <p>Reading: {score.readingYourScore}</p>}
-                            {score.integratedReasoningScore && <p>IR: {score.integratedReasoningScore}</p>}
-                            {score.dataInsightsScore && <p>Data Insights: {score.dataInsightsScore}</p>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-                      <p className="text-sm text-yellow-800">
-                        You haven&apos;t added any standardized test scores yet. Test scores are required to start a college selection session.
-                      </p>
-                      <Link
-                        href="/profile/educational/edit#standardised-test-score"
-                        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-green-700 underline underline-offset-2 hover:text-green-900"
-                      >
-                        <FiIcon name="pencil" className="h-4 w-4" />
-                        Add your test scores
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              )}
-
               <div className="mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                 <label className="flex cursor-pointer items-start gap-3">
                   <Checkbox
@@ -393,7 +316,7 @@ function CollegeSelectorPage() {
               <Button
                 variant="primary" size="lg"
                 onClick={handleStartCollegeSelector}
-                disabled={isLoading || !hasReadInstructions || profileLoading || testScores.length === 0}
+                disabled={isLoading || !hasReadInstructions || profileLoading}
                 iconRight={<FiIcon name="arrow-small-right" className="h-5 w-5" />}
                 className="mt-6"
               >
