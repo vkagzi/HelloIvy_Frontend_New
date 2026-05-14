@@ -60,6 +60,13 @@ function parseLineItems(modulesParam: string, maxQty: number, priceGetter: (mod:
     });
 }
 
+const formatCurrency = (num: number) => {
+  return num.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
 export default function PaymentCheckoutForm({
   config,
   createCheckout,
@@ -76,10 +83,10 @@ export default function PaymentCheckoutForm({
   const isLoggedIn = authStatus === 'authenticated' && !!authSession?.user;
   const modulesParam = searchParams?.get('modules') ?? '';
   const stateParam = searchParams?.get('state') ?? '';
-  const couponCode = searchParams?.get('coupon') ?? '';
-  const discountAmount = parseInt(searchParams?.get('discount') ?? '0', 10);
-  const taxAmount = parseInt(searchParams?.get('tax') ?? '0', 10);
-  const grandTotal = parseInt(searchParams?.get('total') ?? '0', 10);
+  const couponCode = searchParams?.get('coupon_code') ?? '';
+  const discountAmount = parseFloat(searchParams?.get('discount') ?? '0');
+  const taxAmount = parseFloat(searchParams?.get('tax') ?? '0');
+  const grandTotal = parseFloat(searchParams?.get('total') ?? '0');
 
   const maxQty = config.mode === 'school' ? 200 : 10;
   const lineItems = parseLineItems(modulesParam, maxQty, getPrice);
@@ -144,7 +151,7 @@ export default function PaymentCheckoutForm({
 
     api<CheckoutSession>(config.createEndpoint, {
       method: 'POST',
-      body: { module_quantities: moduleQuantities, coupon_code: couponCode || undefined, billing_state: stateParam || undefined },
+      body: { module_quantities: moduleQuantities, billing_state: stateParam || undefined },
     })
       .then((data) => setSession(data))
       .catch((err: unknown) => setInitError(err instanceof Error ? err.message : 'Failed to initialise checkout'))
@@ -179,7 +186,12 @@ export default function PaymentCheckoutForm({
       if (config.mode === 'student') {
         // Student: create payment session now
         const modules = lineItems.flatMap((item) => Array.from({ length: item.quantity }, () => item.module));
-        const body = { modules, coupon_code: couponCode || undefined, billing_state: stateParam || undefined, ...contactDetails };
+        const body = { 
+          modules, 
+          billing_state: stateParam || undefined, 
+          coupon_code: couponCode || undefined,
+          ...contactDetails 
+        };
         result = createCheckout
           ? await createCheckout(body)
           : await api<CheckoutSession>(config.createEndpoint, { method: 'POST', body });
@@ -250,7 +262,7 @@ export default function PaymentCheckoutForm({
         onClick={() => {
           const params = new URLSearchParams({ modules: modulesParam });
           if (stateParam) params.set('state', stateParam);
-          if (couponCode) params.set('coupon', couponCode);
+
           router.push(`${config.backUrl}?${params.toString()}`);
         }}
         className="flex cursor-pointer items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
@@ -337,7 +349,7 @@ export default function PaymentCheckoutForm({
                 Redirecting to payment…
               </span>
             ) : (
-              `Pay ₹${typeof displayTotal === 'number' ? displayTotal.toLocaleString('en-IN') : displayTotal}`
+              `Pay ₹${formatCurrency(displayTotal)}`
             )}
           </button>
         </div>
@@ -354,7 +366,7 @@ export default function PaymentCheckoutForm({
                   <span className="font-medium text-gray-800">{item.label}</span>
                   {item.quantity > 1 && <span className="ml-1 text-gray-400">× {item.quantity}</span>}
                 </div>
-                <span className="font-medium text-gray-900">₹{item.lineTotal}</span>
+                <span className="font-medium text-gray-900">₹{formatCurrency(item.lineTotal)}</span>
               </div>
             ))}
           </div>
@@ -363,22 +375,24 @@ export default function PaymentCheckoutForm({
             {/* Subtotal */}
             <div className="flex items-center justify-between text-sm text-gray-600">
               <span>Subtotal</span>
-              <span>₹{subtotal}</span>
+              <span>₹{formatCurrency(subtotal)}</span>
             </div>
-
+            
             {/* Discount */}
             {discountAmount > 0 && (
-              <div className="flex items-center justify-between text-sm text-green-600">
-                <span>Discount{couponCode ? ` (${couponCode})` : ''}</span>
-                <span>−₹{discountAmount}</span>
+              <div className="flex items-center justify-between text-sm text-green-600 font-medium">
+                <span>Discount {couponCode ? `(${couponCode})` : ''}</span>
+                <span>- ₹{formatCurrency(discountAmount)}</span>
               </div>
             )}
+
+
 
             {/* Tax */}
             {taxAmount > 0 && stateParam && (
               <div className="flex items-center justify-between text-sm text-gray-500">
                 <span>{taxLabel}</span>
-                <span>₹{taxAmount}</span>
+                <span>₹{formatCurrency(taxAmount)}</span>
               </div>
             )}
 
@@ -389,7 +403,7 @@ export default function PaymentCheckoutForm({
           <div className="mt-3 border-t border-neutral-100 pt-3 flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-900">Total</span>
             <span className="text-lg font-bold text-purple-700">
-              ₹{typeof displayTotal === 'number' ? displayTotal.toLocaleString('en-IN') : displayTotal}
+              ₹{formatCurrency(displayTotal)}
             </span>
           </div>
 

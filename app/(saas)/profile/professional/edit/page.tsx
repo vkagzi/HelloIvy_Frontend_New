@@ -98,31 +98,22 @@ const ProfessionalFormDetails: React.FC = () => {
     
     if (!experiences.length) return;
 
-    setFormDefaults((prev) => {
-      const existing = Array.isArray(prev.experiences) ? prev.experiences : [];
-      const mapped = experiences.map((exp: any, idx: number) => {
-        const existExp = existing[idx] || {};
-        return {
-          ...existExp,
-          experienceType: exp.experienceType ?? exp.experience_type ?? existExp.experienceType,
-          industrySector: exp.industrySector ?? exp.industry ?? existExp.industrySector,
-          currentEmployer: exp.currentEmployer ?? exp.employerName ?? exp.company ?? existExp.currentEmployer,
-          city: exp.city ?? existExp.city,
-          durationValue: exp.durationValue ?? exp.duration ?? existExp.durationValue,
-          durationUnit: exp.durationUnit ?? exp.unit ?? existExp.durationUnit,
-          startDate: exp.startDate ?? exp.start_date ?? existExp.startDate,
-          endDate: exp.endDate ?? exp.end_date ?? existExp.endDate,
-          jobTitle: exp.jobTitle ?? exp.title ?? existExp.jobTitle,
-          responsibilities: exp.responsibilities ?? existExp.responsibilities,
-          achievements: exp.achievements ?? existExp.achievements,
-        };
-      });
-
-      return {
-        ...prev,
-        ...professional, // merge top-level if any
-        experiences: mapped,
-      };
+    // PERFORM A CLEAN RENEWAL: Clear existing defaults to avoid data pollution from previous scans
+    setFormDefaults({
+      experiences: experiences.map((exp: any) => ({
+        experienceType: exp.experienceType ?? exp.experience_type ?? "",
+        industrySector: exp.industrySector ?? exp.industry ?? "",
+        currentEmployer: exp.currentEmployer ?? exp.employerName ?? exp.company ?? "",
+        city: exp.city ?? "",
+        durationValue: exp.durationValue ?? exp.duration ?? "",
+        durationUnit: exp.durationUnit ?? exp.unit ?? "Months",
+        startDate: exp.startDate ?? exp.start_date ?? "",
+        endDate: exp.endDate ?? exp.end_date ?? "",
+        jobTitle: exp.jobTitle ?? exp.title ?? "",
+        responsibilities: exp.responsibilities ?? "",
+        achievements: exp.achievements ?? "",
+      })),
+      ...(typeof professional === 'object' && !Array.isArray(professional) ? professional : {})
     });
   }, [parsedTranscriptData]);
 
@@ -152,6 +143,17 @@ const ProfessionalFormDetails: React.FC = () => {
       }
     }
   }
+
+  // Only load saved server data when there is NO active resume scan
+  useEffect(() => {
+    if (parsedTranscriptData?.professional) {
+      // A scan is active — do not overwrite with old server data
+      return;
+    }
+    if (Object.keys(professionalDetails).length > 0) {
+      setFormDefaults(professionalDetails as Record<string, unknown>);
+    }
+  }, [JSON.stringify(professionalDetails), parsedTranscriptData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   console.log('Professional details for form:', professionalDetails); // Debug log
 

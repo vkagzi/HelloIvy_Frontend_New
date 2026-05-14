@@ -147,6 +147,9 @@ const api = async <T = any>(
   if (responseType === 'text') return res.text() as Promise<T>;
   if (responseType === 'raw') return res as unknown as T;
 
+  // Handle 204 No Content or empty responses
+  if (res.status === 204) return {} as T;
+
   return res.json();
 };
 

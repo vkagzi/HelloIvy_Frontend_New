@@ -134,9 +134,9 @@ export default function ResumeUploader() {
           </div>
           <p className="mt-1 text-[10px] text-neutral-500 font-medium text-left">
             {uploadProgress < 50 
-              ? `Uploading: ${uploadProgress * 2}%` 
+              ? `Uploading: ${Math.round(uploadProgress * 2)}%` 
               : uploadProgress < 100 
-                ? `Extracting Data: ${uploadProgress}%`
+                ? `Extracting Data: ${Math.round(uploadProgress)}%`
                 : 'Finishing...'}
           </p>
         </div>

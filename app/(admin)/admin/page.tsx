@@ -91,6 +91,13 @@ export default function AdminDashboardPage() {
               description="Find users by email, role, or school"
               color="amber"
             />
+            <ActionCard
+              href="/admin/coupons"
+              icon="🎟️"
+              title="Manage Coupons"
+              description="Create and track discount vouchers"
+              color="indigo"
+            />
           </div>
         </div>
 

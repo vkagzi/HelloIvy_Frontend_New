@@ -13,10 +13,10 @@ type ModuleAccessContextType = {
 const ModuleAccessContext = createContext<ModuleAccessContextType | undefined>(undefined);
 
 export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const [modules, setModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const hasFetchedRef = useRef(false);
+  const currentUserIdRef = useRef<string | null>(null);
 
   const fetchModules = useCallback(async (): Promise<void> => {
     try {
@@ -31,14 +31,21 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   useEffect(() => {
     if (status === 'loading') return;
+
     if (status === 'unauthenticated') {
+      setModules([]);
+      currentUserIdRef.current = null;
       setLoading(false);
       return;
     }
-    if (hasFetchedRef.current) return;
-    hasFetchedRef.current = true;
-    fetchModules();
-  }, [status, fetchModules]);
+
+    if (status === 'authenticated' && session?.user?.id) {
+      if (currentUserIdRef.current !== session.user.id) {
+        currentUserIdRef.current = session.user.id;
+        fetchModules();
+      }
+    }
+  }, [status, session?.user?.id, fetchModules]);
 
   const hasAccess = useCallback(
     (moduleName: string): boolean => modules.includes(moduleName),
