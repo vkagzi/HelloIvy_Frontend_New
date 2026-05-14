@@ -153,7 +153,18 @@ export default function CollegeSelectorResultsPage() {
             studentResponse: m.student_response,
           });
         } else if (m.bot_question && !m.student_response) {
-          concludingMessage = m.bot_question;
+          // Check if this is the last message (concluding) or a mid-conversation
+          // display entry (e.g. comparison table)
+          if (i === messages.length - 1) {
+            concludingMessage = m.bot_question;
+          } else {
+            paired.push({
+              questionNumber: m.question_number || paired.length + 1,
+              phase: 'conversation',
+              botQuestion: m.bot_question,
+              studentResponse: '',
+            });
+          }
         }
       }
 

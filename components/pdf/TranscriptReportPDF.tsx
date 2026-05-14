@@ -47,12 +47,21 @@ const themes = {
 const gray = '#4b5563';
 const darkText = '#1f2937';
 
+/** Replace emoji characters with text equivalents for PDF font compatibility. */
+function sanitizeForPDF(text: string): string {
+  return text
+    .replace(/⭐+/g, (m) => `${m.length}/5`)
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .trim();
+}
+
 /* ── markdown-to-PDF primitives ─────────────────────────── */
 
 /** Render inline markdown (bold, italic, bold-italic, inline code) as Text spans. */
 function renderInline(text: string, baseStyle: PDFStyle): React.ReactNode[] {
+  const safe = sanitizeForPDF(text);
   // Match: ***bold-italic***, **bold**, *italic*, `code`
-  const parts = text.split(/(\*{3}[^*]+\*{3}|\*{2}[^*]+\*{2}|\*[^*]+\*|`[^`]+`)/g);
+  const parts = safe.split(/(\*{3}[^*]+\*{3}|\*{2}[^*]+\*{2}|\*[^*]+\*|`[^`]+`)/g);
   return parts.map((part, i) => {
     if (/^\*{3}(.+)\*{3}$/.test(part)) {
       return <Text key={i} style={[baseStyle, { fontFamily: 'Helvetica-BoldOblique' }]}>{part.slice(3, -3)}</Text>;
@@ -143,7 +152,7 @@ function renderMarkdownPDF(markdown: string, brandColor: string): React.ReactNod
               <View key={ri} style={{ flexDirection: 'row', backgroundColor: ri % 2 === 0 ? '#fff' : '#f9fafb', borderTop: '0.5 solid #e5e7eb' }}>
                 {Array.from({ length: colCount }, (_, ci) => (
                   <Text key={ci} style={{ flex: 1, fontSize: 8, color: gray, paddingHorizontal: 6, paddingVertical: 3 }}>
-                    {(row[ci] || '').replace(/\*{1,3}/g, '')}
+                    {sanitizeForPDF((row[ci] || '').replace(/\*{1,3}/g, ''))}
                   </Text>
                 ))}
               </View>
@@ -370,14 +379,16 @@ const TranscriptReportPDF: React.FC<TranscriptReportPDFProps> = ({
                 </View>
               </View>
 
-              {/* Student response */}
-              <View style={[s.messageBlock, s.messageRow]}>
-                <View style={[s.accentBar, { backgroundColor: t.accent }]} />
-                <View style={s.messageContent}>
-                  <Text style={[s.senderLabel, { color: t.accent }]}>Student Response</Text>
-                  {renderMarkdownPDF(qa.studentResponse, t.accent)}
+              {/* Student response — only render when present */}
+              {qa.studentResponse ? (
+                <View style={[s.messageBlock, s.messageRow]}>
+                  <View style={[s.accentBar, { backgroundColor: t.accent }]} />
+                  <View style={s.messageContent}>
+                    <Text style={[s.senderLabel, { color: t.accent }]}>Student Response</Text>
+                    {renderMarkdownPDF(qa.studentResponse, t.accent)}
+                  </View>
                 </View>
-              </View>
+              ) : null}
 
               {idx < qaList.length - 1 && <View style={s.divider} />}
             </View>
