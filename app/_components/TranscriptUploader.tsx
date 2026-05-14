@@ -27,7 +27,7 @@ export default function TranscriptUploader({
         setUploadProgress((prev) => {
           if (prev < 70) return prev + 2; // Moving through pre-processing
           if (prev < 90) return prev + 1; // AI is scanning
-          if (prev < 98) return prev + 0.2; // Finalizing extraction
+          if (prev < 98) return Math.round(prev + 0.2); // Finalizing extraction
           return prev; // Hold at 98% until done
         });
       }, 100);
@@ -142,9 +142,9 @@ export default function TranscriptUploader({
           </div>
           <p className="mt-1 text-[10px] text-neutral-500 font-medium text-right">
             {uploadProgress < 50 
-              ? `Uploading: ${uploadProgress * 2}%` 
+              ? `Uploading: ${Math.round(uploadProgress * 2)}%` 
               : uploadProgress < 100 
-                ? `Extracting Data: ${uploadProgress}%`
+                ? `Extracting Data: ${Math.round(uploadProgress)}%`
                 : 'Finishing...'}
           </p>
         </div>

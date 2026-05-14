@@ -427,9 +427,8 @@ function PaymentHistoryTable({
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
-                      STATUS_COLORS[p.status] ?? 'bg-gray-100 text-gray-600'
-                    }`}
+                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_COLORS[p.status] ?? 'bg-gray-100 text-gray-600'
+                      }`}
                   >
                     {p.status}
                   </span>
@@ -475,19 +474,19 @@ export default function ModuleSubscriptions(props: ModuleSubscriptionsProps) {
 
       api<{ payments: Payment[] }>(paymentsUrl)
         .then((d) => setPayments(d.payments ?? []))
-        .catch(() => {})
+        .catch(() => { })
         .finally(() => setPaymentsLoading(false));
     }
 
     if (isSchool) {
       api<{ subscriptions: SchoolSubscription[] }>('/api/accounts/school/subscriptions/')
         .then((d) => setSubscriptions(d.subscriptions ?? []))
-        .catch(() => {})
+        .catch(() => { })
         .finally(() => setSubscriptionsLoading(false));
     } else {
       api<{ subscriptions: UserSubscription[] }>('/api/accounts/me/subscriptions/')
         .then((d) => setUserSubscriptions(d.subscriptions ?? []))
-        .catch(() => {})
+        .catch(() => { })
         .finally(() => setUserSubsLoading(false));
     }
   }, [isSchool, isB2B]);
