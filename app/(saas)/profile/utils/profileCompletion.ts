@@ -57,43 +57,51 @@ const countFilledFields = (
 
 /**
  * Calculate overall profile completion percentage.
- *
- * Accepts the profile section objects as extracted by ProfileContext.
- * The result mirrors what the backend returns in `completion_percentage`.
+ * Each of the 4 sections contributes exactly 25%.
+ * - Personal Details: 25%
+ * - Educational: 25%
+ * - Professional (experiences): 25%
+ * - Extra-curricular (extraCurricular): 25%
  */
 export const calculateProfileCompletion = (profileData: {
   personalDetails?: ProfileData;
   educationalDetails?: ProfileData;
+  professionalDetails?: ProfileData;
   extraCurricularDetails?: unknown;
 }): number => {
-  let totalFilled = 0;
-  let totalRequired = 0;
+  let totalPercentage = 0;
 
-  // 1. Personal details – 11 individual required fields
+  // 1. Personal details (25%)
   const personal = countFilledFields(
     profileData.personalDetails ?? {},
     PERSONAL_REQUIRED_FIELDS,
   );
-  totalFilled += personal.filled;
-  totalRequired += personal.total;
+  if (personal.total > 0) {
+    totalPercentage += (personal.filled / personal.total) * 25;
+  }
 
-  // 2. Educational – 1 required field
+  // 2. Educational (25%)
   const educational = countFilledFields(
     profileData.educationalDetails ?? {},
     EDUCATIONAL_REQUIRED_FIELDS,
   );
-  totalFilled += educational.filled;
-  totalRequired += educational.total;
-
-  // 3. Extra-curricular – non-empty array counts as 1
-  totalRequired += 1;
-  const ecData = profileData.extraCurricularDetails;
-  if (Array.isArray(ecData) && ecData.length > 0) {
-    totalFilled += 1;
+  if (educational.total > 0) {
+    totalPercentage += (educational.filled / educational.total) * 25;
   }
 
-  if (totalRequired === 0) return 0;
-  return Math.round((totalFilled / totalRequired) * 100);
+  // 3. Professional (25%)
+  const profData = profileData.professionalDetails?.experiences;
+  if (Array.isArray(profData) && profData.length > 0) {
+    totalPercentage += 25;
+  }
+
+  // 4. Extra-curricular (25%)
+  const ecData = profileData.extraCurricularDetails;
+  if (Array.isArray(ecData) && ecData.length > 0) {
+    totalPercentage += 25;
+  }
+
+  return Math.round(Math.min(totalPercentage, 100));
 };
 
 /**
@@ -102,10 +110,12 @@ export const calculateProfileCompletion = (profileData: {
 export const getSectionCompletionDetails = (profileData: {
   personalDetails?: ProfileData;
   educationalDetails?: ProfileData;
+  professionalDetails?: ProfileData;
   extraCurricularDetails?: unknown;
 }): {
   personal: number;
   educational: number;
+  professional: number;
   extraCurricular: number;
 } => {
   const personal = countFilledFields(
@@ -117,12 +127,16 @@ export const getSectionCompletionDetails = (profileData: {
     EDUCATIONAL_REQUIRED_FIELDS,
   );
 
+  const profData = profileData.professionalDetails?.experiences;
+  const professionalPct = Array.isArray(profData) && profData.length > 0 ? 100 : 0;
+
   const ecData = profileData.extraCurricularDetails;
   const extraCurricularPct = Array.isArray(ecData) && ecData.length > 0 ? 100 : 0;
 
   return {
     personal: personal.total > 0 ? Math.round((personal.filled / personal.total) * 100) : 0,
     educational: educational.total > 0 ? Math.round((educational.filled / educational.total) * 100) : 0,
+    professional: professionalPct,
     extraCurricular: extraCurricularPct,
   };
 };

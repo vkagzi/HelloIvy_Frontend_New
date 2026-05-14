@@ -55,6 +55,17 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
   const [selectedState, setSelectedState] = useState<StateOption | ''>('');
   const [agreeTerms, setAgreeTerms] = useState(false);
 
+  // Coupon States
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    isFlat: boolean;
+    discountPct?: number;
+    discountAmount?: number;
+  } | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [couponError, setCouponError] = useState('');
+
   useEffect(() => {
     if (moduleChoices.length === 0) return;
 
@@ -98,7 +109,15 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
   const totalUnits = selectedRows.reduce((s, r) => s + r.quantity, 0);
   const subtotal = selectedRows.reduce((s, r) => s + getPrice(r.value) * r.quantity, 0);
 
-  const discountAmount = 0;
+  let discountAmount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.isFlat && appliedCoupon.discountAmount) {
+      discountAmount = appliedCoupon.discountAmount;
+    } else if (!appliedCoupon.isFlat && appliedCoupon.discountPct) {
+      discountAmount = (subtotal * appliedCoupon.discountPct) / 100;
+    }
+    discountAmount = Math.min(discountAmount, subtotal);
+  }
 
   const formatCurrency = (num: number) => {
     return num.toLocaleString('en-IN', {
@@ -120,10 +139,46 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
   const canCheckout = selectedRows.length > 0 && selectedState !== '' && agreeTerms;
 
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+
+    setValidatingCoupon(true);
+    setCouponError('');
+    try {
+      const res = await api<{
+        valid: boolean;
+        code: string;
+        voucher_type: string;
+        voucher_value: number;
+        min_booking_amount?: number;
+      }>('/api/accounts/coupons/validate/', {
+        method: 'POST',
+        body: { code, amount: subtotal },
+      });
+
+      const isFlat = res.voucher_type === 'flat';
+      setAppliedCoupon({
+        code: res.code,
+        isFlat,
+        discountPct: !isFlat ? res.voucher_value : undefined,
+        discountAmount: isFlat ? res.voucher_value : undefined,
+        minAmount: res.min_booking_amount
+      });
+      setCouponInput(res.code);
+    } catch (err: any) {
+      setCouponError(err.message || 'Invalid coupon code');
+      setAppliedCoupon(null);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
   const handlePayNow = () => {
     if (!canCheckout) return;
     const modulesParam = selectedRows.map((r) => `${r.value}:${r.quantity}`).join(',');
     const params = new URLSearchParams({ modules: modulesParam, state: selectedState });
+    if (appliedCoupon) params.set('coupon_code', appliedCoupon.code);
     params.set('discount', String(discountAmount));
     params.set('tax', String(totalTax));
     params.set('total', String(grandTotal));
@@ -250,7 +305,50 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
         <div className="border-t border-neutral-100" />
 
-
+        {/* Coupon Input */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-700">Coupon Code</label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Enter code"
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value)}
+                disabled={!!appliedCoupon || subtotal === 0}
+                className="w-full rounded-lg border border-neutral-200 px-4 py-2 text-sm tracking-wider focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100 disabled:bg-neutral-50 disabled:text-neutral-500 font-mono"
+              />
+              {appliedCoupon && (
+                <button
+                  onClick={() => {
+                    setAppliedCoupon(null);
+                    setCouponInput('');
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-neutral-100 p-1 text-neutral-400 hover:text-red-500 transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+              )}
+            </div>
+            {!appliedCoupon && (
+              <button
+                type="button"
+                onClick={handleApplyCoupon}
+                disabled={!couponInput || validatingCoupon || subtotal === 0}
+                className="rounded-lg bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-600 border border-purple-100 hover:bg-purple-100 disabled:opacity-50 transition"
+              >
+                {validatingCoupon ? '...' : 'Apply'}
+              </button>
+            )}
+          </div>
+          {couponError && <p className="mt-1 text-xs text-red-500">{couponError}</p>}
+          {appliedCoupon && (
+            <p className="mt-1 text-xs text-green-600 flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              Coupon applied! {appliedCoupon.isFlat ? `₹${appliedCoupon.discountAmount} off` : `${appliedCoupon.discountPct}% off`}
+            </p>
+          )}
+        </div>
 
         <div className="border-t border-neutral-100" />
 
@@ -282,6 +380,12 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
         {/* Tax breakdown */}
         {selectedState && taxableAmount > 0 && (
           <div className="space-y-2 rounded-lg bg-neutral-50 px-4 py-3">
+            {appliedCoupon && (
+              <div className="flex items-center justify-between text-sm text-green-600 font-medium">
+                <span>Coupon Discount</span>
+                <span>- ₹{formatCurrency(discountAmount)}</span>
+              </div>
+            )}
             {selectedState === 'maharashtra' ? (
               <>
                 <div className="flex items-center justify-between text-sm text-gray-500">

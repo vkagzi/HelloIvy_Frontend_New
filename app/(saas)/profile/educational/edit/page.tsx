@@ -177,10 +177,27 @@ const EducationalDetailsForm: React.FC = () => {
     console.log("!!! [EducationalDetailsForm] Syncing scanned data. Current academicLevel in form:", currentAcademicLevel);
     
     // Start with a merge of DB data and current values
-    const newDefaults: Record<string, any> = { 
+    let newDefaults: Record<string, any> = { 
       ...educationalDetails,
       ...currentValues 
     };
+
+    if (!isTargeted) {
+      console.log("!!! [EducationalDetailsForm] GLOBAL SCAN DETECTED. Performing Hard Reset of defaults.");
+      // Start from a clean slate for global sections to prevent "Same Data" pollution
+      newDefaults = {
+        academicLevel: currentValues.academicLevel,
+        gradeLevel: currentValues.gradeLevel,
+        courses: [],
+        awards: [],
+        testScores: [],
+        highSchool: [],
+        undergraduate: [],
+        postgraduate: [],
+        tenPlus: [],
+        undergraduate_prereq: [],
+      };
+    }
 
     // Support various response structures: direct object, direct array, or nested
     // Check common root keys like 'data', 'response', 'scannedData', 'transcript_data'
@@ -345,7 +362,7 @@ const EducationalDetailsForm: React.FC = () => {
         console.log(`[EducationalDetailsForm] Updated ${sectionName}[${index}] with mapped data.`, newDefaults[sectionName]);
       } else {
         // Global Update: Intelligence mapping for the entire section
-        // We will reset sections that we find data for to ensure "Renewal"
+        // Note: newDefaults was already initialized with empty arrays at the top of this effect
         const sectionsToClear = new Set<string>();
         
         const detectedAcademicLevel = (parsedTranscriptData.academicLevel || "").toLowerCase();
@@ -375,26 +392,6 @@ const EducationalDetailsForm: React.FC = () => {
         const isHighSchool = currentAcademicLevel === 'High School (8th–12th grade)' || detectedAcademicLevel.includes('high school');
         
         console.log(`[EducationalDetailsForm] Sync Logic - isWorkingProf: ${isWorkingProf}, isPostgrad: ${isPostgrad} (hasPG: ${hasPGDegree}), current: ${currentAcademicLevel}, detected: ${detectedAcademicLevel}`);
-        
-        // CLEANUP: Reset sections that should be mutually exclusive with the current mode
-        // to prevent "Data Pollution" as requested by the user.
-        if (isWorkingProf) {
-          newDefaults['undergraduate'] = [];
-          newDefaults['undergraduate_prereq'] = [];
-          newDefaults['postgraduate'] = [];
-          sectionsToClear.add('undergraduate');
-          sectionsToClear.add('undergraduate_prereq');
-          sectionsToClear.add('postgraduate');
-        } else if (isPostgrad) {
-          newDefaults['tenPlus'] = [];
-          sectionsToClear.add('tenPlus');
-        } else {
-          // Undergraduate mode
-          newDefaults['postgraduate'] = [];
-          newDefaults['tenPlus'] = [];
-          sectionsToClear.add('postgraduate');
-          sectionsToClear.add('tenPlus');
-        }
 
         educationalRecords.forEach((e: any) => {
           const searchLevel = (getValue(e, ['academicLevel', 'level', 'degree', 'program', 'institutionName']) || "").toLowerCase();
@@ -729,14 +726,18 @@ const EducationalDetailsForm: React.FC = () => {
 
 
   // Populate form defaults from existing educational data
+  // Only load saved server data when there is NO active resume scan.
+  // If a scan is present, the scan sync useEffect above already handled it.
   useEffect(() => {
-    if (educationalDetails && Object.keys(educationalDetails).length > 0) {
-      setFormDefaults((prev) => ({
-        ...prev,
-        ...educationalDetails,
-      }));
+    if (parsedTranscriptData && Object.keys(parsedTranscriptData).length > 0) {
+      // A scan is active — do not overwrite it with old server data.
+      return;
     }
-  }, [defaultValues]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (educationalDetails && Object.keys(educationalDetails).length > 0) {
+      console.log("[EducationalDetailsForm] No active scan. Loading saved server data.");
+      setFormDefaults(educationalDetails);
+    }
+  }, [educationalDetails, parsedTranscriptData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to hash element (e.g. #standardised-test-score) after form renders
   useEffect(() => {

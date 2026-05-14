@@ -83,8 +83,8 @@ export default function PaymentCheckoutForm({
   const isLoggedIn = authStatus === 'authenticated' && !!authSession?.user;
   const modulesParam = searchParams?.get('modules') ?? '';
   const stateParam = searchParams?.get('state') ?? '';
-  const couponCode = '';
-  const discountAmount = 0;
+  const couponCode = searchParams?.get('coupon_code') ?? '';
+  const discountAmount = parseFloat(searchParams?.get('discount') ?? '0');
   const taxAmount = parseFloat(searchParams?.get('tax') ?? '0');
   const grandTotal = parseFloat(searchParams?.get('total') ?? '0');
 
@@ -186,7 +186,12 @@ export default function PaymentCheckoutForm({
       if (config.mode === 'student') {
         // Student: create payment session now
         const modules = lineItems.flatMap((item) => Array.from({ length: item.quantity }, () => item.module));
-        const body = { modules, billing_state: stateParam || undefined, ...contactDetails };
+        const body = { 
+          modules, 
+          billing_state: stateParam || undefined, 
+          coupon_code: couponCode || undefined,
+          ...contactDetails 
+        };
         result = createCheckout
           ? await createCheckout(body)
           : await api<CheckoutSession>(config.createEndpoint, { method: 'POST', body });
@@ -372,6 +377,14 @@ export default function PaymentCheckoutForm({
               <span>Subtotal</span>
               <span>₹{formatCurrency(subtotal)}</span>
             </div>
+            
+            {/* Discount */}
+            {discountAmount > 0 && (
+              <div className="flex items-center justify-between text-sm text-green-600 font-medium">
+                <span>Discount {couponCode ? `(${couponCode})` : ''}</span>
+                <span>- ₹{formatCurrency(discountAmount)}</span>
+              </div>
+            )}
 
 
 
