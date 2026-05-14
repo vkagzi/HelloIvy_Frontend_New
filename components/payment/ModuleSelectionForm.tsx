@@ -163,7 +163,6 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
         isFlat,
         discountPct: !isFlat ? res.voucher_value : undefined,
         discountAmount: isFlat ? res.voucher_value : undefined,
-        minAmount: res.min_booking_amount
       });
       setCouponInput(res.code);
     } catch (err: any) {
