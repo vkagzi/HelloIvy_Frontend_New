@@ -39,6 +39,7 @@ const adminNavItems: NavItem[] = [
       { label: 'School Payments', href: '/admin/payments/schools' },
     ],
   },
+  { label: 'Pricing', icon: 'badge-dollar', href: '/admin/pricing' },
 ];
 
 const AdminNavbar: React.FC = () => {
