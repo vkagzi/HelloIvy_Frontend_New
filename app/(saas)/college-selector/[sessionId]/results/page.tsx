@@ -12,6 +12,10 @@ import {
   CollegeRecommendation,
   TranscriptData,
 } from '@/lib/college-selector-api';
+import { downloadPDF } from '@/lib/pdf-from-component';
+import CollegeSelectorResultsPDF from '@/components/pdf/CollegeSelectorResultsPDF';
+import TranscriptReportPDF from '@/components/pdf/TranscriptReportPDF';
+import { useUserAuth } from '@/app/_hooks/useUserAuth';
 
 type TabType = 'results' | 'history';
 
@@ -34,12 +38,15 @@ export default function CollegeSelectorResultsPage() {
   const params = useParams();
   const sessionId = params?.sessionId as string | undefined;
   const { addToast } = useToast();
+  const { userDetails } = useUserAuth();
 
   const [recommendations, setRecommendations] = useState<CollegeRecommendation[]>([]);
   const [transcript, setTranscript] = useState<TranscriptData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloadingResults, setIsDownloadingResults] = useState(false);
+  const [isDownloadingTranscript, setIsDownloadingTranscript] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('results');
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -91,6 +98,88 @@ export default function CollegeSelectorResultsPage() {
       addToast('Failed to load transcript', { type: 'error' });
     } finally {
       setIsLoadingHistory(false);
+    }
+  }
+
+  async function downloadResultsFile() {
+    try {
+      setIsDownloadingResults(true);
+
+      const firstName = userDetails.first_name || '';
+      const lastName = userDetails.last_name || '';
+      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || userDetails.email || 'Student');
+
+      await downloadPDF(
+        <CollegeSelectorResultsPDF recommendations={recommendations} studentName={studentName} />,
+        `College_Selector_Results_${studentName.replace(/\s+/g, '_')}`,
+      );
+
+      addToast('Results downloaded successfully!', { type: 'success' });
+    } catch (e) {
+      console.error('Failed to download results:', e);
+      addToast('Failed to download results', { type: 'error' });
+    } finally {
+      setIsDownloadingResults(false);
+    }
+  }
+
+  async function downloadTranscriptFile() {
+    if (!sessionId) return;
+
+    try {
+      setIsDownloadingTranscript(true);
+
+      // Use existing transcript or fetch it
+      let transcriptData = transcript;
+      if (!transcriptData) {
+        transcriptData = await collegeSelectorApi.getTranscript(sessionId);
+      }
+
+      const firstName = userDetails.first_name || '';
+      const lastName = userDetails.last_name || '';
+      const studentName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || userDetails.email || 'Student');
+
+      const messages = transcriptData.messages || [];
+      const paired: { questionNumber: number; phase: string; botQuestion: string; studentResponse: string }[] = [];
+      let concludingMessage: string | null = null;
+
+      for (let i = 0; i < messages.length; i++) {
+        const m = messages[i];
+        if (m.bot_question && m.student_response) {
+          paired.push({
+            questionNumber: m.question_number || paired.length + 1,
+            phase: 'conversation',
+            botQuestion: m.bot_question,
+            studentResponse: m.student_response,
+          });
+        } else if (m.bot_question && !m.student_response) {
+          concludingMessage = m.bot_question;
+        }
+      }
+
+      const startedAt = messages.length > 0 ? messages[0].timestamp : undefined;
+      const completedAt = messages.length > 0 ? messages[messages.length - 1].timestamp : undefined;
+
+      await downloadPDF(
+        <TranscriptReportPDF
+          variant="college"
+          sessionId={sessionId}
+          studentName={studentName}
+          startedAt={startedAt}
+          completedAt={completedAt}
+          totalQuestions={paired.length}
+          messages={paired}
+          concludingMessage={concludingMessage}
+        />,
+        `College_Selector_Transcript_${studentName.replace(/\s+/g, '_')}`,
+      );
+
+      addToast('Transcript downloaded!', { type: 'success' });
+    } catch (e) {
+      console.error('Failed to download transcript:', e);
+      addToast('Failed to download transcript', { type: 'error' });
+    } finally {
+      setIsDownloadingTranscript(false);
     }
   }
 
@@ -210,6 +299,26 @@ export default function CollegeSelectorResultsPage() {
               <div className="bg-linear-to-r from-green-500 to-emerald-500 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white">Results Summary</h3>
+                  <Button
+                    onClick={downloadResultsFile}
+                    disabled={isDownloadingResults}
+                    variant="secondary"
+                    className="bg-white/20 text-white hover:bg-white/30"
+                  >
+                    {isDownloadingResults ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download PDF
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
               <div className="p-6">
@@ -329,6 +438,20 @@ export default function CollegeSelectorResultsPage() {
 
                     {/* Body */}
                     <div className="p-6">
+                      {/* Suggested Deadline Callout */}
+                      {rec.suggested_deadline && (
+                        <div className="mb-6 flex items-center gap-3 rounded-xl bg-linear-to-r from-purple-50 to-indigo-50 border border-purple-200 px-4 py-3">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-100">
+                            <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </span>
+                          <div>
+                            <p className="text-xs font-medium text-purple-500 uppercase tracking-wide">Suggested Deadline</p>
+                            <p className="text-sm font-semibold text-purple-800">{rec.suggested_deadline}</p>
+                          </div>
+                        </div>
+                      )}
                       <div className="md:columns-2 gap-8 [&>div]:mb-6 [&>div]:break-inside-avoid">
                         {/* Description */}
                         {rec.description && (
@@ -342,6 +465,23 @@ export default function CollegeSelectorResultsPage() {
                               About This College
                             </h4>
                             <p className="leading-relaxed text-gray-600">{rec.description}</p>
+                          </div>
+                        )}
+
+                        {/* Fit Reasoning */}
+                        {rec.fit_reasoning && (
+                          <div>
+                            <h4 className="mb-3 flex items-center text-lg font-semibold text-gray-900">
+                              <span className={`mr-2 rounded-lg p-1.5 ${FIT_COLORS[rec.fit_category]?.bg || 'bg-green-100'}`}>
+                                <svg className={`h-4 w-4 ${FIT_COLORS[rec.fit_category]?.text || 'text-green-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                              </span>
+                              Why This Is a {rec.fit_category.charAt(0).toUpperCase() + rec.fit_category.slice(1)}
+                            </h4>
+                            <p className={`leading-relaxed rounded-lg p-3 text-sm ${FIT_COLORS[rec.fit_category]?.bg || 'bg-gray-50'} ${FIT_COLORS[rec.fit_category]?.text || 'text-gray-700'}`}>
+                              {rec.fit_reasoning}
+                            </p>
                           </div>
                         )}
 
@@ -535,6 +675,22 @@ export default function CollegeSelectorResultsPage() {
                   <Heading level={3} className="text-lg font-semibold text-gray-900">
                     Full Conversation Transcript
                   </Heading>
+                  <Button
+                    onClick={downloadTranscriptFile}
+                    disabled={isDownloadingTranscript}
+                    className="bg-linear-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                  >
+                    {isDownloadingTranscript ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        📄 Download Transcript
+                      </>
+                    )}
+                  </Button>
                 </div>
                 <div className="space-y-6">
                   {transcript.messages.map((msg) => (
@@ -557,7 +713,7 @@ export default function CollegeSelectorResultsPage() {
                           <div className="mb-3">
                             <p className="text-sm font-semibold text-gray-900">College Advisor:</p>
                             <div
-                              className="mt-1 text-gray-700 prose-table [&_table]:w-full [&_table]:border-collapse [&_table]:my-3 [&_table]:text-sm [&_table]:rounded-xl [&_table]:overflow-hidden [&_table]:shadow-md [&_table]:border [&_table]:border-gray-200 [&_thead]:bg-linear-to-r [&_thead]:from-emerald-600 [&_thead]:to-green-500 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-semibold [&_th]:text-white [&_th]:text-xs [&_th]:uppercase [&_th]:tracking-wider [&_th]:border-0 [&_th]:border-b [&_th]:border-emerald-400/30 [&_tbody_tr]:transition-colors [&_tbody_tr]:duration-150 [&_tbody_tr:hover]:bg-emerald-50 [&_tbody_tr:nth-child(even)]:bg-gray-50/60 [&_tbody_tr:nth-child(even):hover]:bg-emerald-50 [&_td]:px-4 [&_td]:py-3 [&_td]:border-0 [&_td]:border-b [&_td]:border-gray-100 [&_td:first-child]:font-semibold [&_td:first-child]:text-gray-800 [&_tbody_tr:last-child_td]:border-b-0"
+                              className="mt-1 text-gray-700 prose prose-sm max-w-none [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-gray-900 [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-gray-900 [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-gray-900 [&_h3]:mt-3 [&_h3]:mb-1 [&_h4]:text-sm [&_h4]:font-semibold [&_h4]:text-gray-900 [&_h4]:mt-2 [&_h4]:mb-1 [&_p]:mt-0 [&_p]:mb-2 [&_strong]:font-semibold [&_strong]:text-gray-900 [&_em]:italic [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2 [&_li]:my-0.5 [&_a]:text-emerald-600 [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-emerald-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_blockquote]:my-3 [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_hr]:my-4 [&_hr]:border-gray-200 [&_table]:w-full [&_table]:border-collapse [&_table]:my-4 [&_table]:text-sm [&_table]:rounded-xl [&_table]:overflow-hidden [&_table]:shadow-md [&_table]:border [&_table]:border-gray-200 [&_thead]:bg-linear-to-r [&_thead]:from-emerald-600 [&_thead]:to-green-500 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-semibold [&_th]:text-white [&_th]:text-xs [&_th]:uppercase [&_th]:tracking-wider [&_th]:border-0 [&_th]:border-b [&_th]:border-emerald-400/30 [&_tbody_tr]:transition-colors [&_tbody_tr]:duration-150 [&_tbody_tr:hover]:bg-emerald-50 [&_tbody_tr:nth-child(even)]:bg-gray-50/60 [&_tbody_tr:nth-child(even):hover]:bg-emerald-50 [&_td]:px-4 [&_td]:py-3 [&_td]:border-0 [&_td]:border-b [&_td]:border-gray-100 [&_td:first-child]:font-semibold [&_td:first-child]:text-gray-800 [&_tbody_tr:last-child_td]:border-b-0"
                               dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.bot_question) }}
                             />
                           </div>

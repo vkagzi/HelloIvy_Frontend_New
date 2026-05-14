@@ -1,5 +1,7 @@
 import React from 'react';
 import { Document, Page, View, Text, Image, Link, StyleSheet } from '@react-pdf/renderer';
+
+type PDFStyle = Record<string, string | number>;
 import { LOGO_APP_BASE64 } from './logo-base64';
 
 /* ── theme presets ──────────────────────────────────────── */
@@ -28,10 +30,178 @@ const themes = {
     coachLabel: 'Career Coach',
     title: 'Career & Degree Selection Session Transcript',
   },
+  college: {
+    brand: '#059669',
+    brandLight: '#d1fae5',
+    chipBg: '#a7f3d0',
+    accent: '#14cecf',
+    accentLight: '#d0f5f5',
+    disclaimerBg: '#ecfdf5',
+    disclaimerBorder: '#6ee7b7',
+    disclaimerText: '#065f46',
+    coachLabel: 'College Advisor',
+    title: 'College Selection Session Transcript',
+  },
 } as const;
 
 const gray = '#4b5563';
 const darkText = '#1f2937';
+
+/* ── markdown-to-PDF primitives ─────────────────────────── */
+
+/** Render inline markdown (bold, italic, bold-italic, inline code) as Text spans. */
+function renderInline(text: string, baseStyle: PDFStyle): React.ReactNode[] {
+  // Match: ***bold-italic***, **bold**, *italic*, `code`
+  const parts = text.split(/(\*{3}[^*]+\*{3}|\*{2}[^*]+\*{2}|\*[^*]+\*|`[^`]+`)/g);
+  return parts.map((part, i) => {
+    if (/^\*{3}(.+)\*{3}$/.test(part)) {
+      return <Text key={i} style={[baseStyle, { fontFamily: 'Helvetica-BoldOblique' }]}>{part.slice(3, -3)}</Text>;
+    }
+    if (/^\*{2}(.+)\*{2}$/.test(part)) {
+      return <Text key={i} style={[baseStyle, { fontFamily: 'Helvetica-Bold' }]}>{part.slice(2, -2)}</Text>;
+    }
+    if (/^\*(.+)\*$/.test(part)) {
+      return <Text key={i} style={[baseStyle, { fontStyle: 'italic' }]}>{part.slice(1, -1)}</Text>;
+    }
+    if (/^`(.+)`$/.test(part)) {
+      return <Text key={i} style={[baseStyle, { fontFamily: 'Courier', backgroundColor: '#f3f4f6', fontSize: 8 }]}>{part.slice(1, -1)}</Text>;
+    }
+    return <Text key={i} style={baseStyle}>{part}</Text>;
+  });
+}
+
+/** Parse markdown string into react-pdf View/Text elements. */
+function renderMarkdownPDF(markdown: string, brandColor: string): React.ReactNode {
+  const lines = markdown.split('\n');
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  const baseText = { fontSize: 9, color: gray, lineHeight: 1.5 } as const;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Skip empty lines
+    if (line.trim() === '') {
+      i++;
+      continue;
+    }
+
+    // Headings
+    const headingMatch = line.match(/^(#{1,4})\s+(.+)/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const sizes = [14, 12, 11, 10];
+      elements.push(
+        <Text key={i} style={{ fontSize: sizes[level - 1] || 10, fontFamily: 'Helvetica-Bold', color: darkText, marginTop: level <= 2 ? 6 : 4, marginBottom: 3 }}>
+          {headingMatch[2].replace(/\*{1,3}/g, '')}
+        </Text>
+      );
+      i++;
+      continue;
+    }
+
+    // Horizontal rule
+    if (/^[-*_]{3,}\s*$/.test(line.trim())) {
+      elements.push(<View key={i} style={{ height: 0.5, backgroundColor: '#e5e7eb', marginVertical: 4 }} />);
+      i++;
+      continue;
+    }
+
+    // Table: collect all table rows
+    if (line.trim().startsWith('|')) {
+      const tableRows: string[][] = [];
+      let hasHeader = false;
+      while (i < lines.length && lines[i].trim().startsWith('|')) {
+        const row = lines[i].trim();
+        // Skip separator rows (|---|---|)
+        if (/^\|[\s:|-]+\|$/.test(row)) {
+          hasHeader = true;
+          i++;
+          continue;
+        }
+        const cells = row.split('|').filter(Boolean).map((c) => c.trim());
+        tableRows.push(cells);
+        i++;
+      }
+      if (tableRows.length > 0) {
+        const headerRow = hasHeader ? tableRows[0] : null;
+        const bodyRows = hasHeader ? tableRows.slice(1) : tableRows;
+        const colCount = (headerRow || bodyRows[0] || []).length;
+        elements.push(
+          <View key={`table-${i}`} style={{ marginVertical: 4, borderRadius: 4, overflow: 'hidden', border: '0.5 solid #d1d5db' }}>
+            {headerRow && (
+              <View style={{ flexDirection: 'row', backgroundColor: brandColor }}>
+                {headerRow.map((cell, ci) => (
+                  <Text key={ci} style={{ flex: 1, fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#fff', paddingHorizontal: 6, paddingVertical: 4 }}>
+                    {cell}
+                  </Text>
+                ))}
+              </View>
+            )}
+            {bodyRows.map((row, ri) => (
+              <View key={ri} style={{ flexDirection: 'row', backgroundColor: ri % 2 === 0 ? '#fff' : '#f9fafb', borderTop: '0.5 solid #e5e7eb' }}>
+                {Array.from({ length: colCount }, (_, ci) => (
+                  <Text key={ci} style={{ flex: 1, fontSize: 8, color: gray, paddingHorizontal: 6, paddingVertical: 3 }}>
+                    {(row[ci] || '').replace(/\*{1,3}/g, '')}
+                  </Text>
+                ))}
+              </View>
+            ))}
+          </View>
+        );
+      }
+      continue;
+    }
+
+    // Unordered list item
+    const ulMatch = line.match(/^\s*[-*+]\s+(.+)/);
+    if (ulMatch) {
+      elements.push(
+        <View key={i} style={{ flexDirection: 'row', gap: 4, marginBottom: 2, paddingLeft: 8 }}>
+          <Text style={[baseText, { color: brandColor, fontFamily: 'Helvetica-Bold' }]}>•</Text>
+          <Text style={[baseText, { flex: 1 }]}>{renderInline(ulMatch[1], baseText)}</Text>
+        </View>
+      );
+      i++;
+      continue;
+    }
+
+    // Ordered list item
+    const olMatch = line.match(/^\s*(\d+)[.)]\s+(.+)/);
+    if (olMatch) {
+      elements.push(
+        <View key={i} style={{ flexDirection: 'row', gap: 4, marginBottom: 2, paddingLeft: 8 }}>
+          <Text style={[baseText, { color: brandColor, fontFamily: 'Helvetica-Bold', width: 14 }]}>{olMatch[1]}.</Text>
+          <Text style={[baseText, { flex: 1 }]}>{renderInline(olMatch[2], baseText)}</Text>
+        </View>
+      );
+      i++;
+      continue;
+    }
+
+    // Blockquote
+    if (line.trimStart().startsWith('>')) {
+      const quoteText = line.replace(/^>\s*/, '');
+      elements.push(
+        <View key={i} style={{ flexDirection: 'row', gap: 4, marginVertical: 2 }}>
+          <View style={{ width: 2, backgroundColor: brandColor, borderRadius: 1 }} />
+          <Text style={[baseText, { flex: 1, fontStyle: 'italic', color: '#6b7280' }]}>{quoteText}</Text>
+        </View>
+      );
+      i++;
+      continue;
+    }
+
+    // Regular paragraph
+    elements.push(
+      <Text key={i} style={[baseText, { marginBottom: 2 }]}>{renderInline(line, baseText)}</Text>
+    );
+    i++;
+  }
+
+  return <View>{elements}</View>;
+}
 
 /* ── shared styles ──────────────────────────────────────── */
 const s = StyleSheet.create({
@@ -91,7 +261,7 @@ export interface TranscriptQA {
 }
 
 export interface TranscriptReportPDFProps {
-  variant: 'domain' | 'career';
+  variant: 'domain' | 'career' | 'college';
   studentName?: string;
   sessionId: string;
   startedAt?: string;
@@ -196,7 +366,7 @@ const TranscriptReportPDF: React.FC<TranscriptReportPDFProps> = ({
                 <View style={[s.accentBar, { backgroundColor: t.brand }]} />
                 <View style={s.messageContent}>
                   <Text style={[s.senderLabel, { color: t.brand }]}>{t.coachLabel}</Text>
-                  <Text style={s.messageText}>{qa.botQuestion}</Text>
+                  {renderMarkdownPDF(qa.botQuestion, t.brand)}
                 </View>
               </View>
 
@@ -205,7 +375,7 @@ const TranscriptReportPDF: React.FC<TranscriptReportPDFProps> = ({
                 <View style={[s.accentBar, { backgroundColor: t.accent }]} />
                 <View style={s.messageContent}>
                   <Text style={[s.senderLabel, { color: t.accent }]}>Student Response</Text>
-                  <Text style={s.messageText}>{qa.studentResponse}</Text>
+                  {renderMarkdownPDF(qa.studentResponse, t.accent)}
                 </View>
               </View>
 
@@ -236,7 +406,7 @@ const TranscriptReportPDF: React.FC<TranscriptReportPDFProps> = ({
               <View style={[s.accentBar, { backgroundColor: '#22c55e' }]} />
               <View style={s.messageContent}>
                 <Text style={[s.senderLabel, { color: '#22c55e' }]}>{t.coachLabel}</Text>
-                <Text style={s.messageText}>{concludingMessage}</Text>
+                {renderMarkdownPDF(concludingMessage, '#22c55e')}
               </View>
             </View>
           </View>

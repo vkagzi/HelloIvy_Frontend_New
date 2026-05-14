@@ -175,11 +175,13 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
   }, [voiceTranscript, conversationMode]);
 
   // ── Auto-disconnect voice when session ends ─────────────────
+  // Wait until the AI finishes speaking before disconnecting so the
+  // user hears the full goodbye message.
   useEffect(() => {
-    if (sessionEnded && (voiceConnected || voiceConnecting)) {
+    if (sessionEnded && (voiceConnected || voiceConnecting) && !voiceSpeaking) {
       disconnectVoice({ silent: true });
     }
-  }, [sessionEnded, voiceConnected, voiceConnecting, disconnectVoice]);
+  }, [sessionEnded, voiceConnected, voiceConnecting, voiceSpeaking, disconnectVoice]);
 
   const activateVoiceMode = useCallback(async (options?: { resuming?: boolean }) => {
     const resuming = options?.resuming ?? false;

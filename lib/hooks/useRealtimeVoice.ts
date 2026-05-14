@@ -215,6 +215,14 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
           onSessionProgress: (progress) => {
             onSessionProgressRef.current?.(progress);
           },
+          onDisplayContent: (content) => {
+            // Insert formatted content (e.g. markdown table from a tool call)
+            // as a completed assistant transcript entry.
+            updateTranscriptRef((prev) => [
+              ...prev,
+              { role: 'assistant', content, timestamp: new Date() },
+            ]);
+          },
           onHighlightLastBot: (highlight) => {
             setHighlightLastBot(highlight);
           },

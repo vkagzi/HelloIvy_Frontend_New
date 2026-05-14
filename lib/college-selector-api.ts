@@ -98,6 +98,8 @@ export interface CollegeRecommendation {
   campus_type: string;
   intl_student_support: string;
   fit_category: 'reach' | 'match' | 'safe';
+  fit_reasoning: string;
+  suggested_deadline: string;
   match_percentage: number;
   description: string;
   rank?: number;

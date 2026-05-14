@@ -759,6 +759,14 @@ export default function PreferencesPage() {
     setCountries(countries.filter((c) => c !== country));
   };
 
+  const moveCountry = (index: number, direction: 'up' | 'down') => {
+    const newCountries = [...countries];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newCountries.length) return;
+    [newCountries[index], newCountries[targetIndex]] = [newCountries[targetIndex], newCountries[index]];
+    setCountries(newCountries);
+  };
+
   const toggleMultiSelect = (item: string, list: string[], setList: (v: string[]) => void) => {
     if (list.includes(item)) setList(list.filter((x) => x !== item));
     else setList([...list, item]);
@@ -1004,23 +1012,55 @@ export default function PreferencesPage() {
 
             {countries.length > 0 && (
               <div>
-                <Label className="mb-2">Selected countries ({countries.length}/5)</Label>
-                <div className="flex flex-wrap gap-2">
-                  {countries.map((country) => (
-                    <Badge key={country} variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
-                      {COUNTRY_FLAGS[country] && <span>{COUNTRY_FLAGS[country]}</span>}
-                      {country}
-                      <button
-                        type="button"
-                        onClick={() => removeCountry(country)}
-                        className="ml-1 rounded-full p-0.5 hover:bg-neutral-300"
-                      >
-                        <span className="sr-only">Remove {country}</span>
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </Badge>
+                <Label className="mb-2">Selected countries ({countries.length}/5) — ranked by preference</Label>
+                <div className="space-y-2">
+                  {countries.map((country, index) => (
+                    <div key={country} className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                        {index + 1}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-sm font-medium">
+                        {COUNTRY_FLAGS[country] && <span>{COUNTRY_FLAGS[country]}</span>}
+                        {country}
+                      </span>
+                      <span className="text-xs text-neutral-400">
+                        {index === 0 ? '(Most preferred)' : index === countries.length - 1 && countries.length > 1 ? '(Least preferred)' : ''}
+                      </span>
+                      <div className="ml-auto flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => moveCountry(index, 'up')}
+                          disabled={index === 0}
+                          className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                          title="Move up"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveCountry(index, 'down')}
+                          disabled={index === countries.length - 1}
+                          className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                          title="Move down"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeCountry(country)}
+                          className="rounded p-1 text-neutral-400 hover:bg-red-50 hover:text-red-500"
+                          title="Remove"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

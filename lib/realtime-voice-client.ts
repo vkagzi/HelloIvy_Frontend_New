@@ -55,6 +55,8 @@ export interface RealtimeVoiceClientConfig {
   onTokenUsage?: (usage: RealtimeTokenUsage) => void;
   /** Fired when the backend sends updated session progress (step count, completion) */
   onSessionProgress?: (progress: SessionProgress) => void;
+  /** Fired when the backend sends formatted display content (e.g. comparison table) from a tool call */
+  onDisplayContent?: (content: string) => void;
   /** Fired when a system response (intro, mode-switch) is playing — UI should highlight the last bot bubble */
   onHighlightLastBot?: (highlight: boolean) => void;
 }
@@ -642,6 +644,13 @@ export class RealtimeVoiceClient {
         case 'session.progress':
           console.log(`[${this.label}] 📊 Session progress:`, message);
           this.config.onSessionProgress?.(message as unknown as SessionProgress);
+          break;
+
+        case 'display.content':
+          // Formatted content (e.g. markdown table) from a tool call.
+          // Surface it as a completed assistant transcript entry.
+          console.log(`[${this.label}] 📊 Display content received`);
+          this.config.onDisplayContent?.(message.content as string);
           break;
 
         case 'conversation.item.created':
