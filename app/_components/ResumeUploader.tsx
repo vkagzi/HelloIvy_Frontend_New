@@ -114,14 +114,14 @@ export default function ResumeUploader() {
         type="button"
         disabled={loading}
         onClick={() => fileInputRef.current?.click()}
-        className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-600 transition hover:bg-blue-100 disabled:opacity-50"
+        className="flex items-center gap-3 rounded-xl bg-blue-50 px-6 py-3.5 text-sm font-bold text-blue-600 transition hover:bg-blue-100 disabled:opacity-50 border border-blue-100 shadow-sm"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="17 8 12 3 7 8"></polyline>
           <line x1="12" y1="3" x2="12" y2="15"></line>
         </svg>
-        {loading ? 'Scanning...' : 'Upload Resume'}
+        {loading ? 'Scanning Resume...' : 'Upload your resume here (PDF, DOCX, or JPG) to create/update your profile instantly!'}
       </button>
 
       {loading && (
