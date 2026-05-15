@@ -13,7 +13,7 @@ export function transformEducationalData(
     result.highSchool = (result.highSchool as Record<string, unknown>[]).map(
       (yearEntry) => transformHighSchoolYear(yearEntry)
     );
-  }
+  }   
 
   // Transform undergraduate data
   if (result.undergraduate && Array.isArray(result.undergraduate)) {

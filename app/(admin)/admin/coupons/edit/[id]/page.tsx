@@ -9,7 +9,7 @@ import api from '@/lib/api-client';
 export default function AdminEditCouponPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
-  
+
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [checking, setChecking] = useState(false);
@@ -134,7 +134,7 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
       <div className="rounded-lg border border-neutral-200 bg-white shadow-sm overflow-hidden">
         <div className="flex items-center justify-between border-b border-neutral-100 bg-neutral-50 px-6 py-4">
           <h2 className="text-lg font-bold text-neutral-800 uppercase tracking-tight">Edit Coupon</h2>
-          <Link 
+          <Link
             href="/admin/coupons"
             className="rounded bg-green-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-green-700 transition shadow-sm"
           >
@@ -145,8 +145,8 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
         <form onSubmit={handleSubmit} className="p-8 space-y-6 max-w-5xl bg-white">
           <div>
             <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider">Title</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Enter Title"
               required
               className="w-full rounded border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 focus:outline-none transition"
@@ -158,8 +158,8 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider">Date From</label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 className="w-full rounded border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-blue-500 focus:outline-none transition"
                 value={formData.date_from}
                 onChange={(e) => setFormData({ ...formData, date_from: e.target.value })}
@@ -168,8 +168,8 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
 
             <div>
               <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider">Duration (Days)</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 placeholder="Duration (days)"
                 className="w-full rounded border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-blue-500 focus:outline-none transition"
                 value={formData.duration}
@@ -179,8 +179,8 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
           </div>
 
           <div className="flex items-center gap-3 py-2 px-1">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               id="limited"
               className="h-4 w-4 rounded border-neutral-300 bg-white text-blue-600 focus:ring-blue-500"
               checked={formData.is_limited}
@@ -193,8 +193,8 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
             <label className="mb-3 block text-sm font-bold text-neutral-700 uppercase tracking-wider underline decoration-blue-500 decoration-2 underline-offset-4">Coupon Type</label>
             <div className="flex items-center gap-8">
               <label className="flex items-center gap-2 cursor-pointer group">
-                <input 
-                  type="radio" 
+                <input
+                  type="radio"
                   name="coupon_type"
                   checked={formData.coupon_type === 'discount'}
                   onChange={() => setFormData({ ...formData, coupon_type: 'discount' })}
@@ -203,8 +203,8 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
                 <span className="text-sm font-medium text-neutral-700 group-hover:text-blue-600 transition">Discount Voucher</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer group">
-                <input 
-                  type="radio" 
+                <input
+                  type="radio"
                   name="coupon_type"
                   checked={formData.coupon_type === 'addon'}
                   onChange={() => setFormData({ ...formData, coupon_type: 'addon' })}
@@ -218,8 +218,8 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className={`mb-2 block text-sm font-bold uppercase tracking-wider ${formData.is_limited ? 'text-neutral-700' : 'text-neutral-400'}`}>No.of Users (Capacity)</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 placeholder={formData.is_limited ? 'Enter max user count' : 'Enable Limited Usage above first'}
                 disabled={!formData.is_limited}
                 className="w-full rounded border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-blue-500 focus:outline-none transition disabled:bg-neutral-100 disabled:text-neutral-400 disabled:cursor-not-allowed"
@@ -230,8 +230,8 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
 
             <div>
               <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider">Min Booking Amount (₹)</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 placeholder="Min order amount"
                 className="w-full rounded border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-blue-500 focus:outline-none transition"
                 value={formData.min_booking_amount}
@@ -243,7 +243,7 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider">Voucher in (Unit)</label>
-              <select 
+              <select
                 className="w-full rounded border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-blue-500 focus:outline-none transition cursor-pointer"
                 value={formData.voucher_type}
                 onChange={(e) => setFormData({ ...formData, voucher_type: e.target.value })}
@@ -256,8 +256,8 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
 
             <div>
               <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider">Voucher Value (Discount)</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 placeholder="Value"
                 required
                 className="w-full rounded border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-blue-500 focus:outline-none transition"
@@ -271,15 +271,15 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
             <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider border-l-4 border-red-600 pl-3">Voucher Code (Unique Identifier)</label>
             <div className="flex gap-4 items-center">
               <div className="flex-1 relative">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="CODE_123 (any characters allowed)"
                   required
                   className="w-full rounded border border-neutral-300 bg-neutral-50 px-4 py-2.5 text-sm font-mono text-blue-700 font-bold focus:border-blue-500 focus:bg-white focus:outline-none transition"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 />
-                <button 
+                <button
                   type="button"
                   onClick={generateRandomCode}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-blue-600 transition"
@@ -288,7 +288,7 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
                   <RefreshCw size={16} />
                 </button>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={checkAvailability}
                 disabled={checking}
@@ -316,7 +316,7 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
           )}
 
           <div className="pt-6 border-t border-neutral-100 flex items-center justify-between">
-            <button 
+            <button
               type="submit"
               disabled={loading}
               className="w-full md:w-auto rounded bg-blue-600 px-16 py-3.5 text-sm font-bold uppercase tracking-widest text-white hover:bg-blue-700 transition active:scale-95 disabled:opacity-50 shadow-lg shadow-blue-200"
