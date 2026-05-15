@@ -2,15 +2,18 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   careerDiscoveryApi,
   SessionListItem,
+  DomainItem,
 } from '@/lib/career-discovery-api';
 import {
   domainDiscoveryApi,
   SessionListItem as DomainSessionListItem,
   DomainRecommendation,
 } from '@/lib/domain-discovery-api';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import { Checkbox } from '@/app/_components/Checkbox';
 import { BrainWithoutBGLottie } from '@/app/_components/LottieAnimation';
 import { Heading } from '@/app/_components/Typography';
@@ -44,6 +47,20 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   const hasFetchedRef = useRef(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
 
+  // Domain selection state
+  const [allDomains, setAllDomains] = useState<DomainItem[]>([]);
+  const [selectedPrimary, setSelectedPrimary] = useState<string | null>(null);
+  const [selectedSecondary, setSelectedSecondary] = useState<string | null>(
+    null
+  );
+  const [isLoadingDomains, setIsLoadingDomains] = useState(true);
+  const {
+    isProfileComplete,
+    completionPercentage,
+    missingSections,
+    loading: profileLoading,
+  } = useProfile();
+
   const handleCloseReview = () => {
     localStorage.setItem('stream_review_shown', 'true');
 
@@ -62,6 +79,18 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
 
+    const loadDomains = async () => {
+      try {
+        setIsLoadingDomains(true);
+        const response = await careerDiscoveryApi.getDomains();
+        setAllDomains(response.domains || []);
+      } catch (err) {
+        console.error('Failed to load domains:', err);
+      } finally {
+        setIsLoadingDomains(false);
+      }
+    };
+
     const checkDomainDiscovery = async () => {
       try {
         setIsCheckingDomain(true);
@@ -78,7 +107,16 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             const recsResponse = await domainDiscoveryApi.getRecommendations(
               latestSession.session_id
             );
-            setDomainRecommendations(recsResponse.recommendations || []);
+            const recs = recsResponse.recommendations || [];
+            setDomainRecommendations(recs);
+
+            // Pre-select top 2 recommendations
+            if (recs.length >= 2) {
+              setSelectedPrimary(recs[0].domain_title);
+              setSelectedSecondary(recs[1].domain_title);
+            } else if (recs.length === 1) {
+              setSelectedPrimary(recs[0].domain_title);
+            }
           } catch (err) {
             console.error('Failed to fetch domain recommendations:', err);
             setDomainRecommendations([]);
@@ -109,9 +147,30 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       }
     };
 
+    loadDomains();
     checkDomainDiscovery();
     loadSessions();
   }, []);
+
+  const handleDomainClick = (domainName: string) => {
+    if (selectedPrimary === domainName) {
+      // Deselect primary — promote secondary if exists
+      setSelectedPrimary(selectedSecondary);
+      setSelectedSecondary(null);
+    } else if (selectedSecondary === domainName) {
+      // Deselect secondary
+      setSelectedSecondary(null);
+    } else if (!selectedPrimary) {
+      setSelectedPrimary(domainName);
+    } else if (!selectedSecondary) {
+      setSelectedSecondary(domainName);
+    } else {
+      // Both already selected — replace secondary
+      setSelectedSecondary(domainName);
+    }
+  };
+
+  const domainsSelected = selectedPrimary !== null;
 
   const handleStartCareerDiscovery = async () => {
     if (!hasReadInstructions) {
@@ -119,10 +178,13 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       return;
     }
 
-    if (!hasDomainSessions || !latestDomainSession) {
-      setError(
-        'Please complete Stream & Subject Selection before starting Career & Degree Selection '
-      );
+    if (!isProfileComplete) {
+      setError('Please complete your profile before starting a session.');
+      return;
+    }
+
+    if (!selectedPrimary) {
+      setError('Please select at least your primary domain before starting.');
       return;
     }
 
@@ -138,9 +200,11 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
         // ignore
       }
 
-      // Create a new session with the latest domain session ID
+      // Create a new session with selected domains and optional domain session ID
       const session = await careerDiscoveryApi.createSession(
-        latestDomainSession.session_id
+        selectedPrimary,
+        selectedSecondary ?? undefined,
+        latestDomainSession?.session_id
       );
       console.log('Created new session:', session);
 
@@ -148,23 +212,9 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       router.push(`/career-discovery/${session.session_id}/conversations`);
     } catch (err: any) {
       console.error('Failed to start Career & Degree Selection :', err);
-
-      // Check if the error is about missing Stream & Subject Selection
-      if (
-        err?.message?.includes('Stream & Subject Selection required') ||
-        err?.action_required === 'explore_domain_discovery'
-      ) {
-        setError(
-          'Please complete Stream & Subject Selection before starting Career & Degree Selection . You will be redirected...'
-        );
-        setTimeout(() => {
-          router.push('/domain-discovery');
-        }, 2000);
-      } else {
-        setError(
-          'Failed to start Career & Degree Selection . Please try again.'
-        );
-      }
+      setError(
+        'Failed to start Career & Degree Selection . Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -207,6 +257,91 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     };
   };
 
+  const getDomainBadge = (domainName: string) => {
+    if (selectedPrimary === domainName) return { num: '1', label: 'Primary' };
+    if (selectedSecondary === domainName) return { num: '2', label: 'Secondary' };
+    return null;
+  };
+
+  // Find domain recommendation match percentage (if available)
+  const getDomainMatchPct = (domainName: string): number | null => {
+    const rec = domainRecommendations.find(
+      (r) => r.domain_title === domainName
+    );
+    return rec ? rec.match_percentage : null;
+  };
+
+  const isRecommended = (domainName: string): boolean =>
+    domainRecommendations.some((r) => r.domain_title === domainName);
+
+  const DOMAIN_ICONS: Record<string, string> = {
+    'Pure Science': '🔬',
+    'Performing Arts': '🎭',
+    'Humanities': '📚',
+    'Business / Entrepreneurship': '💼',
+    'Statistics / Finance / Data Analytics': '📊',
+    'Law': '⚖️',
+    'Social Sciences': '🧠',
+    'Health & Life Science': '🩺',
+    'Sports/Athletics': '🏅',
+    'Engineering & Applied Technology': '⚙️',
+    'Art & Aesthetics': '🎨',
+    'Public Policy, Governance & Impact': '🏛️',
+  };
+
+  // Split domains into recommended vs other
+  const recommendedDomains = allDomains.filter((d) => isRecommended(d.name));
+  const otherDomains = allDomains.filter((d) => !isRecommended(d.name));
+  const hasRecommendations = recommendedDomains.length > 0;
+
+  const renderDomainCard = (domain: DomainItem) => {
+    const badge = getDomainBadge(domain.name);
+    const matchPct = getDomainMatchPct(domain.name);
+    const icon = DOMAIN_ICONS[domain.name] || '📌';
+    return (
+      <button
+        key={domain.name}
+        type="button"
+        onClick={() => handleDomainClick(domain.name)}
+        className={`relative flex items-center gap-2.5 rounded-lg border-2 px-3 py-2.5 text-left transition-all ${
+          badge?.num === '1'
+            ? 'border-blue-500 bg-blue-50/50 shadow-md ring-1 ring-blue-200'
+            : badge?.num === '2'
+              ? 'border-teal-500 bg-teal-50/50 shadow-md ring-1 ring-teal-200'
+              : 'border-gray-200 bg-white hover:border-slate-400 hover:shadow-sm'
+        }`}
+      >
+        {badge && (
+          <span
+            className={`absolute -top-2.5 -right-2 flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white shadow ${
+              badge.num === '1' ? 'bg-blue-600' : 'bg-teal-600'
+            }`}
+          >
+            {badge.num}
+            <span className="font-medium">{badge.label}</span>
+          </span>
+        )}
+        <span className="text-lg leading-none">{icon}</span>
+        <span
+          className={`text-sm font-semibold ${
+            badge?.num === '1'
+              ? 'text-blue-900'
+              : badge?.num === '2'
+                ? 'text-teal-900'
+                : 'text-gray-800'
+          }`}
+        >
+          {domain.name}
+        </span>
+        {matchPct !== null && (
+          <span className="ml-auto shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+            {matchPct}%
+          </span>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div className="h-full overflow-auto bg-white">
       <div className="mx-auto px-1">
@@ -214,9 +349,6 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
         <div className="mb-5 flex flex-col items-center justify-between gap-8 md:flex-row">
           {/* Left Content */}
           <div className="flex-1">
-            {/* <span className="mb-2 bg-linear-to-r from-red-500 via-pink-500 via-purple-500 via-purple-700 via-indigo-600 to-teal-400 bg-clip-text text-2xl font-semibold text-transparent md:text-2xl">
-              Career & Degree Selection 
-            </span> */}
             <Heading
               level={1}
               variant="web"
@@ -236,36 +368,6 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             />
           </div>
         </div>
-
-        {/* Stream & Subject Selection Requirement Banner */}
-        {!isCheckingDomain && !hasDomainSessions && (
-          <div className="mb-6 rounded-lg border-2 border-blue-300 bg-blue-50 p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500">
-                <FiIcon name="info" className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="mb-2 text-lg font-semibold text-blue-900">
-                  Stream & Subject Selection Required
-                </h3>
-                <p className="mb-4 text-sm text-blue-800">
-                  Before starting Career & Degree Selection , you need to
-                  complete Stream & Subject Selection first. This helps us
-                  understand your interests and strengths to provide better
-                  career recommendations.
-                </p>
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={() => router.push('/domain-discovery')}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Go to Stream & Subject Selection
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Previous Sessions Section */}
         {!isLoadingSessions && sessions.length > 0 && (
@@ -359,70 +461,76 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           </div>
         )}
 
-        {/* Stream & Subject Selection Session Info */}
-        {!isCheckingDomain && hasDomainSessions && latestDomainSession && (
-          <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-5">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500">
-                <FiIcon name="check-circle" className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="mb-1 text-base font-semibold text-green-900">
-                  Based on Your Stream & Subject Selection Session
-                </h3>
-                <p className="mb-2 text-sm text-green-800">
-                  Your Career & Degree Selection will be personalized based on
-                  your most recent Stream & Subject Selection session:
-                </p>
-                <div className="rounded-md bg-white p-3 text-sm">
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="font-medium text-gray-700">
-                      Completed:
-                    </span>
-                    <span className="text-gray-600">
-                      {formatDate(latestDomainSession.created_at)}
-                    </span>
-                  </div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="font-medium text-gray-700">Progress:</span>
-                    <span className="text-gray-600">
-                      {latestDomainSession.current_step} questions answered
-                    </span>
-                  </div>
-
-                  {/* Domain Recommendations */}
-                  {domainRecommendations.length > 0 && (
-                    <div className="mt-3 border-t pt-3">
-                      <div className="mb-2 font-medium text-gray-700">
-                        Your Top Domains:
-                      </div>
-                      <div className="space-y-2">
-                        {domainRecommendations.map((domain, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-start gap-2 rounded-md bg-green-50 p-2"
-                          >
-                            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-semibold text-white">
-                              {idx + 1}
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900">
-                                {domain.domain_title}
-                              </div>
-                              <div className="text-xs text-gray-600">
-                                {domain.match_percentage}% match
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+        {/* Domain Selection Section */}
+        <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Select upto 2 domains to discover career options suited for you
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {hasDomainSessions && domainRecommendations.length > 0
+                ? 'Based on your Stream & Subject Selection results, we\u2019ve pre-selected your top 2 domains. You can confirm or change your selections below.'
+                : 'Choose 2 domains you\u2019d like to explore career options in. Click to select your primary (1st) and secondary (2nd) domain.'}
+            </p>
           </div>
-        )}
+
+          {/* Selected domains summary */}
+          {(selectedPrimary || selectedSecondary) && (
+            <div className="mb-4 flex flex-wrap gap-3">
+              {selectedPrimary && (
+                <div className="flex items-center gap-2 rounded-full bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-blue-600">
+                    1
+                  </span>
+                  {selectedPrimary}
+                  <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                    Primary
+                  </span>
+                </div>
+              )}
+              {selectedSecondary && (
+                <div className="flex items-center gap-2 rounded-full bg-teal-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-teal-600">
+                    2
+                  </span>
+                  {selectedSecondary}
+                  <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                    Secondary
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isLoadingDomains ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-purple-500 border-t-transparent"></div>
+              <span className="ml-2 text-gray-500">Loading domains...</span>
+            </div>
+          ) : hasRecommendations ? (
+            <>
+              {/* Recommended domains */}
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                <FiIcon name="star" className="h-3 w-3" />
+                Recommended for You
+              </div>
+              <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {recommendedDomains.map(renderDomainCard)}
+              </div>
+              {/* Other domains */}
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Other Domains
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {otherDomains.map(renderDomainCard)}
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {allDomains.map(renderDomainCard)}
+            </div>
+          )}
+        </div>
 
         {/* Instructions Box */}
         <div className="mb-6 rounded-lg border border-orange-200 p-6">
@@ -464,8 +572,8 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             <li className="flex gap-3">
               <span className="min-w-5 font-semibold">3</span>
               <span>
-                You'll go through a 20-step guided conversation to uncover your
-                career preferences and interests.
+                You&apos;ll go through an 18-step guided conversation to uncover
+                your career preferences and interests.
               </span>
             </li>
             <li className="flex gap-3">
@@ -478,7 +586,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             <li className="flex gap-3">
               <span className="min-w-5 font-semibold">5</span>
               <span>
-                The entire process takes about 30-40 minutes and is completely
+                The entire process takes about 25-35 minutes and is completely
                 personalized to your background.
               </span>
             </li>
@@ -497,39 +605,99 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             </div>
           )}
 
-          <div className="mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-            <label className="flex cursor-pointer items-start gap-3">
-              <Checkbox
-                checked={hasReadInstructions}
-                onCheckedChange={(checked) =>
-                  setHasReadInstructions(Boolean(checked))
-                }
-                className="mt-1"
-                disabled={!hasDomainSessions}
-              />
-              <span
-                className={`text-sm ${!hasDomainSessions ? 'text-gray-400' : 'text-gray-700'}`}
+          {!profileLoading && !isProfileComplete ? (
+            <div className="mt-6 rounded-lg border border-orange-200 bg-orange-50 p-4">
+              <div className="flex items-start gap-3">
+                <FiIcon
+                  name="exclamation-circle"
+                  className="mt-0.5 h-5 w-5 shrink-0 text-orange-500"
+                />
+                <div className="flex-1">
+                  <p className="font-semibold text-orange-800">
+                    Profile incomplete ({completionPercentage}%)
+                  </p>
+                  <p className="mt-1 text-sm text-orange-700">
+                    You need to complete your profile before starting a Career &
+                    Degree Selection session.
+                    {missingSections.some(s => s === 'personalDetails' || s === 'educational') && (
+                      <>
+                        {' '}
+                        Missing:{' '}
+                        {missingSections.map((s, i) => {
+                          const slugMap: Record<string, string> = {
+                            personalDetails: 'personal',
+                            educational: 'educational',
+                            extraCurricular: 'extra-curricular',
+                          };
+                          const labelMap: Record<string, string> = {
+                            personalDetails: 'Personal Details',
+                            educational: 'Educational',
+                            extraCurricular: 'Extra Curricular',
+                          };
+                          const slug = slugMap[s] ?? s;
+                          const label =
+                            labelMap[s] ??
+                            s.charAt(0).toUpperCase() + s.slice(1);
+                          return (
+                            <span key={s}>
+                              {i > 0 && ', '}
+                              <Link
+                                href={`/profile/${slug}/edit`}
+                                className="font-medium underline underline-offset-2 hover:text-orange-900"
+                              >
+                                {label}
+                              </Link>
+                            </span>
+                          );
+                        })}
+                        .
+                      </>
+                    )}
+                  </p>
+                  <Link
+                    href="/profile/personal/edit"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
+                  >
+                    <FiIcon name="pencil" className="h-4 w-4" />
+                    Complete my profile
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <Checkbox
+                    checked={hasReadInstructions}
+                    onCheckedChange={(checked) =>
+                      setHasReadInstructions(Boolean(checked))
+                    }
+                    className="mt-1"
+                  />
+                  <span className="text-sm text-gray-700">
+                    I have read all the instructions mentioned above.
+                  </span>
+                </label>
+              </div>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleStartCareerDiscovery}
+                disabled={isLoading || !hasReadInstructions || !domainsSelected || profileLoading}
+                iconRight={<FiIcon name="arrow-small-right" className="h-5 w-5" />}
+                className="mt-6"
               >
-                I have read all the instructions mentioned above.
-              </span>
-            </label>
-          </div>
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={handleStartCareerDiscovery}
-            disabled={isLoading || !hasReadInstructions || !hasDomainSessions}
-            iconRight={<FiIcon name="arrow-small-right" className="h-5 w-5" />}
-            className="mt-6"
-          >
-            {isLoading
-              ? 'Starting...'
-              : !hasDomainSessions
-                ? 'Complete Stream & Subject Selection First'
-                : sessions.length > 0
-                  ? 'Start New Session'
-                  : 'Start Session'}
-          </Button>
+                {isLoading
+                  ? 'Starting...'
+                  : !domainsSelected
+                    ? 'Select Your Domains First'
+                    : sessions.length > 0
+                      ? 'Start New Session'
+                      : 'Start Session'}
+              </Button>
+            </>
+          )}
         </div>
       </div>
       <ReviewModal open={showReviewModal} onClose={handleCloseReview} module="career"/>

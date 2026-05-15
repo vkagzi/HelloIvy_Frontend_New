@@ -113,23 +113,48 @@ export interface SessionListResponse {
   total_count: number;
 }
 
+export interface DomainItem {
+  name: string;
+  description: string;
+}
+
+export interface DomainsResponse {
+  domains: DomainItem[];
+}
+
 // ================== API Class ==================
 
 class CareerDiscoveryAPI {
   private baseUrl = '/api/career-discovery';
 
   /**
+   * Get all predefined domains available for career discovery
+   */
+  async getDomains(): Promise<DomainsResponse> {
+    return api<DomainsResponse>(`${this.baseUrl}/domains/`);
+  }
+
+  /**
    * Create a new Career & Degree Selection session
    * Returns the session with the initial bot message
    */
   async createSession(
-    domainSessionId: string
+    primaryDomain: string,
+    secondaryDomain?: string,
+    domainSessionId?: string,
   ): Promise<CareerDiscoverySession> {
+    const body: Record<string, string> = {
+      primary_domain: primaryDomain,
+    };
+    if (secondaryDomain) {
+      body.secondary_domain = secondaryDomain;
+    }
+    if (domainSessionId) {
+      body.domain_session_id = domainSessionId;
+    }
     return api<CareerDiscoverySession>(`${this.baseUrl}/`, {
       method: 'POST',
-      body: {
-        domain_session_id: domainSessionId,
-      },
+      body,
     });
   }
 
