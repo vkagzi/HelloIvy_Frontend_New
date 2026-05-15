@@ -17,6 +17,7 @@ import {
   type MessageHistoryResponse,
   type SendMessageResponse,
 } from '@/lib/college-selector-api';
+import { CollegeDebugDialog } from '@/components/CollegeDebugDialog';
 
 // ─── API Adapter ────────────────────────────────────────────────
 const collegeSelectorApiAdapter: ConversationConfig['api'] = {
@@ -199,6 +200,8 @@ const collegeSelectorConversationConfig: ConversationConfig = {
         </div>
       </div>
     ),
+
+    renderDebugDialog: (props) => <CollegeDebugDialog {...props} />,
   },
 };
 

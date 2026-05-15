@@ -252,29 +252,26 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     const arr: Record<string, unknown>[] = Array.isArray(arrUnknown)
       ? (arrUnknown as Record<string, unknown>[])
       : [];
-    arr.push(
-      Object.fromEntries(
-        fields.map((fid) => {
-          const field = fieldDefs.find((f) => f.id === fid);
-          // If this field should default from another field, use its current value
-          if (field?.defaultValueFrom) {
-            const sourceValue = form.getValues(
-              field.defaultValueFrom as never
-            ) as unknown as string;
-            if (sourceValue) return [fid, sourceValue];
-          }
-          return [fid, field ? getDefaultValue(field.type as FieldType) : ''];
-        })
-      )
+    const newEntry = Object.fromEntries(
+      fields.map((fid) => {
+        const field = fieldDefs.find((f) => f.id === fid);
+        // If this field should default from another field, use its current value
+        if (field?.defaultValueFrom) {
+          const sourceValue = form.getValues(
+            field.defaultValueFrom as never
+          ) as unknown as string;
+          if (sourceValue) return [fid, sourceValue];
+        }
+        return [fid, field ? getDefaultValue(field.type as FieldType) : ''];
+      })
     );
-    form.setValue(groupName, arr);
+    form.setValue(groupName, [...arr, newEntry], { shouldDirty: true });
   };
 
   const handleRemoveRepeatable = (groupName: string, idx: number): void => {
     const arr = form.getValues(groupName);
     if (Array.isArray(arr)) {
-      arr.splice(idx, 1);
-      form.setValue(groupName, arr);
+      form.setValue(groupName, arr.filter((_, i) => i !== idx), { shouldDirty: true });
     }
   };
 

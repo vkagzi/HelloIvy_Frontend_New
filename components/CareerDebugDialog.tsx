@@ -61,7 +61,7 @@ export function CareerDebugDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl">
+      <DialogContent className="max-w-6xl sm:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogTitle>🐛 Debug Information</DialogTitle>
         <DialogDescription>
           Technical details about the Career & Degree Selection session
@@ -98,7 +98,7 @@ export function CareerDebugDialog({
         )}
 
         {!isLoading && !error && debugInfo && (
-          <Tabs defaultValue="model" className="mt-4">
+          <Tabs defaultValue="token-usage" className="mt-4">
             <TabsList className="w-full">
               <TabsTrigger value="model" className="flex-1">
                 Model Info

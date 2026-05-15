@@ -313,6 +313,10 @@ class CollegeSelectorAPI {
     return api<{ status: string; service: string }>(`${this.baseUrl}/health/`);
   }
 
+  async getDebugInfo(sessionId: string): Promise<CollegeDebugInfo> {
+    return api<CollegeDebugInfo>(`${this.baseUrl}/${sessionId}/debug/`);
+  }
+
   async updateTestScores(
     testScores: Array<Record<string, unknown>>
   ): Promise<{ test_scores: Array<Record<string, unknown>>; message: string }> {
@@ -321,6 +325,60 @@ class CollegeSelectorAPI {
       { method: 'PUT', body: { test_scores: testScores } }
     );
   }
+}
+
+export interface CollegeDebugInfo {
+  session_id: string;
+  current_phase: 'preferences' | 'conversation' | 'completed';
+  model_info: {
+    provider: string;
+    main_llm: {
+      type: string;
+      model: string;
+      temperature: number | null;
+      max_tokens: number | null;
+    };
+    recommendations_llm: {
+      type: string;
+      model: string;
+      temperature: number | null;
+      max_tokens: number | null;
+    };
+  };
+  system_prompts: {
+    conversation_prompt: string;
+    recommendations_prompt: string;
+  };
+  preferences_context: string;
+  user_context: string;
+  session_state: {
+    current_step: number;
+    total_steps: number;
+    bot_messages: number;
+    user_messages: number;
+    preferences_completed: boolean;
+  };
+  token_usage: {
+    categories?: Record<
+      string,
+      {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+        call_count: number;
+        cache_read_tokens?: number;
+        cache_creation_tokens?: number;
+        reasoning_tokens?: number;
+      }
+    >;
+    total_input_tokens?: number;
+    total_output_tokens?: number;
+    total_tokens?: number;
+    total_llm_calls?: number;
+    total_cache_read_tokens?: number;
+    total_cache_creation_tokens?: number;
+    total_reasoning_tokens?: number;
+  };
 }
 
 export const collegeSelectorApi = new CollegeSelectorAPI();
