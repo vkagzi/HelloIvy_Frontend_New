@@ -156,7 +156,6 @@ export default function ResumeUploader() {
           ensure your profile is complete.
         </p>
       </div>
-
       {loading && (
         <div className="mt-1 w-full max-w-[140px]">
           <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
