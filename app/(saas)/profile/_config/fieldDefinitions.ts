@@ -983,10 +983,12 @@ export const educationalFieldDefs: FieldDefinition[] = [
           { length: 2035 - 1960 + 1 },
           (_, i) => (1960 + i).toString()
         ),
-        'Working/Completed College': Array.from(
-          { length: 2035 - 1960 + 1 },
-          (_, i) => (1960 + i).toString()
-        ),
+        'Working/Completed College': [
+          'Currently Working',
+          ...Array.from({ length: 2035 - 1960 + 1 }, (_, i) =>
+            (1960 + i).toString()
+          ),
+        ],
       },
     },
 
