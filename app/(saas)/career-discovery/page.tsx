@@ -290,8 +290,12 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   };
 
   // Split domains into recommended vs other
-  const recommendedDomains = allDomains.filter((d) => isRecommended(d.name));
-  const otherDomains = allDomains.filter((d) => !isRecommended(d.name));
+  const recommendedDomains = allDomains
+    .filter((d) => isRecommended(d.name))
+    .sort((a, b) => (getDomainMatchPct(b.name) ?? 0) - (getDomainMatchPct(a.name) ?? 0));
+  const otherDomains = allDomains
+    .filter((d) => !isRecommended(d.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
   const hasRecommendations = recommendedDomains.length > 0;
 
   const renderDomainCard = (domain: DomainItem) => {
