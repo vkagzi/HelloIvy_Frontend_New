@@ -50,7 +50,7 @@ export default function ResumeUploader() {
 
       const response = await new Promise((resolve, reject) => {
         xhr.open('POST', url, true);
-        
+
         if (token) {
           xhr.setRequestHeader('Authorization', `Bearer ${token}`);
         }
@@ -110,32 +110,64 @@ export default function ResumeUploader() {
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <button
-        type="button"
-        disabled={loading}
-        onClick={() => fileInputRef.current?.click()}
-        className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-600 transition hover:bg-blue-100 disabled:opacity-50"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="17 8 12 3 7 8"></polyline>
-          <line x1="12" y1="3" x2="12" y2="15"></line>
-        </svg>
-        {loading ? 'Scanning...' : 'Upload Resume'}
-      </button>
+      <div className="flex flex-col items-start gap-2">
+        {/* Upload Button */}
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => fileInputRef.current?.click()}
+          className="
+      flex items-center gap-3
+      rounded-2xl border border-blue-100
+      bg-[#EEF3FF]
+      px-6 py-4
+      text-[12px] font-semibold text-[#0B57D0]
+      shadow-sm transition-all
+      hover:bg-[#E4ECFF]
+      disabled:opacity-50
+    "
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="shrink-0"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
 
+          <span>
+            {loading
+              ? 'Scanning Resume...'
+              : 'Upload your resume here (PDF, DOCX, or JPG) to create/update your profile instantly!'}
+          </span>
+        </button>
+
+        {/* Small Instruction Text */}
+        <p className="ml-2 text-xs leading-relaxed text-gray-500">
+          Once scanned, review every tab and add any additional information to
+          ensure your profile is complete.
+        </p>
+      </div>
       {loading && (
         <div className="mt-1 w-full max-w-[140px]">
           <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
-            <div 
+            <div
               className="h-full bg-blue-600 transition-all duration-300 ease-out"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
           <p className="mt-1 text-[10px] text-neutral-500 font-medium text-left">
-            {uploadProgress < 50 
-              ? `Uploading: ${Math.round(uploadProgress * 2)}%` 
-              : uploadProgress < 100 
+            {uploadProgress < 50
+              ? `Uploading: ${Math.round(uploadProgress * 2)}%`
+              : uploadProgress < 100
                 ? `Extracting Data: ${Math.round(uploadProgress)}%`
                 : 'Finishing...'}
           </p>

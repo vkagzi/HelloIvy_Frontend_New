@@ -13,7 +13,8 @@ import {
   Copy,
   ChevronRight,
   AlertCircle,
-  Home
+  Home,
+  Edit
 } from 'lucide-react';
 import api from '@/lib/api-client';
 
@@ -216,6 +217,13 @@ export default function AdminCouponsListPage() {
                           >
                             <Copy size={16} />
                           </button>
+                          <Link 
+                            href={`/admin/coupons/edit/${coupon.id}`}
+                            className="p-1.5 text-neutral-400 hover:text-green-600 transition"
+                            title="Edit Coupon"
+                          >
+                            <Edit size={16} />
+                          </Link>
                           <button 
                             onClick={() => handleDelete(coupon.id)}
                             className="p-1.5 text-neutral-400 hover:text-red-600 transition"
