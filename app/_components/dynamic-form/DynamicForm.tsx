@@ -393,7 +393,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 >
                   {item.fields?.map((fid) => {
                     const field = fieldDefs.find((f) => f.id === fid);
-                    if (!field || !isFieldVisible(field, formValues))
+                    if (!field || !isFieldVisible(field, row))
                       return null;
                     const errorKey = `${item.name}.${rIdx}.${fid}`;
                     const repeatableField: FieldDefinition = {
@@ -495,7 +495,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 >
                   {item.fields?.map((fid) => {
                     const field = fieldDefs.find((f) => f.id === fid);
-                    if (!field || !isFieldVisible(field, formValues))
+                    if (!field || !isFieldVisible(field, row))
                       return null;
                     const errorKey = `${item.name}.${rIdx}.${fid}`;
                     const repeatableField: FieldDefinition = {
@@ -597,7 +597,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 >
                   {item.fields?.map((fid) => {
                     const field = fieldDefs.find((f) => f.id === fid);
-                    if (!field || !isFieldVisible(field, formValues))
+                    if (!field || !isFieldVisible(field, row))
                       return null;
                     const errorKey = `${item.name}.${rIdx}.${fid}`;
                     const repeatableField: FieldDefinition = {
@@ -684,7 +684,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 >
                   {item.fields?.map((fid) => {
                     const field = fieldDefs.find((f) => f.id === fid);
-                    if (!field || !isFieldVisible(field, formValues))
+                    if (!field || !isFieldVisible(field, row))
                       return null;
                     const errorKey = `${item.name}.${rIdx}.${fid}`;
                     const repeatableField: FieldDefinition = {
@@ -764,7 +764,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 >
                   {item.fields?.map((fid) => {
                     const field = fieldDefs.find((f) => f.id === fid);
-                    if (!field || !isFieldVisible(field, formValues))
+                    if (!field || !isFieldVisible(field, row))
                       return null;
                     const errorKey = `${item.name}.${rIdx}.${fid}`;
                     const repeatableField: FieldDefinition = {
