@@ -25,12 +25,12 @@ const TOPICS = [
   { key: 'work',        label: 'Work Experience',                          color: 'border-amber-400',   bg: 'bg-amber-50',   text: 'text-amber-700',   icon: '💼' },
 
   // Royal Indigo vibe
-  { key: 'leadership',  label: 'Leadership Skills / Extra-Curricular / Sport', color: 'border-slate-400',   bg: 'bg-slate-50',   text: 'text-slate-700',  icon: '🏆' },
+  { key: 'leadership',  label: 'Leadership Skills / Extra-Curricular / Sport', color: 'border-blue-400',    bg: 'bg-blue-50',    text: 'text-blue-700',  icon: '🏆' },
 
   // Elegant Rose vibe
-  { key: 'community',   label: 'Community Service',                         color: 'border-sky-400',     bg: 'bg-sky-50',     text: 'text-sky-700',    icon: '🤝' },
+  { key: 'community',   label: 'Community Service',                         color: 'border-amber-400',   bg: 'bg-amber-50',   text: 'text-amber-700',    icon: '🤝' },
 
-  { key: 'discussion',  label: 'Discussion Points',                        color: 'border-violet-400',  bg: 'bg-violet-50',  text: 'text-violet-700',  icon: '💬' },
+  { key: 'discussion',  label: 'Discussion Points',                        color: 'border-blue-400',    bg: 'bg-blue-50',    text: 'text-blue-700',  icon: '💬' },
 ] as const;
 
 type TopicKey = (typeof TOPICS)[number]['key'];
