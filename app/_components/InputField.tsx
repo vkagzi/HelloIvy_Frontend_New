@@ -103,11 +103,6 @@ export const InputField: React.FC<InputFieldProps> = ({
         >
           {label}
           {required && <span className="ml-1 text-orange-500">*</span>}
-          {name?.toLowerCase().includes('end') && (
-            <span className="ml-1 text-[10px] text-neutral-500 font-normal italic">
-              If you are currently employed with your organization, please enter today’s date as the end date
-            </span>
-          )}
         </label>
       )}
 

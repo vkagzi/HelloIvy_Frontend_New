@@ -186,6 +186,25 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
                   inputWidthClass="w-full"
                 />
               </div>
+
+              {selectedTestType === 'Other' && (
+                <div>
+                  <FieldRenderer
+                    field={{
+                      id: `testScores.${testIdx}.testTypeOther`,
+                      type: 'text',
+                      label: 'Please specify test type',
+                      placeholder: 'Enter test type',
+                      required: true,
+                    }}
+                    form={form}
+                    error={errors[`testScores.${testIdx}.testTypeOther`]}
+                    inputHeightClass="py-2"
+                    labelHeightClass="text-label-md"
+                    inputWidthClass="w-full"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Test-specific Fields */}

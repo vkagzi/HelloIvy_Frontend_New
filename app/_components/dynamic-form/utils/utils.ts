@@ -17,7 +17,7 @@ export const getDefaultValue = (type: FieldType): string | number | boolean | st
 export const isFieldVisible = (
   field:
     | FieldDefinition
-    | { visibility?: { depends_on: { field_id: string; value: string[] } } },
+    | { visibility?: { depends_on: { field_id: string; value: (string | boolean | undefined | null)[] } } },
   formValues: Record<string, unknown>
 ): boolean => {
   if (!field.visibility?.depends_on) return true;
@@ -26,8 +26,8 @@ export const isFieldVisible = (
 
   if (Array.isArray(selected)) {
     // selected is an array (e.g., multi-select)
-    return selected.some((s) => value.includes(s));
+    return selected.some((s) => value.includes(s as any));
   }
   // selected is a single value
-  return value.includes(selected as string);
+  return value.includes(selected as any);
 };
