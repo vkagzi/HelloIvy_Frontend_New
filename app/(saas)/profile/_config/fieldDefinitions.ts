@@ -863,14 +863,14 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'yourTotalScore',
     type: 'text',
-    label: 'Your Score / GPA / Percentage / Grades',
+    label: 'Your Score / GPA / Percentage / Grade',
     placeholder: 'Enter your total score',
     required: false,
   },
   {
     id: 'highestTotalScore',
     type: 'text',
-    label: 'Max possible score /GPA/ Percentage / Grades',
+    label: 'Max possible score /GPA/ Percentage / Grade',
     placeholder: 'Enter maximum possible score, GPA, or percentage',
     required: true,
     width: 1.5,
@@ -983,10 +983,12 @@ export const educationalFieldDefs: FieldDefinition[] = [
           { length: 2035 - 1960 + 1 },
           (_, i) => (1960 + i).toString()
         ),
-        'Working/Completed College': Array.from(
-          { length: 2035 - 1960 + 1 },
-          (_, i) => (1960 + i).toString()
-        ),
+        'Working/Completed College': [
+          'Currently Working',
+          ...Array.from({ length: 2035 - 1960 + 1 }, (_, i) =>
+            (1960 + i).toString()
+          ),
+        ],
       },
     },
 
@@ -995,16 +997,16 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'overallPercentage',
     type: 'text',
-    label: 'Your Score / GPA / Percentage / Grades',
+    label: 'Your Score / GPA / Percentage / Grade',
     placeholder: 'Enter your score, GPA, or percentage',
-    required: true,
+    required: false,
   },
   {
     id: 'maximumPossibleGPA',
     type: 'text',
-    label: 'Max possible score /GPA/ Percentage / Grades',
+    label: 'Max possible score /GPA/ Percentage / Grade',
     placeholder: 'Enter maximum possible score, GPA, percentage or Grades',
-    required: true,
+    required: false,
   },
   {
     id: 'estimatedRank',
@@ -1044,7 +1046,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'score',
     type: 'text',
-    label: 'Your Score / GPA / Percentage / Grades',
+    label: 'Your Score / GPA / Percentage / Grade',
     placeholder: 'Enter your score, GPA, percentage or Grades',
     required: true,
   },
