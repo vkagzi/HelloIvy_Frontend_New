@@ -606,13 +606,16 @@ const EducationalDetailsForm: React.FC = () => {
       // Parse formatted city strings to extract city, state, country
       const parsedData = parseFormLocationData(_data);
 
-      // Transform educational data to proper structure with year identifiers
-      const transformedData = transformEducationalData(parsedData);
+      // WE DO NOT TRANSFORM AGAIN ON SUBMIT!
+      // The form data is already in the correct format.
+      // transformEducationalData was converting our form data (which uses 'yearOfCompletion')
+      // into backend format (which expects 'year'), breaking the form when re-rendering.
+      // We just use parsedData directly!
 
       // Build a clean educational object with only relevant keys.
       // Only the academic section matching the current academicLevel is included;
       // stale sections from a previous academicLevel selection are dropped.
-      const academicLevel = transformedData.academicLevel as string | undefined;
+      const academicLevel = parsedData.academicLevel as string | undefined;
       const sectionKey: Record<string, string> = {
         'High School (8th–12th grade)': 'highSchool',
         'College/Undergraduate': 'undergraduate',
@@ -639,16 +642,16 @@ const EducationalDetailsForm: React.FC = () => {
         'Postgraduate',
       ];
       if (academicLevel && gradeLevelLevels.includes(academicLevel)) {
-        if (transformedData.gradeLevel !== undefined) {
-          cleanEducational.gradeLevel = transformedData.gradeLevel;
+        if (parsedData.gradeLevel !== undefined) {
+          cleanEducational.gradeLevel = parsedData.gradeLevel;
         }
       }
 
       // High-school-only fields
       if (academicLevel === 'High School (8th–12th grade)') {
-        if (transformedData.hasCurrentGradeScores !== undefined) {
+        if (parsedData.hasCurrentGradeScores !== undefined) {
           cleanEducational.hasCurrentGradeScores =
-            transformedData.hasCurrentGradeScores;
+            parsedData.hasCurrentGradeScores;
         }
       }
 
@@ -668,10 +671,10 @@ const EducationalDetailsForm: React.FC = () => {
       }
 
       allSections.forEach((section) => {
-        if (transformedData[section] !== undefined && Array.isArray(transformedData[section])) {
+        if (parsedData[section] !== undefined && Array.isArray(parsedData[section])) {
            // Only include if it's not empty, OR if we explicitly cleared it above
-           if ((transformedData[section] as any[]).length > 0 || cleanEducational[section] !== undefined) {
-             cleanEducational[section] = transformedData[section];
+           if ((parsedData[section] as any[]).length > 0 || cleanEducational[section] !== undefined) {
+             cleanEducational[section] = parsedData[section];
            }
         }
       });
@@ -679,8 +682,8 @@ const EducationalDetailsForm: React.FC = () => {
       // Include shared keys
       const sharedKeys = ['courses', 'awards', 'testScores'];
       sharedKeys.forEach((key) => {
-        if (transformedData[key] !== undefined) {
-          cleanEducational[key] = transformedData[key];
+        if (parsedData[key] !== undefined) {
+          cleanEducational[key] = parsedData[key];
         }
       });
 
