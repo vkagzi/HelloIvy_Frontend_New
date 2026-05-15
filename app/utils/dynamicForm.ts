@@ -35,7 +35,7 @@ export interface FieldDefinition {
   visibility?: {
     depends_on: {
       field_id: string;
-      value: (string | boolean)[];
+      value: (string | boolean | undefined | null)[];
     };
   };
   optionsDependsOn?: {

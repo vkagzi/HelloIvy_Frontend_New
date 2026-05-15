@@ -1203,7 +1203,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   },
   {
     id: 'testType',
-    type: 'multi_select',
+    type: 'select',
     label: 'Test Type',
     placeholder: 'Select test type',
     required: false,
@@ -1216,6 +1216,26 @@ export const educationalFieldDefs: FieldDefinition[] = [
       'SAT',
       'TOEFL',
       'Other',
+    ],
+  },
+  {
+    id: 'testTypeOther',
+    type: 'text',
+    label: 'Please specify test type',
+    placeholder: 'Enter test type',
+    required: false,
+    visibility: {
+      depends_on: {
+        field_id: 'testType',
+        value: ['Other'],
+      },
+    },
+    validationDependsOn: [
+      {
+        fieldId: 'testType',
+        values: ['Other'],
+        validation: { required: true },
+      },
     ],
   },
   {
@@ -1958,9 +1978,30 @@ export const professionalFieldDefs: FieldDefinition[] = [
       'Internship',
       'Part time',
       'Project',
+      'Other',
     ],
     placeholder: 'Select experience type',
     required: true,
+  },
+  {
+    id: 'experienceTypeOther',
+    type: 'text',
+    label: 'Please specify experience type',
+    placeholder: 'Enter experience type',
+    required: false,
+    visibility: {
+      depends_on: {
+        field_id: 'experienceType',
+        value: ['Other'],
+      },
+    },
+    validationDependsOn: [
+      {
+        fieldId: 'experienceType',
+        values: ['Other'],
+        validation: { required: true },
+      },
+    ],
   },
   {
     id: 'industrySector',
@@ -2048,6 +2089,12 @@ export const professionalFieldDefs: FieldDefinition[] = [
     type: 'date',
     label: 'Start Date',
     placeholder: 'DD/MM/YYYY',
+    required: true,
+  },
+  {
+    id: 'currentlyWorking',
+    type: 'checkbox',
+    label: 'I currently work here',
     required: false,
   },
   {
@@ -2056,6 +2103,12 @@ export const professionalFieldDefs: FieldDefinition[] = [
     label: 'End Date',
     placeholder: 'DD/MM/YYYY',
     required: false,
+    visibility: {
+      depends_on: {
+        field_id: 'currentlyWorking',
+        value: [false, undefined, ''],
+      },
+    },
   },
   {
     id: 'achievements',
@@ -2084,11 +2137,13 @@ export const professionalLayout: LayoutBlock[] = [
     type: 'fieldset',
     fields: [
       'experienceType',
+      'experienceTypeOther',
       'industrySector',
       'currentEmployer',
       'jobTitle',
       'startDate',
       'endDate',
+      'currentlyWorking',
       'city',
       'responsibilities',
       'achievements',
@@ -2325,6 +2380,26 @@ export const extraCurricularFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
+    id: 'activityTypeOther',
+    type: 'text',
+    label: 'Please specify activity type',
+    placeholder: 'Enter activity type',
+    required: false,
+    visibility: {
+      depends_on: {
+        field_id: 'activityType',
+        value: ['Other'],
+      },
+    },
+    validationDependsOn: [
+      {
+        fieldId: 'activityType',
+        values: ['Other'],
+        validation: { required: true },
+      },
+    ],
+  },
+  {
     id: 'startDate',
     type: 'date',
     label: 'Start Date',
@@ -2398,6 +2473,7 @@ export const getExtraCurricularLayout = (
       type: 'fieldset',
       fields: [
         'activityType',
+        'activityTypeOther',
         'startDate',
         'endDate',
         'positionHeld',

@@ -121,11 +121,6 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                     {field.required && (
                       <span className="ml-1 text-orange-500">*</span>
                     )}
-                    {field.id.toLowerCase().includes('end') && (
-                      <span className="ml-1 text-[10px] text-neutral-500 font-normal italic">
-                        If you are currently employed with your organization, please enter today’s date as the end date
-                      </span>
-                    )}
                   </Label>
                 )}
                 <Input
@@ -224,7 +219,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             );
           case 'checkbox':
             return (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 pt-7">
                 <Checkbox
                   disabled={disabledField}
                   id={field.id}
