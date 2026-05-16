@@ -4,12 +4,14 @@
  * IMPORTANT: This logic MUST stay in sync with the backend calculation in
  * helloivy-api-main/apps/profiles/services.py → calculate_profile_completion().
  *
- * Tracked sections (3):
+ * Tracked sections (4):
  *   1. personalDetails  – 9 required fields checked individually
  *   2. educational       – 1 required field  (academicLevel)
  *   3. extraCurricular   – non-empty array   (1 point)
+ *   4. additional        – 2 required fields
  *
- * Total required items = 11.  Percentage = Math.round(filled / 11 * 100).
+ * Total weight: 100% (25% each)
+ * Professional section has 0% weightage.
  */
 
 type ProfileData = Record<string, unknown>;
@@ -24,6 +26,8 @@ const PERSONAL_REQUIRED_FIELDS = [
 ] as const;
 
 const EDUCATIONAL_REQUIRED_FIELDS = ['academicLevel'] as const;
+
+const ADDITIONAL_REQUIRED_FIELDS = ['degreeInterest', 'domainInterest'] as const;
 
 /**
  * Check if a single value is considered filled (mirrors backend _is_value_filled).
@@ -68,6 +72,7 @@ export const calculateProfileCompletion = (profileData: {
   educationalDetails?: ProfileData;
   professionalDetails?: ProfileData;
   extraCurricularDetails?: unknown;
+  additionalDetails?: ProfileData;
 }): number => {
   let totalPercentage = 0;
 
@@ -89,17 +94,22 @@ export const calculateProfileCompletion = (profileData: {
     totalPercentage += (educational.filled / educational.total) * 25;
   }
 
-  // 3. Professional (25%)
-  const profData = profileData.professionalDetails?.experiences;
-  if (Array.isArray(profData) && profData.length > 0) {
-    totalPercentage += 25;
-  }
-
-  // 4. Extra-curricular (25%)
+  // 3. Extra-curricular (25%)
   const ecData = profileData.extraCurricularDetails;
   if (Array.isArray(ecData) && ecData.length > 0) {
     totalPercentage += 25;
   }
+
+  // 4. Additional (25%)
+  const additional = countFilledFields(
+    profileData.additionalDetails ?? {},
+    ADDITIONAL_REQUIRED_FIELDS,
+  );
+  if (additional.total > 0) {
+    totalPercentage += (additional.filled / additional.total) * 25;
+  }
+
+  // 5. Professional (0%)
 
   return Math.round(Math.min(totalPercentage, 100));
 };
@@ -112,11 +122,13 @@ export const getSectionCompletionDetails = (profileData: {
   educationalDetails?: ProfileData;
   professionalDetails?: ProfileData;
   extraCurricularDetails?: unknown;
+  additionalDetails?: ProfileData;
 }): {
   personal: number;
   educational: number;
   professional: number;
   extraCurricular: number;
+  additional: number;
 } => {
   const personal = countFilledFields(
     profileData.personalDetails ?? {},
@@ -133,10 +145,16 @@ export const getSectionCompletionDetails = (profileData: {
   const ecData = profileData.extraCurricularDetails;
   const extraCurricularPct = Array.isArray(ecData) && ecData.length > 0 ? 100 : 0;
 
+  const additional = countFilledFields(
+    profileData.additionalDetails ?? {},
+    ADDITIONAL_REQUIRED_FIELDS,
+  );
+
   return {
     personal: personal.total > 0 ? Math.round((personal.filled / personal.total) * 100) : 0,
     educational: educational.total > 0 ? Math.round((educational.filled / educational.total) * 100) : 0,
     professional: professionalPct,
     extraCurricular: extraCurricularPct,
+    additional: additional.total > 0 ? Math.round((additional.filled / additional.total) * 100) : 0,
   };
 };
