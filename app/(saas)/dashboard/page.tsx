@@ -98,14 +98,18 @@ export default function Dashboard(): React.ReactElement {
           <Label size="md" className="block whitespace-pre-line">
             {description}
           </Label>
-          <Link href={linkHref} className="btn-secondary mt-4 inline-block">
+          <Link
+            href={linkHref}
+            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-105 hover:from-cyan-600 hover:to-blue-600 hover:shadow-xl active:scale-95"
+          >
             {linkText}
           </Link>
 
           <div className="mt-3 text-xs text-neutral-500">
             <ol className="ml-5 list-decimal space-y-1">
               <li>
-                Please complete your profile details carefully, to help me understand you better and ensure that your results are accurate.
+                Please complete your profile details carefully, to help me
+                understand you better and ensure that your results are accurate.
               </li>
               <li>You can use this tool on your computer, iPad, or tablet.</li>
               <li>
