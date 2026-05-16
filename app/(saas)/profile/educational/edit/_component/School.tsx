@@ -86,10 +86,21 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
   if (Array.isArray(currentFormArray)) {
     currentFormArray.forEach((entry) => {
       if (entry && typeof entry === 'object') {
-        const rawGrade = String((entry as Record<string, unknown>).gradeLevel || (entry as Record<string, unknown>).grade || '');
-        const g = parseInt(rawGrade.replace(/Grade\s+|th|st|nd|rd/gi, ''), 10);
+        const rawGrade = String((entry as Record<string, unknown>).gradeLevel || (entry as Record<string, unknown>).grade || '').toUpperCase();
+        let g = parseInt(rawGrade.replace(/GRADE\s+|TH|ST|ND|RD/gi, ''), 10);
+        
+        // Support Roman numerals if parsing as integer failed
+        if (isNaN(g)) {
+          const romanMap: Record<string, number> = { 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'VIII': 8 };
+          for (const [rom, num] of Object.entries(romanMap)) {
+            if (new RegExp(`\\b${rom}\\b`).test(rawGrade)) {
+              g = num;
+              break;
+            }
+          }
+        }
+
         // Snapshot data for any valid grade found in the form data.
-        // This preserves scanned data for grades that might not be visible currently.
         if (!isNaN(g)) {
           gradeDataRef.current[g] = { ...(entry as Record<string, unknown>) };
         }
@@ -237,6 +248,23 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
       watchedSectionData.forEach((entry, idx) => {
         const grade = gradesToShow[idx];
         if (grade === undefined) return;
+
+        // Ensure the record actually belongs to this grade before syncing subjects
+        const rawEntryGrade = String((entry as Record<string, unknown>).gradeLevel || (entry as Record<string, unknown>).grade || '').toUpperCase();
+        let entryGrade = parseInt(rawEntryGrade.replace(/GRADE\s+|TH|ST|ND|RD/gi, ''), 10);
+        if (isNaN(entryGrade)) {
+          const romanMap: Record<string, number> = { 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'VIII': 8 };
+          for (const [rom, num] of Object.entries(romanMap)) {
+            if (new RegExp(`\\b${rom}\\b`).test(rawEntryGrade)) {
+              entryGrade = num;
+              break;
+            }
+          }
+        }
+        
+        // If the entry has a different grade than the section we are syncing, skip it.
+        // The remapping useEffect will soon fix the array order.
+        if (!isNaN(entryGrade) && entryGrade !== grade) return;
 
         const subjectsFieldName = section.repeatables?.name ?? 'subjects';
         const formSubjects = (entry as Record<string, unknown>)?.[subjectsFieldName] as any[];
@@ -394,7 +422,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                 <Label size="lg" className="font-semibold text-neutral-900">
                   {gradeLabel} Basic Details
                 </Label>
-                <TranscriptUploader targetIndex={schoolIdx} />
+                <TranscriptUploader targetSection="highSchool" targetIndex={schoolIdx} />
               </div>
               {schoolIdx > 0 && (
                 <div className="mb-3 flex items-center gap-2">

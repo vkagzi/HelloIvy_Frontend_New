@@ -279,8 +279,12 @@ const EducationalDetailsForm: React.FC = () => {
         ...(section === 'highSchool' ? {
           schoolName: getValue(e, ['schoolName', 'institutionName', 'universityName', 'university', 'collegeName', 'college', 'school', 'nameOfInstitution']) ?? "",
           gradeLevel: (() => {
-            const raw = getValue(e, ['gradeLevel', 'grade', 'academicLevel']) ?? "";
-            const match = String(raw).match(/(\d+)/);
+            const raw = String(getValue(e, ['gradeLevel', 'grade', 'academicLevel']) ?? "").toUpperCase();
+            const romanMap: Record<string, number> = { 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'VIII': 8 };
+            for (const [rom, num] of Object.entries(romanMap)) {
+              if (new RegExp(`\\b${rom}\\b`).test(raw)) return num;
+            }
+            const match = raw.match(/(\d+)/);
             return match ? parseInt(match[1], 10) : "";
           })(),
           yearOfCompletion: (() => {
@@ -358,9 +362,36 @@ const EducationalDetailsForm: React.FC = () => {
         
         const currentArray = Array.isArray(newDefaults[sectionName]) ? [...newDefaults[sectionName]] : [];
         
-        // Use the first record from the scan for the targeted row
+        // Smart Record Picking: Find the record that matches the specific grade for this index
+        let bestRec = firstRec;
+        if (sectionName === 'highSchool' && educationalRecords.length > 1) {
+          const gradeLevel = currentValues.gradeLevel as string | undefined;
+          const hasScores = currentValues.hasCurrentGradeScores as string | undefined;
+          const parsedGrade = gradeLevel ? parseInt(gradeLevel.replace('Grade ', ''), 10) : 9;
+          const selectedGrade = !isNaN(parsedGrade) ? parsedGrade : 9;
+          
+          if (hasScores && ['Yes', 'No'].includes(hasScores)) {
+            const startGrade = hasScores === 'Yes' ? selectedGrade : selectedGrade - 1;
+            const targetGradeNum = startGrade - index;
+            
+            const matchingRec = educationalRecords.find((e: any) => {
+              const raw = String(getValue(e, ['gradeLevel', 'grade', 'academicLevel']) ?? "").toUpperCase();
+              const romanMap: Record<string, number> = { 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'VIII': 8 };
+              let extracted = parseInt(raw.replace(/GRADE\s+|TH|ST|ND|RD/gi, ''), 10);
+              if (isNaN(extracted)) {
+                for (const [rom, num] of Object.entries(romanMap)) {
+                  if (new RegExp(`\\b${rom}\\b`).test(raw)) { extracted = num; break; }
+                }
+              }
+              return extracted === targetGradeNum;
+            });
+            
+            if (matchingRec) bestRec = matchingRec;
+          }
+        }
+
         if (!currentArray[index]) currentArray[index] = {};
-        const mappedData = mapRecord(firstRec, sectionName);
+        const mappedData = mapRecord(bestRec, sectionName);
         currentArray[index] = { ...currentArray[index], ...mappedData };
         
         newDefaults[sectionName] = currentArray;
