@@ -10,6 +10,19 @@ import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
 import { isFieldVisible } from '@/app/_components/dynamic-form/utils/utils';
 import TranscriptUploader from '@/app/_components/TranscriptUploader';
+import {
+  americanSubjects,
+  cambridgeALevelSubjects,
+  cambridgeIGCSESubjects,
+  cbseSubjects,
+  hscSubjects,
+  icseSubjects,
+  ibSubjects,
+  iscSubjects,
+  niosSubjects,
+  stateBoardSubjects,
+  seniorSecondarySubjects,
+} from '@/app/(saas)/profile/_config/fieldDefinitions';
 
 /** Returns the list of grades to display in descending order (always 2 grades) */
 const computeGradesToShow = (
@@ -120,8 +133,8 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
       const existingSubjects =
         Array.isArray(existingSchools) && existingSchools[idx]
           ? (existingSchools[idx] as Record<string, unknown>)[
-              section.repeatables?.name ?? 'subjects'
-            ]
+          section.repeatables?.name ?? 'subjects'
+          ]
           : null;
       const subjectsCount = Array.isArray(existingSubjects)
         ? existingSubjects.length
@@ -238,7 +251,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
       });
     });
   }, [gradesToShow.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
-  
+
   // Watch for changes in the form data (e.g. from AI uploader) to sync subject rows
   const watchedSectionData = useWatch({
     control: form.control,
@@ -258,7 +271,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
         const subjectsFieldName = section.repeatables?.name ?? 'subjects';
         const formSubjects = (entry as Record<string, unknown>)?.[subjectsFieldName] as any[];
-        
+
         if (Array.isArray(formSubjects)) {
           const currentRows = prev[grade] || [];
           if (formSubjects.length !== currentRows.length) {
@@ -488,13 +501,12 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
             </p>
             <div className="mt-5 overflow-x-auto">
               {(() => {
+                const sectionValues = (formValues as Record<string, unknown>)?.[section.type] as any[];
+                const schoolValues = sectionValues?.[schoolIdx];
+                const schoolSubjects = schoolValues?.[section.repeatables?.name ?? 'subjects'] as any[];
+
                 // Check if any subject in this school has 'Other' selected
-                const hasOtherSubject = subjectRows.some((_, rowIdx) => {
-                  const subjectValue = form.watch(
-                    `${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.subject`
-                  ) as string | undefined;
-                  return subjectValue === 'Other';
-                });
+                const hasOtherSubject = Array.isArray(schoolSubjects) && schoolSubjects.some((s) => s.subject === 'Other');
 
                 // Filter fields to exclude 'subjectOther' if no 'Other' subject exists
                 const visibleFields =
@@ -533,10 +545,8 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                     </thead>
                     <tbody>
                       {subjectRows.map((row, rowIdx) => {
-                        // Watch the subject value for this row to conditionally show subjectOther
-                        const subjectValue = form.watch(
-                          `${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.subject`
-                        ) as string | undefined;
+                        // Get the subject value for this row from schoolSubjects
+                        const subjectValue = schoolSubjects?.[rowIdx]?.subject as string | undefined;
                         const showSubjectOther = subjectValue === 'Other';
 
                         // Collect subjects already selected in OTHER rows (exclude 'Other' since multiple custom subjects are allowed)
@@ -580,24 +590,41 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                                 );
                               }
 
+                              // Get the board value for this school from formValues
+                              const boardValue = schoolValues?.board as string | undefined;
+
+                              // Map board names to subject lists
+                              const boardSubjectMap: Record<string, string[]> = {
+                                'American (AP / US High School Diploma)': americanSubjects,
+                                'Cambridge - A Levels': cambridgeALevelSubjects,
+                                'Cambridge - IGCSE': cambridgeIGCSESubjects,
+                                CBSE: cbseSubjects,
+                                HSC: hscSubjects,
+                                ICSE: icseSubjects,
+                                'International Baccalaureate (IB)': ibSubjects,
+                                ISC: iscSubjects,
+                                NIOS: niosSubjects,
+                                'State Board': stateBoardSubjects,
+                              };
+
+                              const currentBoardSubjects =
+                                (boardValue && boardSubjectMap[boardValue]) || seniorSecondarySubjects;
+
                               const controllerName = `${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.${fieldDef.id}`;
+
                               // For subject field, filter out subjects already selected in other rows
-                              const filteredFieldDef: FieldDefinition =
-                                fieldId === 'subject' && fieldDef.options
-                                  ? {
-                                      ...fieldDef,
-                                      id: controllerName,
-                                      label: '',
-                                      options: fieldDef.options.filter(
-                                        (opt) =>
-                                          !alreadySelectedSubjects.includes(opt)
-                                      ),
-                                    }
-                                  : {
-                                      ...fieldDef,
-                                      id: controllerName,
-                                      label: '', // Remove label in table cells
-                                    };
+                              const subjectsToShow = fieldId === 'subject'
+                                ? currentBoardSubjects.filter(
+                                  (opt) => opt === 'Other' || !alreadySelectedSubjects.includes(opt)
+                                )
+                                : undefined;
+
+                              const fieldForRenderer: FieldDefinition = {
+                                ...fieldDef,
+                                id: controllerName,
+                                label: '', // Remove label in table cells
+                              };
+
                               return (
                                 <td key={controllerName} className="px-4 py-3">
                                   <Controller
@@ -608,12 +635,13 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                                     }
                                     render={() => (
                                       <FieldRenderer
-                                        field={filteredFieldDef}
+                                        field={fieldForRenderer}
                                         form={form}
                                         error={errors[controllerName]}
                                         inputHeightClass="py-2"
                                         labelHeightClass="text-label-md"
                                         inputWidthClass="w-full"
+                                        optionsOverride={subjectsToShow}
                                       />
                                     )}
                                   />
@@ -649,14 +677,14 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
             {errors[
               `${sectionType}.${schoolIdx}.${section.repeatables?.name ?? 'subjects'}`
             ] && (
-              <p className="mt-1 text-sm text-red-500">
-                {
-                  errors[
+                <p className="mt-1 text-sm text-red-500">
+                  {
+                    errors[
                     `${sectionType}.${schoolIdx}.${section.repeatables?.name ?? 'subjects'}`
-                  ]
-                }
-              </p>
-            )}
+                    ]
+                  }
+                </p>
+              )}
             <button
               type="button"
               className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"

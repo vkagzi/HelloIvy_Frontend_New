@@ -72,7 +72,34 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   const dependentFieldId = (field as any).optionsDependsOn?.fieldId as
     | string
     | undefined;
-  const watchedDepValue = dependentFieldId ? form.watch(dependentFieldId) : undefined;
+
+  // Resolve the dependent field ID by looking up the path hierarchy
+  const resolvedDependentFieldId = React.useMemo(() => {
+    if (!dependentFieldId) return undefined;
+    
+    // Split the current field path (e.g., "highSchool.0.subjects.0.subject")
+    const parts = field.id.split('.');
+    
+    // Traverse upwards from the current field's location to find the dependent field
+    // e.g., for "highSchool.0.subjects.0.subject" and "board", try:
+    // 1. "highSchool.0.subjects.0.board"
+    // 2. "highSchool.0.subjects.board"
+    // 3. "highSchool.0.board" (This is where the board field is)
+    // 4. "board"
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const prefix = parts.slice(0, i).join('.');
+      const candidateId = prefix ? `${prefix}.${dependentFieldId}` : dependentFieldId;
+      
+      // Check if this candidate exists in the form state
+      if (form.getValues(candidateId) !== undefined) {
+        return candidateId;
+      }
+    }
+    
+    return dependentFieldId;
+  }, [field.id, dependentFieldId, form]);
+
+  const watchedDepValue = resolvedDependentFieldId ? form.watch(resolvedDependentFieldId) : undefined;
   
   const resolvedOptions: string[] = React.useMemo(() => {
     if (optionsOverride) return optionsOverride;
