@@ -84,23 +84,15 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     | Record<string, unknown>[]
     | undefined;
   if (Array.isArray(currentFormArray)) {
-    const currentGradeSet = new Set(gradesToShow);
     currentFormArray.forEach((entry) => {
       if (entry && typeof entry === 'object') {
         const rawGrade = String((entry as Record<string, unknown>).gradeLevel || (entry as Record<string, unknown>).grade || '');
         const g = parseInt(rawGrade.replace(/Grade\s+|th|st|nd|rd/gi, ''), 10);
-        // Only snapshot data for grades that are currently allowed
-        if (!isNaN(g) && currentGradeSet.has(g)) {
+        // Snapshot data for any valid grade found in the form data.
+        // This preserves scanned data for grades that might not be visible currently.
+        if (!isNaN(g)) {
           gradeDataRef.current[g] = { ...(entry as Record<string, unknown>) };
         }
-      }
-    });
-    // Remove ALL stale entries — any grade not in the allowed set is deleted
-    // so that old data never leaks back when grades are reused
-    Object.keys(gradeDataRef.current).forEach((key) => {
-      const gradeNum = parseInt(key, 10);
-      if (!currentGradeSet.has(gradeNum)) {
-        delete gradeDataRef.current[gradeNum];
       }
     });
   }
@@ -136,18 +128,8 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     return map;
   });
 
-  // Sync subject rows map and form grade values whenever gradesToShow changes
   useEffect(() => {
-    const allowedGradeSet = new Set(gradesToShow);
-
-    // Eagerly clear gradeDataRef entries for grades that are no longer shown.
-    // This prevents stale data from being restored if the user switches back.
-    Object.keys(gradeDataRef.current).forEach((key) => {
-      const gradeNum = parseInt(key, 10);
-      if (!allowedGradeSet.has(gradeNum)) {
-        delete gradeDataRef.current[gradeNum];
-      }
-    });
+    // Sync subject rows map and form grade values whenever gradesToShow changes
 
     setSubjectRowsByGrade((prev) => {
       const next: Record<number, SubjectRows> = {};

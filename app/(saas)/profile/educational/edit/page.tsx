@@ -278,6 +278,11 @@ const EducationalDetailsForm: React.FC = () => {
         // Common fields with different names
         ...(section === 'highSchool' ? {
           schoolName: getValue(e, ['schoolName', 'institutionName', 'universityName', 'university', 'collegeName', 'college', 'school', 'nameOfInstitution']) ?? "",
+          gradeLevel: (() => {
+            const raw = getValue(e, ['gradeLevel', 'grade', 'academicLevel']) ?? "";
+            const match = String(raw).match(/(\d+)/);
+            return match ? parseInt(match[1], 10) : "";
+          })(),
           yearOfCompletion: (() => {
             const raw = getValue(e, ['yearOfCompletion', 'graduationYear', 'endYear', 'end_year', 'endDate', 'end_date', 'year']) ?? "";
             if (!raw) return '';
