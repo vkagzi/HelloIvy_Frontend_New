@@ -544,6 +544,7 @@ const EducationalDetailsForm: React.FC = () => {
     // 4. Map Test Scores
     if (parsedTranscriptData.testScores && Array.isArray(parsedTranscriptData.testScores) && parsedTranscriptData.testScores.length > 0) {
       newDefaults.testScores = parsedTranscriptData.testScores.map((newScore: any) => ({
+        ...newScore,
         testType: newScore.testType || "",
         testDate: newScore.testDate || "",
         totalScore: newScore.totalScore || newScore.yourScore || "",
