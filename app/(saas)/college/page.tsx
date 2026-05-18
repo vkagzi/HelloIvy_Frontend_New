@@ -9,6 +9,8 @@ import { FiIcon } from '@/app/_components/Icons';
 import { Heading, Label } from '@/app/_components/Typography';
 import LottieAnimation, { BrainWithoutBGLottie, IvyWithoutBGLottie } from '@/app/_components/LottieAnimation';
 import ModuleAccessGuard from '@/app/_components/ModuleAccessGuard';
+import Link from 'next/link';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 function CollegeLandingPage() {
   const router = useRouter();
@@ -16,6 +18,11 @@ function CollegeLandingPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { speakText, isSpeaking } = useOpenAITTS();
+  const { profileData, loading: profileLoading } = useProfile();
+
+  const profileExists = profileData !== null;
+  const linkText = profileExists ? 'View/Edit your profile' : 'Create your profile';
+  const linkHref = '/profile/personal';
 
   const instructions = `This module helps you discover colleges that align with your academic goals, preferences, and dreams. We'll explore colleges worldwide based on your preferred country, academic field, and budget. You'll receive customized college recommendations based on your profile and express your preferences naturally with voice or text. The process takes 15-20 minutes and covers preferred countries, academic fields, budget, and campus preferences. You'll get your top 5 personalized college recommendations with detailed insights.`;
 
@@ -47,6 +54,17 @@ function CollegeLandingPage() {
               <br />
               College Selection?
             </Heading>
+            
+            {profileLoading ? (
+              <div className="mt-5 h-10 w-44 animate-pulse rounded-xl bg-neutral-200" />
+            ) : (
+              <Link
+                href={linkHref}
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-105 hover:from-cyan-600 hover:to-blue-600 hover:shadow-xl active:scale-95"
+              >
+                {linkText}
+              </Link>
+            )}
           </div>
 
           {/* Right - Brain Animation */}
