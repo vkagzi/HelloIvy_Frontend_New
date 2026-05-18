@@ -43,8 +43,16 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [completionPercentage, setCompletionPercentage] = useState<number>(0);
   const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   const [missingSections, setMissingSections] = useState<string[]>([]);
-  const [parsedTranscriptData, setParsedTranscriptData] = useState<Record<string, any> | null>(null);
+  const [parsedTranscriptData, setParsedTranscriptDataInternal] = useState<Record<string, any> | null>(null);
   const [unsavedProfileEdits, setUnsavedProfileEdits] = useState<Record<string, any>>({});
+
+  const setParsedTranscriptData = useCallback((data: Record<string, any> | null) => {
+    setParsedTranscriptDataInternal(data);
+    if (data) {
+      // Clear any prior unsaved edits so that the fresh scan details successfully override and auto-fill the forms
+      setUnsavedProfileEdits({});
+    }
+  }, []);
   const currentUserIdRef = useRef<string | null>(null);
 
   const fetchProfileData = useCallback(async (): Promise<void> => {
