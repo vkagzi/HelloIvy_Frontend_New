@@ -162,11 +162,6 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       return;
     }
 
-    if (!isProfileComplete) {
-      setError('Please complete your profile before starting a session.');
-      return;
-    }
-
     if (!selectedPrimary) {
       setError('Please select at least your primary domain before starting.');
       return;
@@ -593,99 +588,36 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             </div>
           )}
 
-          {!profileLoading && !isProfileComplete ? (
-            <div className="mt-6 rounded-lg border border-orange-200 bg-orange-50 p-4">
-              <div className="flex items-start gap-3">
-                <FiIcon
-                  name="exclamation-circle"
-                  className="mt-0.5 h-5 w-5 shrink-0 text-orange-500"
-                />
-                <div className="flex-1">
-                  <p className="font-semibold text-orange-800">
-                    Profile incomplete ({completionPercentage}%)
-                  </p>
-                  <p className="mt-1 text-sm text-orange-700">
-                    You need to complete your profile before starting a Career &
-                    Degree Selection session.
-                    {missingSections.some(s => s === 'personalDetails' || s === 'educational') && (
-                      <>
-                        {' '}
-                        Missing:{' '}
-                        {missingSections.map((s, i) => {
-                          const slugMap: Record<string, string> = {
-                            personalDetails: 'personal',
-                            educational: 'educational',
-                            extraCurricular: 'extra-curricular',
-                          };
-                          const labelMap: Record<string, string> = {
-                            personalDetails: 'Personal Details',
-                            educational: 'Educational',
-                            extraCurricular: 'Extra Curricular',
-                          };
-                          const slug = slugMap[s] ?? s;
-                          const label =
-                            labelMap[s] ??
-                            s.charAt(0).toUpperCase() + s.slice(1);
-                          return (
-                            <span key={s}>
-                              {i > 0 && ', '}
-                              <Link
-                                href={`/profile/${slug}/edit`}
-                                className="font-medium underline underline-offset-2 hover:text-orange-900"
-                              >
-                                {label}
-                              </Link>
-                            </span>
-                          );
-                        })}
-                        .
-                      </>
-                    )}
-                  </p>
-                  <Link
-                    href="/profile/personal/edit"
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
-                  >
-                    <FiIcon name="pencil" className="h-4 w-4" />
-                    Complete my profile
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-                <label className="flex cursor-pointer items-start gap-3">
-                  <Checkbox
-                    checked={hasReadInstructions}
-                    onCheckedChange={(checked) =>
-                      setHasReadInstructions(Boolean(checked))
-                    }
-                    className="mt-1"
-                  />
-                  <span className="text-sm text-gray-700">
-                    I have read all the instructions mentioned above.
-                  </span>
-                </label>
-              </div>
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={handleStartCareerDiscovery}
-                disabled={isLoading || !hasReadInstructions || !domainsSelected || profileLoading}
-                iconRight={<FiIcon name="arrow-small-right" className="h-5 w-5" />}
-                className="mt-6"
-              >
-                {isLoading
-                  ? 'Starting...'
-                  : !domainsSelected
-                    ? 'Select Your Domains First'
-                    : sessions.length > 0
-                      ? 'Start New Session'
-                      : 'Start Session'}
-              </Button>
-            </>
-          )}
+          <div className="mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <Checkbox
+                checked={hasReadInstructions}
+                onCheckedChange={(checked) =>
+                  setHasReadInstructions(Boolean(checked))
+                }
+                className="mt-1"
+              />
+              <span className="text-sm text-gray-700">
+                I have read all the instructions mentioned above.
+              </span>
+            </label>
+          </div>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleStartCareerDiscovery}
+            disabled={isLoading || !hasReadInstructions || !domainsSelected}
+            iconRight={<FiIcon name="arrow-small-right" className="h-5 w-5" />}
+            className="mt-6"
+          >
+            {isLoading
+              ? 'Starting...'
+              : !domainsSelected
+                ? 'Select Your Domains First'
+                : sessions.length > 0
+                  ? 'Start New Session'
+                  : 'Start Session'}
+          </Button>
         </div>
       </div>
     </div>

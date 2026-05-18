@@ -491,7 +491,9 @@ export default function AdminUserDetailPage() {
                 ? calculateProfileCompletion({
                     personalDetails: profileInner.personalDetails as Record<string, unknown>,
                     educationalDetails: profileInner.educational as Record<string, unknown>,
+                    professionalDetails: profileInner.professional as Record<string, unknown>,
                     extraCurricularDetails: profileInner.extraCurricular,
+                    additionalDetails: profileInner.additional as Record<string, unknown>,
                   })
                 : 0;
 

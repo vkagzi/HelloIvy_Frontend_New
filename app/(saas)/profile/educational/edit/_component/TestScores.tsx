@@ -78,6 +78,8 @@ export const TestScoresBlock: React.FC<TestScoresBlockProps> = ({
 
   // Sync testScores state with form data when form data changes
   useEffect(() => {
+    console.log('!!! [TestScoresBlock] watchedAllTestScores:', JSON.stringify(watchedAllTestScores, null, 2));
+    console.log('!!! [TestScoresBlock] form.getValues("testScores"):', JSON.stringify(form.getValues('testScores'), null, 2));
     if (Array.isArray(watchedAllTestScores) && watchedAllTestScores.length > 0) {
       const filteredScores = watchedAllTestScores
         .filter((score) => {

@@ -18,6 +18,7 @@ import {
 import CollapsibleSection from '@/app/_components/CollapsibleSection';
 import Component from '@/app/(saas)/profile/educational/edit/_component/Component';
 import { TestScoresBlock } from '@/app/(saas)/profile/educational/edit/_component/TestScores';
+import { useToast } from '@/app/_components/Toast';
 import {
   getDefaultValue,
   isFieldVisible,
@@ -44,6 +45,20 @@ const flattenDefaultValues = (
   layout: LayoutItem[]
 ): Record<string, unknown> => {
   const result: Record<string, unknown> = { ...values };
+
+  // Explicitly flatten testScores because it is managed as a custom block in TestScores.tsx
+  // and is not registered as a standard repeatable fieldset in the static layout.
+  if (values && Array.isArray(values.testScores)) {
+    const arr = values.testScores as Record<string, unknown>[];
+    arr.forEach((row, idx) => {
+      if (row && typeof row === 'object') {
+        Object.entries(row).forEach(([key, val]) => {
+          result[`testScores.${idx}.${key}`] = val;
+        });
+      }
+    });
+  }
+
   layout.forEach((item) => {
     if (item.repeatable && item.name && Array.isArray(values[item.name])) {
       const arr = values[item.name] as Record<string, unknown>[];
@@ -72,6 +87,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   onSaveOnly,
   isSubmitting = false,
 }) => {
+  const { addToast } = useToast();
   const [shouldNavigate, setShouldNavigate] = React.useState(false);
   const initialState: Record<string, unknown> = {};
   layout.forEach((item) => {
@@ -160,41 +176,47 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     z.number().min(1, 'Percentile must be at least 1').max(100, 'Percentile must be at most 100').optional()
   );
 
+  const stringField = z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? undefined : String(val)),
+    z.string().optional()
+  );
+
   const testScoresSchema = z.object({
     testScores: z
       .array(
         z
           .object({
-            testType: z.string().optional(),
-            testDate: z.string().optional(),
-            totalScore: z.string().optional(),
-            yourScore: z.string().optional(),
+            testType: stringField,
+            testDate: stringField,
+            totalScore: stringField,
+            yourScore: stringField,
             yourPercentile: percentileField,
-            writingYourScore: z.string().optional(),
+            writingYourScore: stringField,
             writingYourPercentile: percentileField,
-            mathYourScore: z.string().optional(),
+            mathYourScore: stringField,
             mathYourPercentile: percentileField,
-            criticalReadingYourScore: z.string().optional(),
+            criticalReadingYourScore: stringField,
             criticalReadingYourPercentile: percentileField,
-            analyticalWritingScore: z.string().optional(),
+            analyticalWritingScore: stringField,
             analyticalWritingPercentile: percentileField,
-            verbalReasoningScore: z.string().optional(),
+            verbalReasoningScore: stringField,
             verbalReasoningPercentile: percentileField,
-            quantitativeReasoningScore: z.string().optional(),
+            quantitativeReasoningScore: stringField,
             quantitativeReasoningPercentile: percentileField,
-            dataInsightsScore: z.string().optional(),
+            dataInsightsScore: stringField,
             dataInsightsPercentile: percentileField,
-            englishYourScore: z.string().optional(),
+            englishYourScore: stringField,
             englishYourPercentile: percentileField,
-            readingYourScore: z.string().optional(),
+            readingYourScore: stringField,
             readingYourPercentile: percentileField,
-            scienceYourScore: z.string().optional(),
+            scienceYourScore: stringField,
             scienceYourPercentile: percentileField,
-            integratedReasoningScore: z.string().optional(),
+            integratedReasoningScore: stringField,
             integratedReasoningPercentile: percentileField,
-            retakeExamDate: z.string().optional(),
-            tookCoaching: z.string().optional(),
-            coachingName: z.string().optional(),
+            retakeExamDate: stringField,
+            tookCoaching: stringField,
+            coachingName: stringField,
+            numberOfAttempts: stringField,
           })
           .refine(
             (data) => {
@@ -244,7 +266,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       .default([]),
   });
 
-  // Merge test scores schema with main schema
+  // Merge test scores schema with main schema     
   schema = schema.and(testScoresSchema);
 
   const handleAddRepeatable = (groupName: string, fields: string[]): void => {
@@ -436,11 +458,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               return (
                 <button
                   type="button"
-                  className={`text-label-sm self-start font-medium ${
-                    isMaxReached
+                  className={`text-label-sm self-start font-medium ${isMaxReached
                       ? 'cursor-not-allowed text-neutral-400'
                       : 'cursor-pointer text-blue-500'
-                  }`}
+                    }`}
                   onClick={() =>
                     handleAddRepeatable(item.name!, item.fields ?? [])
                   }
@@ -538,11 +559,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               return (
                 <button
                   type="button"
-                  className={`text-label-sm self-start font-medium ${
-                    isMaxReached
+                  className={`text-label-sm self-start font-medium ${isMaxReached
                       ? 'cursor-not-allowed text-neutral-400'
                       : 'cursor-pointer text-blue-500'
-                  }`}
+                    }`}
                   onClick={() =>
                     handleAddRepeatable(item.name!, item.fields ?? [])
                   }
@@ -727,11 +747,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               return (
                 <button
                   type="button"
-                  className={`text-label-sm self-start font-medium ${
-                    isMaxReached
+                  className={`text-label-sm self-start font-medium ${isMaxReached
                       ? 'cursor-not-allowed text-neutral-400'
                       : 'cursor-pointer text-blue-500'
-                  }`}
+                    }`}
                   onClick={() =>
                     handleAddRepeatable(item.name!, item.fields ?? [])
                   }
@@ -1239,10 +1258,12 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     // These are created by flattenDefaultValues for React Hook Form but should not be in the final output
     Object.keys(filtered).forEach((key) => {
       // Check if the key matches a flattened pattern: repeatableName.index.fieldName
-      const isFlattened = repeatableNames.some((name) => {
-        const pattern = new RegExp(`^${name}\\.\\d+\\.`);
-        return pattern.test(key);
-      });
+      const isFlattened =
+        repeatableNames.some((name) => {
+          const pattern = new RegExp(`^${name}\\.\\d+\\.`);
+          return pattern.test(key);
+        }) || /^testScores\.\d+\./.test(key);
+
       if (isFlattened) {
         delete filtered[key];
       }

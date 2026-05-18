@@ -61,11 +61,12 @@ const countFilledFields = (
 
 /**
  * Calculate overall profile completion percentage.
- * Each of the 4 sections contributes exactly 25%.
- * - Personal Details: 25%
- * - Educational: 25%
- * - Professional (experiences): 25%
- * - Extra-curricular (extraCurricular): 25%
+ * Total weight: 100%
+ * - Personal Details: 22.5%
+ * - Educational: 22.5%
+ * - Professional: 22.5%
+ * - Extra-curricular (extraCurricular): 22.5%
+ * - Additional: 10%
  */
 export const calculateProfileCompletion = (profileData: {
   personalDetails?: ProfileData;
@@ -76,40 +77,44 @@ export const calculateProfileCompletion = (profileData: {
 }): number => {
   let totalPercentage = 0;
 
-  // 1. Personal details (25%)
+  // 1. Personal details (22.5%)
   const personal = countFilledFields(
     profileData.personalDetails ?? {},
     PERSONAL_REQUIRED_FIELDS,
   );
   if (personal.total > 0) {
-    totalPercentage += (personal.filled / personal.total) * 25;
+    totalPercentage += (personal.filled / personal.total) * 22.5;
   }
 
-  // 2. Educational (25%)
+  // 2. Educational (22.5%)
   const educational = countFilledFields(
     profileData.educationalDetails ?? {},
     EDUCATIONAL_REQUIRED_FIELDS,
   );
   if (educational.total > 0) {
-    totalPercentage += (educational.filled / educational.total) * 25;
+    totalPercentage += (educational.filled / educational.total) * 22.5;
   }
 
-  // 3. Extra-curricular (25%)
+  // 3. Professional (22.5%)
+  const profData = profileData.professionalDetails?.experiences;
+  if (Array.isArray(profData) && profData.length > 0) {
+    totalPercentage += 22.5;
+  }
+
+  // 4. Extra-curricular (22.5%)
   const ecData = profileData.extraCurricularDetails;
   if (Array.isArray(ecData) && ecData.length > 0) {
-    totalPercentage += 25;
+    totalPercentage += 22.5;
   }
 
-  // 4. Additional (25%)
+  // 5. Additional (10%)
   const additional = countFilledFields(
     profileData.additionalDetails ?? {},
     ADDITIONAL_REQUIRED_FIELDS,
   );
   if (additional.total > 0) {
-    totalPercentage += (additional.filled / additional.total) * 25;
+    totalPercentage += (additional.filled / additional.total) * 10;
   }
-
-  // 5. Professional (0%)
 
   return Math.round(Math.min(totalPercentage, 100));
 };
