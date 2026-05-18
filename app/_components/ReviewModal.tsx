@@ -5,7 +5,7 @@ import { useState } from 'react';
 interface Props {
   open: boolean;
   onClose: () => void;
-  module: "stream" | "career";
+  module: "stream" | "career" | "college";
 }
 
 export default function ReviewModal({ open, onClose, module }: Props) {
