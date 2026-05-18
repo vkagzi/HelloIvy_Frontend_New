@@ -528,14 +528,29 @@ function extractTestScores(edu: Record<string, unknown> | undefined): Array<Reco
 // ================== Helper Components ==================
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
+  const percent = Math.round((current / total) * 100);
   return (
-    <div className="mb-6 space-y-3">
+    <div className="mb-10 space-y-4">
       <div className="flex items-center justify-between">
-        <Badge variant="secondary">Step {current} of {total}</Badge>
-        <span className="text-sm text-neutral-500">{Math.round((current / total) * 100)}%</span>
+        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50/80 px-3.5 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200/60 shadow-xs backdrop-blur-md">
+          <span className="flex h-2 w-2 rounded-full bg-emerald-500 relative">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+          </span>
+          Step {current} of {total}
+        </span>
+        <span className="text-sm font-extrabold text-neutral-800 tracking-tight flex items-center gap-1">
+          <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100/80">{percent}%</span>
+          <span className="text-neutral-400 font-medium text-xs uppercase tracking-wider">Complete</span>
+        </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
-        <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${(current / total) * 100}%` }} />
+      <div className="h-3 w-full overflow-hidden rounded-full bg-neutral-100 border border-neutral-200/20 p-[2px] shadow-inner">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-emerald-500 to-blue-600 transition-all duration-700 ease-out shadow-[0_0_8px_rgba(6,182,212,0.35)] relative overflow-hidden"
+          style={{ width: `${percent}%` }}
+        >
+          {/* Shimmering animation effect overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.25)_50%,transparent_100%)] bg-[length:200%_100%] animate-[shimmer_2.5s_infinite]" />
+        </div>
       </div>
     </div>
   );
@@ -545,27 +560,62 @@ function MCQOption({ value, label, desc, icon, selected, onSelect }: {
   value: string; label: string; desc?: string; icon?: string; selected: boolean; onSelect: (v: string) => void;
 }) {
   return (
-    <Button
+    <button
       type="button"
-      variant="outline"
       onClick={() => onSelect(value)}
       className={cn(
-        'h-auto w-full justify-start gap-3 rounded-xl border-2 p-4 text-left whitespace-normal hover:bg-neutral-50',
-        selected && 'border-primary bg-primary/5 text-primary hover:bg-primary/10'
+        'group flex w-full items-start gap-4 rounded-2xl border-2 p-5 text-left transition-all duration-300 ease-out cursor-pointer',
+        selected
+          ? 'border-emerald-500 bg-gradient-to-br from-emerald-50/50 via-white to-emerald-50/20 shadow-[0_8px_25px_rgba(16,185,129,0.06)] ring-1 ring-emerald-500/20 scale-[1.01]'
+          : 'border-neutral-200 bg-gradient-to-b from-white to-neutral-50/30 hover:border-emerald-500/30 hover:bg-white hover:shadow-[0_10px_30px_rgba(16,185,129,0.04)] hover:-translate-y-[2px]'
       )}
     >
+      {/* Premium Radio Checked Indicator */}
       <span className={cn(
-        'flex size-5 shrink-0 items-center justify-center rounded-full border-2',
-        selected ? 'border-primary' : 'border-neutral-300'
+        'mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300',
+        selected
+          ? 'border-emerald-600 bg-emerald-600 shadow-[0_0_10px_rgba(16,185,129,0.4)] scale-110'
+          : 'border-neutral-300 group-hover:border-emerald-400/60 bg-white'
       )}>
-        {selected && <span className="size-2.5 rounded-full bg-primary" />}
+        {selected ? (
+          <svg className="h-3.5 w-3.5 text-white stroke-[3.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <span className="h-2 w-2 rounded-full bg-transparent group-hover:bg-neutral-200 transition-colors duration-200" />
+        )}
       </span>
-      {icon && <span className="text-xl shrink-0">{icon}</span>}
-      <span className="grid gap-1">
-        <span className="font-medium text-neutral-900">{label}</span>
-        {desc && <span className="text-sm font-normal text-neutral-500">{desc}</span>}
+
+      {/* Premium Emoji Box */}
+      {icon && (
+        <span className={cn(
+          'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl transition-all duration-300 border shadow-xs',
+          selected
+            ? 'bg-gradient-to-br from-cyan-50 via-emerald-50/20 to-blue-50/50 border-emerald-200 scale-110 shadow-[0_4px_12px_rgba(16,185,129,0.15)]'
+            : 'bg-white border-neutral-100 group-hover:bg-neutral-50 group-hover:scale-105'
+        )}>
+          {icon}
+        </span>
+      )}
+
+      {/* Text block */}
+      <span className="grid gap-1 flex-1">
+        <span className={cn(
+          'font-bold text-base transition-colors duration-200 tracking-tight leading-none',
+          selected ? 'text-emerald-950' : 'text-neutral-800 group-hover:text-emerald-950'
+        )}>
+          {label}
+        </span>
+        {desc && (
+          <span className={cn(
+            'text-sm leading-relaxed font-medium transition-colors duration-200 mt-1',
+            selected ? 'text-emerald-800/80' : 'text-neutral-500'
+          )}>
+            {desc}
+          </span>
+        )}
       </span>
-    </Button>
+    </button>
   );
 }
 
@@ -573,18 +623,22 @@ function MultiSelectChip({ label, icon, selected, onToggle }: {
   label: string; icon?: string; selected: boolean; onToggle: () => void;
 }) {
   return (
-    <Button
+    <button
       type="button"
-      size="sm"
-      variant={selected ? 'default' : 'secondary'}
       onClick={onToggle}
-      className="rounded-full"
+      className={cn(
+        'inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 cursor-pointer shadow-xs border',
+        selected
+          ? 'bg-gradient-to-r from-cyan-500 via-emerald-500 to-blue-600 border-transparent text-white shadow-md shadow-cyan-500/10 scale-102 hover:from-cyan-600 hover:via-emerald-600 hover:to-blue-700'
+          : 'bg-white border-neutral-200/80 text-neutral-700 hover:border-emerald-500/40 hover:text-emerald-800 hover:shadow-sm'
+      )}
     >
-      {icon && <span className="mr-1.5">{icon}</span>}
-      {label}
-    </Button>
+      {icon && <span className="text-base shrink-0 transition-transform group-hover:scale-110">{icon}</span>}
+      <span>{label}</span>
+    </button>
   );
 }
+
 
 function SearchableSelect({ options, value, onChange, placeholder }: {
   options: string[]; value: string; onChange: (v: string) => void; placeholder: string;
@@ -667,7 +721,7 @@ export default function PreferencesPage() {
     if (degreeType && !options.includes(degreeType)) {
       setDegreeType('');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [degreeLevel, degreeTypesByLevel]);
 
   // Populate test scores from profile
@@ -959,367 +1013,553 @@ export default function PreferencesPage() {
   };
 
   return (
-    <div className="h-full overflow-auto bg-neutral-50">
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <Card>
-          <CardContent className="p-6 md:p-8">
-            <h1 className="mb-2 text-2xl font-bold text-neutral-900">College Selection Preferences</h1>
-            <p className="mb-6 text-neutral-500">Tell us what you&apos;re looking for so we can find the best colleges for you.</p>
+    <div className="min-h-full overflow-auto bg-neutral-50 relative py-8 px-4 md:py-16">
+      {/* Ambient background glowing orbs */}
+      <div className="absolute top-10 left-10 w-72 h-72 rounded-full bg-cyan-400/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-blue-400/10 blur-3xl pointer-events-none" />
+      <div className="absolute top-1/3 right-20 w-80 h-80 rounded-full bg-indigo-300/5 blur-3xl pointer-events-none" />
 
+      {/* Custom styles for animations */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}} />
+
+      <div className="mx-auto max-w-3xl relative z-10 animate-fadeIn">
+        <div className="rounded-3xl border border-neutral-200/60 bg-white/95 shadow-[0_20px_50px_rgba(0,0,0,0.03)] backdrop-blur-xl overflow-hidden relative">
+          <div className="overflow-hidden rounded-[32px] border border-neutral-200 bg-white shadow-xl">
+
+            {/* Card Top Accent Line */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#3B82F6] via-[#22C1EE] to-[#1FD1C2]" />
+
+            <div className="p-6 md:p-10">
+              <div className="text-center md:text-left mb-8 flex flex-col items-center md:items-start">
+                {/* Luxury Academic Badge */}
+                {/* Icon Badge */}
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3B82F6] via-[#22C1EE] to-[#1FD1C2] text-white shadow-[0_10px_30px_rgba(34,193,238,0.35)]">
+                  <svg
+                    className="h-7 w-7"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                    />
+                  </svg>
+                </div>
+
+                {/* Heading */}
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-[#2563EB] via-[#1DA1F2] to-[#14C8B8] bg-clip-text text-transparent">
+                  College Selection Preferences
+                </h1>
+
+                {/* Subtitle */}
+                <p className="mt-3 text-neutral-500 text-sm md:text-base font-medium max-w-lg leading-relaxed">
+                  Tell us what you&apos;re looking for so we can find the best colleges for you.
+                </p>
+              </div>
+            </div>
             <StepIndicator current={step} total={TOTAL_STEPS} />
 
-        {/* Step 1: Degree Goals */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">1. Degree Goals</h2>
-            <p className="text-neutral-600">Which degree do you wish to pursue?</p>
-
-            <div>
-              <Label className="mb-2">Degree Level *</Label>
-              {degreeOptionsLoading ? (
-                <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-500">Loading degree options...</div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {degreeLevels.map((d) => (
-                    <MCQOption key={d.value} value={d.value} label={d.label} icon={DEGREE_LEVEL_ICONS[d.value]}
-                      selected={degreeLevel === d.value} onSelect={setDegreeLevel} />
-                  ))}
+            {/* Step 1: Degree Goals */}
+            {step === 1 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">1. Degree Goals</h2>
+                  <p className="text-neutral-500 text-sm mt-1">Which degree do you wish to pursue?</p>
                 </div>
-              )}
-            </div>
 
-            {degreeLevel && (
-              <div>
-                <Label className="mb-2">Degree Type *</Label>
-                <div className="flex gap-3">
-                  <div className={degreeType === 'Other' ? 'w-1/3' : 'w-full'}>
-                    <SearchableSelect
-                      options={getDegreeTypes()} value={degreeType}
-                      onChange={setDegreeType} placeholder="Search degree type..."
-                    />
-                  </div>
-                  {degreeType === 'Other' && (
-                    <div className="w-2/3">
-                      <Input
-                        value={degreeTypeOther}
-                        onChange={(e) => setDegreeTypeOther(e.target.value)}
-                        placeholder="Enter your degree type..."
-                      />
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold tracking-wider uppercase text-neutral-500 block">Degree Level *</label>
+                  {degreeOptionsLoading ? (
+                    <div className="rounded-xl border border-neutral-100 bg-neutral-50/50 px-4 py-6 text-center text-sm text-neutral-400 animate-pulse">
+                      Loading degree options...
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {degreeLevels.map((d) => (
+                        <MCQOption
+                          key={d.value}
+                          value={d.value}
+                          label={d.label}
+                          icon={DEGREE_LEVEL_ICONS[d.value]}
+                          selected={degreeLevel === d.value}
+                          onSelect={setDegreeLevel}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
-              </div>
-            )}
 
-            <div>
-              <Label className="mb-2">Primary Major / Area of Concentration *</Label>
-              <div className="flex gap-3">
-                <div className={primaryMajor === 'Other' ? 'w-1/3' : 'w-full'}>
-                  <SearchableSelect
-                    options={MAJOR_OPTIONS} value={primaryMajor}
-                    onChange={setPrimaryMajor} placeholder="Search major..."
-                  />
-                </div>
-                {primaryMajor === 'Other' && (
-                  <div className="w-2/3">
-                    <Input
-                      value={primaryMajorOther}
-                      onChange={(e) => setPrimaryMajorOther(e.target.value)}
-                      placeholder="Enter your major..."
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-2">Secondary Major / Minor (Optional)</Label>
-              <div className="flex gap-3">
-                <div className={secondaryMajor === 'Other' ? 'w-1/3' : 'w-full'}>
-                  <SearchableSelect
-                    options={['Not Applicable', ...MAJOR_OPTIONS]} value={secondaryMajor}
-                    onChange={setSecondaryMajor} placeholder="Not Applicable"
-                  />
-                </div>
-                {secondaryMajor === 'Other' && (
-                  <div className="w-2/3">
-                    <Input
-                      value={secondaryMajorOther}
-                      onChange={(e) => setSecondaryMajorOther(e.target.value)}
-                      placeholder="Enter your minor..."
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Standardized Test Scores */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">2. Standardized Test Scores</h2>
-            <p className="text-neutral-600">
-              Add your standardized test scores for more accurate college recommendations.
-              These scores will also be saved to your profile.
-            </p>
-            <div className="rounded-lg border border-neutral-200 p-6">
-              <TestScoresBlock
-                testTypeOptions={ugPgTestTypeOptions}
-                fieldDefs={educationalFieldDefs}
-                layout={educationalLayout}
-                form={testScoresForm}
-                errors={{}}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Country Selection */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">3. Country Preferences</h2>
-            <p className="text-neutral-600">
-              We will shortlist 20 colleges from across the countries you pick. Select up to 5.
-            </p>
-
-            {countries.length < 5 && (
-              <div>
-                <Label className="mb-2">Add a country</Label>
-                <SearchableSelect
-                  options={COUNTRY_OPTIONS.filter((c) => !countries.includes(c)).map((c) => `${COUNTRY_FLAGS[c] || ''} ${c}`)}
-                  value=""
-                  onChange={(v) => addCountry(v.replace(/^\p{So}\p{So}?\s*/u, ''))}
-                  placeholder="Search country..."
-                />
-              </div>
-            )}
-
-            {countries.length > 0 && (
-              <div>
-                <Label className="mb-2">Selected countries ({countries.length}/5) — ranked by preference</Label>
-                <div className="space-y-2">
-                  {countries.map((country, index) => (
-                    <div key={country} className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
-                        {index + 1}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-sm font-medium">
-                        {COUNTRY_FLAGS[country] && <span>{COUNTRY_FLAGS[country]}</span>}
-                        {country}
-                      </span>
-                      <span className="text-xs text-neutral-400">
-                        {index === 0 ? '(Most preferred)' : index === countries.length - 1 && countries.length > 1 ? '(Least preferred)' : ''}
-                      </span>
-                      <div className="ml-auto flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => moveCountry(index, 'up')}
-                          disabled={index === 0}
-                          className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30 disabled:hover:bg-transparent"
-                          title="Move up"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveCountry(index, 'down')}
-                          disabled={index === countries.length - 1}
-                          className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30 disabled:hover:bg-transparent"
-                          title="Move down"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeCountry(country)}
-                          className="rounded p-1 text-neutral-400 hover:bg-red-50 hover:text-red-500"
-                          title="Remove"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
+                {degreeLevel && (
+                  <div className="space-y-2 animate-fadeIn">
+                    <label className="text-xs font-semibold tracking-wider uppercase text-neutral-500 block">Degree Type *</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className={degreeType === 'Other' ? 'md:col-span-1' : 'md:col-span-3'}>
+                        <SearchableSelect
+                          options={getDegreeTypes()}
+                          value={degreeType}
+                          onChange={setDegreeType}
+                          placeholder="Search degree type..."
+                        />
                       </div>
+                      {degreeType === 'Other' && (
+                        <div className="md:col-span-2">
+                          <Input
+                            className="h-10 rounded-lg border-neutral-300 focus-visible:ring-emerald-500"
+                            value={degreeTypeOther}
+                            onChange={(e) => setDegreeTypeOther(e.target.value)}
+                            placeholder="Enter your degree type..."
+                          />
+                        </div>
+                      )}
                     </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold tracking-wider uppercase text-neutral-500 block">Primary Major / Area of Concentration *</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className={primaryMajor === 'Other' ? 'md:col-span-1' : 'md:col-span-3'}>
+                      <SearchableSelect
+                        options={MAJOR_OPTIONS}
+                        value={primaryMajor}
+                        onChange={setPrimaryMajor}
+                        placeholder="Search major..."
+                      />
+                    </div>
+                    {primaryMajor === 'Other' && (
+                      <div className="md:col-span-2">
+                        <Input
+                          className="h-10 rounded-lg border-neutral-300 focus-visible:ring-emerald-500"
+                          value={primaryMajorOther}
+                          onChange={(e) => setPrimaryMajorOther(e.target.value)}
+                          placeholder="Enter your major..."
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold tracking-wider uppercase text-neutral-500 block">Secondary Major / Minor (Optional)</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className={secondaryMajor === 'Other' ? 'md:col-span-1' : 'md:col-span-3'}>
+                      <SearchableSelect
+                        options={['Not Applicable', ...MAJOR_OPTIONS]}
+                        value={secondaryMajor}
+                        onChange={setSecondaryMajor}
+                        placeholder="Not Applicable"
+                      />
+                    </div>
+                    {secondaryMajor === 'Other' && (
+                      <div className="md:col-span-2">
+                        <Input
+                          className="h-10 rounded-lg border-neutral-300 focus-visible:ring-emerald-500"
+                          value={secondaryMajorOther}
+                          onChange={(e) => setSecondaryMajorOther(e.target.value)}
+                          placeholder="Enter your minor..."
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Standardized Test Scores */}
+            {step === 2 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">2. Standardized Test Scores</h2>
+                  <p className="text-neutral-500 text-sm mt-1">
+                    Add your standardized test scores for more accurate college recommendations.
+                    These scores will also be saved to your profile.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-neutral-100 bg-neutral-50/30 p-5 md:p-6">
+                  <TestScoresBlock
+                    testTypeOptions={ugPgTestTypeOptions}
+                    fieldDefs={educationalFieldDefs}
+                    layout={educationalLayout}
+                    form={testScoresForm}
+                    errors={{}}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Country Selection */}
+            {step === 3 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">3. Country Preferences</h2>
+                  <p className="text-neutral-500 text-sm mt-1">
+                    We will shortlist 20 colleges from across the countries you pick. Select up to 5 countries.
+                  </p>
+                </div>
+
+                {countries.length < 5 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold tracking-wider uppercase text-neutral-500 block">Add a country</label>
+                    <SearchableSelect
+                      options={COUNTRY_OPTIONS.filter((c) => !countries.includes(c)).map((c) => `${COUNTRY_FLAGS[c] || ''} ${c}`)}
+                      value=""
+                      onChange={(v) => addCountry(v.replace(/^\p{So}\p{So}?\s*/u, ''))}
+                      placeholder="Search country..."
+                    />
+                  </div>
+                )}
+
+                {countries.length > 0 && (
+                  <div className="space-y-3">
+                    <label className="text-xs font-semibold tracking-wider uppercase text-neutral-500 block">
+                      Selected countries ({countries.length}/5) — ranked by preference
+                    </label>
+                    <div className="space-y-2.5">
+                      {countries.map((country, index) => (
+                        <div
+                          key={country}
+                          className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-xs hover:border-neutral-300 transition-all duration-200"
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-700 border border-emerald-100">
+                            {index + 1}
+                          </span>
+                          <span className="flex items-center gap-2 text-sm font-semibold text-neutral-800">
+                            {COUNTRY_FLAGS[country] && <span className="text-lg">{COUNTRY_FLAGS[country]}</span>}
+                            {country}
+                          </span>
+                          <span className="text-xs font-medium text-neutral-400 italic">
+                            {index === 0 ? '— Most preferred' : index === countries.length - 1 && countries.length > 1 ? '— Least preferred' : ''}
+                          </span>
+
+                          <div className="ml-auto flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => moveCountry(index, 'up')}
+                              disabled={index === 0}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                              title="Move up"
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveCountry(index, 'down')}
+                              disabled={index === countries.length - 1}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                              title="Move down"
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeCountry(country)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
+                              title="Remove"
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 4: Campus Setting */}
+            {step === 4 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">4. Campus Setting</h2>
+                  <p className="text-neutral-500 text-sm mt-1">What kind of campus environment do you prefer?</p>
+                </div>
+
+                <div className="space-y-3">
+                  {CAMPUS_SETTINGS.map((s) => (
+                    <MCQOption
+                      key={s.value}
+                      value={s.value}
+                      label={s.label}
+                      desc={s.desc}
+                      icon={s.icon}
+                      selected={campusSetting === s.value}
+                      onSelect={setCampusSetting}
+                    />
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold tracking-wider uppercase text-neutral-500 block">How important is this preference?</label>
+                  <div className="inline-flex rounded-xl bg-neutral-100 p-1 border border-neutral-200/50">
+                    {CAMPUS_IMPORTANCE.map((i) => {
+                      const isSel = campusImportance === i.value;
+                      return (
+                        <button
+                          key={i.value}
+                          type="button"
+                          onClick={() => setCampusImportance(i.value)}
+                          className={cn(
+                            'rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 cursor-pointer',
+                            isSel
+                              ? 'bg-white text-neutral-900 shadow-xs'
+                              : 'text-neutral-500 hover:text-neutral-900'
+                          )}
+                        >
+                          {i.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold tracking-wider uppercase text-neutral-500 block">What weather works for you?</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {CLIMATE_OPTIONS.map((c) => (
+                      <MCQOption
+                        key={c.value}
+                        value={c.value}
+                        label={c.label}
+                        icon={c.icon}
+                        selected={climatePreference === c.value}
+                        onSelect={setClimatePreference}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Type of College */}
+            {step === 5 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">5. Type of College</h2>
+                  <p className="text-neutral-500 text-sm mt-1">What type of institution are you interested in?</p>
+                </div>
+
+                <div className="space-y-3">
+                  {COLLEGE_TYPES.map((t) => (
+                    <MCQOption
+                      key={t.value}
+                      value={t.value}
+                      label={t.label}
+                      icon={t.icon}
+                      selected={collegeType === t.value}
+                      onSelect={setCollegeType}
+                    />
                   ))}
                 </div>
               </div>
             )}
-          </div>
-        )}
 
-        {/* Step 4: Campus Setting */}
-        {step === 4 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">4. Campus Setting</h2>
-            <p className="text-neutral-600">What kind of campus environment do you prefer?</p>
-            <div className="space-y-3">
-              {CAMPUS_SETTINGS.map((s) => (
-                <MCQOption key={s.value} value={s.value} label={s.label} desc={s.desc} icon={s.icon}
-                  selected={campusSetting === s.value} onSelect={setCampusSetting} />
-              ))}
-            </div>
+            {/* Step 6: Research Intensity */}
+            {step === 6 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">6. Research Intensity</h2>
+                  <p className="text-neutral-500 text-sm mt-1">How important are research opportunities to you?</p>
+                </div>
 
-            <div>
-              <Label className="mb-2">How important is this preference?</Label>
-              <div className="flex flex-wrap gap-3">
-                {CAMPUS_IMPORTANCE.map((i) => (
-                  <Button key={i.value} type="button" variant={campusImportance === i.value ? 'default' : 'outline'} onClick={() => setCampusImportance(i.value)}>
-                    {i.label}
-                  </Button>
-                ))}
+                <div className="space-y-3">
+                  {RESEARCH_LEVELS.map((r) => (
+                    <MCQOption
+                      key={r.value}
+                      value={r.value}
+                      label={r.label}
+                      icon={r.icon}
+                      selected={researchImportance === r.value}
+                      onSelect={setResearchImportance}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div>
-              <Label className="mb-2">What weather works for you?</Label>
-              <div className="grid grid-cols-2 gap-3">
-                {CLIMATE_OPTIONS.map((c) => (
-                  <MCQOption key={c.value} value={c.value} label={c.label} icon={c.icon}
-                    selected={climatePreference === c.value} onSelect={setClimatePreference} />
-                ))}
+            {/* Step 7: Cultural Fit */}
+            {step === 7 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">7. Cultural Fit</h2>
+                  <p className="text-neutral-500 text-sm mt-1">What kind of campus culture would you thrive in? (Select all that apply)</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2.5 p-1">
+                  {CULTURAL_FIT_OPTIONS.map((c) => (
+                    <MultiSelectChip
+                      key={c}
+                      label={c}
+                      icon={CHIP_ICONS[c]}
+                      selected={culturalFit.includes(c)}
+                      onToggle={() => toggleMultiSelect(c, culturalFit, setCulturalFit)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Step 5: Type of College */}
-        {step === 5 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">5. Type of College</h2>
-            <p className="text-neutral-600">What type of institution are you interested in?</p>
-            <div className="space-y-3">
-              {COLLEGE_TYPES.map((t) => (
-                <MCQOption key={t.value} value={t.value} label={t.label} icon={t.icon}
-                  selected={collegeType === t.value} onSelect={setCollegeType} />
-              ))}
-            </div>
-            {/* <div>
-              <Label className="mb-2">Why does this matter to you most? (select all that apply)</Label>
-              <div className="flex flex-wrap gap-2">
-                {COLLEGE_TYPE_REASONS.map((r) => (
-                  <MultiSelectChip key={r} label={r} icon={CHIP_ICONS[r]} selected={collegeTypeReasons.includes(r)}
-                    onToggle={() => toggleMultiSelect(r, collegeTypeReasons, setCollegeTypeReasons)} />
-                ))}
+            {/* Step 8: Class Size Preference */}
+            {step === 8 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">8. Class Size Preference</h2>
+                  <p className="text-neutral-500 text-sm mt-1">What learning environment do you prefer?</p>
+                </div>
+
+                <div className="space-y-3">
+                  {CLASS_SIZES.map((s) => (
+                    <MCQOption
+                      key={s.value}
+                      value={s.value}
+                      label={s.label}
+                      icon={s.icon}
+                      selected={classSize === s.value}
+                      onSelect={setClassSize}
+                    />
+                  ))}
+                </div>
               </div>
-            </div> */}
-          </div>
-        )}
+            )}
 
-        {/* Step 6: Research Intensity */}
-        {step === 6 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">6. Research Intensity</h2>
-            <p className="text-neutral-600">How important are research opportunities to you?</p>
-            <div className="space-y-3">
-              {RESEARCH_LEVELS.map((r) => (
-                <MCQOption key={r.value} value={r.value} label={r.label} icon={r.icon}
-                  selected={researchImportance === r.value} onSelect={setResearchImportance} />
-              ))}
-            </div>
-          </div>
-        )}
+            {/* Step 9: Brand Preference */}
+            {step === 9 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">9. Brand Preference</h2>
+                  <p className="text-neutral-500 text-sm mt-1">Is the college’s global brand recognition an important factor in your decision?</p>
+                </div>
 
-        {/* Step 7: Cultural Fit */}
-        {step === 7 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">7. Cultural Fit</h2>
-            <p className="text-neutral-600">What kind of campus culture would you thrive in? (Multi-select)</p>
-
-            <div className="flex flex-wrap gap-2">
-              {CULTURAL_FIT_OPTIONS.map((c) => (
-                <MultiSelectChip key={c} label={c} icon={CHIP_ICONS[c]} selected={culturalFit.includes(c)}
-                  onToggle={() => toggleMultiSelect(c, culturalFit, setCulturalFit)} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Step 8: Class Size Preference */}
-        {step === 8 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">8. Class Size Preference</h2>
-
-            <div>
-              <Label className="mb-2">What learning environment do you prefer?</Label>
-              <div className="space-y-3">
-                {CLASS_SIZES.map((s) => (
-                  <MCQOption key={s.value} value={s.value} label={s.label} icon={s.icon}
-                    selected={classSize === s.value} onSelect={setClassSize} />
-                ))}
+                <div className="space-y-3">
+                  {IMPORTANCE_OPTIONS.map((option) => (
+                    <MCQOption
+                      key={option.value}
+                      value={option.value}
+                      label={option.label}
+                      icon={option.icon}
+                      selected={brandPreference === option.value}
+                      onSelect={setBrandPreference}
+                    />
+                  ))}
+                </div>
               </div>
+            )}
+
+            {/* Step 10: Financing your Education */}
+            {step === 10 && (
+              <div className="space-y-6 animate-fadeIn">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">10. Financing your Education</h2>
+                  <p className="text-neutral-500 text-sm mt-1">Do you require financial aid or scholarship?</p>
+                </div>
+
+                <div className="space-y-3">
+                  {IMPORTANCE_OPTIONS.map((option) => (
+                    <MCQOption
+                      key={option.value}
+                      value={option.value}
+                      label={option.label}
+                      icon={option.icon}
+                      selected={financialAidPreference === option.value}
+                      onSelect={setFinancialAidPreference}
+                    />
+                  ))}
+                </div>
+
+                <div className="space-y-2 mt-6">
+                  <label className="text-xs font-semibold tracking-wider uppercase text-neutral-500 block">Additional Notes / Comments (Optional)</label>
+                  <Textarea
+                    className="min-h-[140px] w-full rounded-2xl border border-neutral-200 bg-neutral-50/10 focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 p-4.5 text-sm leading-relaxed transition-all duration-300 resize-none hover:border-neutral-300 focus:bg-white"
+                    value={additionalNotes}
+                    onChange={(e) => setAdditionalNotes(e.target.value)}
+                    placeholder="Tell us any other details about your academic goals, budget constraints, or college dreams..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 animate-fadeIn">
+                {error}
+              </div>
+            )}
+
+            {/* Navigation action footer */}
+            <div className="flex justify-between items-center mt-10 pt-6 border-t border-neutral-100">
+              <button
+                type="button"
+                onClick={() => setStep(Math.max(1, step - 1))}
+                disabled={step === 1}
+                className="rounded-xl border border-neutral-200 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50 hover:text-neutral-900 transition-all duration-200 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-neutral-700 cursor-pointer disabled:cursor-not-allowed"
+              >
+                Back
+              </button>
+
+              {step < TOTAL_STEPS ? (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={!canProceed()}
+                  className="group inline-flex items-center gap-1.5 rounded-xl bg-neutral-950 px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-neutral-900 active:scale-98 transition-all duration-200 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <span>Next</span>
+                  <svg
+                    className="h-4 w-4 transform group-hover:translate-x-0.5 transition-transform duration-200"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={saving || !canProceed()}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-emerald-700 active:scale-98 transition-all duration-200 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {saving ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Start Conversation with Ivy</span>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
-        )}
-
-        {/* Step 9: Brand Preference */}
-        {step === 9 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">9. Brand Preference</h2>
-            <p className="text-neutral-600">Is the college’s global brand recognition an important factor in your decision?</p>
-            <div className="space-y-3">
-              {IMPORTANCE_OPTIONS.map((option) => (
-                <MCQOption key={option.value} value={option.value} label={option.label} icon={option.icon}
-                  selected={brandPreference === option.value} onSelect={setBrandPreference} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Step 10: Financing your Education */}
-        {step === 10 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-neutral-900">10. Financing your Education</h2>
-            <p className="text-neutral-600">Do you require financial aid or scholarship?</p>
-            <div className="space-y-3">
-              {IMPORTANCE_OPTIONS.map((option) => (
-                <MCQOption key={option.value} value={option.value} label={option.label} icon={option.icon}
-                  selected={financialAidPreference === option.value} onSelect={setFinancialAidPreference} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex justify-between mt-8">
-          <Button
-            variant="outline" size="lg"
-            onClick={() => setStep(Math.max(1, step - 1))}
-            disabled={step === 1}
-          >
-            Back
-          </Button>
-
-          {step < TOTAL_STEPS ? (
-            <Button
-              size="lg"
-              onClick={handleNext}
-              disabled={!canProceed()}
-            >
-              Next
-              <FiIcon name="arrow-small-right" className="h-5 w-5" />
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              onClick={handleSubmit}
-              disabled={saving || !canProceed()}
-            >
-              {saving ? 'Saving...' : 'Start Conversation with Ivy'}
-            </Button>
-          )}
         </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
