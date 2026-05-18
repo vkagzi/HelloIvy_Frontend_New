@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button';
 const AdditionalFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse, refetch, parsedTranscriptData } = useProfile();
+  const { rawApiResponse, refetch, parsedTranscriptData, setParsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [pendingData, setPendingData] = React.useState<Record<string, unknown> | null>(null);
@@ -74,14 +74,16 @@ const AdditionalFormDetails: React.FC = () => {
         },
       });
       if (response['message'] === 'Profile updated successfully.') {
-        // Refetch profile data to update the context
+        // Clear scan data and refetch so form shows fresh server data
+        setParsedTranscriptData(null);
         await refetch();
         // Now perform the post-save action
         if (action === 'navigate') {
           addToast('Profile completed successfully!', { type: 'success' });
-          router.push('/profile/personal');
+          setTimeout(() => router.push('/profile/personal'), 1000);
         } else {
           addToast('Additional details saved successfully!', { type: 'success' });
+          setTimeout(() => window.location.reload(), 1000);
         }
       } else {
         addToast('Failed to update profile.', { type: 'error' });

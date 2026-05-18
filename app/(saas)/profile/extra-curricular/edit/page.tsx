@@ -19,7 +19,7 @@ import ResumeUploader from '@/app/_components/ResumeUploader';
 const ExtraCurricularFormDetails: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse, refetch, parsedTranscriptData } = useProfile();
+  const { rawApiResponse, refetch, parsedTranscriptData, setParsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
@@ -83,8 +83,11 @@ const ExtraCurricularFormDetails: React.FC = () => {
         },
       });
       if (response['message'] === 'Profile updated successfully.') {
-        // Refetch profile data to update the context
+        // Clear scan data and refetch so form shows fresh server data
+        setParsedTranscriptData(null);
         await refetch();
+        addToast('Extra-curricular details saved successfully!', { type: 'success' });
+        setTimeout(() => window.location.reload(), 1000);
       } else {
         addToast('Failed to update profile.', { type: 'error' });
       }
@@ -146,7 +149,7 @@ const ExtraCurricularFormDetails: React.FC = () => {
         showSaveButton={{ showSave: true, href: '/profile/additional/edit' }}
         isSubmitting={isSubmitting}
         onSaveOnly={() => {
-          addToast('Extra-curricular details saved successfully!', { type: 'success' });
+          // Toast and reload handled by onSubmit
         }}
         onSaveAndNavigate={() => {
           addToast('Extra-curricular details saved! Navigating to additional details...', { type: 'success' });

@@ -22,7 +22,7 @@ import TranscriptUploader from '@/app/_components/TranscriptUploader';
 const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { rawApiResponse, loading, error, refetch, parsedTranscriptData } = useProfile();
+  const { rawApiResponse, loading, error, refetch, parsedTranscriptData, setParsedTranscriptData } = useProfile();
   const [resumeFormDefaults, setResumeFormDefaults] = useState<
     Record<string, unknown>
   >({});
@@ -99,8 +99,12 @@ const PersonalDetailsForm: React.FC = () => {
       console.log('Update response:', response); // Debug log
 
       if (response['message'] === 'Profile updated successfully.') {
-        // Refetch profile data to update the context
+        // Clear scan data and refetch so form shows fresh server data
+        setParsedTranscriptData(null);
         await refetch();
+        addToast('Personal details saved successfully!', { type: 'success' });
+        // Auto-reload so the saved values are displayed from the server
+        setTimeout(() => window.location.reload(), 1000);
       } else {
         addToast('Failed to update profile. Please try again.', {
           type: 'error',
@@ -264,7 +268,7 @@ const PersonalDetailsForm: React.FC = () => {
         showSaveButton={{ showSave: true, href: '/profile/educational/edit' }}
         isSubmitting={isSubmitting}
         onSaveOnly={() => {
-          addToast('Personal details saved successfully!', { type: 'success' });
+          // Toast and reload handled by onSubmit
         }}
         onSaveAndNavigate={() => {
           addToast(

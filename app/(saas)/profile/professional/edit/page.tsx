@@ -24,7 +24,7 @@ const ProfessionalFormDetails: React.FC = () => {
   const formRef = React.useRef<ReturnType<
     typeof import('react-hook-form').useForm
   > | null>(null);
-  const { rawApiResponse, refetch, parsedTranscriptData } = useProfile();
+  const { rawApiResponse, refetch, parsedTranscriptData, setParsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const [formDefaults, setFormDefaults] = useState<Record<string, unknown>>({});
@@ -70,8 +70,11 @@ const ProfessionalFormDetails: React.FC = () => {
         },
       });
       if (response['message'] === 'Profile updated successfully.') {
-        // Refetch profile data to update the context
+        // Clear scan data and refetch so form shows fresh server data
+        setParsedTranscriptData(null);
         await refetch();
+        addToast('Professional details saved successfully!', { type: 'success' });
+        setTimeout(() => window.location.reload(), 1000);
       } else {
         addToast('Failed to update profile.', { type: 'error' });
       }
@@ -186,9 +189,7 @@ const ProfessionalFormDetails: React.FC = () => {
         }}
         isSubmitting={isSubmitting}
         onSaveOnly={() => {
-          addToast('Professional details saved successfully!', {
-            type: 'success',
-          });
+          // Toast and reload handled by onSubmit
         }}
         onSaveAndNavigate={() => {
           addToast(
