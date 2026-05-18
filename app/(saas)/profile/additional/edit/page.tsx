@@ -74,8 +74,15 @@ const AdditionalFormDetails: React.FC = () => {
         },
       });
       if (response['message'] === 'Profile updated successfully.') {
-        // Clear scan data and refetch so form shows fresh server data
-        setParsedTranscriptData(null);
+        // Clear only additional scan data so we don't wipe out other tabs
+        setParsedTranscriptData((prev: any) => {
+          if (!prev) return prev;
+          const next = { ...prev };
+          delete next.additional;
+          delete next.skills;
+          delete next.projects;
+          return next;
+        });
         await refetch();
         // Now perform the post-save action
         if (action === 'navigate') {
@@ -83,7 +90,6 @@ const AdditionalFormDetails: React.FC = () => {
           setTimeout(() => router.push('/profile/personal'), 1000);
         } else {
           addToast('Additional details saved successfully!', { type: 'success' });
-          setTimeout(() => window.location.reload(), 1000);
         }
       } else {
         addToast('Failed to update profile.', { type: 'error' });

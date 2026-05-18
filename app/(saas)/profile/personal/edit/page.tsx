@@ -99,12 +99,17 @@ const PersonalDetailsForm: React.FC = () => {
       console.log('Update response:', response); // Debug log
 
       if (response['message'] === 'Profile updated successfully.') {
-        // Clear scan data and refetch so form shows fresh server data
-        setParsedTranscriptData(null);
+        // Clear only personal scan data so we don't wipe out other tabs
+        setParsedTranscriptData((prev: any) => {
+          if (!prev) return prev;
+          const next = { ...prev };
+          delete next.personalDetails;
+          delete next.personal; // handles old format
+          return next;
+        });
+        setResumeFormDefaults({});
         await refetch();
         addToast('Personal details saved successfully!', { type: 'success' });
-        // Auto-reload so the saved values are displayed from the server
-        setTimeout(() => window.location.reload(), 1000);
       } else {
         addToast('Failed to update profile. Please try again.', {
           type: 'error',

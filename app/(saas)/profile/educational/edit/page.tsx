@@ -753,11 +753,17 @@ const EducationalDetailsForm: React.FC = () => {
       });
 
       // Clear scan data so the form re-renders from fresh server data
-      setParsedTranscriptData(null);
+      setParsedTranscriptData((prev: any) => {
+        if (!prev) return prev;
+        const next = { ...prev };
+        delete next.educational;
+        delete next.courses;
+        delete next.awards;
+        delete next.testScores;
+        return next;
+      });
       await refetch();
       addToast('Educational details saved successfully!', { type: 'success' });
-      // Auto-reload so the saved values are displayed from the server
-      setTimeout(() => window.location.reload(), 1000);
     } catch (error: any) {
       console.error('Update failed detailed:', {
         message: error.message,
@@ -783,7 +789,8 @@ const EducationalDetailsForm: React.FC = () => {
   // Only load saved server data when there is NO active resume scan.
   // If a scan is present, the scan sync useEffect above already handled it.
   useEffect(() => {
-    if (parsedTranscriptData && Object.keys(parsedTranscriptData).length > 0) {
+    const hasEduScan = parsedTranscriptData && (parsedTranscriptData.educational || parsedTranscriptData.courses || parsedTranscriptData.awards || parsedTranscriptData.testScores);
+    if (hasEduScan) {
       // A scan is active — do not overwrite it with old server data.
       return;
     }

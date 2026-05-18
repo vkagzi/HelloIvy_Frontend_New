@@ -70,11 +70,16 @@ const ProfessionalFormDetails: React.FC = () => {
         },
       });
       if (response['message'] === 'Profile updated successfully.') {
-        // Clear scan data and refetch so form shows fresh server data
-        setParsedTranscriptData(null);
+        // Clear only professional scan data so we don't wipe out other tabs
+        setParsedTranscriptData((prev: any) => {
+          if (!prev) return prev;
+          const next = { ...prev };
+          delete next.professional;
+          return next;
+        });
+        setFormDefaults({});
         await refetch();
         addToast('Professional details saved successfully!', { type: 'success' });
-        setTimeout(() => window.location.reload(), 1000);
       } else {
         addToast('Failed to update profile.', { type: 'error' });
       }
