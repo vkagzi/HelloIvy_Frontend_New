@@ -113,7 +113,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
           }
         }
 
-        // Snapshot data for any valid grade found in the form data.
+        // Snapshot ALL grades so AI extracted data for non-visible grades isn't lost
         if (!isNaN(g)) {
           gradeDataRef.current[g] = { ...(entry as Record<string, unknown>) };
         }

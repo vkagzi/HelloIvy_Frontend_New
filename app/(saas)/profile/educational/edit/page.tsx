@@ -29,7 +29,7 @@ import {
 const EducationalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
-  const { profileData, rawApiResponse, refetch, personalDetails, educationalDetails: contextEducationalDetails, parsedTranscriptData } = useProfile();
+  const { profileData, rawApiResponse, refetch, personalDetails, educationalDetails: contextEducationalDetails, parsedTranscriptData, setParsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
@@ -277,15 +277,25 @@ const EducationalDetailsForm: React.FC = () => {
         city: getValue(e, ['city', 'location', 'town', 'address']) ?? "",
         // Common fields with different names
         ...(section === 'highSchool' ? {
-          schoolName: getValue(e, ['schoolName', 'institutionName', 'universityName', 'university', 'collegeName', 'college', 'school', 'nameOfInstitution']) ?? "",
+          schoolName: getValue(e, ['schoolName', 'institutionName', 'universityName', 'university', 'collegeName', 'college', 'school', 'nameOfInstitution', 'institution', 'name']) ?? "",
           gradeLevel: (() => {
-            const raw = String(getValue(e, ['gradeLevel', 'grade', 'academicLevel']) ?? "").toUpperCase();
+            // Try direct gradeLevel / grade / academicLevel fields first
+            const raw = String(getValue(e, ['gradeLevel', 'grade', 'class', 'standard', 'academicLevel', 'level']) ?? "");
+            const rawUpper = raw.toUpperCase();
             const romanMap: Record<string, number> = { 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'VIII': 8 };
             for (const [rom, num] of Object.entries(romanMap)) {
-              if (new RegExp(`\\b${rom}\\b`).test(raw)) return num;
+              if (new RegExp(`\\b${rom}\\b`).test(rawUpper)) return num;
             }
             const match = raw.match(/(\d+)/);
-            return match ? parseInt(match[1], 10) : "";
+            if (match) {
+              const n = parseInt(match[1], 10);
+              if (n >= 8 && n <= 12) return n;
+            }
+            // Fallback: try to find it in degree/program/institutionName
+            const degree = (getValue(e, ['degree', 'program', 'institutionName']) || "").toLowerCase();
+            const degreeMatch = degree.match(/(10|11|12|8|9)(?:th|st|nd|rd)?\s*(?:grade|class|standard|std)?/);
+            if (degreeMatch) return parseInt(degreeMatch[1], 10);
+            return undefined;
           })(),
           yearOfCompletion: (() => {
             const raw = getValue(e, ['yearOfCompletion', 'graduationYear', 'endYear', 'end_year', 'endDate', 'end_date', 'year']) ?? "";
@@ -361,7 +371,7 @@ const EducationalDetailsForm: React.FC = () => {
         console.log(`[EducationalDetailsForm] Targeted scan detected for ${sectionName} index ${index}`);
         
         const currentArray = Array.isArray(newDefaults[sectionName]) ? [...newDefaults[sectionName]] : [];
-        
+
         // Smart Record Picking: Find the record that matches the specific grade for this index
         let bestRec = firstRec;
         if (sectionName === 'highSchool' && educationalRecords.length > 1) {
@@ -741,8 +751,12 @@ const EducationalDetailsForm: React.FC = () => {
         body: { profile: updatedProfile },
       });
 
+      // Clear scan data so the form re-renders from fresh server data
+      setParsedTranscriptData(null);
       await refetch();
       addToast('Educational details saved successfully!', { type: 'success' });
+      // Auto-reload so the saved values are displayed from the server
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error: any) {
       console.error('Update failed detailed:', {
         message: error.message,
@@ -807,7 +821,7 @@ const EducationalDetailsForm: React.FC = () => {
         showSaveButton={{ showSave: true, href: '/profile/professional/edit' }}
         isSubmitting={isSubmitting}
         onSaveOnly={() => {
-          // Toast handled by onSubmit
+          // Toast and reload handled by onSubmit
         }}
         onSaveAndNavigate={() => {
           // Toast handled by onSubmit
