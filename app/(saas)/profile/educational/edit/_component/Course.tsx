@@ -8,6 +8,7 @@ import { FieldRenderer } from '@/app/_components/dynamic-form/FieldRenderer';
 import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
+import { isFieldVisible } from '@/app/_components/dynamic-form/utils/utils';
 
 interface CourseBlockProps {
   section: LayoutItem;
@@ -110,6 +111,14 @@ export const CourseBlock: React.FC<CourseBlockProps> = ({
             {section?.fields?.map((fieldId: string) => {
               const fieldDef = fieldDefs.find((def) => def.id === fieldId);
               if (!fieldDef) return null;
+
+              const sectionValues = (
+                formValues as Record<string, unknown>
+              )?.[sectionType];
+              const courseValues = Array.isArray(sectionValues)
+                ? ((sectionValues[courseIdx] as Record<string, unknown>) ?? {})
+                : {};
+              if (!isFieldVisible(fieldDef, courseValues)) return null;
 
               const controllerName = `${sectionType}.${courseIdx}.${fieldDef.id}`;
               const repeatableField: FieldDefinition = {

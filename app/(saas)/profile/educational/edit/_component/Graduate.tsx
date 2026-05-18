@@ -10,6 +10,7 @@ import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
 import TranscriptUploader from '@/app/_components/TranscriptUploader';
 import { UNDERGRADUATE_DEGREE_PROGRAMS, POSTGRADUATE_DEGREE_PROGRAMS } from '@/app/(saas)/profile/_config/fieldDefinitions';
+import { isFieldVisible } from '@/app/_components/dynamic-form/utils/utils';
 
 interface GraduateBlockProps {
   section: LayoutItem;
@@ -119,6 +120,8 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     control: form.control,
     name: sectionType as any,
   });
+
+  const formValues = useWatch({ control: form.control });
 
   useEffect(() => {
     if (!Array.isArray(watchedSectionData) || watchedSectionData.length === 0) return;
@@ -298,6 +301,16 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
               .map((fieldId: string) => {
                 const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                 if (!fieldDef) return null;
+
+                const sectionValues = (
+                  formValues as Record<string, unknown>
+                )?.[sectionType];
+                const degreeValues = Array.isArray(sectionValues)
+                  ? ((sectionValues[degreeIdx] as Record<string, unknown>) ??
+                    {})
+                  : {};
+                if (!isFieldVisible(fieldDef, degreeValues)) return null;
+
                 const controllerName = `${sectionType}.${degreeIdx}.${fieldDef.id}`;
                 const repeatableField: FieldDefinition = {
                   ...fieldDef,
@@ -431,6 +444,16 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
               .map((fieldId: string) => {
                 const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                 if (!fieldDef) return null;
+
+                const sectionValues = (
+                  formValues as Record<string, unknown>
+                )?.[sectionType];
+                const degreeValues = Array.isArray(sectionValues)
+                  ? ((sectionValues[degreeIdx] as Record<string, unknown>) ??
+                    {})
+                  : {};
+                if (!isFieldVisible(fieldDef, degreeValues)) return null;
+
                 const controllerName = `${sectionType}.${degreeIdx}.${fieldDef.id}`;
                 const repeatableField: FieldDefinition = {
                   ...fieldDef,
