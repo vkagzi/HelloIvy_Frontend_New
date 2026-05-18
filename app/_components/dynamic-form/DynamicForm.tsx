@@ -23,6 +23,7 @@ import {
   isFieldVisible,
 } from '@/app/_components/dynamic-form/utils/utils';
 import { Heading, Label } from '@/app/_components/Typography';
+import { Checkbox } from '@/app/_components/Checkbox';
 
 type DynamicFormProps = {
   fieldDefs: FieldDefinition[];
@@ -571,10 +572,36 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 className="flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
               >
                 {/* Experience Heading and Remove Button */}
-                <div className="mb-5 flex items-center justify-between">
-                  <h3 className="text-label-lg font-semibold text-neutral-900">
-                    Work Experience {rIdx + 1}
-                  </h3>
+                <div className="mb-5 flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <h3 className="text-label-lg font-semibold text-neutral-900">
+                      Work Experience / Internship {rIdx + 1}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <Controller
+                        name={`${item.name}.${rIdx}.currentlyWorking` as never}
+                        control={form.control}
+                        defaultValue={false as never}
+                        render={({ field: controllerField }) => (
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`${item.name}.${rIdx}.currentlyWorking`}
+                              checked={controllerField.value === true}
+                              onCheckedChange={(checked) =>
+                                controllerField.onChange(Boolean(checked))
+                              }
+                            />
+                            <label
+                              htmlFor={`${item.name}.${rIdx}.currentlyWorking`}
+                              className="text-sm font-medium text-neutral-600 cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                            >
+                              I currently work here
+                            </label>
+                          </div>
+                        )}
+                      />
+                    </div>
+                  </div>
                   {!disableRemove && (
                     <button
                       type="button"
@@ -592,7 +619,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 <div
                   className={`grid gap-4 ${getGridColsClass(repeatableColumns)}`}
                 >
-                  {item.fields?.map((fid) => {
+                  {item.fields?.filter((fid) => fid !== 'currentlyWorking').map((fid) => {
                     const field = fieldDefs.find((f) => f.id === fid);
                     if (!field || !isFieldVisible(field, row))
                       return null;

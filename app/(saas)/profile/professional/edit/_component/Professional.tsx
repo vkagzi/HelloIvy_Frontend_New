@@ -9,6 +9,7 @@ import { LayoutItem } from '@/app/_components/dynamic-form/types/type';
 import { FieldDefinition } from '@/app/utils/dynamicForm';
 import { Label } from '@/app/_components/Typography';
 import { isFieldVisible } from '@/app/_components/dynamic-form/utils/utils';
+import { Checkbox } from '@/app/_components/Checkbox';
 
 interface SchoolBlockProps {
   section: LayoutItem;
@@ -122,10 +123,36 @@ export const ProfessionalBlock: React.FC<SchoolBlockProps> = ({
           className="mb-6 flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
         >
           {/* Basic Professional Details */}
-          <div className="mb-5 flex items-center justify-between">
-            <Label size="lg" className="font-semibold text-neutral-900">
-              Work Experience {schoolIdx + 1}
-            </Label>
+          <div className="mb-5 flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              <Label size="lg" className="font-semibold text-neutral-900">
+                Work Experience/ Internship {schoolIdx + 1} 
+              </Label>
+              <div className="flex items-center gap-2">
+                <Controller
+                  name={`${sectionType}.${schoolIdx}.currentlyWorking` as never}
+                  control={form.control}
+                  defaultValue={false as never}
+                  render={({ field: controllerField }) => (
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id={`${sectionType}.${schoolIdx}.currentlyWorking`}
+                        checked={controllerField.value === true}
+                        onCheckedChange={(checked) =>
+                          controllerField.onChange(Boolean(checked))
+                        }
+                      />
+                      <label
+                        htmlFor={`${sectionType}.${schoolIdx}.currentlyWorking`}
+                        className="text-sm font-medium text-neutral-600 cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                      >
+                        I currently work here
+                      </label>
+                    </div>
+                  )}
+                />
+              </div>
+            </div>
             {schools.length > minSchools && (
               <Button
                 type="button"
@@ -144,7 +171,7 @@ export const ProfessionalBlock: React.FC<SchoolBlockProps> = ({
             }}
           >
             {section?.fields
-              ?.filter((fieldId: string) => fieldId !== 'achievements')
+              ?.filter((fieldId: string) => fieldId !== 'achievements' && fieldId !== 'currentlyWorking')
               .map((fieldId: string) => {
                 const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                 if (!fieldDef) return null;
