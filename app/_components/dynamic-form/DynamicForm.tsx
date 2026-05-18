@@ -24,6 +24,7 @@ import {
   isFieldVisible,
 } from '@/app/_components/dynamic-form/utils/utils';
 import { Heading, Label } from '@/app/_components/Typography';
+import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 
 type DynamicFormProps = {
   fieldDefs: FieldDefinition[];
@@ -88,7 +89,20 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   isSubmitting = false,
 }) => {
   const { addToast } = useToast();
+  const { unsavedProfileEdits, setUnsavedProfileEdits } = useProfile();
   const [shouldNavigate, setShouldNavigate] = React.useState(false);
+
+  const sectionName = React.useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    const path = window.location.pathname;
+    if (path.includes('/profile/personal/')) return 'personalDetails';
+    if (path.includes('/profile/educational/')) return 'educational';
+    if (path.includes('/profile/professional/')) return 'professional';
+    if (path.includes('/profile/extra-curricular/')) return 'extraCurricular';
+    if (path.includes('/profile/additional/')) return 'additional';
+    return '';
+  }, []);
+
   const initialState: Record<string, unknown> = {};
   layout.forEach((item) => {
     if (item.type === 'fieldset' && item.fields) {
@@ -124,10 +138,17 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     }
   });
 
+  // Merge server/parsed defaults with any unsaved active form state
+  const mergedDefaultValues = React.useMemo(() => {
+    const base = defaultValues || {};
+    const edits = sectionName ? (unsavedProfileEdits[sectionName] || {}) : {};
+    return { ...base, ...edits };
+  }, [defaultValues, sectionName, unsavedProfileEdits]);
+
   // Flatten defaultValues for repeatable fields
   const flatDefaultValues =
-    defaultValues && Object.keys(defaultValues).length > 0
-      ? flattenDefaultValues(defaultValues, layout)
+    mergedDefaultValues && Object.keys(mergedDefaultValues).length > 0
+      ? flattenDefaultValues(mergedDefaultValues, layout)
       : initialState;
 
   const form = useForm<Record<string, unknown>>({
@@ -141,14 +162,32 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     }
   }, [onFormInit, form]);
 
+  const formValues = form.watch();
+
+  // Persist form values to global unsaved state on changes
+  React.useEffect(() => {
+    if (!sectionName) return;
+
+    const handler = setTimeout(() => {
+      const currentValStr = JSON.stringify(formValues);
+      const savedValStr = JSON.stringify(unsavedProfileEdits[sectionName]);
+      if (currentValStr !== savedValStr) {
+        setUnsavedProfileEdits((prev: any) => ({
+          ...prev,
+          [sectionName]: formValues,
+        }));
+      }
+    }, 400); // 400ms debounce to avoid excessive keystroke render cycles
+
+    return () => clearTimeout(handler);
+  }, [formValues, sectionName, unsavedProfileEdits, setUnsavedProfileEdits]);
+
   useEffect(() => {
-    if (defaultValues && Object.keys(defaultValues).length > 0) {
-      form.reset(flattenDefaultValues(defaultValues, layout));
+    if (mergedDefaultValues && Object.keys(mergedDefaultValues).length > 0) {
+      form.reset(flattenDefaultValues(mergedDefaultValues, layout));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultValues]);
-
-  const formValues = form.watch();
+  }, [mergedDefaultValues]);
   // const [instances, setInstances] = useState<number>(1);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -1490,6 +1529,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         }
         setErrors({});
         await onSubmit(cleanedValues);
+        if (sectionName) {
+          setUnsavedProfileEdits((prev: any) => {
+            const next = { ...prev };
+            delete next[sectionName];
+            return next;
+          });
+        }
         if (shouldNavigate && onSaveAndNavigate) {
           onSaveAndNavigate();
           setShouldNavigate(false);

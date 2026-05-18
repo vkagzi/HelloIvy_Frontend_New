@@ -23,6 +23,8 @@ type ProfileContextType = {
   missingSections: string[];
   parsedTranscriptData: Record<string, any> | null;
   setParsedTranscriptData: (data: Record<string, any> | null) => void;
+  unsavedProfileEdits: Record<string, any>;
+  setUnsavedProfileEdits: React.Dispatch<React.SetStateAction<Record<string, any>>>;
 };
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -42,6 +44,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   const [missingSections, setMissingSections] = useState<string[]>([]);
   const [parsedTranscriptData, setParsedTranscriptData] = useState<Record<string, any> | null>(null);
+  const [unsavedProfileEdits, setUnsavedProfileEdits] = useState<Record<string, any>>({});
   const currentUserIdRef = useRef<string | null>(null);
 
   const fetchProfileData = useCallback(async (): Promise<void> => {
@@ -168,6 +171,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         missingSections,
         parsedTranscriptData,
         setParsedTranscriptData,
+        unsavedProfileEdits,
+        setUnsavedProfileEdits,
       }}
     >
       {children}
