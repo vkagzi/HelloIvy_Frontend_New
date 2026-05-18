@@ -16,6 +16,7 @@ import { downloadPDF } from '@/lib/pdf-from-component';
 import CollegeSelectorResultsPDF from '@/components/pdf/CollegeSelectorResultsPDF';
 import TranscriptReportPDF from '@/components/pdf/TranscriptReportPDF';
 import { useUserAuth } from '@/app/_hooks/useUserAuth';
+import ReviewModal from '@/app/_components/ReviewModal';
 
 type TabType = 'results' | 'history';
 
@@ -50,6 +51,19 @@ export default function CollegeSelectorResultsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('results');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [showReviewModal, setShowReviewModal] = useState(false);
+
+  const handleCloseReview = () => {
+    localStorage.setItem('college_review_shown', 'true');
+    setShowReviewModal(false);
+  };
+
+  useEffect(() => {
+    const reviewShown = localStorage.getItem('college_review_shown');
+    if (!reviewShown) {
+      setShowReviewModal(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (sessionId) loadResults();
@@ -759,6 +773,7 @@ export default function CollegeSelectorResultsPage() {
           </Button>
         </div>
       </div>
+      <ReviewModal open={showReviewModal} onClose={handleCloseReview} module="college" />
     </div>
   );
 }

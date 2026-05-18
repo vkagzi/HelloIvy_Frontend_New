@@ -1,6 +1,5 @@
 'use client';
 
-import useSWR from 'swr';
 import api from '@/lib/api-client';
 
 export interface ModuleChoice {

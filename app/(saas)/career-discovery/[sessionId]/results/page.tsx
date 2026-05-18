@@ -16,6 +16,7 @@ import CareerResultsPDF from '@/components/pdf/CareerResultsPDF';
 import TranscriptReportPDF from '@/components/pdf/TranscriptReportPDF';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import { useUserAuth } from '@/app/_hooks/useUserAuth';
+import ReviewModal from '@/app/_components/ReviewModal';
 
 type TabType = 'results' | 'history';
 
@@ -36,6 +37,19 @@ const CareerResultsPage: React.FC = () => {
   const [isDownloadingResults, setIsDownloadingResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('results');
+  const [showReviewModal, setShowReviewModal] = useState(false);
+
+  const handleCloseReview = () => {
+    localStorage.setItem('career_review_shown', 'true');
+    setShowReviewModal(false);
+  };
+
+  useEffect(() => {
+    const reviewShown = localStorage.getItem('career_review_shown');
+    if (!reviewShown) {
+      setShowReviewModal(true);
+    }
+  }, []);
 
   // Load recommendations on mount
   useEffect(() => {
@@ -845,6 +859,7 @@ const CareerResultsPage: React.FC = () => {
           </Button>
         </div>
       </div>
+      <ReviewModal open={showReviewModal} onClose={handleCloseReview} module="career" />
     </div>
   );
 };

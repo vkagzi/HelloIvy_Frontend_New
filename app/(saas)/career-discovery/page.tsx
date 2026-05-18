@@ -26,7 +26,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import ModuleAccessGuard from '@/app/_components/ModuleAccessGuard';
-import ReviewModal from '@/app/_components/ReviewModal';
 
 interface CareerDiscoveryPageProps {}
 
@@ -45,7 +44,6 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   >([]);
   const [isCheckingDomain, setIsCheckingDomain] = useState(true);
   const hasFetchedRef = useRef(false);
-  const [showReviewModal, setShowReviewModal] = useState(false);
 
   // Domain selection state
   const [allDomains, setAllDomains] = useState<DomainItem[]>([]);
@@ -60,20 +58,6 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     missingSections,
     loading: profileLoading,
   } = useProfile();
-
-  const handleCloseReview = () => {
-    localStorage.setItem('stream_review_shown', 'true');
-
-    setShowReviewModal(false);
-  };
-
-  useEffect(() => {
-    const reviewShown = localStorage.getItem('stream_review_shown');
-
-    if (!reviewShown) {
-      setShowReviewModal(true);
-    }
-  }, []);
 
   useEffect(() => {
     if (hasFetchedRef.current) return;
@@ -704,7 +688,6 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           )}
         </div>
       </div>
-      <ReviewModal open={showReviewModal} onClose={handleCloseReview} module="career"/>
     </div>
   );
 }
