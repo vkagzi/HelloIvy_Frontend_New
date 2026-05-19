@@ -1037,7 +1037,6 @@ export default function PreferencesPage() {
 
       <div className="mx-auto max-w-3xl relative z-10 animate-fadeIn">
         <div className="rounded-3xl border border-neutral-200/60 bg-white/95 shadow-[0_20px_50px_rgba(0,0,0,0.03)] backdrop-blur-xl overflow-hidden relative">
-          <div className="overflow-hidden rounded-[32px] border border-neutral-200 bg-white shadow-xl">
 
             {/* Card Top Accent Line */}
             <div className="h-1.5 w-full bg-gradient-to-r from-[#3B82F6] via-[#22C1EE] to-[#1FD1C2]" />
@@ -1072,7 +1071,6 @@ export default function PreferencesPage() {
                   Tell us what you&apos;re looking for so we can find the best colleges for you.
                 </p>
               </div>
-            </div>
             <StepIndicator current={step} total={TOTAL_STEPS} />
 
             {/* Step 1: Degree Goals */}
