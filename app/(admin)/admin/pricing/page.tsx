@@ -154,7 +154,7 @@ export default function PricingPage() {
   };
 
   const customModulesList = useMemo(() => {
-    const STATIC_KEYS = ['college_selector', 'career_discovery', 'domain_discovery', 'reachivy_pro', 'hello_ivy'];
+    const STATIC_KEYS = ['college_selector', 'career_discovery', 'domain_discovery'];
     return modules.filter((m) => !STATIC_KEYS.includes(m.value));
   }, [modules]);
 
