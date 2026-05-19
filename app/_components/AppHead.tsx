@@ -4,8 +4,7 @@ import { Heading, Label } from '@/app/_components/Typography';
 import { FiIcon } from '@/app/_components/Icons';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import imgLogoApp from '@/assets/images/logo-app.png';
+import { IvyWithoutBGLottie } from '@/app/_components/LottieAnimation';
 import { useUserAuth } from '@/app/_hooks/useUserAuth';
 import {
   DropdownMenu,
@@ -78,13 +77,11 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
       <header className="flex h-12 items-center justify-between border-b border-neutral-200 px-4">
         <div className="flex items-center gap-3">
           {isPayAsStudent && !session ? (
-            <Link href="/dashboard">
-              <Image
-                src={imgLogoApp}
-                alt="HelloIvy Logo"
-                className="h-6 w-auto"
-                priority
-              />
+            <Link href="/dashboard" className="flex items-center gap-2 select-none">
+              <IvyWithoutBGLottie className="h-9 w-9 flex-shrink-0" />
+              <span className="font-work-sans text-2xl font-medium tracking-tight text-neutral-800">
+                hello<span className="font-bold text-neutral-900">ivy</span>
+              </span>
             </Link>
           ) : (
             <>

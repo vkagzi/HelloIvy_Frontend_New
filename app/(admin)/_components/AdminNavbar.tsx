@@ -4,9 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { FiIcon } from '@/app/_components/Icons';
-import imgLogoApp from '@/assets/images/logo-app.png';
-import imgIcon from '@/assets/images/icon.png';
-import Image from 'next/image';
+import { IvyWithoutBGLottie } from '@/app/_components/LottieAnimation';
 import { Label } from '@/app/_components/Typography';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
 
@@ -83,12 +81,13 @@ const AdminNavbar: React.FC = () => {
   const sidebarContent = (
     <>
       <div className="flex h-12 items-center justify-between pb-3">
-        <Link href="/admin">
-          <Image
-            src={collapsed ? imgIcon : imgLogoApp}
-            alt="HelloIvy Logo"
-            className="h-6 w-auto transition-all duration-200"
-          />
+        <Link href="/admin" className="flex items-center gap-2 select-none">
+          <IvyWithoutBGLottie className="h-9 w-9 flex-shrink-0" />
+          {!collapsed && (
+            <span className="font-work-sans text-2xl font-medium tracking-tight text-neutral-800">
+              hello<span className="font-bold text-neutral-900">ivy</span>
+            </span>
+          )}
         </Link>
         <button
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}

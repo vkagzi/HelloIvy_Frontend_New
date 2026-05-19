@@ -4,8 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiIcon } from '@/app/_components/Icons';
-import imgLogoApp from '@/assets/images/logo-app.png';
-import Image from 'next/image';
+import { IvyWithoutBGLottie } from '@/app/_components/LottieAnimation';
 import { Label } from '@/app/_components/Typography';
 import { sidebarNavItems } from '@/app/_constants/navItems';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
@@ -54,17 +53,14 @@ const Navbar: React.FC = () => {
           collapsed ? 'justify-center' : 'justify-between'
         }`}
       >
-        {/* Show logo ONLY when sidebar expanded */}
-        {!collapsed && (
-          <Link href="/dashboard">
-            <Image
-              src={imgLogoApp}
-              alt="HelloIvy Logo"
-              className="h-6 w-auto transition-all duration-200"
-              priority
-            />
-          </Link>
-        )}
+        <Link href="/dashboard" className="flex items-center gap-2 select-none">
+          <IvyWithoutBGLottie className="h-9 w-9 flex-shrink-0" />
+          {!collapsed && (
+            <span className="font-work-sans text-2xl font-medium tracking-tight text-neutral-800">
+              hello<span className="font-bold text-neutral-900">ivy</span>
+            </span>
+          )}
+        </Link>
 
         {/* Collapse toggle button */}
         <button
