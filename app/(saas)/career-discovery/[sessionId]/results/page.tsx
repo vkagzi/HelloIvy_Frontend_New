@@ -47,7 +47,10 @@ const CareerResultsPage: React.FC = () => {
   useEffect(() => {
     const reviewShown = localStorage.getItem('career_review_shown');
     if (!reviewShown) {
-      setShowReviewModal(true);
+      const timer = setTimeout(() => {
+        setShowReviewModal(true);
+      }, 60000);
+      return () => clearTimeout(timer);
     }
   }, []);
 

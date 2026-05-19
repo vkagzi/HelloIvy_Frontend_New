@@ -90,7 +90,11 @@ const DomainResultsPage: React.FC = () => {
     const reviewShown = localStorage.getItem('stream_review_shown');
 
     if (!reviewShown) {
-      setShowReviewModal(true);
+      const timer = setTimeout(() => {
+        setShowReviewModal(true);
+      }, 60000);
+
+      return () => clearTimeout(timer);
     }
   }, []);
 

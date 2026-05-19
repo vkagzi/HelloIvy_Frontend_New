@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import api from '@/lib/api';
 
 interface Props {
   open: boolean;
@@ -19,18 +20,13 @@ export default function ReviewModal({ open, onClose, module }: Props) {
     if (!rating) return;
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/submit/`, {
+      await api('/api/domain-discovery/submit-review/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-
-        body: JSON.stringify({
+        body: {
           rating,
           comment,
           module,
-        }),
+        },
       });
 
       localStorage.setItem('reviewSubmitted', 'true');

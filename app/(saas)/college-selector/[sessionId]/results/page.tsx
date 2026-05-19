@@ -61,7 +61,10 @@ export default function CollegeSelectorResultsPage() {
   useEffect(() => {
     const reviewShown = localStorage.getItem('college_review_shown');
     if (!reviewShown) {
-      setShowReviewModal(true);
+      const timer = setTimeout(() => {
+        setShowReviewModal(true);
+      }, 60000);
+      return () => clearTimeout(timer);
     }
   }, []);
 
