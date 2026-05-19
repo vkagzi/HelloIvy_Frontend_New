@@ -49,8 +49,12 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const setParsedTranscriptData = useCallback((data: Record<string, any> | null) => {
     setParsedTranscriptDataInternal(data);
     if (data) {
-      // Clear any prior unsaved edits so that the fresh scan details successfully override and auto-fill the forms
-      setUnsavedProfileEdits({});
+      // Clear any prior unsaved edits so that the fresh scan details successfully override and auto-fill the forms.
+      // Defer this using a small timeout so that the form uploader sync effects can read the active form values
+      // (like the selected high school grade level) before the unsaved edits are wiped.
+      setTimeout(() => {
+        setUnsavedProfileEdits({});
+      }, 100);
     }
   }, []);
   const currentUserIdRef = useRef<string | null>(null);
