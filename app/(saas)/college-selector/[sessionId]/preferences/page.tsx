@@ -292,7 +292,7 @@ const COUNTRY_CODES: Record<string, string> = {
   Ukraine: 'UA',
   'United Arab Emirates': 'AE',
   'United Kingdom': 'GB',
-  'United States': 'US',
+  'United States of America': 'US',
   Uruguay: 'UY',
   Uzbekistan: 'UZ',
   Vanuatu: 'VU',
@@ -305,8 +305,8 @@ const COUNTRY_CODES: Record<string, string> = {
 
 // Prioritized country options - top countries first, followed by rest alphabetically
 const PRIORITIZED_COUNTRIES = [
-  "United States", "United Kingdom", "Canada", "Singapore", "Australia",
-  "France", "Spain", "Ireland", "Germany", "India",
+  "United States of America", "United Kingdom", "Canada", "India", "Singapore",
+  "Australia", "France", "Spain", "Ireland", "Germany",
 ];
 const OTHER_COUNTRIES = Object.keys(COUNTRY_CODES)
   .filter((country) => !PRIORITIZED_COUNTRIES.includes(country))

@@ -636,28 +636,33 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                     <h3 className="text-label-lg font-semibold text-neutral-900">
                       Work Experience / Internship {rIdx + 1}
                     </h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <Controller
                         name={`${item.name}.${rIdx}.currentlyWorking` as never}
                         control={form.control}
                         defaultValue={false as never}
-                        render={({ field: controllerField }) => (
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id={`${item.name}.${rIdx}.currentlyWorking`}
-                              checked={controllerField.value === true}
-                              onCheckedChange={(checked) =>
-                                controllerField.onChange(Boolean(checked))
-                              }
-                            />
+                        render={({ field: controllerField }) => {
+                          const isCurrentlyWorking = controllerField.value === true;
+                          return (
                             <label
                               htmlFor={`${item.name}.${rIdx}.currentlyWorking`}
-                              className="text-sm font-medium text-neutral-600 cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold cursor-pointer transition-all duration-200 select-none active:scale-97 ${
+                                isCurrentlyWorking
+                                  ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
+                                  : 'bg-neutral-50 border-neutral-200 text-neutral-500 hover:bg-neutral-100 hover:border-neutral-300 hover:text-neutral-700'
+                              }`}
                             >
-                              I currently work here
+                              <Checkbox
+                                id={`${item.name}.${rIdx}.currentlyWorking`}
+                                checked={isCurrentlyWorking}
+                                onCheckedChange={(checked) =>
+                                  controllerField.onChange(Boolean(checked))
+                                }
+                              />
+                              <span>I currently work here</span>
                             </label>
-                          </div>
-                        )}
+                          );
+                        }}
                       />
                     </div>
                   </div>
@@ -1311,6 +1316,22 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 if (rowObj.subject !== 'Other') {
                   // Remove subjectOther field completely when subject is not "Other"
                   delete rowObj.subjectOther;
+                }
+              }
+
+              // For experienceType: clear experienceTypeOther if experienceType is not "Other"
+              if ('experienceType' in rowObj) {
+                if (rowObj.experienceType !== 'Other') {
+                  // Remove experienceTypeOther field completely when experienceType is not "Other"
+                  delete rowObj.experienceTypeOther;
+                }
+              }
+
+              // For industrySector: clear industrySectorOther if industrySector is not "Other"
+              if ('industrySector' in rowObj) {
+                if (rowObj.industrySector !== 'Other') {
+                  // Remove industrySectorOther field completely when industrySector is not "Other"
+                  delete rowObj.industrySectorOther;
                 }
               }
 
