@@ -2664,6 +2664,26 @@ export const professionalFieldDefs: FieldDefinition[] = [
     ],
   },
   {
+    id: 'industrySectorOther',
+    type: 'text',
+    label: 'Please specify industry/sector',
+    placeholder: 'Enter industry or sector',
+    required: false,
+    visibility: {
+      depends_on: {
+        field_id: 'industrySector',
+        value: ['Other'],
+      },
+    },
+    validationDependsOn: [
+      {
+        fieldId: 'industrySector',
+        values: ['Other'],
+        validation: { required: true },
+      },
+    ],
+  },
+  {
     id: 'currentEmployer',
     type: 'text',
     label: 'Employer/Company Name',
@@ -2763,6 +2783,7 @@ export const professionalLayout: LayoutBlock[] = [
       'experienceType',
       'experienceTypeOther',
       'industrySector',
+      'industrySectorOther',
       'currentEmployer',
       'jobTitle',
       'startDate',

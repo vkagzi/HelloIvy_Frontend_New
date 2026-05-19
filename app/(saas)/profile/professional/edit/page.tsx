@@ -110,7 +110,9 @@ const ProfessionalFormDetails: React.FC = () => {
     setFormDefaults({
       experiences: experiences.map((exp: any) => ({
         experienceType: exp.experienceType ?? exp.experience_type ?? "",
+        experienceTypeOther: exp.experienceTypeOther ?? exp.experience_type_other ?? "",
         industrySector: exp.industrySector ?? exp.industry ?? "",
+        industrySectorOther: exp.industrySectorOther ?? exp.industry_sector_other ?? exp.industry_other ?? "",
         currentEmployer: exp.currentEmployer ?? exp.employerName ?? exp.company ?? "",
         city: exp.city ?? "",
         durationValue: exp.durationValue ?? exp.duration ?? "",
