@@ -49,7 +49,12 @@ function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
     completionPercentage,
     missingSections,
     loading: profileLoading,
+    profileData,
   } = useProfile();
+
+  const profileExists = profileData !== null;
+  const linkText = profileExists ? 'View/Edit your profile' : 'Create your profile';
+  const linkHref = '/profile/personal';
 
   useEffect(() => {
     let isCancelled = false;
@@ -197,6 +202,19 @@ function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
               <br />
               streams and subjects?
             </Heading>
+            <p className="mt-3 text-sm text-gray-600">
+              Please update your profile with your latest information before we begin.
+            </p>
+            {profileLoading ? (
+              <div className="mt-5 h-10 w-44 animate-pulse rounded-xl bg-neutral-200" />
+            ) : (
+              <Link
+                href={linkHref}
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-105 hover:from-cyan-600 hover:to-blue-600 hover:shadow-xl active:scale-95"
+              >
+                {linkText}
+              </Link>
+            )}
           </div>
 
           {/* Right - Brain Animation */}
