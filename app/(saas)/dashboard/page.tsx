@@ -8,6 +8,8 @@ import { Heading, Label } from '@/app/_components/Typography';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import api from '@/lib/api-client';
 import { useSession } from 'next-auth/react';
+import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
+import { FiIcon } from '@/app/_components/Icons';
 
 type VoicePersona = 'male' | 'female';
 
@@ -34,6 +36,24 @@ export default function Dashboard(): React.ReactElement {
   const schoolName = session?.user?.school_name;
 
   const [currentPersona, setCurrentPersona] = useState<VoicePersona>('male');
+  const [activeModuleNames, setActiveModuleNames] = useState<string[]>([]);
+  const { modules: allModules } = useModuleChoices();
+
+  useEffect(() => {
+    api<{ modules: string[] }>('/api/accounts/my-modules/')
+      .then((data) => {
+        if (data && Array.isArray(data.modules)) {
+          setActiveModuleNames(data.modules);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const activeModules = React.useMemo(() => {
+    const isStaff = ['superadmin', 'operationadmin'].includes(session?.user?.role || '');
+    if (isStaff) return allModules;
+    return allModules.filter((m) => activeModuleNames.includes(m.value));
+  }, [allModules, activeModuleNames, session]);
 
   useEffect(() => {
     api<{ settings: { voice_persona?: string } }>('/api/accounts/settings/')
@@ -188,6 +208,69 @@ export default function Dashboard(): React.ReactElement {
             Change Voice
           </Link>
         </div>
+      </div>
+
+      {/* Your Active Modules Grid */}
+      <div className="mx-auto mt-8 max-w-3xl">
+        <h2 className="mb-4 text-base font-bold text-neutral-800 flex items-center gap-2">
+          <FiIcon name="apps" className="h-5 w-5 text-purple-600" />
+          Your Active Modules
+        </h2>
+        
+        {activeModules.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-neutral-300 p-8 text-center bg-white shadow-sm">
+            <FiIcon name="lock" className="mx-auto h-8 w-8 text-neutral-400 mb-2" />
+            <p className="text-sm font-medium text-neutral-600">No active modules found</p>
+            <p className="text-xs text-neutral-400 mt-1">Please contact your counselor or school administrator to unlock modules.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {activeModules.map((m) => {
+              let launchHref = `/${m.value}`;
+              if (m.value === 'college_selector') launchHref = '/college-selector';
+              if (m.value === 'career_discovery') launchHref = '/career-discovery';
+              if (m.value === 'domain_discovery') launchHref = '/domain-discovery';
+
+              const iconName = m.icon || 'briefcase';
+              const colorClass = m.color || 'bg-purple-100 text-purple-700';
+
+              return (
+                <div 
+                  key={m.value}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:border-purple-200"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${colorClass} shadow-sm group-hover:scale-105 transition-transform duration-300`}>
+                        <FiIcon name={iconName} className="h-5 w-5" />
+                      </div>
+                      <span className="inline-flex rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700 border border-green-100">
+                        Active
+                      </span>
+                    </div>
+
+                    <h3 className="mt-3 text-sm font-bold text-neutral-900 group-hover:text-purple-600 transition-colors">
+                      {m.label}
+                    </h3>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      Explore resources, personal counsel and recommendations.
+                    </p>
+                  </div>
+
+                  <div className="mt-4">
+                    <Link
+                      href={launchHref}
+                      className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 transition-colors group-hover:bg-purple-600 group-hover:text-white"
+                    >
+                      <span>Launch Module</span>
+                      <FiIcon name="angle-small-right" className="h-3 w-3" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </>
   );
