@@ -1816,16 +1816,15 @@ export const educationalFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
-    id: 'year',
-    type: 'select_autofill',
-    options: Array.from({ length: 11 }, (_, i) => {
-      const year = new Date().getFullYear() - 5 + i;
-      return year.toString();
-    }),
-    label: 'Year of Completion',
-    placeholder: 'Enter year',
-    required: true,
-  },
+  id: 'year',
+  type: 'select_autofill',
+  options: Array.from({ length: 2035 - 1960 + 1 }, (_, i) => {
+    return (1960 + i).toString();
+  }),
+  label: 'Year of Completion',
+  placeholder: 'Enter year',
+  required: true,
+},
   {
     id: 'testType',
     type: 'select',
