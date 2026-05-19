@@ -153,6 +153,25 @@ export default function PricingPage() {
     }
   };
 
+  const customModulesList = useMemo(() => {
+    const STATIC_KEYS = ['college_selector', 'career_discovery', 'domain_discovery', 'reachivy_pro', 'hello_ivy'];
+    return modules.filter((m) => !STATIC_KEYS.includes(m.value));
+  }, [modules]);
+
+  const handleDeleteCustomModule = async (value: string) => {
+    if (!confirm(`Are you sure you want to delete the custom module "${value}"? This will also remove any pricing associated with it.`)) {
+      return;
+    }
+    try {
+      await api(`/api/accounts/custom-modules/${value}/`, { method: 'DELETE' });
+      addToast('Custom module deleted successfully', { type: 'success' });
+      refetchModuleChoices();
+      fetchPricing();
+    } catch (err: unknown) {
+      addToast('Failed to delete custom module', { type: 'error' });
+    }
+  };
+
   // Fetch schools for autocomplete
   useEffect(() => {
     if (!dialogOpen) return;
@@ -720,6 +739,32 @@ export default function PricingPage() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* List of custom modules */}
+          <div className="mt-4 border-t border-gray-100 pt-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Created Custom Modules</h3>
+            {customModulesList.length === 0 ? (
+              <p className="text-xs text-gray-500 italic">No custom modules created yet.</p>
+            ) : (
+              <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                {customModulesList.map((cm) => (
+                  <div key={cm.value} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm border border-gray-100">
+                    <div>
+                      <span className="font-medium text-gray-900">{cm.label}</span>
+                      <span className="ml-2 text-xs text-gray-500">({cm.value}) — ₹{cm.price}</span>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteCustomModule(cm.value)}
+                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"
+                      title="Delete module"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
