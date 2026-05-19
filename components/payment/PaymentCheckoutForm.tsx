@@ -115,6 +115,8 @@ export default function PaymentCheckoutForm({
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
   const [contactLocked, setContactLocked] = useState({ firstName: false, lastName: false, email: false });
 
   // Prefill from session for logged-in users
@@ -138,24 +140,25 @@ export default function PaymentCheckoutForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // School mode: create checkout session on mount
+  // School mode: prefill details on mount
   useEffect(() => {
     if (config.mode !== 'school') return;
     if (initRef.current) return;
     initRef.current = true;
 
-    if (!modulesParam || Object.keys(moduleQuantities).length === 0) {
-      router.replace(config.backUrl);
-      return;
-    }
-
-    api<CheckoutSession>(config.createEndpoint, {
-      method: 'POST',
-      body: { module_quantities: moduleQuantities, billing_state: stateParam || undefined },
-    })
-      .then((data) => setSession(data))
-      .catch((err: unknown) => setInitError(err instanceof Error ? err.message : 'Failed to initialise checkout'))
-      .finally(() => setInitLoading(false));
+    setInitLoading(true);
+    api<{ address?: string; email?: string; phone?: string }>(config.createEndpoint, { method: 'GET' })
+      .then((data) => {
+        if (data.address) setAddress(data.address);
+        if (data.email) setEmail(data.email);
+        if (data.phone) setPhone(data.phone);
+      })
+      .catch((err: unknown) => {
+        setInitError(err instanceof Error ? err.message : 'Failed to load checkout details');
+      })
+      .finally(() => {
+        setInitLoading(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -163,7 +166,8 @@ export default function PaymentCheckoutForm({
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
-    phone.replace(/\D/g, '').length >= 10;
+    phone.replace(/\D/g, '').length >= 10 &&
+    address.trim().length > 0;
 
   const displayTotal = grandTotal || (session?.total ?? subtotal);
   const stateName = stateParam === 'maharashtra' ? 'Maharashtra' : stateParam === 'rest_of_india' ? 'Rest of India' : '';
@@ -179,6 +183,8 @@ export default function PaymentCheckoutForm({
         last_name: lastName.trim(),
         email: email.trim(),
         phone: phone.trim(),
+        address: address.trim(),
+        gst_number: gstNumber.trim(),
       };
 
       let result: CheckoutSession;
@@ -196,9 +202,14 @@ export default function PaymentCheckoutForm({
           ? await createCheckout(body)
           : await api<CheckoutSession>(config.createEndpoint, { method: 'POST', body });
       } else {
-        // School: session already created on mount
-        if (!session) return;
-        result = session;
+        // School: create session now with all contact/billing details included
+        const body = {
+          module_quantities: moduleQuantities,
+          billing_state: stateParam || undefined,
+          coupon_code: couponCode || undefined,
+          ...contactDetails
+        };
+        result = await api<CheckoutSession>(config.createEndpoint, { method: 'POST', body });
       }
 
       // Redirect to HDFC payment page
@@ -330,6 +341,28 @@ export default function PaymentCheckoutForm({
                 placeholder="+91 98765 43210"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-700">
+                Billing Address <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="text"
+                placeholder={config.mode === 'school' ? "School Billing Address" : "Billing Address"}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-700">
+                GST Number (Optional)
+              </label>
+              <Input
+                type="text"
+                placeholder="22AAAAA1111A1Z1"
+                value={gstNumber}
+                onChange={(e) => setGstNumber(e.target.value)}
               />
             </div>
           </div>

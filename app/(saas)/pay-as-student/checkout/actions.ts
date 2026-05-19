@@ -44,6 +44,8 @@ export async function createStudentCheckout(body: {
   last_name: string;
   email: string;
   phone: string;
+  address: string;
+  gst_number?: string;
 }) {
   const session = await auth();
   const token = session?.accessToken;
