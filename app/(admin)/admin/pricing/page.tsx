@@ -94,9 +94,83 @@ export default function PricingPage() {
   const userInputRef = useRef<HTMLInputElement>(null);
   const [selectedUserLabel, setSelectedUserLabel] = useState('');
 
-  const { modules } = useModuleChoices();
+  const { modules, refetch: refetchModuleChoices } = useModuleChoices();
   const moduleLabels: Record<string, string> = {};
   for (const m of modules) moduleLabels[m.value] = m.label;
+
+  // Custom module creation states
+  const [createModuleOpen, setCreateModuleOpen] = useState(false);
+  const [customModuleForm, setCustomModuleForm] = useState({
+    value: '',
+    label: '',
+    price: '',
+  });
+  const [savingModule, setSavingModule] = useState(false);
+
+  const handleCreateCustomModule = async () => {
+    if (!customModuleForm.value || !customModuleForm.label) {
+      addToast('Module ID and Display Name are required', { type: 'error' });
+      return;
+    }
+    const sanitizedValue = customModuleForm.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    setSavingModule(true);
+    try {
+      await api('/api/accounts/custom-modules/', {
+        method: 'POST',
+        body: {
+          value: sanitizedValue,
+          label: customModuleForm.label,
+          price: customModuleForm.price ? Number(customModuleForm.price) : 999,
+          icon: 'briefcase',
+          color: 'bg-purple-100 text-purple-700',
+        },
+      });
+      addToast('Custom module created successfully', { type: 'success' });
+      setCreateModuleOpen(false);
+      setCustomModuleForm({
+        value: '',
+        label: '',
+        price: '',
+      });
+      refetchModuleChoices();
+      fetchPricing();
+    } catch (err: unknown) {
+      let message = 'Failed to create custom module';
+      if (err instanceof Error) {
+        const body = (err.cause as { body?: Record<string, unknown> })?.body;
+        if (body) {
+          const parts = Object.entries(body)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .join('; ');
+          if (parts) message = parts;
+        } else if (err.message) {
+          message = err.message;
+        }
+      }
+      addToast(message, { type: 'error' });
+    } finally {
+      setSavingModule(false);
+    }
+  };
+
+  const customModulesList = useMemo(() => {
+    const STATIC_KEYS = ['college_selector', 'career_discovery', 'domain_discovery'];
+    return modules.filter((m) => !STATIC_KEYS.includes(m.value));
+  }, [modules]);
+
+  const handleDeleteCustomModule = async (value: string) => {
+    if (!confirm(`Are you sure you want to delete the custom module "${value}"? This will also remove any pricing associated with it.`)) {
+      return;
+    }
+    try {
+      await api(`/api/accounts/custom-modules/${value}/`, { method: 'DELETE' });
+      addToast('Custom module deleted successfully', { type: 'success' });
+      refetchModuleChoices();
+      fetchPricing();
+    } catch (err: unknown) {
+      addToast('Failed to delete custom module', { type: 'error' });
+    }
+  };
 
   // Fetch schools for autocomplete
   useEffect(() => {
@@ -256,7 +330,10 @@ export default function PricingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Module Pricing</h1>
-        <Button onClick={openCreate}>Add Pricing</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setCreateModuleOpen(true)}>+ Create Module</Button>
+          <Button onClick={openCreate}>Add Pricing</Button>
+        </div>
       </div>
 
       {/* Filter */}
@@ -608,6 +685,96 @@ export default function PricingPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving || !form.module_name || !form.price}>
               {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Module Dialog */}
+      <Dialog open={createModuleOpen} onOpenChange={setCreateModuleOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-purple-700">
+              <Building2 className="h-5 w-5" />
+              Create New Custom Module
+            </DialogTitle>
+            <DialogDescription>
+              Add a new custom module. Once created, it will immediately appear in all subscription and pricing dropdowns.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="module-id">Module ID / Slug (lowercase, e.g. essay_evaluator)</Label>
+              <Input
+                id="module-id"
+                placeholder="essay_evaluator"
+                value={customModuleForm.value}
+                onChange={(e) => setCustomModuleForm({ ...customModuleForm, value: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="module-label">Display Name (e.g. Essay Evaluator)</Label>
+              <Input
+                id="module-label"
+                placeholder="Essay Evaluator"
+                value={customModuleForm.label}
+                onChange={(e) => setCustomModuleForm({ ...customModuleForm, label: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="module-price">Price (INR)</Label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₹</span>
+                <Input
+                  id="module-price"
+                  type="number"
+                  min={0}
+                  placeholder="999"
+                  value={customModuleForm.price}
+                  onChange={(e) => setCustomModuleForm({ ...customModuleForm, price: e.target.value })}
+                  className="pl-7"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* List of custom modules */}
+          <div className="mt-4 border-t border-gray-100 pt-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Created Custom Modules</h3>
+            {customModulesList.length === 0 ? (
+              <p className="text-xs text-gray-500 italic">No custom modules created yet.</p>
+            ) : (
+              <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                {customModulesList.map((cm) => (
+                  <div key={cm.value} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm border border-gray-100">
+                    <div>
+                      <span className="font-medium text-gray-900">{cm.label}</span>
+                      <span className="ml-2 text-xs text-gray-500">({cm.value}) — ₹{cm.price}</span>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteCustomModule(cm.value)}
+                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"
+                      title="Delete module"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateModuleOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleCreateCustomModule}
+              disabled={savingModule || !customModuleForm.value || !customModuleForm.label || !customModuleForm.price}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {savingModule ? 'Creating...' : 'Create Module'}
             </Button>
           </DialogFooter>
         </DialogContent>

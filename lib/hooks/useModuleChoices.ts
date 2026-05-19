@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api-client';
 
 export interface ModuleChoice {
@@ -19,8 +20,6 @@ interface ModuleChoicesResponse {
 const DEFAULT_PRICE = 999;
 const DEFAULT_CURRENCY = 'INR';
 
-// TODO: restore API call once backend is ready
-// const fetcher = () => api<ModuleChoicesResponse>('/api/accounts/module-choices/');
 const STATIC_MODULES: ModuleChoice[] = [
   { value: 'college_selector', label: 'College Selector', price: 4500, icon: 'school', color: 'bg-green-100 text-green-700' },
   { value: 'career_discovery', label: 'Career & Degree Selection', price: 999, icon: 'briefcase', color: 'bg-purple-100 text-purple-700' },
@@ -28,10 +27,35 @@ const STATIC_MODULES: ModuleChoice[] = [
 ];
 
 export function useModuleChoices() {
-  const modules = STATIC_MODULES;
-  const loading = false;
-  const currency = DEFAULT_CURRENCY;
-  const defaultPrice = DEFAULT_PRICE;
+  const [modules, setModules] = useState<ModuleChoice[]>(STATIC_MODULES);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
+  const [defaultPrice, setDefaultPrice] = useState<number>(DEFAULT_PRICE);
+  const [trigger, setTrigger] = useState(0);
+
+  const refetch = useCallback(() => {
+    setTrigger((prev) => prev + 1);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    api<ModuleChoicesResponse>('/api/accounts/module-choices/')
+      .then((data) => {
+        if (!active) return;
+        if (data && Array.isArray(data.modules)) {
+          setModules(data.modules);
+        }
+        if (data?.currency) setCurrency(data.currency);
+        if (data?.default_price != null) setDefaultPrice(data.default_price);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [trigger]);
 
   const prices: Record<string, number> = {};
   for (const m of modules) {
@@ -40,7 +64,7 @@ export function useModuleChoices() {
 
   const getPrice = (moduleName: string): number => prices[moduleName] ?? defaultPrice;
 
-  return { modules, currency, defaultPrice, getPrice, loading };
+  return { modules, currency, defaultPrice, getPrice, loading, refetch };
 }
 
 /** Build lookup maps from the modules array returned by useModuleChoices(). */
