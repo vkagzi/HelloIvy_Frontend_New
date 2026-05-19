@@ -542,25 +542,96 @@ const EducationalDetailsForm: React.FC = () => {
     }
 
     // 4. Map Test Scores
-    if (parsedTranscriptData.testScores && Array.isArray(parsedTranscriptData.testScores) && parsedTranscriptData.testScores.length > 0) {
-      newDefaults.testScores = parsedTranscriptData.testScores.map((newScore: any) => ({
-        ...newScore,
-        testType: newScore.testType || "",
-        testDate: newScore.testDate || "",
-        totalScore: newScore.totalScore || newScore.yourScore || "",
-        yourScore: newScore.yourScore || newScore.totalScore || "",
-        writingYourScore: newScore.writingYourScore || "",
-        mathYourScore: newScore.mathYourScore || "",
-        criticalReadingYourScore: newScore.criticalReadingYourScore || "",
-        analyticalWritingScore: newScore.analyticalWritingScore || "",
-        verbalReasoningScore: newScore.verbalReasoningScore || "",
-        quantitativeReasoningScore: newScore.quantitativeReasoningScore || "",
-        dataInsightsScore: newScore.dataInsightsScore || "",
-        englishYourScore: newScore.englishYourScore || "",
-        readingYourScore: newScore.readingYourScore || "",
-        scienceYourScore: newScore.scienceYourScore || "",
-        integratedReasoningScore: newScore.integratedReasoningScore || "",
-      }));
+    const testScoresData = parsedTranscriptData.testScores || parsedTranscriptData.test_scores || findKey(parsedTranscriptData, ['testScores', 'test_scores']);
+    
+    if (testScoresData && Array.isArray(testScoresData) && testScoresData.length > 0) {
+      newDefaults.testScores = testScoresData.map((newScore: any) => {
+        const cleanScore = { ...newScore };
+        
+        // Dynamic Alias Resolution
+        const findVal = (keys: string[]) => {
+          for (const k of keys) {
+            const foundKey = Object.keys(cleanScore).find(
+              (x) => x.toLowerCase() === k.toLowerCase() || x.toLowerCase().replace(/[^a-z0-9]/g, '') === k.toLowerCase().replace(/[^a-z0-9]/g, '')
+            );
+            if (foundKey && cleanScore[foundKey] !== undefined && cleanScore[foundKey] !== null && cleanScore[foundKey] !== '') {
+              return cleanScore[foundKey];
+            }
+          }
+          return undefined;
+        };
+
+        const sanitizePercentile = (val: any) => {
+          if (val === undefined || val === null || val === '') return undefined;
+          const digits = String(val).replace(/[^\d]/g, '');
+          return digits ? Number(digits) : undefined;
+        };
+
+        // Explicitly map percentiles using alias groups to match fieldDefinitions.ts IDs
+        const verbalPercentileVal = findVal(['verbalReasoningPercentile', 'verbalPercentile', 'verbal_percentile', 'verbalReasoningPercent']);
+        const quantPercentileVal = findVal(['quantitativeReasoningPercentile', 'quantPercentile', 'quantitativePercentile', 'quant_percentile', 'quantitativeReasoningPercent']);
+        const diPercentileVal = findVal(['dataInsightsPercentile', 'dataInsightPercentile', 'data_insights_percentile', 'dataInsightsPercent']);
+        const awaPercentileVal = findVal(['analyticalWritingPercentile', 'awaPercentile', 'awa_percentile', 'analyticalWritingPercent']);
+        const totalPercentileVal = findVal(['yourPercentile', 'totalPercentile', 'percentile', 'total_percentile', 'scorePercentile', 'yourScorePercentile']);
+        const mathPercentileVal = findVal(['mathYourPercentile', 'mathPercentile', 'math_percentile']);
+        const readingPercentileVal = findVal(['criticalReadingYourPercentile', 'readingPercentile', 'reading_percentile', 'criticalReadingPercentile']);
+        const irPercentileVal = findVal(['integratedReasoningPercentile', 'irPercentile', 'ir_percentile']);
+
+        // Normalize testType to exact dropdown option strings to trigger GMAT/GRE layout rendering
+        const rawTestType = String(cleanScore.testType || "").trim();
+        let testType = "Other";
+        let testTypeOther = "";
+        
+        if (rawTestType.toLowerCase().includes('gmat')) {
+          testType = "GMAT";
+        } else if (rawTestType.toLowerCase().includes('gre')) {
+          testType = "GRE";
+        } else if (rawTestType.toLowerCase().includes('sat')) {
+          testType = "SAT";
+        } else if (rawTestType.toLowerCase().includes('act')) {
+          testType = "ACT";
+        } else if (rawTestType.toLowerCase().includes('toefl')) {
+          testType = "TOEFL";
+        } else if (rawTestType.toLowerCase().includes('ielts')) {
+          testType = "IELTS";
+        } else if (rawTestType.toLowerCase().includes('executive')) {
+          testType = "Executive Assessment";
+        } else if (rawTestType) {
+          testType = "Other";
+          testTypeOther = rawTestType;
+        }
+
+        return {
+          ...cleanScore,
+          testType,
+          testTypeOther,
+          testDate: cleanScore.testDate || "",
+          totalScore: cleanScore.totalScore || cleanScore.yourScore || "",
+          yourScore: cleanScore.yourScore || cleanScore.totalScore || "",
+          writingYourScore: cleanScore.writingYourScore || "",
+          mathYourScore: cleanScore.mathYourScore || "",
+          criticalReadingYourScore: cleanScore.criticalReadingYourScore || "",
+          analyticalWritingScore: cleanScore.analyticalWritingScore || "",
+          verbalReasoningScore: cleanScore.verbalReasoningScore || "",
+          quantitativeReasoningScore: cleanScore.quantitativeReasoningScore || "",
+          dataInsightsScore: cleanScore.dataInsightsScore || "",
+          englishYourScore: cleanScore.englishYourScore || "",
+          readingYourScore: cleanScore.readingYourScore || "",
+          scienceYourScore: cleanScore.scienceYourScore || "",
+          integratedReasoningScore: cleanScore.integratedReasoningScore || "",
+          
+          // Map sanitized percentiles to precise React Hook Form fields
+          verbalReasoningPercentile: sanitizePercentile(verbalPercentileVal),
+          quantitativeReasoningPercentile: sanitizePercentile(quantPercentileVal),
+          dataInsightsPercentile: sanitizePercentile(diPercentileVal),
+          analyticalWritingPercentile: sanitizePercentile(awaPercentileVal),
+          yourPercentile: sanitizePercentile(totalPercentileVal),
+          mathYourPercentile: sanitizePercentile(mathPercentileVal),
+          criticalReadingYourPercentile: sanitizePercentile(readingPercentileVal),
+          integratedReasoningPercentile: sanitizePercentile(irPercentileVal),
+        };
+      });
+      console.log('!!! [EducationalDetailsForm] Mapped testScores:', JSON.stringify(newDefaults.testScores, null, 2));
     }
 
     // 5. Academic Level Sync

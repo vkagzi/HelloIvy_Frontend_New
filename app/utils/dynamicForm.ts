@@ -61,13 +61,8 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
   switch (field.type) {
     case 'text':
     case 'textarea': {
-      let base = z.string();
-      // If field has validationDependsOn, make it optional and allow empty string
-      // The conditional validation will be added via refine in the schema builder
-      if (field.validationDependsOn) {
-        // Return early with an optional string schema
-        return z.string().optional();
-      } else if (field.required) {
+      let base: z.ZodString = z.string();
+      if (field.required) {
         base = base.min(1, `${field.label} is required`);
       }
       if (field.validation?.maxLength)
@@ -82,21 +77,44 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
         );
       if (field.validation?.format === 'email')
         base = base.email('Enter a valid email address');
-      return base;
+      
+      const preprocessed = z.preprocess(
+        (val) => (val === null || val === undefined ? val : String(val)),
+        base
+      );
+
+      if (field.validationDependsOn) {
+        return z.preprocess(
+          (val) => (val === null || val === undefined ? val : String(val)),
+          z.string()
+        ).optional();
+      }
+
+      if (field.required) {
+        return preprocessed;
+      }
+      return preprocessed.optional().or(z.literal(''));
     }
     case 'url': {
       let base: ZodType<string> = z.string();
       if (field.required) {
         base = z.string().min(1, `${field.label} is required`);
       }
-      // For both required and optional URL fields, allow empty strings or valid URLs
       base = base.refine((val) => {
         if (!val || val.trim() === '') return !field.required;
-        // More lenient URL validation - check basic format
         const urlPattern = /^https?:\/\/.+\..+/;
         return urlPattern.test(val);
       }, `${field.label} must be a valid URL (e.g., https://example.com)`);
-      return base;
+
+      const preprocessed = z.preprocess(
+        (val) => (val === null || val === undefined ? val : String(val)),
+        base
+      );
+
+      if (field.required) {
+        return preprocessed;
+      }
+      return preprocessed.optional().or(z.literal(''));
     }
     case 'number': {
       let base: ZodType<string> = z.string();
@@ -104,15 +122,24 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
         base = z.string().min(1, `${field.label} is required`);
       if (field.validation?.min !== undefined)
         base = base.refine(
-          (val) => !isNaN(Number(val)) && Number(val) >= field.validation!.min!,
+          (val) => !val || val.trim() === '' || (!isNaN(Number(val)) && Number(val) >= field.validation!.min!),
           `${field.label} must be at least ${field.validation.min}`
         );
       if (field.validation?.max !== undefined)
         base = base.refine(
-          (val) => !isNaN(Number(val)) && Number(val) <= field.validation!.max!,
+          (val) => !val || val.trim() === '' || (!isNaN(Number(val)) && Number(val) <= field.validation!.max!),
           `${field.label} must be at most ${field.validation.max}`
         );
-      return base;
+
+      const preprocessed = z.preprocess(
+        (val) => (val === null || val === undefined ? val : String(val)),
+        base
+      );
+
+      if (field.required) {
+        return preprocessed;
+      }
+      return preprocessed.optional().or(z.literal(''));
     }
     case 'date': {
       let base: ZodType<string> = z.string();
@@ -120,47 +147,60 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
         base = z.string().min(1, `${field.label} is required`);
       if (field.validation?.format === 'date')
         base = base.refine(
-          (val) => !isNaN(Date.parse(val)),
+          (val) => !val || val.trim() === '' || !isNaN(Date.parse(val)),
           `${field.label} must be a valid date`
         );
-      return base;
+
+      const preprocessed = z.preprocess(
+        (val) => (val === null || val === undefined ? val : String(val)),
+        base
+      );
+
+      if (field.required) {
+        return preprocessed;
+      }
+      return preprocessed.optional().or(z.literal(''));
     }
     case 'select':
     case 'radio': {
       let base: ZodType<string> = z.string();
       if (field.required) {
         base = z.string().min(1, `${field.label} is required`);
-        // Exclude default placeholder options from validation
-        if (field.options) {
-          base = base.refine((val) => {
-            if (!val || val.trim() === '') return false;
-            // Don't allow placeholder options that start with "Select"
-            if (val.startsWith('Select ')) return false;
-            return field.options?.includes(val);
-          }, `${field.label} is required`);
-        }
-      } else if (field.options) {
-        base = base.refine(
-          (val) =>
-            val === undefined ||
-            val === null ||
-            String(val).trim() === '' ||
-            field.options?.includes(val),
-          `${field.label} must be a valid option`
-        );
+        base = base.refine((val) => {
+          if (!val || val.trim() === '') return false;
+          if (val.startsWith('Select ')) return false;
+          return true;
+        }, `${field.label} is required`);
       }
-      return base;
+
+      const preprocessed = z.preprocess(
+        (val) => (val === null || val === undefined ? val : String(val)),
+        base
+      );
+
+      if (field.required) {
+        return preprocessed;
+      }
+      return preprocessed.optional().or(z.literal(''));
     }
     case 'text_select':
     case 'select_autofill':
     case 'location_autofill':
     case 'month_year': {
-      let base = z.string();
+      let base: z.ZodString = z.string();
       if (field.required) base = base.min(1, `${field.label} is required`);
-      return base;
+
+      const preprocessed = z.preprocess(
+        (val) => (val === null || val === undefined ? val : String(val)),
+        base
+      );
+
+      if (field.required) {
+        return preprocessed;
+      }
+      return preprocessed.optional().or(z.literal(''));
     }
     case 'checkbox': {
-      // Allow both boolean and string values (forms often send checkbox as string)
       const checkboxBase = z
         .union([z.boolean(), z.string()])
         .transform((val) => {
@@ -174,21 +214,20 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
           (val) => val === true,
           `${field.label} must be checked`
         );
-      return checkboxBase;
+      return checkboxBase.optional();
     }
     case 'file': {
       if (field.required)
         return z.unknown().refine((val) => !!val, `${field.label} is required`);
-      return z.unknown();
+      return z.unknown().optional();
     }
     case 'multi_select': {
       let base = z.array(z.string());
       if (field.required) base = base.min(1, `${field.label} is required`);
-      else return base.optional();
-      return base;
+      return base.optional().default([]);
     }
     default:
-      return z.unknown();
+      return z.string().optional().or(z.literal(''));
   }
 };
 
@@ -258,20 +297,7 @@ export const generateDynamicFormSchema = (
         // ---
 
         let arrSchema = z.array(objSchema);
-        if (item.repeatable_option?.min !== undefined) {
-          arrSchema = arrSchema.min(
-            item.repeatable_option.min,
-            `At least ${item.repeatable_option.min} ${item.name} required`
-          );
-        }
-        if (item.repeatable_option?.max !== undefined) {
-          arrSchema = arrSchema.max(
-            item.repeatable_option.max,
-            `At most ${item.repeatable_option.max} ${item.name} allowed`
-          );
-        }
-        shape[item.name] =
-          item.repeatable_option?.min === 0 ? arrSchema.optional() : arrSchema;
+        shape[item.name] = arrSchema.optional();
       } else {
         // Non-repeatable fieldset: add each field individually
         item.fields.forEach((fid) => {
@@ -444,19 +470,7 @@ export const generateSubSchema = (
     });
 
     let arrSchema = z.array(objSchema);
-    if (layout.repeatables.repeatable_option?.min !== undefined) {
-      arrSchema = arrSchema.min(
-        layout.repeatables.repeatable_option.min,
-        `At least ${layout.repeatables.repeatable_option.min} ${layout.repeatables.name} required`
-      );
-    }
-    if (layout.repeatables.repeatable_option?.max !== undefined) {
-      arrSchema = arrSchema.max(
-        layout.repeatables.repeatable_option.max,
-        `At most ${layout.repeatables.repeatable_option.max} ${layout.repeatables.name} allowed`
-      );
-    }
-    shape[layout.repeatables.name] = arrSchema;
+    shape[layout.repeatables.name] = arrSchema.optional();
   }
 
   // Create the object schema for the layout type

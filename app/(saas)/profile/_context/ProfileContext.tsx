@@ -23,6 +23,8 @@ type ProfileContextType = {
   missingSections: string[];
   parsedTranscriptData: Record<string, any> | null;
   setParsedTranscriptData: (data: Record<string, any> | null) => void;
+  unsavedProfileEdits: Record<string, any>;
+  setUnsavedProfileEdits: React.Dispatch<React.SetStateAction<Record<string, any>>>;
 };
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -41,7 +43,20 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [completionPercentage, setCompletionPercentage] = useState<number>(0);
   const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   const [missingSections, setMissingSections] = useState<string[]>([]);
-  const [parsedTranscriptData, setParsedTranscriptData] = useState<Record<string, any> | null>(null);
+  const [parsedTranscriptData, setParsedTranscriptDataInternal] = useState<Record<string, any> | null>(null);
+  const [unsavedProfileEdits, setUnsavedProfileEdits] = useState<Record<string, any>>({});
+
+  const setParsedTranscriptData = useCallback((data: Record<string, any> | null) => {
+    setParsedTranscriptDataInternal(data);
+    if (data) {
+      // Clear any prior unsaved edits so that the fresh scan details successfully override and auto-fill the forms.
+      // Defer this using a small timeout so that the form uploader sync effects can read the active form values
+      // (like the selected high school grade level) before the unsaved edits are wiped.
+      setTimeout(() => {
+        setUnsavedProfileEdits({});
+      }, 100);
+    }
+  }, []);
   const currentUserIdRef = useRef<string | null>(null);
 
   const fetchProfileData = useCallback(async (): Promise<void> => {
@@ -168,6 +183,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         missingSections,
         parsedTranscriptData,
         setParsedTranscriptData,
+        unsavedProfileEdits,
+        setUnsavedProfileEdits,
       }}
     >
       {children}
