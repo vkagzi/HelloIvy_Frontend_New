@@ -211,19 +211,13 @@ export default function Dashboard(): React.ReactElement {
       </div>
 
       {/* Your Active Modules Grid */}
-      <div className="mx-auto mt-8 max-w-3xl">
-        <h2 className="mb-4 text-base font-bold text-neutral-800 flex items-center gap-2">
-          <FiIcon name="apps" className="h-5 w-5 text-purple-600" />
-          Your Active Modules
-        </h2>
-        
-        {activeModules.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-neutral-300 p-8 text-center bg-white shadow-sm">
-            <FiIcon name="lock" className="mx-auto h-8 w-8 text-neutral-400 mb-2" />
-            <p className="text-sm font-medium text-neutral-600">No active modules found</p>
-            <p className="text-xs text-neutral-400 mt-1">Please contact your counselor or school administrator to unlock modules.</p>
-          </div>
-        ) : (
+      {activeModules.length > 0 && (
+        <div className="mx-auto mt-8 max-w-3xl">
+          <h2 className="mb-4 text-base font-bold text-neutral-800 flex items-center gap-2">
+            <FiIcon name="apps" className="h-5 w-5 text-purple-600" />
+            Your Active Modules
+          </h2>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activeModules.map((m) => {
               let launchHref = `/${m.value}`;
@@ -270,8 +264,8 @@ export default function Dashboard(): React.ReactElement {
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </>
   );
 }
