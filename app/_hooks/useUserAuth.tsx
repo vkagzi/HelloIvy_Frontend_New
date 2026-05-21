@@ -20,17 +20,16 @@ type UserAuthContextType = {
 export const useUserAuth = (
   serverSession?: Session | null
 ): UserAuthContextType => {
-  // Only call useSession if no server session is provided
   const { data: clientSession, status } = useSession({
     required: false,
   });
 
-  // Use server session if provided, otherwise fall back to client session
-  const session = serverSession !== undefined ? serverSession : clientSession;
+  // Prefer client-side session (which updates reactively) over static serverSession
+  const session = clientSession || serverSession;
   const isAuthenticated =
-    serverSession !== undefined
-      ? !!serverSession
-      : status === 'authenticated';
+    clientSession !== undefined
+      ? !!clientSession
+      : (serverSession !== undefined ? !!serverSession : status === 'authenticated');
 
   const logout = (): void => {
     broadcastLogout();

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import imgIcon from '@/assets/images/icon.png';
+import imgIcon from '@/assets/images/iconGIF.gif';
 import { Heading, Paragraph } from '@/app/_components/Typography';
 import { FiIcon } from '@/app/_components/Icons';
 import Button from '@/app/_components/Button';
@@ -96,6 +96,7 @@ const ProfileHeaderView: React.FC = () => {
             height={80}
             className="rounded-full border border-neutral-200 object-cover"
             priority
+            unoptimized
           />
         </div>
         <div className="flex flex-1 flex-col gap-1.5">

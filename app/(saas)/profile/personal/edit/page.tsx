@@ -18,10 +18,12 @@ import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import ResumeUploader from '@/app/_components/ResumeUploader';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import TranscriptUploader from '@/app/_components/TranscriptUploader';
+import { useSession } from 'next-auth/react';
 
 const PersonalDetailsForm: React.FC = () => {
   const { addToast } = useToast();
   const router = useRouter();
+  const { update } = useSession();
   const { rawApiResponse, loading, error, refetch, parsedTranscriptData, setParsedTranscriptData } = useProfile();
   const [resumeFormDefaults, setResumeFormDefaults] = useState<
     Record<string, unknown>
@@ -59,6 +61,8 @@ const PersonalDetailsForm: React.FC = () => {
             method: 'PATCH',
             body: { first_name: firstName, last_name: lastName },
           });
+          // Update NextAuth session immediately so all components see the new name!
+          await update({ first_name: firstName, last_name: lastName });
         } catch (e) {
           console.error('Failed to save name to user account:', e);
         }
