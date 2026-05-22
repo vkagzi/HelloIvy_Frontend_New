@@ -153,7 +153,7 @@ export default function LandingPageContent(): React.ReactElement {
               href="/contact"
               className="inline-flex min-h-11 items-center justify-center rounded-full border-2 border-brand-indigo bg-transparent px-6 py-2.5 text-center text-[15px] font-semibold text-brand-indigo no-underline outline-none transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-indigo hover:text-white hover:shadow-[0_8px_20px_rgba(76,74,246,0.25)] active:translate-y-0"
             >
-              Talk To Expert
+              Book a Demo
             </Link>
             <Link
               href={`${AUTH_URL}/signup`}
@@ -208,7 +208,7 @@ export default function LandingPageContent(): React.ReactElement {
                     className="inline-flex min-h-11 items-center justify-center rounded-full border-none bg-brand-indigo px-6 py-3 text-center font-semibold text-white no-underline outline-none transition-all duration-200 hover:-translate-y-0.5"
                     onClick={() => setShowMobileMenu(false)}
                   >
-                    Talk To Expert
+                    Book a Demo
                   </Link>
                   <Link
                     href={`${AUTH_URL}/signup`}
@@ -240,7 +240,7 @@ export default function LandingPageContent(): React.ReactElement {
                 <p className="mx-auto text-[17px] leading-relaxed text-neutral-500 sm:text-lg md:mx-0 md:max-w-[520px] md:text-xl">
                   Empowering schools &amp; colleges with personalized,
                   data-driven guidance&mdash;from Career &amp; Degree Selection
-                  to college admission&mdash;backed by 14+ years of expertise.
+                  to college admission&mdash;backed by 15+ years of expertise.
                 </p>
               </div>
               <div className="mx-auto w-full max-w-[400px] md:max-w-[600px]">
@@ -316,7 +316,7 @@ export default function LandingPageContent(): React.ReactElement {
               </div>
               <div>
                 <h3 className="font-darker-grotesque mb-4 text-[24px] font-bold tracking-tight md:text-[28px]">Who we are:</h3>
-                <p className="mb-5 text-[15px] leading-[1.8] text-neutral-500 md:text-base">
+                <p className="mb-5 text-[15px] leading-[1.8] text-neutral-500 md:text-base ">
                   A company born from the expertise of Reachivy.com &mdash;
                   trusted advisors to the dreamers, the doers, and the
                   disruptors of tomorrow.
