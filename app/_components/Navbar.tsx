@@ -7,6 +7,7 @@ import { FiIcon } from '@/app/_components/Icons';
 import { IvyWithoutBGLottie } from '@/app/_components/LottieAnimation';
 import { Label } from '@/app/_components/Typography';
 import { sidebarNavItems } from '@/app/_constants/navItems';
+import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
 import { useSession } from 'next-auth/react';
 
@@ -28,6 +29,40 @@ const Navbar: React.FC = () => {
           : item
       );
   }, [isSchoolAdmin]);
+
+  // Append dynamic custom modules from backend (e.g., modules created via admin)
+  const { modules: dynamicModules = [] } = useModuleChoices();
+
+  const sidebarWithCustom = useMemo(() => {
+    if (!dynamicModules || dynamicModules.length === 0) return filteredNavItems;
+
+    // Map backend modules to NavItem shape and avoid duplicates
+    const extra: { label: string; icon: string; href: string }[] = [];
+    for (const m of dynamicModules) {
+      // Map database/backend underscores to frontend url hyphens
+      let href = `/${m.value}`;
+      if (m.value === 'college_selector') href = '/college-selector';
+      if (m.value === 'career_discovery') href = '/career-discovery';
+      if (m.value === 'domain_discovery') href = '/domain-discovery';
+
+      const exists = sidebarNavItems.some(
+        (s) => s.href === href || s.label.trim() === m.label.trim()
+      );
+      if (!exists) {
+        extra.push({ label: m.label, icon: m.icon || 'briefcase', href });
+      }
+    }
+
+    // Insert extras after the college selector if present, otherwise append
+    const insertAfter = '/college-selector';
+    const idx = filteredNavItems.findIndex((i) => i.href === insertAfter);
+    if (idx >= 0) {
+      const copy = [...filteredNavItems];
+      copy.splice(idx + 1, 0, ...extra);
+      return copy;
+    }
+    return [...filteredNavItems, ...extra];
+  }, [dynamicModules, filteredNavItems]);
 
   // Close drawer on route change
   useEffect(() => {
@@ -90,7 +125,7 @@ const Navbar: React.FC = () => {
 
       {/* NAV ITEMS */}
       <ul className="mt-2 flex-1">
-        {filteredNavItems.map((item) => {
+        {sidebarWithCustom.map((item) => {
           const active = pathname === item.href;
 
           return (

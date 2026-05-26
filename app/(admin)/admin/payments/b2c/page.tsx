@@ -94,6 +94,32 @@ function JsonEntries({ data, depth = 0 }: { data: Record<string, unknown>; depth
   );
 }
 
+// CSV export helper
+function exportPaymentsCSV(payments: UserPayment[]) {
+  const headers = ['ID','Email','First Name','Last Name','Modules','Currency','Amount','Status','Gateway','Txn ID','Date'];
+  const rows = payments.map(p => [
+    p.id,
+    p.user_email,
+    p.user_first_name,
+    p.user_last_name,
+    p.modules_purchased.map(e => typeof e === 'string' ? e : e.module).join('; '),
+    p.currency,
+    p.amount,
+    p.status,
+    p.payment_gateway,
+    p.gateway_transaction_id,
+    new Date(p.created_at).toLocaleDateString(),
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `b2c-payments-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function B2CPaymentsPage() {
   const { modules: moduleChoices } = useModuleChoices();
   const [payments, setPayments] = useState<UserPayment[]>([]);
@@ -106,8 +132,9 @@ export default function B2CPaymentsPage() {
 
   // Add modal
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ user: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+  const [addForm, setAddForm] = useState({ user: '', amount: '', currency: 'INR', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
   const [addModules, setAddModules] = useState<string[]>([]);
+  const [addCustomModule, setAddCustomModule] = useState(''); // free-text "Other" module
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   // User search
@@ -174,17 +201,20 @@ export default function B2CPaymentsPage() {
   }, [userQuery, users]);
 
   const handleAdd = async () => {
-    if (!addForm.user || addModules.length === 0 || !addForm.amount) return;
+    const allModules = [...addModules];
+    if (addCustomModule.trim()) allModules.push(addCustomModule.trim());
+    if (!addForm.user || allModules.length === 0 || !addForm.amount) return;
     setAddSaving(true);
     setAddError(null);
     try {
       await api('/api/payments/b2c/', {
         method: 'POST',
-        body: { ...addForm, modules_purchased: addModules.map(m => ({ module: m, quantity: 1 })), user: Number(addForm.user), amount: parseFloat(addForm.amount) },
+        body: { ...addForm, modules_purchased: allModules.map(m => ({ module: m, quantity: 1 })), user: Number(addForm.user), amount: parseFloat(addForm.amount) },
       });
       setAddOpen(false);
-      setAddForm({ user: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+      setAddForm({ user: '', amount: '', currency: 'INR', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
       setAddModules([]);
+      setAddCustomModule('');
       setSelectedUser(null);
       setUserQuery('');
       fetchPayments();
@@ -263,6 +293,10 @@ export default function B2CPaymentsPage() {
       firstName: p.user_first_name || '',
       lastName: p.user_last_name || '',
       email: p.user_email,
+      address: (p.metadata?.address as string) || '',
+      phone: (p.metadata?.phone as string) || '',
+      gstNumber: (p.metadata?.gst_number as string) || '',
+      payerType: (p.metadata?.payer_type as string) || 'individual',
       lineItems,
       subtotal: (pricing.subtotal as number) ?? Number(p.amount),
       discount: (pricing.discount as number) ?? 0,
@@ -286,10 +320,15 @@ export default function B2CPaymentsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">B2C Payments</h1>
+          <h1 className="text-xl font-bold text-gray-900">Individual Payments</h1>
           <p className="text-sm text-gray-500">{total} total records</p>
         </div>
-        <Button onClick={() => { setAddError(null); setAddModules([]); setSelectedUser(null); setUserQuery(''); setActiveUserModules([]); setAddOpen(true); }}>+ Record Payment</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => exportPaymentsCSV(payments)} className="flex items-center gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+          <Button onClick={() => { setAddError(null); setAddModules([]); setAddCustomModule(''); setSelectedUser(null); setUserQuery(''); setActiveUserModules([]); setAddOpen(true); }}>+ Record Payment</Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -314,20 +353,24 @@ export default function B2CPaymentsPage() {
               <th className="px-4 py-3 text-left">User</th>
               <th className="px-4 py-3 text-left">First Name</th>
               <th className="px-4 py-3 text-left">Last Name</th>
+              <th className="px-4 py-3 text-left">Payer Type</th>
               <th className="px-4 py-3 text-left">Module</th>
+              <th className="px-4 py-3 text-left">Qty</th>
               <th className="px-4 py-3 text-left">Pre-Tax Amt</th>
-              <th className="px-4 py-3 text-left">Tax</th>
+              <th className="px-4 py-3 text-left">GST</th>
               <th className="px-4 py-3 text-left">Total</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Gateway</th>
               <th className="px-4 py-3 text-left">Txn ID</th>
+              <th className="px-4 py-3 text-left">Invoice</th>
               <th className="px-4 py-3 text-left">Date</th>
+              <th className="px-4 py-3 text-left">Pay Link</th>
               <th className="px-4 py-3 text-left">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {payments.length === 0 ? (
-              <tr><td colSpan={13} className="px-4 py-8 text-center text-gray-400">No payments found.</td></tr>
+              <tr><td colSpan={15} className="px-4 py-8 text-center text-gray-400">No payments found.</td></tr>
             ) : payments.map((p) => (
               <tr key={p.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-500">#{p.id}</td>
@@ -336,13 +379,36 @@ export default function B2CPaymentsPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-700">{p.user_first_name || '-'}</td>
                 <td className="px-4 py-3 text-gray-700">{p.user_last_name || '-'}</td>
+                <td className="px-4 py-3">
+                  {(() => {
+                    const pt = (p.metadata?.payer_type as string) || 'individual';
+                    return (
+                      <span className={`inline-flex rounded-full px-2 text-xs font-semibold ${
+                        pt === 'institution' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {pt === 'institution' ? 'Institution' : 'Individual'}
+                      </span>
+                    );
+                  })()}
+                </td>
+                {/* Module Name */}
                 <td className="px-4 py-3 text-gray-500 text-xs">
                   {p.modules_purchased.length > 0
-                    ? p.modules_purchased.map((entry) => {
-                        if (typeof entry === 'string') return entry.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-                        const label = entry.module.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-                        return `${label} - ${entry.quantity}`;
-                      }).join(', ')
+                    ? p.modules_purchased.map((entry, idx) => {
+                        const label = typeof entry === 'string'
+                          ? entry.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+                          : entry.module.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                        return <div key={idx}>{label}</div>;
+                      })
+                    : '-'}
+                </td>
+                {/* Quantity */}
+                <td className="px-4 py-3 text-gray-500 text-xs">
+                  {p.modules_purchased.length > 0
+                    ? p.modules_purchased.map((entry, idx) => {
+                        const qty = typeof entry === 'string' ? 1 : entry.quantity;
+                        return <div key={idx}>{qty}</div>;
+                      })
                     : '-'}
                 </td>
                 <td className="px-4 py-3 text-gray-700">
@@ -358,19 +424,35 @@ export default function B2CPaymentsPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-500">{p.payment_gateway || '-'}</td>
-                <td className="px-4 py-3 font-mono text-xs">
-                  {p.gateway_transaction_id ? (
-                    <button
-                      onClick={() => handleDownloadInvoice(p)}
-                      className="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
-                      title="Download Invoice"
-                    >
-                      {p.gateway_transaction_id}
-                      <Download className="h-3 w-3 shrink-0" />
-                    </button>
-                  ) : '-'}
+                <td className="px-4 py-3 font-mono text-xs">{p.gateway_transaction_id || '-'}</td>
+                <td className="px-4 py-3">
+                  <Button
+                    onClick={() => handleDownloadInvoice(p)}
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-[10px] border-blue-200 text-blue-600 hover:bg-blue-50"
+                  >
+                    <Download className="mr-1 h-3 w-3" />
+                    Invoice
+                  </Button>
                 </td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
+                <td className="px-4 py-3">
+                  {p.status === 'pending' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-purple-600 h-7 px-2 text-[10px]"
+                      onClick={() => {
+                        const url = `${window.location.origin}/pay-as-student/checkout/?payment_id=${p.id}&order_id=${p.metadata?.order_id || p.id}&modules=${p.modules_purchased.map(m => typeof m === 'string' ? m : m.module).join(',')}`;
+                        navigator.clipboard.writeText(url);
+                        alert('Checkout link copied to clipboard!');
+                      }}
+                    >
+                      Copy Link
+                    </Button>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <Button
                     onClick={() => setDetailPayment(p)}
@@ -390,7 +472,7 @@ export default function B2CPaymentsPage() {
       {/* Add Modal */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-7xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
-          <DialogTitle>Record B2C Payment</DialogTitle>
+          <DialogTitle>Record Individual Payment</DialogTitle>
           {addError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{addError}</p>}
           <div className="space-y-3">
             <div className="space-y-1">
@@ -449,7 +531,7 @@ export default function B2CPaymentsPage() {
               </div>
             </div>
             <div className="space-y-1">
-              <Label>Modules</Label>
+              <Label>Modules / Services</Label>
               <div className="flex flex-wrap gap-2">
                 {moduleChoices.map((m) => {
                   const isActive = activeUserModules.includes(m.value);
@@ -468,6 +550,25 @@ export default function B2CPaymentsPage() {
                   );
                 })}
               </div>
+              {/* Other / Custom service text */}
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="b2c-other-module"
+                  checked={addCustomModule !== ''}
+                  onChange={(e) => { if (!e.target.checked) setAddCustomModule(''); else setAddCustomModule(' '); }}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="b2c-other-module" className="text-sm text-gray-700 cursor-pointer">Other / Custom Service</label>
+              </div>
+              {addCustomModule !== '' && (
+                <Input
+                  placeholder="e.g. Urgent Interview Prep, Profile Review..."
+                  value={addCustomModule}
+                  onChange={(e) => setAddCustomModule(e.target.value)}
+                  className="mt-1"
+                />
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><Label htmlFor="add-amount">Amount</Label><Input id="add-amount" type="number" step="0.01" placeholder="0.00" value={addForm.amount} onChange={(e) => setAddForm({ ...addForm, amount: e.target.value })} /></div>
@@ -480,7 +581,7 @@ export default function B2CPaymentsPage() {
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
-            <Button onClick={handleAdd} disabled={addSaving || !addForm.user || addModules.length === 0 || !addForm.amount}>{addSaving ? 'Saving...' : 'Record'}</Button>
+            <Button onClick={handleAdd} disabled={addSaving || !addForm.user || (addModules.length === 0 && !addCustomModule.trim()) || !addForm.amount}>{addSaving ? 'Saving...' : 'Record'}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -547,7 +648,8 @@ export default function B2CPaymentsPage() {
                 <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">User</h3>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div className="flex justify-between"><span className="text-gray-500">Email</span><Link href={`/admin/users/${detailPayment.user}`} className="text-blue-600 hover:underline">{detailPayment.user_email}</Link></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Name</span><span className="text-gray-900">{[detailPayment.user_first_name, detailPayment.user_last_name].filter(Boolean).join(' ') || '-'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Name</span><span className="text-gray-900">{[detailPayment.user_first_name, detailPayment.user_last_name].filter(Boolean).join(' ') || '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Payer Type</span><span className={`font-medium ${((detailPayment.metadata?.payer_type as string) || 'individual') === 'institution' ? 'text-blue-700' : 'text-gray-900'}`}>{((detailPayment.metadata?.payer_type as string) || 'individual') === 'institution' ? 'Institution' : 'Individual'}</span></div>
                 </div>
               </section>
 

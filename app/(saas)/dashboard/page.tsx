@@ -51,8 +51,12 @@ export default function Dashboard(): React.ReactElement {
 
   const activeModules = React.useMemo(() => {
     const isStaff = ['superadmin', 'operationadmin'].includes(session?.user?.role || '');
-    if (isStaff) return allModules;
-    return allModules.filter((m) => activeModuleNames.includes(m.value));
+    let modules = allModules;
+    if (!isStaff) {
+      modules = allModules.filter((m) => activeModuleNames.includes(m.value));
+    }
+    // Explicitly filter out 'Career & Degree Selection' as requested
+    return modules.filter((m) => m.value !== 'career_discovery');
   }, [allModules, activeModuleNames, session]);
 
   useEffect(() => {

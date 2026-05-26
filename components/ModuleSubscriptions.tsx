@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LockKeyhole } from 'lucide-react';
+import { LockKeyhole, Download } from 'lucide-react';
 import api from '@/lib/api-client';
 import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
 import { useModuleChoices, buildModuleLookups } from '@/lib/hooks/useModuleChoices';
@@ -56,6 +56,7 @@ export interface Payment {
   gateway_transaction_id: string;
   notes: string;
   created_at: string;
+  metadata?: Record<string, any>;
 }
 
 /* ─── props ─────────────────────────────────────────────────── */
@@ -127,7 +128,7 @@ function SchoolSubscriptionsTable({
   if (!hasRows) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-8 text-center">
-        <p className="text-sm text-gray-500">No module subscriptions yet. Purchase modules below to get started.</p>
+        <p className="text-sm text-gray-500">No modules purchased yet. Purchase modules below to get started.</p>
       </div>
     );
   }
@@ -217,7 +218,7 @@ function B2CSubscriptionsTable({
   if (!hasRows) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-8 text-center">
-        <p className="text-sm text-gray-500">No module subscriptions yet. Purchase modules below to get started.</p>
+        <p className="text-sm text-gray-500">No modules purchased yet. Purchase modules below to get started.</p>
       </div>
     );
   }
@@ -385,6 +386,30 @@ function PaymentHistoryTable({
   labelFor: (value: string) => string;
   showGateway?: boolean;
 }) {
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  const handleDownloadInvoice = async (paymentId: number) => {
+    setDownloadingId(paymentId);
+    try {
+      const blob = await api<Blob>(`/api/accounts/me/payments/${paymentId}/invoice/`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice_${paymentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download invoice:', err);
+      alert('Failed to download invoice. Please try again.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   if (loading) return <SkeletonRows count={3} />;
 
   if (payments.length === 0) {
@@ -401,43 +426,128 @@ function PaymentHistoryTable({
         <table className="w-full text-left text-sm">
           <thead className="border-b border-neutral-200 bg-neutral-50 text-xs font-medium uppercase text-gray-500">
             <tr>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Modules</th>
-              <th className="px-4 py-3">Amount</th>
+              <th className="px-4 py-3">ID</th>
+              <th className="px-4 py-3">Module</th>
+              <th className="px-4 py-3">Quantity</th>
+              <th className="px-4 py-3">Pre-Tax Amt</th>
+              <th className="px-4 py-3">Tax</th>
+              <th className="px-4 py-3">Total</th>
               <th className="px-4 py-3">Status</th>
-              {showGateway && <th className="px-4 py-3">Gateway</th>}
+              <th className="px-4 py-3">Gateway</th>
+              <th className="px-4 py-3">Txn ID</th>
+              <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3 text-right">Invoice</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {payments.map((p) => (
-              <tr key={p.id} className="hover:bg-neutral-50">
-                <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                  <div>{new Date(p.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                  <div className="text-xs text-gray-400">{new Date(p.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
-                </td>
-                <td className="px-4 py-3 text-gray-700">
-                  {p.modules_purchased.map((entry) => {
-                    if (typeof entry === 'string') return labelFor(entry);
-                    return `${labelFor(entry.module)} - ${entry.quantity}`;
-                  }).join(', ') || '—'}
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">
-                  {p.currency === 'INR' ? '₹' : p.currency}{' '}
-                  {Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_COLORS[p.status] ?? 'bg-gray-100 text-gray-600'
-                      }`}
-                  >
-                    {p.status}
-                  </span>
-                </td>
-                {showGateway && (
-                  <td className="px-4 py-3 text-gray-500">{p.payment_gateway || '—'}</td>
-                )}
-              </tr>
-            ))}
+            {payments.map((p) => {
+              const currencySymbol = p.currency === 'INR' ? '₹' : p.currency;
+              return (
+                <tr key={p.id} className="hover:bg-neutral-50">
+                  {/* ID */}
+                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">#{p.id}</td>
+
+                  {/* Module */}
+                  <td className="px-4 py-3 text-gray-700">
+                    {p.modules_purchased.length > 0 ? (
+                      p.modules_purchased.map((entry, idx) => {
+                        const label = typeof entry === 'string' ? labelFor(entry) : labelFor(entry.module);
+                        return (
+                          <div key={idx} className="py-0.5">
+                            {label}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+
+                  {/* Quantity */}
+                  <td className="px-4 py-3 text-gray-700">
+                    {p.modules_purchased.length > 0 ? (
+                      p.modules_purchased.map((entry, idx) => {
+                        const qty = typeof entry === 'string' ? 1 : entry.quantity;
+                        return (
+                          <div key={idx} className="py-0.5">
+                            {qty}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+
+                  {/* Pre-Tax Amt */}
+                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                    {(() => {
+                      const pr = (p.metadata?.pricing ?? {}) as Record<string, any>;
+                      const sub = typeof pr.subtotal === 'number' ? pr.subtotal : null;
+                      const disc = typeof pr.discount === 'number' ? pr.discount : 0;
+                      if (sub === null) return '—';
+                      const preTax = sub - disc;
+                      return `${currencySymbol} ${preTax.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    })()}
+                  </td>
+
+                  {/* Tax */}
+                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                    {(() => {
+                      const pr = (p.metadata?.pricing ?? {}) as Record<string, any>;
+                      const tx = typeof pr.tax === 'number' ? pr.tax : null;
+                      if (tx === null) return '—';
+                      return `${currencySymbol} ${tx.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    })()}
+                  </td>
+
+                  {/* Total */}
+                  <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
+                    {currencySymbol}{' '}
+                    {Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_COLORS[p.status] ?? 'bg-gray-100 text-gray-600'
+                        }`}
+                    >
+                      {p.status}
+                    </span>
+                  </td>
+
+                  {/* Gateway */}
+                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                    {p.payment_gateway || '—'}
+                  </td>
+
+                  {/* Txn ID */}
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500 whitespace-nowrap">
+                    {p.gateway_transaction_id || '—'}
+                  </td>
+
+                  {/* Date */}
+                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                    <div>{new Date(p.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                    <div className="text-xs text-gray-400">{new Date(p.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
+                  </td>
+
+                  {/* Invoice */}
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      onClick={() => handleDownloadInvoice(p.id)}
+                      disabled={downloadingId === p.id}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-neutral-50 hover:text-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 disabled:opacity-50"
+                      style={{ color: '#8B0000' }}
+                    >
+                      <Download size={14} className={downloadingId === p.id ? 'animate-bounce' : ''} />
+                      {downloadingId === p.id ? 'Downloading...' : 'PDF'}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -512,7 +622,7 @@ export default function ModuleSubscriptions(props: ModuleSubscriptionsProps) {
       {isSchool ? (
         <section>
           <div className="mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Module Subscriptions</h2>
+            <h2 className="text-xl font-bold text-gray-900">School Modules</h2>
             <p className="mt-1 text-sm text-gray-500">Modules your school currently has access to.</p>
           </div>
           <SchoolSubscriptionsTable subscriptions={[...subscriptions].sort((a, b) => a.module_display.localeCompare(b.module_display))} loading={false} lockedModules={inactiveModules} purchaseHref={href} moduleIcons={moduleIcons} />
@@ -528,7 +638,7 @@ export default function ModuleSubscriptions(props: ModuleSubscriptionsProps) {
       ) : (
         <section>
           <div className="mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Module Subscriptions</h2>
+            <h2 className="text-xl font-bold text-gray-900">My Modules</h2>
             <p className="mt-1 text-sm text-gray-500">Your module access overview.</p>
           </div>
           <B2CSubscriptionsTable subscriptions={[...userSubscriptions].sort((a, b) => a.module_display.localeCompare(b.module_display))} loading={false} lockedModules={inactiveModules} purchaseHref={href} moduleIcons={moduleIcons} />

@@ -15,6 +15,10 @@ export interface InvoiceData {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
+  address?: string;
+  gstNumber?: string;
+  payerType?: string;
   lineItems: InvoiceLineItem[];
   subtotal: number;
   discount: number;
@@ -218,25 +222,35 @@ export function InvoicePDF({ data }: { data: InvoiceData }) {
             <Text style={s.infoCellLabel}>Billing Name:</Text>
             <Text style={s.infoCellValue}>{data.billingName}</Text>
             <Text style={s.infoCellLabel}>GST Number:</Text>
-            <Text style={s.infoCellValueLast}>-</Text>
+            <Text style={s.infoCellValueLast}>{data.gstNumber || '-'}</Text>
           </View>
           <View style={s.infoRow}>
             <Text style={s.infoCellLabel}>First Name:</Text>
             <Text style={s.infoCellValue}>{data.firstName}</Text>
-            <Text style={s.infoCellLabel}>Email:</Text>
-            <Text style={s.infoCellValueLast}>{data.email}</Text>
+            <Text style={s.infoCellLabel}>Last Name:</Text>
+            <Text style={s.infoCellValueLast}>{data.lastName}</Text>
           </View>
           <View style={s.infoRow}>
-            <Text style={s.infoCellLabel}>Last Name:</Text>
-            <Text style={s.infoCellValue}>{data.lastName}</Text>
+            <Text style={s.infoCellLabel}>Email:</Text>
+            <Text style={s.infoCellValue}>{data.email}</Text>
+            <Text style={s.infoCellLabel}>Phone:</Text>
+            <Text style={s.infoCellValueLast}>{data.phone || '-'}</Text>
+          </View>
+          <View style={s.infoRow}>
             <Text style={s.infoCellLabel}>Txn ID:</Text>
-            <Text style={s.infoCellValueLast}>{data.transactionId || '-'}</Text>
+            <Text style={s.infoCellValue}>{data.transactionId || '-'}</Text>
+            <Text style={s.infoCellLabel}>Payment Mode:</Text>
+            <Text style={s.infoCellValueLast}>{data.paymentMode || '-'}</Text>
+          </View>
+          <View style={s.infoRow}>
+            <Text style={s.infoCellLabel}>Status:</Text>
+            <Text style={s.infoCellValue}>{data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : '-'}</Text>
+            <Text style={s.infoCellLabel}>Payer Type:</Text>
+            <Text style={s.infoCellValueLast}>{data.payerType ? (data.payerType.charAt(0).toUpperCase() + data.payerType.slice(1)) : 'Individual'}</Text>
           </View>
           <View style={s.infoRowLast}>
-            <Text style={s.infoCellLabel}>Payment Mode:</Text>
-            <Text style={s.infoCellValue}>{data.paymentMode || '-'}</Text>
-            <Text style={s.infoCellLabel}>Status:</Text>
-            <Text style={s.infoCellValueLast}>{data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : '-'}</Text>
+            <Text style={s.infoCellLabel}>Billing Address:</Text>
+            <Text style={[s.infoCellValueLast, { width: '83%' }]}>{data.address || '-'}</Text>
           </View>
         </View>
 

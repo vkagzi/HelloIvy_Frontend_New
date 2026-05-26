@@ -16,6 +16,11 @@ const TAX_CONFIG = {
 
 type StateOption = keyof typeof TAX_CONFIG;
 
+const CURRENCY_MAP: Record<StateOption, 'INR'> = {
+  maharashtra: 'INR',
+  rest_of_india: 'INR',
+};
+
 interface ModuleRow {
   value: string;
   label: string;
@@ -34,6 +39,8 @@ export interface ModuleSelectionConfig {
   checkoutUrl: string;
   /** Optional back link */
   backLink?: { href: string; label: string };
+  /** Optional top right button link */
+  topRightLink?: { href: string; label: string };
   /** Page title */
   title: string;
   /** Page subtitle */
@@ -91,7 +98,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
       // Restore state selection
       const stateParam = searchParams?.get('state');
-      if (stateParam === 'maharashtra' || stateParam === 'rest_of_india') {
+      if (stateParam === 'maharashtra' || stateParam === 'rest_of_india' || stateParam === 'outside_india') {
         setSelectedState(stateParam);
       }
 
@@ -126,6 +133,10 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
     });
   };
 
+  const getCurrencySymbol = () => {
+    return '₹';
+  };
+
   const taxableAmount = subtotal - discountAmount;
 
   const taxes = selectedState ? TAX_CONFIG[selectedState] : { cgst: 0, sgst: 0, igst: 0 };
@@ -134,6 +145,11 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
   const igstAmount = (taxableAmount * taxes.igst) / 100;
   const totalTax = cgstAmount + sgstAmount + igstAmount;
   const grandTotal = taxableAmount + totalTax;
+
+  // Round amounts to standard format
+  const convert = (amount: number) => {
+    return Math.round((amount + Number.EPSILON) * 100) / 100;
+  };
 
 
 
@@ -178,13 +194,17 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
     const modulesParam = selectedRows.map((r) => `${r.value}:${r.quantity}`).join(',');
     const params = new URLSearchParams({ modules: modulesParam, state: selectedState });
     if (appliedCoupon) params.set('coupon_code', appliedCoupon.code);
-    params.set('discount', String(discountAmount));
-    params.set('tax', String(totalTax));
-    params.set('total', String(grandTotal));
+    // send converted values in display currency
+    params.set('discount', String(convert(discountAmount)));
+    params.set('tax', String(convert(totalTax)));
+    params.set('total', String(convert(grandTotal)));
+    params.set('currency', String(CURRENCY_MAP[selectedState as StateOption] ?? 'INR'));
     router.push(`${config.checkoutUrl}?${params.toString()}`);
   };
 
   const loading = modulesLoading || (config.showActiveModules ? accessLoading : false) || status === 'loading';
+
+
 
   // Access-denied guard for student mode (school admins can't buy as student)
   if (config.mode === 'student' && status === 'authenticated' && session?.user?.school_id) {
@@ -228,9 +248,19 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
       )}
 
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">{config.title}</h1>
-        <p className="mt-1 text-sm text-gray-500">{config.subtitle}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">{config.title}</h1>
+          <p className="mt-1 text-sm text-gray-500">{config.subtitle}</p>
+        </div>
+        {config.topRightLink && (
+          <Link
+            href={config.topRightLink.href}
+            className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700"
+          >
+            {config.topRightLink.label}
+          </Link>
+        )}
       </div>
 
       {/* Module line-item table */}
@@ -266,7 +296,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
               </div>
 
               {/* Unit price */}
-              <span className="text-right text-sm text-gray-600">₹{getPrice(row.value)}</span>
+              <span className="text-right text-sm text-gray-600">{getCurrencySymbol()}{formatCurrency(convert(getPrice(row.value)))}</span>
 
               {/* Quantity selector */}
               <div className="flex justify-center">
@@ -285,7 +315,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
               {/* Line total */}
               <span className={`text-right text-sm font-semibold ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>
-                {isSelected ? `₹${getPrice(row.value) * row.quantity}` : '—'}
+                {isSelected ? `${getCurrencySymbol()}${formatCurrency(convert(getPrice(row.value) * row.quantity))}` : '—'}
               </span>
             </div>
           );
@@ -299,7 +329,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
           <span className="text-sm text-gray-600">
             Subtotal{totalUnits > 0 ? ` (${totalUnits} ${config.unitLabel}${totalUnits !== 1 ? 's' : ''})` : ''}
           </span>
-          <span className="text-sm font-semibold text-gray-900">₹{subtotal}</span>
+          <span className="text-sm font-semibold text-gray-900">{getCurrencySymbol()}{formatCurrency(convert(subtotal))}</span>
         </div>
 
         <div className="border-t border-neutral-100" />
@@ -354,7 +384,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
         {/* State selection */}
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">State (for GST calculation)</label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             {[
               { value: 'maharashtra' as StateOption, label: 'Maharashtra', sub: '9% CGST + 9% SGST' },
               { value: 'rest_of_india' as StateOption, label: 'Rest of India', sub: '18% IGST' },
@@ -362,12 +392,12 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
               <button
                 key={opt.value}
                 onClick={() => setSelectedState(opt.value)}
-                className={`cursor-pointer rounded-lg border px-4 py-3 text-left transition ${selectedState === opt.value
+                className={`cursor-pointer rounded-lg border px-3 py-2 text-left transition ${selectedState === opt.value
                   ? 'border-purple-400 bg-purple-50'
                   : 'border-neutral-200 bg-white hover:border-purple-300'
                   }`}
               >
-                <p className={`text-sm font-semibold ${selectedState === opt.value ? 'text-purple-700' : 'text-gray-800'}`}>
+                <p className={`text-xs font-semibold ${selectedState === opt.value ? 'text-purple-700' : 'text-gray-800'}`}>
                   {opt.label}
                 </p>
                 <p className="mt-0.5 text-xs text-gray-400">{opt.sub}</p>
@@ -382,7 +412,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
             {appliedCoupon && (
               <div className="flex items-center justify-between text-sm text-green-600 font-medium">
                 <span>Coupon Discount</span>
-                <span>- ₹{formatCurrency(discountAmount)}</span>
+                <span>- {getCurrencySymbol()}{formatCurrency(convert(discountAmount))}</span>
               </div>
             )}
             {selectedState === 'maharashtra' ? (
@@ -408,7 +438,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
         {/* Grand total */}
         <div className="flex items-center justify-between border-t border-neutral-200 pt-4">
           <span className="text-base font-semibold text-gray-900">Total</span>
-          <span className="text-xl font-bold text-purple-700">₹{formatCurrency(grandTotal)}</span>
+          <span className="text-xl font-bold text-purple-700">{getCurrencySymbol()}{formatCurrency(convert(grandTotal))}</span>
         </div>
 
         {/* Terms & Conditions */}
@@ -433,7 +463,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
           disabled={!canCheckout}
           className="w-full cursor-pointer rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Pay Now — ₹{formatCurrency(grandTotal)}
+          Pay Now — {getCurrencySymbol()}{formatCurrency(grandTotal)}
         </button>
 
         {/* Inline hints */}

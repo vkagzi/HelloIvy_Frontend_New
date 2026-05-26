@@ -13,7 +13,7 @@ const schoolNavItems = [
   { label: 'Dashboard', icon: 'sr-apps', href: '/school/dashboard' },
   { label: 'Students', icon: 'users', href: '/school/students' },
   { label: 'Operations Admin', icon: 'users', href: '/school/operations-admin' },
-  { label: 'Subscription', icon: 'credit-card', href: '/school/subscription' },
+  { label: 'Buy Module', icon: 'credit-card', href: '/school/subscription' },
 ];
 
 const SchoolNavbar: React.FC = () => {

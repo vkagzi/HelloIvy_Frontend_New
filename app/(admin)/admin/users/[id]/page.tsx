@@ -23,6 +23,18 @@ import { Badge } from '@/components/ui/badge';
 import { ALL_ROLES, ADMIN_ROLES } from '@/lib/constants/roles';
 import { useAcademicLevels } from '@/lib/hooks/useAcademicLevels';
 import { useModuleChoices, buildModuleLookups } from '@/lib/hooks/useModuleChoices';
+import { Download } from 'lucide-react';
+
+interface UserPayment {
+  id: number;
+  modules_purchased: (string | { module: string; quantity: number })[];
+  amount: string;
+  currency: string;
+  status: string;
+  payment_gateway: string;
+  gateway_transaction_id: string;
+  created_at: string;
+}
 
 interface SchoolOption {
   id: number;
@@ -118,6 +130,11 @@ export default function AdminUserDetailPage() {
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [deactivateSaving, setDeactivateSaving] = useState(false);
 
+  // User payments state (for B2C users)
+  const [payments, setPayments] = useState<UserPayment[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
   // User module subscriptions state (for users without a school)
   const [userModules, setUserModules] = useState<UserModuleSub[]>([]);
   const [addModuleOpen, setAddModuleOpen] = useState(false);
@@ -188,6 +205,41 @@ export default function AdminUserDetailPage() {
       // ignore
     }
   }, [userId]);
+
+  const fetchUserPayments = useCallback(async () => {
+    if (!userId) return;
+    setPaymentsLoading(true);
+    try {
+      const data = await api<{ payments: UserPayment[] }>(`/api/payments/b2c/?user_id=${userId}`);
+      setPayments(data.payments);
+    } catch {
+      // ignore
+    } finally {
+      setPaymentsLoading(false);
+    }
+  }, [userId]);
+
+  const handleDownloadInvoice = async (paymentId: number) => {
+    setDownloadingId(paymentId);
+    try {
+        const blob = await api<Blob>(`/api/accounts/me/payments/${paymentId}/invoice/`, {
+          responseType: 'blob',
+        });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice_${paymentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download invoice:', err);
+      alert('Failed to download invoice. Please try again.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const COMMENT_SEPARATOR = '\n---\n';
 
@@ -263,10 +315,13 @@ export default function AdminUserDetailPage() {
     if (activeTab === 'modules') {
       fetchUserModules();
     }
+    if (activeTab === 'payments') {
+      fetchUserPayments();
+    }
     if (activeTab === 'comments') {
       fetchComments();
     }
-  }, [activeTab, fetchUserModules, fetchComments]);
+  }, [activeTab, fetchUserModules, fetchUserPayments, fetchComments]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -513,11 +568,17 @@ export default function AdminUserDetailPage() {
                   label: 'Career & Degree Selection',
                   badge: `${user.modules.career_discovery.completed_sessions}/${user.modules.career_discovery.total_sessions}`,
                 },
-                  ...(user.school_id === null ? [{
-                    key: 'modules',
-                    label: 'Module Access',
-                    badge: userModules.length > 0 ? String(userModules.length) : '0',
-                  }] : [{
+                  ...(user.school_id === null ? [
+                    {
+                      key: 'modules',
+                      label: 'Module Access',
+                      badge: userModules.length > 0 ? String(userModules.length) : '0',
+                    },
+                    {
+                      key: 'payments',
+                      label: 'Payment History',
+                    }
+                  ] : [{
                     key: 'assigned',
                     label: 'Assigned Modules',
                     badge: String(user.assigned_modules?.length ?? 0),
@@ -710,6 +771,78 @@ export default function AdminUserDetailPage() {
                 </div>
               ) : (
                 <p className="text-sm text-gray-400">No module subscriptions assigned yet.</p>
+              )}
+            </div>
+          )}
+
+          {/* Payment History Tab (B2C only) */}
+          {activeTab === 'payments' && (
+            <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
+              <h2 className="mb-3 text-base font-semibold text-gray-900">Payment History</h2>
+              {paymentsLoading ? (
+                <div className="py-4 text-center text-sm text-gray-500">Loading payments...</div>
+              ) : payments.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-8 text-center">
+                  <p className="text-sm text-gray-500">No payments recorded yet.</p>
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="border-b border-neutral-200 bg-neutral-50 text-xs font-medium uppercase text-gray-500">
+                        <tr>
+                          <th className="px-4 py-3">Date</th>
+                          <th className="px-4 py-3">Modules</th>
+                          <th className="px-4 py-3">Amount</th>
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3 text-right">Invoice</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100">
+                        {payments.map((p) => (
+                          <tr key={p.id} className="hover:bg-neutral-50">
+                            <td className="whitespace-nowrap px-4 py-3 text-gray-700">
+                              <div>{new Date(p.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                              <div className="text-xs text-gray-400">{new Date(p.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-700">
+                              {p.modules_purchased.map((entry) => {
+                                if (typeof entry === 'string') return MODULE_LABELS[entry] || entry;
+                                return `${MODULE_LABELS[entry.module] || entry.module} - ${entry.quantity}`;
+                              }).join(', ') || '—'}
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">
+                              {p.currency === 'INR' ? '₹' : p.currency}{' '}
+                              {Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize bg-neutral-100 text-gray-600`}
+                              >
+                                {p.status}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3 text-right">
+                              {p.status === 'completed' ? (
+                                <button
+                                  onClick={() => handleDownloadInvoice(p.id)}
+                                  disabled={downloadingId === p.id}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-neutral-50 hover:text-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 disabled:opacity-50"
+                                  style={{ color: '#8B0000' }}
+                                >
+                                  <Download size={14} className={downloadingId === p.id ? 'animate-bounce' : ''} />
+                                  {downloadingId === p.id ? 'Downloading...' : 'PDF'}
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               )}
             </div>
           )}

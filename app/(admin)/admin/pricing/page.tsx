@@ -53,6 +53,10 @@ interface FormData {
   currency_variants: Record<string, string>;
   school: string;
   user: string;
+  icon_override: string;
+  color_override: string;
+
+
   is_active: boolean;
 }
 
@@ -62,6 +66,9 @@ const EMPTY_FORM: FormData = {
   currency_variants: { USD: '', EUR: '', AED: '' },
   school: '',
   user: '',
+  label_override: '',
+
+
   is_active: true,
 };
 
@@ -246,6 +253,9 @@ export default function PricingPage() {
       school: p.school != null ? String(p.school) : '',
       user: p.user != null ? String(p.user) : '',
       is_active: p.is_active,
+      label_override: p.label_override ?? '',
+
+
     });
     if (p.school) {
       setScopeType('school');
@@ -279,6 +289,9 @@ export default function PricingPage() {
         is_active: form.is_active,
         school: form.school ? Number(form.school) : null,
         user: form.user ? Number(form.user) : null,
+        label_override: form.label_override || null,
+
+
       };
 
       if (editingId) {
@@ -288,6 +301,7 @@ export default function PricingPage() {
       }
       setDialogOpen(false);
       fetchPricing();
+      refetchModuleChoices();
     } catch (err: unknown) {
       let message = 'Failed to save pricing';
       if (err instanceof Error) {
@@ -312,6 +326,7 @@ export default function PricingPage() {
     try {
       await api(`/api/pricing/${id}/`, { method: 'DELETE' });
       fetchPricing();
+      refetchModuleChoices();
     } catch {
       addToast('Failed to delete pricing', { type: 'error' });
     }
@@ -331,8 +346,8 @@ export default function PricingPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Module Pricing</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setCreateModuleOpen(true)}>+ Create Module</Button>
-          <Button onClick={openCreate}>Add Pricing</Button>
+          <Button onClick={openCreate}>Create Pricing</Button>
+          <Button variant="outline" onClick={() => setCreateModuleOpen(true)}>Create Custom Module</Button>
         </div>
       </div>
 
@@ -371,7 +386,7 @@ export default function PricingPage() {
             {pricing.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-500">
-                  No pricing rows found. Click &ldquo;Add Pricing&rdquo; to create one.
+                  No pricing rows found. Click “Create Pricing” to create one.
                 </td>
               </tr>
             )}
@@ -485,6 +500,38 @@ export default function PricingPage() {
               </div>
             </div>
 
+            {/* Override fields */}
+            <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/50 p-4">
+              <Label className="text-sm font-medium text-gray-700">Overrides (optional)</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="override-label" className="text-xs text-gray-500">Display Name Override</Label>
+                <Input
+                  id="override-label"
+                  placeholder="Custom Module Name"
+                  value={form.label_override}
+                  onChange={(e) => setForm({ ...form, label_override: e.target.value })}
+                />
+              </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              </div>
+            </div>
+
             {/* Scope Section – collapsible, collapsed by default */}
             <div className="rounded-lg border border-gray-200 bg-gray-50/50">
               <button
@@ -569,14 +616,14 @@ export default function PricingPage() {
                                 autoFocus
                               />
                             </div>
-                            <div className="max-h-48 overflow-auto p-1">
-                              {filteredSchools.length > 0 ? filteredSchools.slice(0, 50).map((s) => (
+                            <div className="max-h-60 overflow-y-auto overflow-x-hidden p-1 custom-scrollbar">
+                              {filteredSchools.length > 0 ? filteredSchools.slice(0, 100).map((s) => (
                                 <button
                                   key={s.id}
                                   type="button"
                                   className={cn(
-                                    'flex w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-blue-50',
-                                    form.school === String(s.id) && 'bg-blue-50'
+                                    'flex w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-blue-50 transition-colors',
+                                    form.school === String(s.id) && 'bg-blue-50 border-l-2 border-blue-500 pl-2.5'
                                   )}
                                   onClick={() => {
                                     setForm({ ...form, school: String(s.id), user: '' });
@@ -585,8 +632,8 @@ export default function PricingPage() {
                                     setSchoolPopoverOpen(false);
                                   }}
                                 >
-                                  <span className="font-medium">{s.name}</span>
-                                  {s.contact_email && <span className="text-xs text-gray-500">{s.contact_email}</span>}
+                                  <span className="font-medium text-neutral-900">{s.name}</span>
+                                  {s.contact_email && <span className="text-xs text-neutral-500">{s.contact_email}</span>}
                                 </button>
                               )) : (
                                 <p className="px-3 py-4 text-center text-sm text-gray-500">No schools found</p>
@@ -637,14 +684,14 @@ export default function PricingPage() {
                                 autoFocus
                               />
                             </div>
-                            <div className="max-h-48 overflow-auto p-1">
-                              {filteredUsers.length > 0 ? filteredUsers.slice(0, 50).map((u) => (
+                            <div className="max-h-60 overflow-y-auto overflow-x-hidden p-1 custom-scrollbar">
+                              {filteredUsers.length > 0 ? filteredUsers.slice(0, 100).map((u) => (
                                 <button
                                   key={u.id}
                                   type="button"
                                   className={cn(
-                                    'flex w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-blue-50',
-                                    form.user === String(u.id) && 'bg-blue-50'
+                                    'flex w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-blue-50 transition-colors',
+                                    form.user === String(u.id) && 'bg-blue-50 border-l-2 border-blue-500 pl-2.5'
                                   )}
                                   onClick={() => {
                                     setForm({ ...form, user: String(u.id), school: '' });
@@ -653,8 +700,8 @@ export default function PricingPage() {
                                     setUserPopoverOpen(false);
                                   }}
                                 >
-                                  <span className="font-medium">{u.first_name} {u.last_name}</span>
-                                  <span className="text-xs text-gray-500">{u.email}</span>
+                                  <span className="font-medium text-neutral-900">{u.first_name} {u.last_name}</span>
+                                  <span className="text-xs text-neutral-500">{u.email}</span>
                                 </button>
                               )) : (
                                 <p className="px-3 py-4 text-center text-sm text-gray-500">No users found</p>
@@ -679,7 +726,7 @@ export default function PricingPage() {
               <Label htmlFor="pricing-active" className="cursor-pointer text-sm">Active</Label>
             </div>
 
-          </div>
+
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
