@@ -12,13 +12,15 @@ import api from '@/lib/api-client';
 const TAX_CONFIG = {
   maharashtra: { cgst: 9, sgst: 9, igst: 0 },
   rest_of_india: { cgst: 0, sgst: 0, igst: 18 },
+  outside_india: { cgst: 0, sgst: 0, igst: 0 },
 } as const;
 
 type StateOption = keyof typeof TAX_CONFIG;
 
-const CURRENCY_MAP: Record<StateOption, 'INR'> = {
+const CURRENCY_MAP: Record<StateOption, 'INR' | 'USD'> = {
   maharashtra: 'INR',
   rest_of_india: 'INR',
+  outside_india: 'USD',
 };
 
 interface ModuleRow {

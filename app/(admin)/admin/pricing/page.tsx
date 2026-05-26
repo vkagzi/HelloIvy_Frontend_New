@@ -42,6 +42,7 @@ interface ModulePricing {
   school_name: string | null;
   user: number | null;
   user_email: string | null;
+  label_override: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -53,9 +54,9 @@ interface FormData {
   currency_variants: Record<string, string>;
   school: string;
   user: string;
-  icon_override: string;
-  color_override: string;
-
+  icon_override?: string;
+  color_override?: string;
+  label_override: string;
 
   is_active: boolean;
 }
