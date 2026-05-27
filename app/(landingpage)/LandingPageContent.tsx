@@ -1255,7 +1255,7 @@ export default function LandingPageContent(): React.ReactElement {
                   }}
                 >
                   <Image
-                    src="/images/Malhaar Chaudhary.jpg  "
+                    src="/images/Malhaar Chaudhary.jpg"
                     alt="Malhar Chaudhari, Chief Technical Advisor"
                     fill
                     className="object-cover object-top"

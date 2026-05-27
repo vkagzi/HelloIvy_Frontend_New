@@ -605,3 +605,547 @@ input::placeholder {
 .mic-ended {
   animation: mic-ended-shrink 0.5s ease-out forwards;
 }
+
+/* ── Landing Page Centered Intro Styles ── */
+
+.intro-section {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(248, 244, 255, 0.7) 0%,
+      rgba(255, 255, 255, 1) 75%
+    ),
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(255, 235, 245, 0.5) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(230, 242, 255, 0.5) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(240, 235, 255, 0.4) 0%,
+      transparent 55%
+    );
+  padding: 15px 0 25px 0 !important; /* Force highly compact padding */
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.intro-content-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+  gap: 12px; /* Reduced gaps to fit nicely */
+}
+
+.intro-badge {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 0px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 4;
+  animation: slideRightFade 4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+.intro-badge .ivy-text-highlight {
+  background: linear-gradient(90deg, #e842a5, #a16bfe);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.intro-badge .sparkle {
+  display: inline-block;
+  transform-origin: center;
+  animation: starZoomPulse 2.2s ease-in-out infinite;
+}
+
+.intro-main-title {
+  font-size: 26px; /* Optimized mobile font-size */
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0e1638;
+  max-width: 850px;
+  margin: 0 auto;
+  z-index: 4;
+}
+
+.intro-gif-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 15px 0; /* Extra margin to allow orbits to breathe */
+  width: 100%;
+  height: 200px; /* Mobile height */
+}
+
+.intro-gif-img {
+  width: 160px; /* Optimized mobile gif scale */
+  height: 160px;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 50%; /* Clip square corners to circle */
+  border: 0px solid transparent !important; /* Force remove default border from wildcard selector */
+  outline: none !important; /* Force remove default outline from wildcard selector */
+  box-shadow: none !important;
+  mix-blend-mode: multiply; /* Blend white background out completely */
+  clip-path: circle(
+    49%
+  ) !important; /* Shave off sub-pixel source border noise */
+  z-index: 3; /* Render in front of orbits/dots */
+}
+
+/* Wide Dashed Orbit Ellipses */
+.orbit-ellipse {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.ellipse-1 {
+  width: 340px;
+  height: 80px;
+  border: 1.3px dashed rgba(161, 107, 254, 0.45) !important;
+  transform: rotate(-10deg);
+}
+
+.ellipse-2 {
+  width: 300px;
+  height: 70px;
+  border: 1.3px dashed rgba(76, 74, 246, 0.38) !important;
+  transform: rotate(10deg);
+}
+
+/* Orbiting dots with breathing glow */
+.orbit-dot {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+  border: none !important; /* Strip wildcard borders */
+  outline: none !important;
+  transition: all 0.3s ease;
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+.dot-pink-left {
+  color: #ff529c;
+  background: #ff529c;
+  width: 5px;
+  height: 5px;
+  left: calc(50% - 165px);
+  top: calc(50% + 20px);
+  animation-delay: 0s;
+}
+
+.dot-blue-bottom {
+  color: #5c7cfa;
+  background: #5c7cfa;
+  width: 5px;
+  height: 5px;
+  left: calc(50% - 50px);
+  top: calc(50% + 35px);
+  animation-delay: 1.5s;
+}
+
+.dot-purple-right {
+  color: #7048e8;
+  background: #7048e8;
+  width: 5px;
+  height: 5px;
+  left: calc(50% + 100px);
+  top: calc(50% - 8px);
+  animation-delay: 0.7s;
+}
+
+.dot-darkpurple-farright {
+  color: #5c7cfa;
+  background: #5c7cfa;
+  width: 5px;
+  height: 5px;
+  left: calc(50% + 160px);
+  top: calc(50% - 18px);
+  animation-delay: 2.2s;
+}
+
+.dot-lightblue-right {
+  color: #a5d8ff;
+  background: #a5d8ff;
+  width: 4px;
+  height: 4px;
+  left: calc(50% + 65px);
+  top: calc(50% - 8px);
+  animation-delay: 1.1s;
+}
+
+.dot-teal-farright {
+  color: #7048e8;
+  background: #7048e8;
+  width: 5px;
+  height: 5px;
+  left: calc(50% + 140px);
+  top: calc(50% - 12px);
+  animation-delay: 2.8s;
+}
+
+/* Sparkle Stars */
+.orbit-sparkle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+  transition: all 0.3s ease;
+  animation: twinkle 3.5s ease-in-out infinite;
+}
+
+.orbit-sparkle svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sparkle-pink-topleft {
+  color: #ff529c;
+  width: 8px;
+  height: 8px;
+  left: calc(50% - 100px);
+  top: calc(50% - 55px);
+  animation-delay: 0s;
+}
+
+.sparkle-purple-left {
+  color: #a16bfe;
+  width: 7px;
+  height: 7px;
+  left: calc(50% - 135px);
+  top: calc(50% + 2px);
+  animation-delay: 1.2s;
+}
+
+.sparkle-blue-right {
+  color: #4c4af6;
+  width: 8px;
+  height: 8px;
+  left: calc(50% + 150px);
+  top: calc(50% - 45px);
+  animation-delay: 2.4s;
+}
+
+.intro-description-text {
+  font-size: 18px; /* Legible and fits single screen */
+  line-height: 1.6;
+  color: #555555;
+  max-width: 750px;
+  margin: 0 auto;
+  font-weight: 500;
+  z-index: 4;
+}
+
+.intro-description-text .text-highlight-pink {
+  color: #e842a5;
+  font-weight: 700;
+}
+
+.intro-description-text .text-highlight-purple {
+  color: #a16bfe;
+  font-weight: 700;
+}
+
+/* Twinkle & Glow Animations */
+@keyframes twinkle {
+  0%,
+  100% {
+    transform: scale(0.85) rotate(0deg);
+    opacity: 0.65;
+    filter: drop-shadow(0 0 2px currentColor);
+  }
+  50% {
+    transform: scale(1.15) rotate(45deg);
+    opacity: 1;
+    filter: drop-shadow(0 0 5px currentColor) drop-shadow(0 0 9px currentColor);
+  }
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    transform: scale(0.85);
+    box-shadow:
+      0 0 3px currentColor,
+      0 0 6px currentColor;
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow:
+      0 0 8px currentColor,
+      0 0 16px currentColor,
+      0 0 24px currentColor;
+    opacity: 1;
+  }
+}
+
+@keyframes slideRightFade {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  75% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  85% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  86%,
+  100% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes starZoomPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0px rgba(232, 66, 165, 0));
+  }
+  50% {
+    transform: scale(1.3) rotate(12deg);
+    filter: drop-shadow(0 0 3px rgba(161, 107, 254, 0.6));
+  }
+}
+
+/* Centered Layout Media Queries */
+@media (min-width: 769px) {
+  .intro-section {
+    padding: 25px 0 35px 0 !important;
+  }
+
+  .intro-content-centered {
+    gap: 16px;
+  }
+
+  .intro-badge {
+    font-size: 20px;
+  }
+
+  .intro-main-title {
+    font-size: 38px;
+  }
+
+  .intro-gif-container {
+    height: 280px;
+  }
+
+  .intro-gif-img {
+    width: 220px; /* Elegant scale for tablets */
+    height: 220px;
+  }
+
+  .ellipse-1 {
+    width: 580px;
+    height: 140px;
+  }
+
+  .ellipse-2 {
+    width: 520px;
+    height: 120px;
+  }
+
+  .dot-pink-left {
+    width: 7px;
+    height: 7px;
+    left: calc(50% - 280px);
+    top: calc(50% + 35px);
+  }
+
+  .dot-blue-bottom {
+    width: 7px;
+    height: 7px;
+    left: calc(50% - 80px);
+    top: calc(50% + 62px);
+  }
+
+  .dot-purple-right {
+    width: 7px;
+    height: 7px;
+    left: calc(50% + 170px);
+    top: calc(50% - 12px);
+  }
+
+  .dot-darkpurple-farright {
+    width: 7px;
+    height: 7px;
+    left: calc(50% + 275px);
+    top: calc(50% - 30px);
+  }
+
+  .dot-lightblue-right {
+    width: 5px;
+    height: 5px;
+    left: calc(50% + 110px);
+    top: calc(50% - 12px);
+  }
+
+  .dot-teal-farright {
+    width: 7px;
+    height: 7px;
+    left: calc(50% + 240px);
+    top: calc(50% - 22px);
+  }
+
+  .sparkle-pink-topleft {
+    width: 11px;
+    height: 11px;
+    left: calc(50% - 170px);
+    top: calc(50% - 85px);
+  }
+
+  .sparkle-purple-left {
+    width: 9px;
+    height: 9px;
+    left: calc(50% - 225px);
+    top: calc(50% + 4px);
+  }
+
+  .sparkle-blue-right {
+    width: 10px;
+    height: 10px;
+    left: calc(50% + 250px);
+    top: calc(50% - 75px);
+  }
+
+  .intro-description-text {
+    font-size: 21px;
+    line-height: 1.6;
+  }
+}
+
+@media (min-width: 1025px) {
+  .intro-section {
+    padding: 30px 0 40px 0 !important;
+  }
+
+  .intro-content-centered {
+    gap: 20px;
+  }
+
+  .intro-badge {
+    font-size: 22px;
+  }
+
+  .intro-main-title {
+    font-size: 46px; /* Elegant, doesn't overflow */
+  }
+
+  .intro-gif-container {
+    height: 320px;
+  }
+
+  .intro-gif-img {
+    width: 260px; /* Perfect desktop visual scale */
+    height: 260px;
+  }
+
+  .ellipse-1 {
+    width: 760px;
+    height: 180px;
+  }
+
+  .ellipse-2 {
+    width: 680px;
+    height: 150px;
+  }
+
+  .dot-pink-left {
+    width: 8px;
+    height: 8px;
+    left: calc(50% - 365px);
+    top: calc(50% + 45px);
+  }
+
+  .dot-blue-bottom {
+    width: 8px;
+    height: 8px;
+    left: calc(50% - 100px);
+    top: calc(50% + 80px);
+  }
+
+  .dot-purple-right {
+    width: 8px;
+    height: 8px;
+    left: calc(50% + 220px);
+    top: calc(50% - 15px);
+  }
+
+  .dot-darkpurple-farright {
+    width: 8px;
+    height: 8px;
+    left: calc(50% + 360px);
+    top: calc(50% - 40px);
+  }
+
+  .dot-lightblue-right {
+    width: 6px;
+    height: 6px;
+    left: calc(50% + 140px);
+    top: calc(50% - 15px);
+  }
+
+  .dot-teal-farright {
+    width: 8px;
+    height: 8px;
+    left: calc(50% + 310px);
+    top: calc(50% - 30px);
+  }
+
+  .sparkle-pink-topleft {
+    width: 14px;
+    height: 14px;
+    left: calc(50% - 220px);
+    top: calc(50% - 110px);
+  }
+
+  .sparkle-purple-left {
+    width: 12px;
+    height: 12px;
+    left: calc(50% - 290px);
+    top: calc(50% + 5px);
+  }
+
+  .sparkle-blue-right {
+    width: 13px;
+    height: 13px;
+    left: calc(50% + 330px);
+    top: calc(50% - 100px);
+  }
+
+  .intro-description-text {
+    font-size: 24px; /* Distinctly "a bit bigger" but highly optimized */
+    line-height: 1.6;
+  }
+}
+
