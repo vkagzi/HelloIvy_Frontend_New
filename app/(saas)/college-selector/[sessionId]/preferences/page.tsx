@@ -826,10 +826,16 @@ export default function PreferencesPage() {
 
         // Prefill primary major from domainInterest
         const profileDomain = additional.domainInterest;
-        if (profileDomain && profileDomain !== 'None' && profileDomain !== 'Other') {
-          const mappedMajor = DOMAIN_TO_MAJOR_MAP[profileDomain];
-          if (mappedMajor && MAJOR_OPTIONS.includes(mappedMajor)) {
-            setPrimaryMajor((prev) => prev || mappedMajor);
+        if (profileDomain && profileDomain !== 'None') {
+          const domains = Array.isArray(profileDomain) ? profileDomain : [profileDomain];
+          for (const dom of domains) {
+            if (dom && dom !== 'None' && dom !== 'Other') {
+              const mappedMajor = DOMAIN_TO_MAJOR_MAP[dom];
+              if (mappedMajor && MAJOR_OPTIONS.includes(mappedMajor)) {
+                setPrimaryMajor((prev) => prev || mappedMajor);
+                break;
+              }
+            }
           }
         }
       } catch {

@@ -481,6 +481,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 value={Array.isArray(controllerField.value) ? controllerField.value : []}
                 onChange={controllerField.onChange}
                 error={error}
+                maxSelected={field.validation?.max}
               />
             );
           case 'select_autofill':

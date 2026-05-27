@@ -2878,7 +2878,7 @@ export const additionalFieldDefs: FieldDefinition[] = [
 
   {
     id: 'domainInterest',
-    type: 'select_autofill',
+    type: 'multi_select',
     label: 'What domain are you interested in ?',
     placeholder: 'Select domain',
     options: [
@@ -2903,6 +2903,9 @@ export const additionalFieldDefs: FieldDefinition[] = [
     ],
     required: true,
     width: 1,
+    validation: {
+      max: 3,
+    },
   },
   {
     id: 'domainInterestOther',

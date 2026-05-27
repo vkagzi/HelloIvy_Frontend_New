@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import imgDashboardGraphic from '@/assets/images/dashboard-graphic.png';
+import imgDashboardGraphic from '@/assets/images/iconGIF.gif';
 import Link from 'next/link';
 import { Heading, Label } from '@/app/_components/Typography';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
@@ -143,6 +143,8 @@ export default function Dashboard(): React.ReactElement {
             src={imgDashboardGraphic}
             alt="Dashboard Graphic"
             className="h-auto w-full max-w-sm lg:max-w-5/12"
+            unoptimized
+            style={{ clipPath: 'inset(4px)' }}
           />
         </div>
       </div>
