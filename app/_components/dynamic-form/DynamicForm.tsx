@@ -943,7 +943,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 <Controller
                   name={fid}
                   control={form.control}
-                  defaultValue={form.getValues(fid) ?? ''}
+                  defaultValue={form.getValues(fid) ?? getDefaultValue(field.type as FieldType)}
                   render={() => (
                     <FieldRenderer
                       field={field}
@@ -983,7 +983,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 <Controller
                   name={fid}
                   control={form.control}
-                  defaultValue={form.getValues(fid) ?? ''}
+                  defaultValue={form.getValues(fid) ?? getDefaultValue(field.type as FieldType)}
                   render={() => (
                     <FieldRenderer
                       field={field}

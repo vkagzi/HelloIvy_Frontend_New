@@ -224,7 +224,14 @@ const getFieldSchema = (field: FieldDefinition): ZodType<unknown> => {
     case 'multi_select': {
       let base = z.array(z.string());
       if (field.required) base = base.min(1, `${field.label} is required`);
-      return base.optional().default([]);
+      if (field.validation?.max !== undefined) {
+        base = base.max(
+          field.validation.max,
+          `${field.label} must have at most ${field.validation.max} selections`
+        );
+      }
+      if (!field.required) return base.optional();
+      return base;
     }
     default:
       return z.string().optional().or(z.literal(''));

@@ -18,6 +18,7 @@ interface MultiSelectProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  maxSelected?: number;
 }
 
 export function MultiSelect({
@@ -31,6 +32,7 @@ export function MultiSelect({
   required = false,
   disabled = false,
   className,
+  maxSelected,
 }: MultiSelectProps): React.JSX.Element {
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
   const [searchQuery, setSearchQuery] = React.useState<string>('');
@@ -44,7 +46,11 @@ export function MultiSelect({
   }, [options, searchQuery]);
 
   const handleOptionToggle = (option: string): void => {
-    const newValue = value.includes(option)
+    const isSelected = value.includes(option);
+    if (!isSelected && maxSelected !== undefined && value.length >= maxSelected) {
+      return;
+    }
+    const newValue = isSelected
       ? value.filter((v) => v !== option)
       : [...value, option];
     onChange(newValue);
@@ -196,15 +202,18 @@ export function MultiSelect({
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((option) => {
                   const isSelected = value.includes(option);
+                  const isDisableAdd = !isSelected && maxSelected !== undefined && value.length >= maxSelected;
                   return (
                     <button
                       key={option}
                       type="button"
+                      disabled={isDisableAdd}
                       onClick={() => handleOptionToggle(option)}
                       className={cn(
                         'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors',
                         'hover:bg-neutral-100',
-                        isSelected && 'bg-neutral-50'
+                        isSelected && 'bg-neutral-50',
+                        isDisableAdd && 'cursor-not-allowed opacity-50 hover:bg-transparent'
                       )}
                     >
                       <div

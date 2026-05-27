@@ -37,6 +37,124 @@ let sessionsCache: {
 // Cache expires after 30 seconds to ensure fresh data on real navigation
 const CACHE_TTL = 30000;
 
+const instructionItems = [
+  {
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-8 w-8 text-neutral-700"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    ),
+    text: 'Choose between Text or Voice',
+  },
+  {
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-8 w-8 text-neutral-700"
+      >
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+      </svg>
+    ),
+    text: 'Speak clearly into the mic',
+  },
+  {
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-8 w-8 text-neutral-700"
+      >
+        <path d="M17 2H7v6l5 4-5 4v6h10v-6l-5-4 5-4V2z" />
+        <path d="M9 17h6" />
+        <path d="M10 6h4" />
+      </svg>
+    ),
+    text: 'Wait for the green bar before you speak',
+  },
+  {
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-8 w-8 text-neutral-700"
+      >
+        <path d="M3 20a6 6 0 0 1 10.4-4" />
+        <circle cx="8" cy="7" r="4" />
+        <path d="M22 13.5a1.9 1.9 0 0 0-3.4-1.2 1.9 1.9 0 0 0-3.4 1.2c0 2 3.4 3.8 3.4 3.8s3.4-1.8 3.4-3.8z" />
+      </svg>
+    ),
+    text: 'Answer naturally & truthfully',
+  },
+  {
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-8 w-8 text-neutral-700"
+      >
+        <rect x="3" y="3" width="5" height="5" rx="1" />
+        <rect x="3" y="11" width="5" height="5" rx="1" />
+        <rect x="3" y="19" width="5" height="5" rx="1" />
+        <line x1="11" y1="5.5" x2="21" y2="5.5" />
+        <line x1="11" y1="13.5" x2="21" y2="13.5" />
+        <line x1="11" y1="21.5" x2="21" y2="21.5" />
+        <polyline points="4.5 5.5 5.5 6.5 7 4.5" />
+        <polyline points="4.5 13.5 5.5 14.5 7 12.5" />
+      </svg>
+    ),
+    text: 'Choose one or more options for MCQs',
+  },
+  {
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-8 w-8 text-neutral-700"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <circle cx="11" cy="14" r="3" />
+        <path d="M11 11v3h3" />
+        <line x1="8" y1="19" x2="16" y2="19" />
+      </svg>
+    ),
+    text: 'Follow the 20-step guided conversation',
+  },
+];
+
 function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -312,70 +430,52 @@ function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
           </div>
         )}
 
-        {/* Instructions Box */}
-        <div className="mb-6 rounded-lg border border-teal-200 p-6">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold">
+        {/* Instructions */}
+        <div className="mb-6 rounded-3xl border border-white bg-white p-6 shadow-xs">
+          <div className="mb-6 flex flex-col gap-1">
+            <h2 className="text-xl font-bold text-slate-800">
               {sessions.length > 0
                 ? 'Start a New Session'
-                : 'Go Through Instructions Before We Start The Module'}
+                : 'Go Through Instructions Before We Start'}
             </h2>
+            <p className="text-sm text-slate-500">
+              Discover academic and interest domains that match your natural curiosities, passions, and learning preferences.
+            </p>
           </div>
 
-          <ol className="space-y-3 text-gray-700">
-            <li className="flex gap-3">
-              <span className="min-w-5 font-semibold">1</span>
-              <span>
-                This module helps you discover academic and interest domains
-                that match your natural curiosities, passions, and learning
-                preferences.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="min-w-5 font-semibold">2</span>
-              <span>
-                We analyze your existing profile data, interests, and activities
-                to provide tailored domain recommendations.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="min-w-5 font-semibold">3</span>
-              <span>
-                You'll go through a 20-step guided conversation to uncover your
-                interests and map them to potential domains.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="min-w-5 font-semibold">4</span>
-              <span>
-                Receive detailed domain matches with related subjects,
-                exploration activities, and potential career paths to pursue.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="min-w-5 font-semibold">5</span>
-              <span>
-                The entire process takes about 20-30 minutes and is completely
-                personalized to your background and interests.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="min-w-5 font-semibold">6</span>
-              <span>
-                This module is a prerequisite for the next - understanding your
-                Streams & Subjects helps identify specific Career Paths &
-                Degrees later.
-              </span>
-            </li>
-          </ol>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {instructionItems.map((item, index) => (
+              <div
+                key={index}
+                className="relative p-[1px] bg-gradient-to-br from-cyan-200 to-blue-100 rounded-3xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xs"
+              >
+                <div className="flex h-full flex-col items-center rounded-[23px] bg-gradient-to-b from-white to-blue-50/30 p-5 text-center">
+                  {/* Icon Wrapper */}
+                  <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white border border-neutral-100/80 text-neutral-800 shadow-xs">
+                    {item.icon}
+                  </div>
 
+                  {/* Step Indicator & Text */}
+                  <span className="mb-1 text-xs font-bold tracking-wider text-blue-600/90 uppercase">
+                    Step 0{index + 1}
+                  </span>
+                  <p className="text-sm leading-snug font-semibold text-slate-700">
+                    {item.text}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-6 rounded-lg border border-teal-100 bg-slate-50/50 p-6">
           {error && (
-            <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {error}
             </div>
           )}
 
-          <div className="mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
             <label className="flex cursor-pointer items-start gap-3">
               <Checkbox
                 checked={hasReadInstructions}
