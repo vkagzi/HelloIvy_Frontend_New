@@ -1022,7 +1022,7 @@ export default function LandingPageContent(): React.ReactElement {
                 <span className="sparkle">✨</span>
               </div>
               <h1 className="intro-main-title font-darker-grotesque">
-                Your <span className="gradient-text">AI-Powered</span> Voice
+                Your <span className="gradient-text">ai-Powered</span> Voice
                 Mentor for Career &amp; Educational Success
               </h1>
               <div className="intro-gif-container">
