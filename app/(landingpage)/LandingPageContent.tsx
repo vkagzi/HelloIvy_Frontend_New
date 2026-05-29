@@ -623,7 +623,7 @@ const FAQS = [
   {
     question: 'Is HelloIvy available on mobile devices?',
     answer:
-      'HelloIvy can be accessed on mobile devices, and while we’re actively working on making the platform more mobile-optimized, we currently recommend using a laptop or desktop for the best experience and smoother navigation.',
+      'HelloIvy can be accessed on mobile devices, and while we are actively working on making the platform more mobile-optimized, we currently recommend using a laptop or desktop for the best experience and smoother navigation.',
   },
 ];
 
