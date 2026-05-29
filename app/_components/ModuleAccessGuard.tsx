@@ -24,17 +24,7 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   const hasSchool = !!session?.user?.school_id;
 
   if (PAYWALL_DISABLED) {
-    const isTrial = !loading && !hasAccess(moduleName);
-    return (
-      <div className="relative">
-        {isTrial && (
-          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-center bg-amber-400 py-1 text-xs font-semibold text-amber-900 tracking-wide">
-            Trial
-          </div>
-        )}
-        {children}
-      </div>
-    );
+    return <>{children}</>;
   }
 
   if (loading) {

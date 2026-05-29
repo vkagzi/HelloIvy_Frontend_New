@@ -34,7 +34,33 @@ const Navbar: React.FC = () => {
   const { modules: dynamicModules = [] } = useModuleChoices();
 
   const sidebarWithCustom = useMemo(() => {
-    if (!dynamicModules || dynamicModules.length === 0) return filteredNavItems;
+    const desiredOrder = [
+      '/dashboard',
+      '/domain-discovery',
+      '/career-discovery',
+      '/college-selector',
+      '/counselor-connect',
+      '/pay-as-student',
+    ];
+
+    const sortNavItems = (items: { label: string; icon: string; href: string }[]) => {
+      return [...items].sort((a, b) => {
+        const idxA = desiredOrder.indexOf(a.href);
+        const idxB = desiredOrder.indexOf(b.href);
+        if (idxA !== -1 && idxB !== -1) {
+          return idxA - idxB;
+        }
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return 0;
+      });
+    };
+
+    if (!dynamicModules || dynamicModules.length === 0) {
+      return sortNavItems(filteredNavItems).filter(
+        (item) => !item.href.includes('resume') && !item.label.toLowerCase().includes('resume')
+      );
+    }
 
     // Map backend modules to NavItem shape and avoid duplicates
     const extra: { label: string; icon: string; href: string }[] = [];
@@ -56,12 +82,17 @@ const Navbar: React.FC = () => {
     // Insert extras after the college selector if present, otherwise append
     const insertAfter = '/college-selector';
     const idx = filteredNavItems.findIndex((i) => i.href === insertAfter);
+    let combined: { label: string; icon: string; href: string }[];
     if (idx >= 0) {
       const copy = [...filteredNavItems];
       copy.splice(idx + 1, 0, ...extra);
-      return copy;
+      combined = copy;
+    } else {
+      combined = [...filteredNavItems, ...extra];
     }
-    return [...filteredNavItems, ...extra];
+    return sortNavItems(combined).filter(
+      (item) => !item.href.includes('resume') && !item.label.toLowerCase().includes('resume')
+    );
   }, [dynamicModules, filteredNavItems]);
 
   // Close drawer on route change

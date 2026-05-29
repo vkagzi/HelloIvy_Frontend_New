@@ -11,6 +11,11 @@ export const navItems: NavItem[] = [
     icon: 'world',
     href: '/domain-discovery',
   },
+  {
+    label: 'Career & Degree Selection',
+    icon: 'briefcase',
+    href: '/career-discovery',
+  },
   { label: 'Degree Selector', icon: 'graduation-cap', href: '/degree' },
   { label: 'College Selector', icon: 'school', href: '/college-selector' },
   {
@@ -43,13 +48,13 @@ export const navItems: NavItem[] = [
   { label: 'Settings', icon: 'settings', href: '/settings' },
   { label: 'Change Password', icon: 'lock', href: '/change-password' },
   { label: 'Legal', icon: 'document', href: '/legal' },
-  { label: 'Buy Modules', icon: 'star', href: '/pay-as-student' },
-  { label: 'Checkout', icon: 'credit-card', href: '/pay-as-student/checkout' },
   {
     label: 'Counselor Connect',
     icon: 'comment-alt',
     href: '/counselor-connect',
   },
+  { label: 'Buy Modules', icon: 'star', href: '/pay-as-student' },
+  { label: 'Checkout', icon: 'credit-card', href: '/pay-as-student/checkout' },
 ];
 
 // Subset of nav items shown in the sidebar
@@ -58,7 +63,8 @@ export const sidebarNavItems: NavItem[] = navItems.filter((item) =>
     '/dashboard',
     '/domain-discovery',
     '/college-selector',
-    '/pay-as-student',
     '/counselor-connect',
+    '/pay-as-student',
   ].includes(item.href)
 );
+
