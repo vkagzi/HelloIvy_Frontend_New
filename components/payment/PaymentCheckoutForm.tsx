@@ -110,6 +110,11 @@ export default function PaymentCheckoutForm({
   const [initLoading, setInitLoading] = useState(config.mode === 'school');
   const initRef = useRef(false);
 
+  // Payer type state
+  const [payerType, setPayerType] = useState<'individual' | 'institution'>(
+    config.mode === 'school' ? 'institution' : 'individual'
+  );
+
   // Contact details state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -170,7 +175,7 @@ export default function PaymentCheckoutForm({
     address.trim().length > 0;
 
   const displayTotal = grandTotal || (session?.total ?? subtotal);
-  const stateName = stateParam === 'maharashtra' ? 'Maharashtra' : stateParam === 'rest_of_india' ? 'Rest of India' : '';
+  const stateName = stateParam === 'maharashtra' ? 'Maharashtra' : stateParam === 'rest_of_india' ? 'Rest of India' : stateParam === 'outside_india' ? 'Outside of India' : '';
   const taxLabel = stateParam === 'maharashtra' ? 'GST (9% CGST + 9% SGST)' : 'IGST (18%)';
 
   const handlePay = async () => {
@@ -185,6 +190,7 @@ export default function PaymentCheckoutForm({
         phone: phone.trim(),
         address: address.trim(),
         gst_number: gstNumber.trim(),
+        payer_type: payerType,
       };
 
       let result: CheckoutSession;
@@ -192,12 +198,13 @@ export default function PaymentCheckoutForm({
       if (config.mode === 'student') {
         // Student: create payment session now
         const modules = lineItems.flatMap((item) => Array.from({ length: item.quantity }, () => item.module));
-        const body = { 
-          modules, 
-          billing_state: stateParam || undefined, 
+        const body: any = {
+          modules,
+          billing_state: stateParam || undefined,
           coupon_code: couponCode || undefined,
-          ...contactDetails 
+          ...contactDetails,
         };
+
         result = createCheckout
           ? await createCheckout(body)
           : await api<CheckoutSession>(config.createEndpoint, { method: 'POST', body });
@@ -218,7 +225,11 @@ export default function PaymentCheckoutForm({
         return;
       }
 
-      // Fallback: if no payment URL (dummy gateway)
+      if (displayTotal > 0) {
+        throw new Error('Payment gateway URL was not received. Please try again.');
+      }
+
+      // Fallback: if no payment URL (free checkout)
       if (!isLoggedIn) {
         // Guest user: redirect to status page with order_id for verification
         const statusParams = new URLSearchParams({
@@ -288,12 +299,27 @@ export default function PaymentCheckoutForm({
             <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{payError}</div>
           )}
 
+          {/* Payer type */}
+          <div className="mb-6">
+            <label className="mb-1.5 block text-xs font-medium text-gray-700">I am paying as</label>
+            <select
+              value={payerType}
+              onChange={(e) => setPayerType(e.target.value as 'individual' | 'institution')}
+              className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+            >
+              <option value="individual">I am an Individual</option>
+              <option value="institution">I am an Institution</option>
+            </select>
+          </div>
+
           {/* Contact details */}
           <h2 className="mb-5 text-base font-semibold text-gray-900">Contact Details</h2>
           <div className="space-y-4 mb-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">First name</label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">
+                  First name <span className="text-red-500">*</span>
+                </label>
                 <Input
                   type="text"
                   placeholder="First name"
@@ -304,7 +330,9 @@ export default function PaymentCheckoutForm({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">Last name</label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">
+                  Last name <span className="text-red-500">*</span>
+                </label>
                 <Input
                   type="text"
                   placeholder="Last name"
@@ -334,7 +362,9 @@ export default function PaymentCheckoutForm({
               )}
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-700">Phone number</label>
+              <label className="mb-1 block text-xs font-medium text-gray-700">
+                Phone number <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="tel"
                 inputMode="numeric"

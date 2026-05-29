@@ -10,7 +10,7 @@ const config: ModuleSelectionConfig = {
   quantityLabel: 'Quantity',
   unitLabel: 'unit',
   checkoutUrl: '/pay-as-student/checkout',
-  backLink: { href: '/subscription', label: 'Back to Subscription' },
+  topRightLink: { href: '/subscription', label: 'Payment History' },
   title: 'Select your Modules',
   subtitle: 'Set the quantity for each module you want. Setting quantity to 1 or more adds it to your order.',
   showActiveModules: true,

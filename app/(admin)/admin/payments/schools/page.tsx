@@ -18,6 +18,30 @@ const STATUS_CHOICES = ['pending', 'completed', 'failed', 'refunded'];
 
 const CURRENCY_CHOICES = ['USD', 'INR', 'EUR'];
 
+// CSV export helper
+function exportSchoolPaymentsCSV(payments: SchoolPayment[]) {
+  const headers = ['ID','School','Modules','Currency','Amount','Status','Gateway','Txn ID','Date'];
+  const rows = payments.map(p => [
+    p.id,
+    p.school_name,
+    p.modules_purchased.map(e => typeof e === 'string' ? e : e.module).join('; '),
+    p.currency,
+    p.amount,
+    p.status,
+    p.payment_gateway,
+    p.gateway_transaction_id,
+    new Date(p.created_at).toLocaleDateString(),
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `school-payments-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 interface SchoolPayment {
   id: number;
   school: number;
@@ -60,8 +84,9 @@ export default function SchoolPaymentsPage() {
 
   // Add modal
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ school: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+  const [addForm, setAddForm] = useState({ school: '', amount: '', currency: 'INR', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
   const [addModules, setAddModules] = useState<string[]>([]);
+  const [addCustomModule, setAddCustomModule] = useState(''); // free-text "Other" module
   const [activeSchoolModules, setActiveSchoolModules] = useState<string[]>([]);
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -124,17 +149,20 @@ export default function SchoolPaymentsPage() {
   }, [addForm.school, addOpen]);
 
   const handleAdd = async () => {
+    const allModules = [...addModules];
+    if (addCustomModule.trim()) allModules.push(addCustomModule.trim());
     if (!addForm.school || !addForm.amount) return;
     setAddSaving(true);
     setAddError(null);
     try {
       await api('/api/payments/schools/', {
         method: 'POST',
-        body: { ...addForm, school: Number(addForm.school), amount: parseFloat(addForm.amount), modules_purchased: addModules.map(m => ({ module: m, quantity: 1 })) },
+        body: { ...addForm, school: Number(addForm.school), amount: parseFloat(addForm.amount), modules_purchased: allModules.map(m => ({ module: m, quantity: 1 })) },
       });
       setAddOpen(false);
-      setAddForm({ school: '', amount: '', currency: 'USD', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+      setAddForm({ school: '', amount: '', currency: 'INR', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
       setAddModules([]);
+      setAddCustomModule('');
       fetchPayments();
     } catch (err: unknown) {
       setAddError(err instanceof Error ? err.message : 'Failed to create payment');
@@ -212,9 +240,13 @@ export default function SchoolPaymentsPage() {
       orderId: p.id,
       orderDate: p.created_at,
       billingName: p.school_name || `School #${p.school}`,
-      firstName: p.school_name || '',
-      lastName: '',
-      email: '',
+      firstName: (p.metadata?.first_name as string) || p.school_name || '',
+      lastName: (p.metadata?.last_name as string) || '',
+      email: (p.metadata?.email as string) || '',
+      address: (p.metadata?.address as string) || '',
+      phone: (p.metadata?.phone as string) || '',
+      gstNumber: (p.metadata?.gst_number as string) || '',
+      payerType: 'institution',
       lineItems,
       subtotal: (pricing.subtotal as number) ?? Number(p.amount),
       discount: (pricing.discount as number) ?? 0,
@@ -238,10 +270,15 @@ export default function SchoolPaymentsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">School Payments</h1>
+          <h1 className="text-xl font-bold text-gray-900">Institution Payments</h1>
           <p className="text-sm text-gray-500">{total} total records</p>
         </div>
-        <Button onClick={() => { setAddError(null); setAddModules([]); setActiveSchoolModules([]); setAddOpen(true); }}>+ Record Payment</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => exportSchoolPaymentsCSV(payments)} className="flex items-center gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
+            <Download className="mr-1 h-4 w-4" /> Export CSV
+          </Button>
+          <Button onClick={() => { setAddError(null); setAddModules([]); setAddCustomModule(''); setActiveSchoolModules([]); setAddOpen(true); }}>+ Record Payment</Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -280,7 +317,9 @@ export default function SchoolPaymentsPage() {
               <th className="px-4 py-3 text-left">Modules</th>
               <th className="px-4 py-3 text-left">Gateway</th>
               <th className="px-4 py-3 text-left">Txn ID</th>
+              <th className="px-4 py-3 text-left">Invoice</th>
               <th className="px-4 py-3 text-left">Date</th>
+              <th className="px-4 py-3 text-left">Pay Link</th>
               <th className="px-4 py-3 text-left">Actions</th>
             </tr>
           </thead>
@@ -291,7 +330,11 @@ export default function SchoolPaymentsPage() {
               <tr key={p.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-500">#{p.id}</td>
                 <td className="px-4 py-3">
-                  <Link href={`/admin/schools/${p.school}`} className="text-blue-600 hover:underline">{p.school_name}</Link>
+                  {p.school ? (
+                    <Link href={`/admin/schools/${p.school}`} className="text-blue-600 hover:underline">{p.school_name}</Link>
+                  ) : (
+                    <span className="text-gray-700 font-medium">{p.school_name}</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   {(() => { const pr = (p.metadata?.pricing ?? {}) as Record<string, number>; const sub = pr.subtotal ?? 0; const disc = pr.discount ?? 0; const preTax = sub - disc; return preTax ? `${p.currency} ${preTax.toLocaleString()}` : '-'; })()}
@@ -315,19 +358,36 @@ export default function SchoolPaymentsPage() {
                     : '-'}
                 </td>
                 <td className="px-4 py-3 text-gray-500">{p.payment_gateway || '-'}</td>
-                <td className="px-4 py-3 font-mono text-xs">
-                  {p.gateway_transaction_id ? (
-                    <button
-                      onClick={() => handleDownloadInvoice(p)}
-                      className="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
-                      title="Download Invoice"
-                    >
-                      {p.gateway_transaction_id}
-                      <Download className="h-3 w-3 shrink-0" />
-                    </button>
-                  ) : '-'}
+                <td className="px-4 py-3 font-mono text-xs">{p.gateway_transaction_id || '-'}</td>
+                <td className="px-4 py-3">
+                  <Button
+                    onClick={() => handleDownloadInvoice(p)}
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-[10px] border-blue-200 text-blue-600 hover:bg-blue-50"
+                  >
+                    <Download className="mr-1 h-3 w-3" />
+                    Invoice
+                  </Button>
                 </td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
+                <td className="px-4 py-3">
+                  {p.status === 'pending' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-purple-600 h-7 px-2 text-[10px]"
+                      onClick={() => {
+                        const modules = p.modules_purchased.map(m => { const mod = typeof m === 'string' ? m : m.module; const qty = typeof m === 'string' ? 1 : m.quantity; return `${mod}:${qty}`; }).join(',');
+                        const url = `${window.location.origin}/school/payment/checkout/?payment_id=${p.id}&order_id=${p.metadata?.order_id || p.id}&modules=${modules}`;
+                        navigator.clipboard.writeText(url);
+                        alert('Institutional checkout link copied to clipboard!');
+                      }}
+                    >
+                      Copy Link
+                    </Button>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <Button
                     onClick={() => setDetailPayment(p)}
@@ -347,7 +407,7 @@ export default function SchoolPaymentsPage() {
       {/* Add Modal */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-lg">
-          <DialogTitle>Record School Payment</DialogTitle>
+          <DialogTitle>Record Institution Payment</DialogTitle>
           {addError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{addError}</p>}
           <div className="space-y-3">
             <div className="space-y-1"><Label>School</Label><Select value={addForm.school || '__none__'} onValueChange={(v) => setAddForm({ ...addForm, school: v === '__none__' ? '' : v })}><SelectTrigger><SelectValue placeholder="Select school..." /></SelectTrigger><SelectContent><SelectItem value="__none__">Select school...</SelectItem>{schools.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent></Select></div>
@@ -357,7 +417,7 @@ export default function SchoolPaymentsPage() {
             </div>
             <div className="space-y-1"><Label>Status</Label><Select value={addForm.status} onValueChange={(v) => setAddForm({ ...addForm, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{STATUS_CHOICES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1">
-              <Label>Modules Purchased</Label>
+              <Label>Modules / Services Purchased</Label>
               <div className="flex flex-wrap gap-2">
                 {moduleChoices.map((m) => {
                   const isActive = activeSchoolModules.includes(m.value);
@@ -376,6 +436,25 @@ export default function SchoolPaymentsPage() {
                   );
                 })}
               </div>
+              {/* Other / Custom service text */}
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="school-other-module"
+                  checked={addCustomModule !== ''}
+                  onChange={(e) => { if (!e.target.checked) setAddCustomModule(''); else setAddCustomModule(' '); }}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="school-other-module" className="text-sm text-gray-700 cursor-pointer">Other / Custom Service</label>
+              </div>
+              {addCustomModule !== '' && (
+                <Input
+                  placeholder="e.g. Urgent Interview Prep, Profile Review..."
+                  value={addCustomModule}
+                  onChange={(e) => setAddCustomModule(e.target.value)}
+                  className="mt-1"
+                />
+              )}
             </div>
             <div className="space-y-1"><Label htmlFor="s-add-gateway">Payment Gateway</Label><Input id="s-add-gateway" placeholder="e.g. stripe, razorpay" value={addForm.payment_gateway} onChange={(e) => setAddForm({ ...addForm, payment_gateway: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="s-add-txn">Transaction ID</Label><Input id="s-add-txn" placeholder="Gateway transaction ID" value={addForm.gateway_transaction_id} onChange={(e) => setAddForm({ ...addForm, gateway_transaction_id: e.target.value })} /></div>
@@ -435,7 +514,11 @@ export default function SchoolPaymentsPage() {
               <section className="rounded-lg border border-gray-200 p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">School</h3>
                 <div className="text-sm">
-                  <Link href={`/admin/schools/${detailPayment.school}`} className="text-blue-600 hover:underline font-medium">{detailPayment.school_name}</Link>
+                  {detailPayment.school ? (
+                    <Link href={`/admin/schools/${detailPayment.school}`} className="text-blue-600 hover:underline font-medium">{detailPayment.school_name}</Link>
+                  ) : (
+                    <span className="text-gray-700 font-medium">{detailPayment.school_name}</span>
+                  )}
                 </div>
               </section>
 

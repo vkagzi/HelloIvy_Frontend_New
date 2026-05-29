@@ -33,8 +33,8 @@ const adminNavItems: NavItem[] = [
     icon: 'credit-card',
     href: '/admin/payments/b2c',
     children: [
-      { label: 'B2C Payments', href: '/admin/payments/b2c' },
-      { label: 'School Payments', href: '/admin/payments/schools' },
+      { label: 'Individual', href: '/admin/payments/b2c' },
+      { label: 'Institution', href: '/admin/payments/schools' },
     ],
   },
   { label: 'Pricing', icon: 'badge-dollar', href: '/admin/pricing' },

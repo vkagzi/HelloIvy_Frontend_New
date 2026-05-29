@@ -21,9 +21,20 @@ const DEFAULT_PRICE = 999;
 const DEFAULT_CURRENCY = 'INR';
 
 const STATIC_MODULES: ModuleChoice[] = [
-  { value: 'college_selector', label: 'College Selector', price: 4500, icon: 'school', color: 'bg-green-100 text-green-700' },
-  { value: 'career_discovery', label: 'Career & Degree Selection', price: 999, icon: 'briefcase', color: 'bg-purple-100 text-purple-700' },
-  { value: 'domain_discovery', label: 'Stream & Subject Selection', price: 999, icon: 'world', color: 'bg-cyan-100 text-cyan-700' },
+  {
+    value: 'college_selector',
+    label: 'College Selector',
+    price: 4500,
+    icon: 'school',
+    color: 'bg-green-100 text-green-700',
+  },
+  {
+    value: 'domain_discovery',
+    label: 'Stream & Subject Selection',
+    price: 999,
+    icon: 'world',
+    color: 'bg-cyan-100 text-cyan-700',
+  },
 ];
 
 export function useModuleChoices() {
@@ -62,7 +73,8 @@ export function useModuleChoices() {
     if (m.price != null) prices[m.value] = m.price;
   }
 
-  const getPrice = (moduleName: string): number => prices[moduleName] ?? defaultPrice;
+  const getPrice = (moduleName: string): number =>
+    prices[moduleName] ?? defaultPrice;
 
   return { modules, currency, defaultPrice, getPrice, loading, refetch };
 }

@@ -23,17 +23,6 @@ export default function SubscriptionPage() {
 
   return (
     <div className="space-y-6">
-      {!isB2BStudent && (
-        <div className="flex items-center justify-end">
-          <Link
-            href="/pay-as-student"
-            className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700"
-          >
-            Purchase More Modules
-          </Link>
-        </div>
-      )}
-
       <ModuleSubscriptions mode={isB2BStudent ? 'b2b' : 'b2c'} />
     </div>
   );

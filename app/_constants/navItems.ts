@@ -6,8 +6,11 @@ export type NavItem = {
 
 export const navItems: NavItem[] = [
   { label: 'Dashboard', icon: 'sr-apps', href: '/dashboard' },
-  { label: 'Stream & Subject Selection', icon: 'world', href: '/domain-discovery' },
-  { label: 'Career & Degree Selection ', icon: 'briefcase', href: '/career-discovery' },
+  {
+    label: 'Stream & Subject Selection',
+    icon: 'world',
+    href: '/domain-discovery',
+  },
   { label: 'Degree Selector', icon: 'graduation-cap', href: '/degree' },
   { label: 'College Selector', icon: 'school', href: '/college-selector' },
   {
@@ -40,13 +43,22 @@ export const navItems: NavItem[] = [
   { label: 'Settings', icon: 'settings', href: '/settings' },
   { label: 'Change Password', icon: 'lock', href: '/change-password' },
   { label: 'Legal', icon: 'document', href: '/legal' },
-  { label: 'Unlock Modules', icon: 'star', href: '/pay-as-student' },
+  { label: 'Buy Modules', icon: 'star', href: '/pay-as-student' },
   { label: 'Checkout', icon: 'credit-card', href: '/pay-as-student/checkout' },
-  { label: 'Counselor Connect', icon: 'comment-alt', href: '/counselor-connect' },
-  { label: 'Subscription', icon: 'list-check', href: '/subscription' },
+  {
+    label: 'Counselor Connect',
+    icon: 'comment-alt',
+    href: '/counselor-connect',
+  },
 ];
 
 // Subset of nav items shown in the sidebar
 export const sidebarNavItems: NavItem[] = navItems.filter((item) =>
-  ['/dashboard', '/domain-discovery', '/career-discovery', '/college-selector', '/subscription', '/counselor-connect'].includes(item.href)
+  [
+    '/dashboard',
+    '/domain-discovery',
+    '/college-selector',
+    '/pay-as-student',
+    '/counselor-connect',
+  ].includes(item.href)
 );

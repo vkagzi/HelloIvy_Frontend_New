@@ -98,6 +98,13 @@ export default function AdminDashboardPage() {
               description="Create and track discount vouchers"
               color="indigo"
             />
+            <ActionCard
+              href="/admin/tools/emails"
+              icon="📧"
+              title="Email Tester"
+              description="Test HDFC emails and invoice PDFs"
+              color="amber"
+            />
           </div>
         </div>
 

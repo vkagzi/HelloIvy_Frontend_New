@@ -10,7 +10,7 @@ const config: ModuleSelectionConfig = {
   quantityLabel: 'Students',
   unitLabel: 'student seat',
   checkoutUrl: '/school/payment/checkout',
-  backLink: { href: '/school/subscription', label: 'Back to Subscription' },
+  backLink: { href: '/school/subscription', label: 'Back to Buy Module' },
   title: 'Purchase New Modules',
   subtitle: 'Set the number of students for each module you want to purchase.',
   showActiveModules: true,
