@@ -4,8 +4,15 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import api from '@/lib/api-client';
 import { useSession } from 'next-auth/react';
 
+type ModuleDetail = {
+  module_name: string;
+  expiry_date: string;
+  is_expired: boolean;
+};
+
 type ModuleAccessContextType = {
   modules: string[];
+  moduleDetails: ModuleDetail[];
   loading: boolean;
   hasAccess: (moduleName: string) => boolean;
 };
@@ -15,15 +22,21 @@ const ModuleAccessContext = createContext<ModuleAccessContextType | undefined>(u
 export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { data: session, status } = useSession();
   const [modules, setModules] = useState<string[]>([]);
+  const [moduleDetails, setModuleDetails] = useState<ModuleDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const currentUserIdRef = useRef<string | null>(null);
 
   const fetchModules = useCallback(async (): Promise<void> => {
     try {
-      const data = await api<{ modules: string[] }>('/api/accounts/my-modules/');
+      const data = await api<{ 
+        modules: string[], 
+        module_details?: ModuleDetail[] 
+      }>('/api/accounts/my-modules/');
       setModules(data.modules ?? []);
+      setModuleDetails(data.module_details ?? []);
     } catch {
       setModules([]);
+      setModuleDetails([]);
     } finally {
       setLoading(false);
     }
@@ -34,6 +47,7 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     if (status === 'unauthenticated') {
       setModules([]);
+      setModuleDetails([]);
       currentUserIdRef.current = null;
       setLoading(false);
       return;
@@ -53,7 +67,7 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
   );
 
   return (
-    <ModuleAccessContext.Provider value={{ modules, loading, hasAccess }}>
+    <ModuleAccessContext.Provider value={{ modules, moduleDetails, loading, hasAccess }}>
       {children}
     </ModuleAccessContext.Provider>
   );

@@ -380,18 +380,21 @@ function PaymentHistoryTable({
   loading,
   labelFor,
   showGateway,
+  isSchool,
 }: {
   payments: Payment[];
   loading: boolean;
   labelFor: (value: string) => string;
   showGateway?: boolean;
+  isSchool: boolean;
 }) {
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   const handleDownloadInvoice = async (paymentId: number) => {
     setDownloadingId(paymentId);
     try {
-      const blob = await api<Blob>(`/api/accounts/me/payments/${paymentId}/invoice/`, {
+      const baseUrl = isSchool ? '/api/accounts/school/payments' : '/api/accounts/me/payments';
+      const blob = await api<Blob>(`${baseUrl}/${paymentId}/invoice/`, {
         responseType: 'blob',
       });
       const url = window.URL.createObjectURL(blob);
@@ -538,8 +541,9 @@ function PaymentHistoryTable({
                     <button
                       onClick={() => handleDownloadInvoice(p.id)}
                       disabled={downloadingId === p.id}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-neutral-50 hover:text-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium shadow-sm hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-red-900/20 disabled:opacity-50"
                       style={{ color: '#8B0000' }}
+                      title="Download Invoice PDF"
                     >
                       <Download size={14} className={downloadingId === p.id ? 'animate-bounce' : ''} />
                       {downloadingId === p.id ? 'Downloading...' : 'PDF'}
@@ -659,6 +663,7 @@ export default function ModuleSubscriptions(props: ModuleSubscriptionsProps) {
             loading={false}
             labelFor={labelFor}
             showGateway={isSchool}
+            isSchool={isSchool}
           />
         </section>
       )}
