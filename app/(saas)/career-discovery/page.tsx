@@ -62,7 +62,7 @@ const instructionItems = [
         <line x1="8" y1="23" x2="16" y2="23" />
       </svg>
     ),
-    text: 'Choose between Text or Voice',
+    text: 'Speak clearly into the mic',
   },
   {
     icon: (
@@ -80,7 +80,7 @@ const instructionItems = [
         <path d="M10 6h4" />
       </svg>
     ),
-    text: 'Speak clearly into the mic',
+    text: 'Wait for the green bar before you speak',
   },
   {
     icon: (
@@ -98,7 +98,7 @@ const instructionItems = [
         <path d="M22 13.5a1.9 1.9 0 0 0-3.4-1.2 1.9 1.9 0 0 0-3.4 1.2c0 2 3.4 3.8 3.4 3.8s3.4-1.8 3.4-3.8z" />
       </svg>
     ),
-    text: 'Wait for the green bar before you speak',
+    text: 'Answer naturally & truthfully',
   },
   {
     icon: (
@@ -121,7 +121,7 @@ const instructionItems = [
         <polyline points="4.5 13.5 5.5 14.5 7 12.5" />
       </svg>
     ),
-    text: 'Answer naturally & truthfully',
+    text: 'Choose one or more options for MCQs',
   },
   {
     icon: (
@@ -141,7 +141,7 @@ const instructionItems = [
         <line x1="8" y1="19" x2="16" y2="19" />
       </svg>
     ),
-    text: 'Choose one or more options for MCQs',
+    text: 'Download your report!',
   },
 ];
 

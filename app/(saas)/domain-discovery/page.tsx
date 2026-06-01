@@ -53,7 +53,7 @@ const instructionItems = [
         <polyline points="12 6 12 12 16 14" />
       </svg>
     ),
-    text: 'Choose between Text or Voice',
+    text: 'Set aside 30 minutes ',
   },
   {
     icon: (
@@ -151,7 +151,7 @@ const instructionItems = [
         <line x1="8" y1="19" x2="16" y2="19" />
       </svg>
     ),
-    text: 'Follow the 20-step guided conversation',
+    text: 'Download your report!',
   },
 ];
 
