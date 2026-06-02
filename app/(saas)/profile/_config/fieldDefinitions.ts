@@ -1373,7 +1373,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'location_autofill',
     label: 'Location (City)',
     placeholder: 'Select city/town',
-    required: true,
+    required: false,
     width: 2,
   },
   {
@@ -2695,7 +2695,7 @@ export const professionalFieldDefs: FieldDefinition[] = [
     type: 'location_autofill',
     label: 'City',
     placeholder: 'Select city/town',
-    required: true,
+    required: false,
   },
   {
     id: 'durationValue',
