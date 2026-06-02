@@ -23,6 +23,12 @@ import type {
   ConversationMessage,
 } from './types';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/app/_components/DropdownMenu';
 
 /** ================== Transcript Helpers ================== */
 function loadTranscript(prefix: string, sessionId: string): ConversationMessage[] {
@@ -100,13 +106,19 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
   // Map voice_persona preference to OpenAI Realtime voice name
   const VOICE_MAP: Record<string, string> = { male: 'cedar', female: 'marin' };
   const [realtimeVoiceName, setRealtimeVoiceName] = useState<string | undefined>(undefined);
+  const [realtimeVoiceAccent, setRealtimeVoiceAccent] = useState<string>('american');
   useEffect(() => {
-    apiClient<{ settings: { voice_persona?: string } }>('/api/accounts/settings/')
+    apiClient<{ settings: { voice_persona?: string; voice_accent?: string } }>('/api/accounts/settings/')
       .then((data) => {
         const persona = data.settings?.voice_persona || 'male';
+        const accent = data.settings?.voice_accent || 'american';
         setRealtimeVoiceName(VOICE_MAP[persona] || 'cedar');
+        setRealtimeVoiceAccent(accent);
       })
-      .catch(() => setRealtimeVoiceName('cedar'));
+      .catch(() => {
+        setRealtimeVoiceName('cedar');
+        setRealtimeVoiceAccent('american');
+      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
@@ -127,6 +139,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     feature: featureId,
     label: featureLabel,
     voice: realtimeVoiceName,
+    accent: realtimeVoiceAccent,
     onError: (error) => {
       addToast(`Voice error: ${error}`, { type: 'error' });
       setConversationMode('chat');
@@ -227,6 +240,35 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
       setConversationMode('chat');
     }, 2000);
   }, [disconnectVoice]);
+
+  // Keep a ref to the latest activateVoiceMode function to avoid stale closures in timeouts
+  const activateVoiceModeRef = useRef(activateVoiceMode);
+  useEffect(() => {
+    activateVoiceModeRef.current = activateVoiceMode;
+  }, [activateVoiceMode]);
+
+  const handleAccentChange = useCallback(async (newAccent: string) => {
+    if (newAccent === realtimeVoiceAccent) return;
+    setRealtimeVoiceAccent(newAccent);
+    try {
+      await apiClient('/api/accounts/settings/', {
+        method: 'PUT',
+        body: { voice_accent: newAccent },
+      });
+      addToast(`Accent updated to ${newAccent === 'indian' ? 'Indian' : newAccent === 'british' ? 'British' : 'American'}!`, { type: 'success' });
+
+      // If active in voice mode, automatically restart to apply the new accent seamlessly!
+      if (conversationMode === 'voice' && (voiceConnected || voiceConnecting)) {
+        addToast('Applying new accent...', { type: 'info' });
+        await disconnectVoice();
+        setTimeout(async () => {
+          await activateVoiceModeRef.current({ resuming: true });
+        }, 1000);
+      }
+    } catch {
+      addToast('Failed to save accent preference.', { type: 'error' });
+    }
+  }, [realtimeVoiceAccent, conversationMode, voiceConnected, voiceConnecting, disconnectVoice, addToast]);
 
   // useAudioTranscription commented out — realtime voice is used instead
   // const {
@@ -574,63 +616,101 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
         <div className="border-b bg-white px-4 py-4 shadow-sm md:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-3">
-                <Heading level={2} className="text-xl font-semibold text-gray-900">
-                  {pageTitle}
-                </Heading>
-                {sessionCreatedAt && (
-                  <SessionTimer
-                    sessionCreatedAt={sessionCreatedAt}
-                    isPaused={isPaused}
-                    totalPausedSeconds={totalPausedSeconds}
-                    pauseLoading={pauseLoading}
-                    sessionEnded={sessionEnded}
-                    onTogglePause={handleTogglePause}
-                    onTimeExpired={() => setIsTimerExpired(true)}
-                    accentColor={theme.timerAccent}
-                  />
-                )}
-                {/* Switch to Text / Voice button */}
-                {!sessionEnded && !isInputBlockedByTimer && (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                {/* Left side: Title and Timer */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <Heading level={2} className="text-xl font-semibold text-gray-900">
+                    {pageTitle}
+                  </Heading>
+                  {sessionCreatedAt && (
+                    <SessionTimer
+                      sessionCreatedAt={sessionCreatedAt}
+                      isPaused={isPaused}
+                      totalPausedSeconds={totalPausedSeconds}
+                      pauseLoading={pauseLoading}
+                      sessionEnded={sessionEnded}
+                      onTogglePause={handleTogglePause}
+                      onTimeExpired={() => setIsTimerExpired(true)}
+                      accentColor={theme.timerAccent}
+                    />
+                  )}
+                </div>
+
+                {/* Right side: Action buttons and Accent Selector */}
+                <div className="flex flex-wrap items-center gap-3 ml-auto">
+                  {/* Switch to Text / Voice button */}
+                  {!sessionEnded && !isInputBlockedByTimer && (
+                    <Button
+                      size="sm"
+                      onClick={handleMicToggle}
+                      disabled={voiceConnecting || voiceDisconnecting || voiceSpeaking || isPaused || isLoading}
+                      className={`group flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 ${
+                        voiceConnected
+                          ? 'border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100'
+                          : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
+                      }`}
+                      title={voiceConnected ? 'Switch to text mode' : 'Switch to voice mode'}
+                    >
+                      {voiceConnected ? (
+                        <>
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          <span>Switch to Text</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                          </svg>
+                          <span>Switch to Voice</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
-                    onClick={handleMicToggle}
-                    disabled={voiceConnecting || voiceDisconnecting || voiceSpeaking || isPaused || isLoading}
-                    className={`group flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 ${
-                      voiceConnected
-                        ? 'border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100'
-                        : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
-                    }`}
-                    title={voiceConnected ? 'Switch to text mode' : 'Switch to voice mode'}
+                    onClick={() => setShowDebugDialog(true)}
+                    className="group flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-purple-100 hover:shadow-sm"
+                    title="View debugging information"
                   >
-                    {voiceConnected ? (
-                      <>
-                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        <span>Switch to Text</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                        </svg>
-                        <span>Switch to Voice</span>
-                      </>
-                    )}
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                    <span>Debug</span>
                   </Button>
-                )}
-                <Button
-                  size="sm"
-                  onClick={() => setShowDebugDialog(true)}
-                  className="group flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-purple-100 hover:shadow-sm"
-                  title="View debugging information"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                  <span>Debug</span>
-                </Button>
+
+                  {/* Switch Accent Dropdown */}
+                  {!sessionEnded && !isInputBlockedByTimer && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          disabled={voiceConnecting || voiceDisconnecting || voiceSpeaking || isLoading}
+                          className="group flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 transition-all hover:border-teal-300 hover:bg-teal-100 hover:shadow-sm"
+                          title="Select counsellor voice accent"
+                        >
+                          <span className="text-sm select-none" aria-hidden>{realtimeVoiceAccent === 'indian' ? '🇮🇳' : realtimeVoiceAccent === 'british' ? '🇬🇧' : '🇺🇸'}</span>
+                          <span>{realtimeVoiceAccent === 'indian' ? 'Indian' : realtimeVoiceAccent === 'british' ? 'British' : 'American'} Accent</span>
+                          <svg className="h-3 w-3 text-teal-600 transition-transform group-data-[state=open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-[150px] bg-white border border-neutral-200 rounded-lg shadow-md p-1 z-50">
+                        <DropdownMenuItem onClick={() => handleAccentChange('american')} className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold hover:bg-neutral-100 rounded-md cursor-pointer text-neutral-700">
+                          <span className="text-sm">🇺🇸</span> American Accent
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAccentChange('british')} className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold hover:bg-neutral-100 rounded-md cursor-pointer text-neutral-700">
+                          <span className="text-sm">🇬🇧</span> British Accent
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAccentChange('indian')} className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold hover:bg-neutral-100 rounded-md cursor-pointer text-neutral-700">
+                          <span className="text-sm">🇮🇳</span> Indian Accent
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
                 Question {questionsCompleted + 1}

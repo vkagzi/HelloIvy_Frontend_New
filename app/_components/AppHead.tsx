@@ -160,9 +160,9 @@ const AppHead: React.FC<AppHeadProps> = ({ session }) => {
               <DropdownMenuItem asChild>
                 <Link href="/change-password">Change Password</Link>
               </DropdownMenuItem>
-              {/* <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild>
                 <Link href="/settings">Settings</Link>
-              </DropdownMenuItem> */}
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/faq">FAQs</Link>
               </DropdownMenuItem>
