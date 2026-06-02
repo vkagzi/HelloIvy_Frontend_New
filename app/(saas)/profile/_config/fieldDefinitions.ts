@@ -894,7 +894,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     type: 'location_autofill',
     label: 'City',
     placeholder: 'Select city/town',
-    required: true,
+    required: false,
     width: 1.25,
     stateKey: 'state',
     countryKey: 'country',
