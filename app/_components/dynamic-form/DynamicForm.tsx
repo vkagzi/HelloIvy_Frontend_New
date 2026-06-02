@@ -1532,10 +1532,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             // Show visible toast for errors
             const firstError = result.error.issues[0];
             const errorPath = firstError.path.join('.');
-            toast({
-              title: 'Form Validation Error',
-              description: `Field "${errorPath}": ${firstError.message}`,
-              variant: 'destructive',
+            addToast(`Field "${errorPath}": ${firstError.message}`, {
+              type: 'error',
             });
 
             console.log('Detailed validation errors:');
@@ -1607,10 +1605,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           console.error('[DynamicForm] react-hook-form errors:', errors);
           const firstErrorKey = Object.keys(errors)[0];
           const firstError = errors[firstErrorKey];
-          toast({
-            title: 'Form Error',
-            description: `Field "${firstErrorKey}": ${firstError?.message || 'Invalid value'}`,
-            variant: 'destructive',
+          addToast(`Field "${firstErrorKey}": ${firstError?.message || 'Invalid value'}`, {
+            type: 'error',
           });
         }
       )}

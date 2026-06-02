@@ -56,12 +56,13 @@ async function handleReturn(
     const verifyUrl = `${getApiBase()}/accounts/payment/return-verify/${orderId}/${paymentType}/`;
     const res = await fetch(verifyUrl, { cache: 'no-store' });
 
+    let responseData: any = null;
     if (res.ok) {
-      const data = await res.json();
-      paymentId = data.payment_id ? String(data.payment_id) : '';
-      status = data.status || 'pending';
-      amount = data.amount != null ? String(data.amount) : '';
-      currency = data.currency || '';
+      responseData = await res.json();
+      paymentId = responseData.payment_id ? String(responseData.payment_id) : '';
+      status = responseData.status || 'pending';
+      amount = responseData.amount != null ? String(responseData.amount) : '';
+      currency = responseData.currency || '';
     } else {
       // If verify failed, try to extract payment_id from orderId format: "{id}_{hex}"
       const parts = orderId.split('_');
@@ -81,8 +82,8 @@ async function handleReturn(
   // If status is failed, redirect directly back to the payment selection page to preserve flow
   if (status === 'failed') {
     const retryUrl = new URL(paymentType === 'school' ? '/school/payment' : '/pay-as-student', baseUrl);
-    if (data && data.modules) retryUrl.searchParams.set('modules', data.modules);
-    if (data && data.billing_state) retryUrl.searchParams.set('state', data.billing_state);
+    if (responseData && responseData.modules) retryUrl.searchParams.set('modules', responseData.modules);
+    if (responseData && responseData.billing_state) retryUrl.searchParams.set('state', responseData.billing_state);
     return NextResponse.redirect(retryUrl);
   }
 
