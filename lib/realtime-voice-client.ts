@@ -34,6 +34,8 @@ export interface RealtimeVoiceClientConfig {
   label?: string;
   /** OpenAI Realtime voice name (e.g. 'cedar', 'marin') */
   voice?: string;
+  /** OpenAI Realtime voice accent (e.g. 'indian', 'british', 'american') */
+  accent?: string;
 
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -135,6 +137,7 @@ export class RealtimeVoiceClient {
           session_id: this.config.sessionId,
         });
         if (this.config.voice) params.set('voice', this.config.voice);
+        if (this.config.accent) params.set('accent', this.config.accent);
         const wsUrl =
           apiBaseUrl
             .replace('https://', 'wss://')
@@ -531,6 +534,7 @@ export class RealtimeVoiceClient {
           session_id: this.config.sessionId,
         });
         if (this.config.voice) params.set('voice', this.config.voice);
+        if (this.config.accent) params.set('accent', this.config.accent);
         const wsUrl =
           apiBaseUrl
             .replace('https://', 'wss://')
