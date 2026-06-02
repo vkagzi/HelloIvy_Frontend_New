@@ -16,6 +16,8 @@ interface UseRealtimeVoiceOptions {
   label?: string;
   /** OpenAI Realtime voice name (e.g. 'cedar', 'marin') */
   voice?: string;
+  /** OpenAI Realtime voice accent (e.g. 'indian', 'british', 'american') */
+  accent?: string;
   onError?: (error: string) => void;
   /** Called when the backend sends updated session progress */
   onSessionProgress?: (progress: SessionProgress) => void;
@@ -27,7 +29,7 @@ export interface RealtimeVoiceMessage {
   timestamp: Date;
 }
 
-export function useRealtimeVoice({ sessionId, feature, label, voice, onError, onSessionProgress }: UseRealtimeVoiceOptions) {
+export function useRealtimeVoice({ sessionId, feature, label, voice, accent, onError, onSessionProgress }: UseRealtimeVoiceOptions) {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -136,6 +138,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
           feature,
           label,
           voice,
+          accent,
           onConnected: () => {
             isConnectingRef.current = false;
             setIsConnected(true);
@@ -259,7 +262,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, onError, on
         clientRef.current = null;
       }
     },
-    [sessionId, feature, label, voice, openMic, teardownMic, updateTranscriptRef],
+    [sessionId, feature, label, voice, accent, openMic, teardownMic, updateTranscriptRef],
   );
 
   const disconnectVoice = useCallback(async (options?: { silent?: boolean }) => {
