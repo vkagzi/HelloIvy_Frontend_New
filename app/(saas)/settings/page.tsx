@@ -10,6 +10,7 @@ import { useToast } from '@/app/_components/Toast';
 import Button from '@/app/_components/Button';
 
 type VoicePersona = 'male' | 'female';
+type VoiceAccent = 'indian' | 'british' | 'american';
 
 type PersonaOption = {
   id: VoicePersona;
@@ -42,6 +43,50 @@ const PERSONAS: PersonaOption[] = [
   },
 ];
 
+type AccentOption = {
+  id: VoiceAccent;
+  label: string;
+  flag: string;
+  description: string;
+  hoverBorder: string;
+  selectedBG: string;
+  selectedBorder: string;
+  tagColor: string;
+};
+
+const ACCENTS: AccentOption[] = [
+  {
+    id: 'indian',
+    label: 'Indian Accent',
+    flag: '🇮🇳',
+    description: 'Warm, highly clear regional cadence and pronunciation.',
+    hoverBorder: 'hover:border-orange-300',
+    selectedBG: 'bg-orange-50/40',
+    selectedBorder: 'border-orange-500',
+    tagColor: 'bg-orange-100 text-orange-700',
+  },
+  {
+    id: 'british',
+    label: 'British Accent',
+    flag: '🇬🇧',
+    description: 'Polished, professional Received Pronunciation.',
+    hoverBorder: 'hover:border-blue-300',
+    selectedBG: 'bg-blue-50/40',
+    selectedBorder: 'border-blue-500',
+    tagColor: 'bg-blue-100 text-blue-700',
+  },
+  {
+    id: 'american',
+    label: 'American Accent',
+    flag: '🇺🇸',
+    description: 'Natural, clear standard American intonation.',
+    hoverBorder: 'hover:border-emerald-300',
+    selectedBG: 'bg-emerald-50/40',
+    selectedBorder: 'border-emerald-500',
+    tagColor: 'bg-emerald-100 text-emerald-700',
+  },
+];
+
 const WAVE_DELAYS = [0, 250, 100, 350, 150];
 
 const VOICE_MAP: Record<VoicePersona, string> = { male: 'cedar', female: 'marin' };
@@ -55,6 +100,8 @@ const VOICE_SAMPLE_URLS: Record<VoicePersona, string> = {
 export default function SettingsPage(): React.ReactElement {
   const [selected, setSelected] = useState<VoicePersona>('male');
   const [saved, setSaved] = useState<VoicePersona>('male');
+  const [selectedAccent, setSelectedAccent] = useState<VoiceAccent>('american');
+  const [savedAccent, setSavedAccent] = useState<VoiceAccent>('american');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [playingPersona, setPlayingPersona] = useState<VoicePersona | null>(null);
@@ -112,11 +159,15 @@ export default function SettingsPage(): React.ReactElement {
   );
 
   useEffect(() => {
-    api<{ settings: { voice_persona?: VoicePersona } }>('/api/accounts/settings/')
+    api<{ settings: { voice_persona?: VoicePersona; voice_accent?: VoiceAccent } }>('/api/accounts/settings/')
       .then((data) => {
         const persona = data.settings?.voice_persona || 'male';
         setSelected(persona);
         setSaved(persona);
+
+        const accent = data.settings?.voice_accent || 'american';
+        setSelectedAccent(accent);
+        setSavedAccent(accent);
       })
       .catch(() => {
         // keep defaults
@@ -129,18 +180,19 @@ export default function SettingsPage(): React.ReactElement {
     try {
       await api('/api/accounts/settings/', {
         method: 'PUT',
-        body: { voice_persona: selected },
+        body: { voice_persona: selected, voice_accent: selectedAccent },
       });
       setSaved(selected);
-      addToast('Voice preference saved successfully!', { type: 'success' });
+      setSavedAccent(selectedAccent);
+      addToast('Voice and accent preferences saved successfully!', { type: 'success' });
     } catch {
-      addToast('Failed to save voice preference. Please try again.', { type: 'error' });
+      addToast('Failed to save voice preferences. Please try again.', { type: 'error' });
     } finally {
       setSaving(false);
     }
-  }, [selected, addToast]);
+  }, [selected, selectedAccent, addToast]);
 
-  const dirty = selected !== saved;
+  const dirty = selected !== saved || selectedAccent !== savedAccent;
 
   return (
     <div className="mx-auto max-w-2xl py-4">
@@ -291,12 +343,101 @@ export default function SettingsPage(): React.ReactElement {
         )}
       </div>
 
+      {/* Select Your Voice Accent card */}
+      <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-3">
+          <svg className="h-6 w-6 text-teal-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h2a2.5 2.5 0 002.5-2.5V10a2 2 0 00-2-2h-1.5a2 2 0 01-2-2V4.5A2.5 2.5 0 0012 2h-.5a2.5 2.5 0 00-2.5 2.5v.14M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <Label size="lg" className="font-bold">
+            Select Your Voice Accent
+          </Label>
+        </div>
+        <Paragraph size="sm" className="mt-1 text-neutral-500">
+          Choose the regional accent for your HelloIvy counsellor when using live voice mode.
+        </Paragraph>
+
+        {loading ? (
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-32 animate-pulse rounded-xl bg-neutral-100"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {ACCENTS.map((acc) => {
+              const isSelected = selectedAccent === acc.id;
+              return (
+                <div
+                  key={acc.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedAccent(acc.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedAccent(acc.id);
+                    }
+                  }}
+                  className={`group relative flex cursor-pointer flex-col justify-between gap-2.5 rounded-xl border-2 p-4 transition-all ${
+                    isSelected
+                      ? `${acc.selectedBorder} ${acc.selectedBG} shadow-md`
+                      : `border-neutral-200 bg-white ${acc.hoverBorder} hover:shadow-sm`
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-3xl filter drop-shadow-sm select-none" aria-hidden>{acc.flag}</span>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold select-none ${acc.tagColor}`}>
+                      {acc.id.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div>
+                    <Label size="sm" className="font-bold text-neutral-900 block group-hover:text-teal-600 transition-colors">
+                      {acc.label}
+                    </Label>
+                    <Paragraph size="xs" className="mt-1 text-neutral-500 leading-normal">
+                      {acc.description}
+                    </Paragraph>
+                  </div>
+
+                  {/* Selection check */}
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-teal-500 text-white shadow-sm">
+                      <svg
+                        className="h-2.5 w-2.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={4.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M4.5 12.75l6 6 9-13.5"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Actions */}
       <div className="mt-6 flex justify-end gap-3">
         <Button
           variant='outline'
           disabled={!dirty}
-          onClick={() => setSelected(saved)}
+          onClick={() => {
+            setSelected(saved);
+            setSelectedAccent(savedAccent);
+          }}
           className="rounded-lg border border-neutral-300 px-5 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Cancel
