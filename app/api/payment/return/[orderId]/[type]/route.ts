@@ -78,15 +78,21 @@ async function handleReturn(
     }
   }
 
-  // Redirect to the frontend status page with all context in query params.
-  // This is OUR redirect (not HDFC's), so query params are preserved.
+  // If status is failed, redirect directly back to the payment selection page to preserve flow
+  if (status === 'failed') {
+    const retryUrl = new URL(paymentType === 'school' ? '/school/payment' : '/pay-as-student', baseUrl);
+    if (data && data.modules) retryUrl.searchParams.set('modules', data.modules);
+    if (data && data.billing_state) retryUrl.searchParams.set('state', data.billing_state);
+    return NextResponse.redirect(retryUrl);
+  }
+
+  // Otherwise redirect to the frontend status page (for completed or pending)
   const redirectUrl = new URL('/payment/status', baseUrl);
   if (paymentId) redirectUrl.searchParams.set('payment_id', paymentId);
   redirectUrl.searchParams.set('status', status);
   redirectUrl.searchParams.set('type', paymentType);
   if (amount) redirectUrl.searchParams.set('amount', amount);
   if (currency) redirectUrl.searchParams.set('currency', currency);
-  // Pass order_id so the guest status page can verify without auth
   if (orderIdForStatus) redirectUrl.searchParams.set('order_id', orderIdForStatus);
 
   return NextResponse.redirect(redirectUrl);

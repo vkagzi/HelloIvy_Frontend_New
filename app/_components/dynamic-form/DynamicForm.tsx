@@ -1520,77 +1520,100 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
   return (
     <form
-      onSubmit={form.handleSubmit(async (values) => {
-        // Filter out empty rows before validation
-        const cleanedValues = filterEmptyRows(values);
-        const result = schema.safeParse(cleanedValues);
-        if (!result.success) {
-          console.log('Form validation errors:', result.error.issues);
-          console.log('Detailed validation errors:');
-          result.error.issues.forEach((err, index) => {
-            console.log(`Error ${index + 1}:`);
-            console.log('  Path:', err.path.join('.'));
-            console.log('  Message:', err.message);
-            console.log('  Code:', err.code);
-            console.log(
-              '  Received value:',
-              err.path.reduce<unknown>(
-                (obj: unknown, key) =>
-                  typeof key === 'string' || typeof key === 'number'
-                    ? (obj as Record<string, unknown>)[key]
-                    : obj,
-                cleanedValues
-              )
-            );
-          });
-          const fieldErrors: Record<string, string> = {};
-          result.error.issues.forEach((err) => {
-            const errorKey = err.path.map((p) => String(p)).join('.');
-            fieldErrors[errorKey] = err.message;
-          });
-          setErrors(fieldErrors);
+      onSubmit={form.handleSubmit(
+        async (values) => {
+          // Filter out empty rows before validation
+          const cleanedValues = filterEmptyRows(values);
+          console.log('[DynamicForm] Cleaned values:', cleanedValues);
+          const result = schema.safeParse(cleanedValues);
+          if (!result.success) {
+            console.log('Form validation errors:', result.error.issues);
+            
+            // Show visible toast for errors
+            const firstError = result.error.issues[0];
+            const errorPath = firstError.path.join('.');
+            toast({
+              title: 'Form Validation Error',
+              description: `Field "${errorPath}": ${firstError.message}`,
+              variant: 'destructive',
+            });
 
-          // Focus and scroll to the first invalid field
-          const firstErrorKey = Object.keys(fieldErrors)[0];
-          if (firstErrorKey) {
-            // Try direct id match first, then fallback to name attribute
-            let el =
-              document.getElementById(firstErrorKey) ??
-              document.querySelector<HTMLElement>(`[name="${firstErrorKey}"]`);
-
-            // Fallback: for array-level errors (e.g. "highSchool.0.subjects"),
-            // try to find any element whose id starts with the error key
-            if (!el) {
-              const escapedKey = CSS.escape(firstErrorKey);
-              el = document.querySelector<HTMLElement>(
-                `[id^="${escapedKey}."]`
+            console.log('Detailed validation errors:');
+            result.error.issues.forEach((err, index) => {
+              console.log(`Error ${index + 1}:`);
+              console.log('  Path:', err.path.join('.'));
+              console.log('  Message:', err.message);
+              console.log('  Code:', err.code);
+              console.log(
+                '  Received value:',
+                err.path.reduce<unknown>(
+                  (obj: unknown, key) =>
+                    typeof key === 'string' || typeof key === 'number'
+                      ? (obj as Record<string, unknown>)[key]
+                      : obj,
+                  cleanedValues
+                )
               );
+            });
+            const fieldErrors: Record<string, string> = {};
+            result.error.issues.forEach((err) => {
+              const errorKey = err.path.map((p) => String(p)).join('.');
+              fieldErrors[errorKey] = err.message;
+            });
+            setErrors(fieldErrors);
+
+            // Focus and scroll to the first invalid field
+            const firstErrorKey = Object.keys(fieldErrors)[0];
+            if (firstErrorKey) {
+              // Try direct id match first, then fallback to name attribute
+              let el =
+                document.getElementById(firstErrorKey) ??
+                document.querySelector<HTMLElement>(`[name="${firstErrorKey}"]`);
+
+              // Fallback: for array-level errors (e.g. "highSchool.0.subjects"),
+              // try to find any element whose id starts with the error key
+              if (!el) {
+                const escapedKey = CSS.escape(firstErrorKey);
+                el = document.querySelector<HTMLElement>(
+                  `[id^="${escapedKey}."]`
+                );
+              }
+
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.focus({ preventScroll: true });
+              }
             }
 
-            if (el) {
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              el.focus({ preventScroll: true });
-            }
+            return;
           }
-
-          return;
-        }
-        setErrors({});
-        await onSubmit(cleanedValues);
-        if (sectionName) {
-          setUnsavedProfileEdits((prev: any) => {
-            const next = { ...prev };
-            delete next[sectionName];
-            return next;
+          setErrors({});
+          await onSubmit(cleanedValues);
+          if (sectionName) {
+            setUnsavedProfileEdits((prev: any) => {
+              const next = { ...prev };
+              delete next[sectionName];
+              return next;
+            });
+          }
+          if (shouldNavigate && onSaveAndNavigate) {
+            onSaveAndNavigate();
+            setShouldNavigate(false);
+          } else if (!shouldNavigate && onSaveOnly) {
+            onSaveOnly();
+          }
+        },
+        (errors) => {
+          console.error('[DynamicForm] react-hook-form errors:', errors);
+          const firstErrorKey = Object.keys(errors)[0];
+          const firstError = errors[firstErrorKey];
+          toast({
+            title: 'Form Error',
+            description: `Field "${firstErrorKey}": ${firstError?.message || 'Invalid value'}`,
+            variant: 'destructive',
           });
         }
-        if (shouldNavigate && onSaveAndNavigate) {
-          onSaveAndNavigate();
-          setShouldNavigate(false);
-        } else if (!shouldNavigate && onSaveOnly) {
-          onSaveOnly();
-        }
-      })}
+      )}
       noValidate
       autoComplete="off"
     >
