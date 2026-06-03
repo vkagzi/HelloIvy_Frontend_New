@@ -51,12 +51,12 @@ async function handleReturn(
   // orderId is the HDFC order reference: "{paymentId}_{randomHex}"
   const orderIdForStatus = orderId;
 
+  let responseData: any = null;
   try {
     // Call Django's unauthenticated return-verify endpoint
     const verifyUrl = `${getApiBase()}/accounts/payment/return-verify/${orderId}/${paymentType}/`;
     const res = await fetch(verifyUrl, { cache: 'no-store' });
 
-    let responseData: any = null;
     if (res.ok) {
       responseData = await res.json();
       paymentId = responseData.payment_id ? String(responseData.payment_id) : '';
