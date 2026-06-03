@@ -185,20 +185,12 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
   const handleRemoveDegree = (key: string, degreeIdx: number): void => {
     if (degrees.length <= minDegrees) return;
     
-    // Clear form values for this degree
-    const degreeFields = section.fields ?? [];
-    degreeFields.forEach((fieldId: string) => {
-      form.setValue(`${sectionType}.${degreeIdx}.${fieldId}` as any, undefined as any);
-    });
-    
-    // Clear year values for this degree
-    const currentYears = degrees.find((d) => d.key === key)?.yearRows ?? [];
-    currentYears.forEach((_, yearIdx) => {
-      (section.repeatables?.fields ?? []).forEach((fieldId: string) => {
-        form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}` as any, undefined as any);
-      });
-      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year` as any, undefined as any);
-    });
+    // Get the current array and remove the item to preserve index integrity in react-hook-form
+    const currentData = form.getValues(sectionType);
+    if (Array.isArray(currentData)) {
+      const nextData = currentData.filter((_, idx) => idx !== degreeIdx);
+      form.setValue(sectionType, nextData, { shouldDirty: true, shouldValidate: true });
+    }
     
     setDegrees((prev) => prev.filter((degree) => degree.key !== key));
   };
@@ -237,16 +229,20 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     );
   };
 
-  // Remove a year row from a specific degree
   const handleRemoveYear = (degreeIdx: number, yearIdx: number): void => {
     const degree = degrees[degreeIdx];
     if (!degree || degree.yearRows.length <= minYears) return;
     
-    // Clear form values for this year
-    (section.repeatables?.fields ?? []).forEach((fieldId: string) => {
-      form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldId}` as any, undefined as any);
-    });
-    form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year` as any, undefined as any);
+    // Update form data first to let index shifting happen correctly
+    const currentSectionData = form.getValues(sectionType);
+    if (Array.isArray(currentSectionData) && currentSectionData[degreeIdx]) {
+      const degreeData = currentSectionData[degreeIdx];
+      const currentYears = degreeData[yearsFieldName];
+      if (Array.isArray(currentYears)) {
+        const nextYears = currentYears.filter((_, idx) => idx !== yearIdx);
+        form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}`, nextYears, { shouldDirty: true, shouldValidate: true });
+      }
+    }
     
     setDegrees((prev) =>
       prev.map((deg, idx) =>

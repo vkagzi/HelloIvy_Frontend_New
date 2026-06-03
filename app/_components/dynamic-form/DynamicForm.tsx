@@ -1518,23 +1518,24 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     return filtered;
   };
 
+  const isNavigatingRef = useRef<boolean>(false);
+
   return (
     <form
-      onSubmit={form.handleSubmit(
-        async (values) => {
+      onSubmit={(e) => {
+        // Intercept submit to set the ref based on the button that triggered it
+        // Note: handleSubmit calls this but we can also use form.handleSubmit directly
+        form.handleSubmit(async (values) => {
+          const shouldNavigate = isNavigatingRef.current;
           // Filter out empty rows before validation
           const cleanedValues = filterEmptyRows(values);
           console.log('[DynamicForm] Cleaned values:', cleanedValues);
+          
           const result = schema.safeParse(cleanedValues);
           if (!result.success) {
-            console.log('Form validation errors:', result.error.issues);
+            console.error('[DynamicForm] Validation Errors:', result.error.format());
+            console.log('Form validation issues:', result.error.issues);
             
-            // Show visible toast for errors
-            const firstError = result.error.issues[0];
-            const errorPath = firstError.path.join('.');
-            addToast(`Field "${errorPath}": ${firstError.message}`, {
-              type: 'error',
-            });
 
             console.log('Detailed validation errors:');
             result.error.issues.forEach((err, index) => {
@@ -1586,30 +1587,27 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             return;
           }
           setErrors({});
-          await onSubmit(cleanedValues);
-          if (sectionName) {
-            setUnsavedProfileEdits((prev: any) => {
-              const next = { ...prev };
-              delete next[sectionName];
-              return next;
-            });
+          try {
+            await onSubmit(cleanedValues);
+
+            if (sectionName) {
+              setUnsavedProfileEdits((prev: any) => {
+                const next = { ...prev };
+                delete next[sectionName];
+                return next;
+              });
+            }
+
+            if (shouldNavigate && onSaveAndNavigate) {
+              onSaveAndNavigate();
+            } else if (!shouldNavigate && onSaveOnly) {
+              onSaveOnly();
+            }
+          } catch (error) {
+            console.error('[DynamicForm] Submission error:', error);
           }
-          if (shouldNavigate && onSaveAndNavigate) {
-            onSaveAndNavigate();
-            setShouldNavigate(false);
-          } else if (!shouldNavigate && onSaveOnly) {
-            onSaveOnly();
-          }
-        },
-        (errors) => {
-          console.error('[DynamicForm] react-hook-form errors:', errors);
-          const firstErrorKey = Object.keys(errors)[0];
-          const firstError = errors[firstErrorKey];
-          addToast(`Field "${firstErrorKey}": ${firstError?.message || 'Invalid value'}`, {
-            type: 'error',
-          });
-        }
-      )}
+        })(e);
+      }}
       noValidate
       autoComplete="off"
     >
@@ -1625,7 +1623,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 size="default"
                 type="submit"
                 className="min-w-[100px]"
-                onClick={() => setShouldNavigate(false)}
+                onClick={() => {
+                  isNavigatingRef.current = false;
+                  setShouldNavigate(false);
+                }}
                 disabled={isSubmitting}
               >
                 Save
@@ -1635,7 +1636,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 size="default"
                 type="submit"
                 className="min-w-[120px]"
-                onClick={() => setShouldNavigate(true)}
+                onClick={() => {
+                  isNavigatingRef.current = true;
+                  setShouldNavigate(true);
+                }}
                 disabled={isSubmitting}
               >
                 {buttonName}
@@ -1647,6 +1651,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               size="default"
               type="submit"
               className="min-w-[120px]"
+              onClick={() => {
+                isNavigatingRef.current = true;
+                setShouldNavigate(true);
+              }}
               disabled={isSubmitting}
             >
               {buttonName}

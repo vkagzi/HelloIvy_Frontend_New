@@ -58,6 +58,22 @@ interface UserComment {
   parent_student_comment_updated_at: string | null;
 }
 
+interface UserLog {
+  type: 'activity' | 'session' | 'payment';
+  timestamp: string;
+  data: any;
+}
+
+interface LogsResponse {
+  user: { id: number; email: string; name: string };
+  timeline: UserLog[];
+  stats: {
+    total_logins: number;
+    total_payments: number;
+    completed_sessions: number;
+  };
+}
+
 interface UserDetail {
   id: number;
   email: string;
@@ -160,7 +176,7 @@ export default function AdminUserDetailPage() {
   const [commentSuccess, setCommentSuccess] = useState<'counselor' | 'parent' | null>(null);
 
   // Main vertical tab state
-  const [activeTab, setActiveTab] = useState<string>('profile');
+  const [activeTab, setActiveTab] = useState<string>('domain');
   // Profile section sub-tab state
   const [activeProfileSection, setActiveProfileSection] = useState<string>('personal');
 
@@ -174,6 +190,25 @@ export default function AdminUserDetailPage() {
   const [emailStudentSending, setEmailStudentSending] = useState(false);
   const [emailStudentSuccess, setEmailStudentSuccess] = useState<string | null>(null);
   const [emailStudentError, setEmailStudentError] = useState<string | null>(null);
+
+  // Logs state
+  const [logsOpen, setLogsOpen] = useState(false);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsData, setLogsData] = useState<LogsResponse | null>(null);
+
+  const fetchLogs = async () => {
+    if (!userId) return;
+    setLogsLoading(true);
+    setLogsOpen(true);
+    try {
+      const data = await api<LogsResponse>(`/api/accounts/admin/users/${userId}/logs/`);
+      setLogsData(data);
+    } catch (err) {
+      console.error('Failed to fetch logs:', err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
 
   const handleSendStudentEmail = async () => {
     if (!userId || !emailStudentBody.trim()) return;
@@ -222,9 +257,9 @@ export default function AdminUserDetailPage() {
   const handleDownloadInvoice = async (paymentId: number) => {
     setDownloadingId(paymentId);
     try {
-        const blob = await api<Blob>(`/api/accounts/me/payments/${paymentId}/invoice/`, {
-          responseType: 'blob',
-        });
+      const blob = await api<Blob>(`/api/accounts/me/payments/${paymentId}/invoice/`, {
+        responseType: 'blob',
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -259,7 +294,7 @@ export default function AdminUserDetailPage() {
     } catch {
       // ignore — endpoint may not exist yet
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const handleSaveComment = async (type: 'counselor' | 'parent') => {
@@ -503,7 +538,6 @@ export default function AdminUserDetailPage() {
           ] : []),
           { label: 'Created', value: formatDate(user.created_at) },
           { label: 'Last Login', value: user.last_login ? formatDateTime(user.last_login) : 'Never' },
-          // { label: 'Terms Accepted', value: user.terms_accepted ? 'Yes' : 'No' },
           { label: 'Last Updated', value: formatDate(user.updated_at) },
         ]}
         actions={
@@ -524,7 +558,14 @@ export default function AdminUserDetailPage() {
               Edit Details
             </Button>
             <Button
-              onClick={() => setDeactivateOpen(true)}
+              onClick={fetchLogs}
+              variant="outline"
+              size="sm"
+            >
+              View logs
+            </Button>
+            <Button
+              onClick={handleToggleActive}
               variant={user.is_active ? 'destructive' : 'default'}
               className={user.is_active ? '' : 'bg-green-600 hover:bg-green-700'}
               size="sm"
@@ -541,23 +582,7 @@ export default function AdminUserDetailPage() {
         <div className="w-56 shrink-0">
           <nav className="flex flex-col rounded-lg border border-gray-200 bg-white">
             {(() => {
-              const profileInner = user.profile_data?.profile as Record<string, unknown> | undefined;
-              const completionPct = profileInner
-                ? calculateProfileCompletion({
-                    personalDetails: profileInner.personalDetails as Record<string, unknown>,
-                    educationalDetails: profileInner.educational as Record<string, unknown>,
-                    professionalDetails: profileInner.professional as Record<string, unknown>,
-                    extraCurricularDetails: profileInner.extraCurricular,
-                    additionalDetails: profileInner.additional as Record<string, unknown>,
-                  })
-                : 0;
-
               const tabs = [
-                {
-                  key: 'profile',
-                  label: 'Profile',
-                  badge: `${completionPct}%`,
-                },
                 {
                   key: 'domain',
                   label: 'Stream & Subject Selection',
@@ -568,44 +593,42 @@ export default function AdminUserDetailPage() {
                   label: 'Career & Degree Selection',
                   badge: `${user.modules.career_discovery.completed_sessions}/${user.modules.career_discovery.total_sessions}`,
                 },
-                  ...(user.school_id === null ? [
-                    {
-                      key: 'modules',
-                      label: 'Module Access',
-                      badge: userModules.length > 0 ? String(userModules.length) : '0',
-                    },
-                    {
-                      key: 'payments',
-                      label: 'Payment History',
-                    }
-                  ] : [{
-                    key: 'assigned',
-                    label: 'Assigned Modules',
-                    badge: String(user.assigned_modules?.length ?? 0),
-                  }]),
+                ...(user.school_id === null ? [
                   {
-                    key: 'comments',
-                    label: 'Counselor Connect',
+                    key: 'modules',
+                    label: 'Module Access',
+                    badge: userModules.length > 0 ? String(userModules.length) : '0',
                   },
-                ];
+                  {
+                    key: 'payments',
+                    label: 'Payment History',
+                  }
+                ] : [{
+                  key: 'assigned',
+                  label: 'Assigned Modules',
+                  badge: String(user.assigned_modules?.length ?? 0),
+                }]),
+                {
+                  key: 'comments',
+                  label: 'Counselor Connect',
+                },
+              ];
 
               return tabs.map((tab) => (
                 <Button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   variant="ghost"
-                  className={`justify-between px-4 py-3 text-left text-sm font-medium transition border-l-2 rounded-none min-w-0 ${
-                    activeTab === tab.key
+                  className={`justify-between px-4 py-3 text-left text-sm font-medium transition border-l-2 rounded-none min-w-0 ${activeTab === tab.key
                       ? 'border-l-indigo-600 bg-indigo-50 text-indigo-700'
                       : 'border-l-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   <span className="truncate">{tab.label}</span>
-                  {'badge' in tab && <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                    activeTab === tab.key
+                  {'badge' in tab && <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${activeTab === tab.key
                       ? 'bg-indigo-100 text-indigo-700'
                       : 'bg-gray-100 text-gray-500'
-                  }`}>
+                    }`}>
                     {tab.badge}
                   </span>}
                 </Button>
@@ -616,61 +639,6 @@ export default function AdminUserDetailPage() {
 
         {/* Tab Content */}
         <div className="min-w-0 flex-1">
-          {/* Profile Tab */}
-          {activeTab === 'profile' && (() => {
-            const profileInner = user.profile_data?.profile as Record<string, unknown> | undefined;
-            if (!profileInner) {
-              return (
-                <div className="rounded-lg border border-gray-200 bg-white px-5 py-10 text-center text-sm text-gray-400">
-                  No profile data available.
-                </div>
-              );
-            }
-
-            const activeSectionConfig = PROFILE_SECTIONS.find(s => s.key === activeProfileSection) ?? PROFILE_SECTIONS[0];
-            let sectionData: ProfileData = (profileInner[activeSectionConfig.contextKey] as ProfileData) ?? {};
-
-            // Use authoritative first/last name from the User model
-            if (activeSectionConfig.key === 'personal') {
-              sectionData = {
-                ...sectionData,
-                firstName: user.first_name ?? '',
-                lastName: user.last_name ?? '',
-              };
-            }
-
-            if (activeSectionConfig.key === 'extra-curricular') {
-              sectionData = {
-                extraCurricular: profileInner.extraCurricular ?? [],
-                educational: profileInner.educational,
-              };
-            }
-
-            return (
-              <div className="rounded-lg border border-gray-200 bg-white">
-                <div className="flex border-b border-gray-200 overflow-x-auto">
-                  {PROFILE_SECTIONS.map((section) => (
-                    <Button
-                      key={section.key}
-                      onClick={() => setActiveProfileSection(section.key)}
-                      variant="ghost"
-                      className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap transition rounded-none border-b-2 ${
-                        activeProfileSection === section.key
-                          ? 'border-b-indigo-600 text-indigo-600'
-                          : 'border-b-transparent text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      {section.label}
-                    </Button>
-                  ))}
-                </div>
-                <div className="px-5 py-4">
-                  <ProfileViewDetails defaultValues={sectionData} section={activeProfileSection} hideNav />
-                </div>
-              </div>
-            );
-          })()}
-
           {/* Stream & Subject Selection Tab */}
           {activeTab === 'domain' && (
             <ModuleCard
@@ -744,9 +712,8 @@ export default function AdminUserDetailPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={`inline-flex rounded-full px-2 text-xs font-semibold ${
-                          sub.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`inline-flex rounded-full px-2 text-xs font-semibold ${sub.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
                           {sub.is_active ? 'Active' : 'Inactive'}
                         </span>
                         <Button
@@ -780,69 +747,70 @@ export default function AdminUserDetailPage() {
             <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
               <h2 className="mb-3 text-base font-semibold text-gray-900">Payment History</h2>
               {paymentsLoading ? (
-                <div className="py-4 text-center text-sm text-gray-500">Loading payments...</div>
-              ) : payments.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-8 text-center">
-                  <p className="text-sm text-gray-500">No payments recorded yet.</p>
+                <p className="text-sm text-gray-500">Loading payments...</p>
+              ) : payments.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs font-semibold uppercase text-gray-500">
+                        <th className="pb-2">Date</th>
+                        <th className="pb-2">Modules</th>
+                        <th className="pb-2">Amount</th>
+                        <th className="pb-2">Status</th>
+                        <th className="pb-2">Invoice</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {payments.map((p) => (
+                        <tr key={p.id}>
+                          <td className="py-2 text-gray-600">{formatDate(p.created_at)}</td>
+                          <td className="py-2">
+                            <div className="flex flex-wrap gap-1">
+                              {p.modules_purchased.map((m, idx) => {
+                                const name = typeof m === 'string' ? m : m.module;
+                                return (
+                                  <Badge key={idx} variant="outline" className="text-[10px]">
+                                    {MODULE_LABELS[name] || name}
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          </td>
+                          <td className="py-2 font-medium text-gray-900">
+                            {p.currency} {p.amount}
+                          </td>
+                          <td className="py-2">
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${p.status === 'success' || p.status === 'captured'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-amber-100 text-amber-700'
+                              }`}>
+                              {p.status}
+                            </span>
+                          </td>
+                          <td className="py-2">
+                            {(p.status === 'success' || p.status === 'captured') && (
+                              <Button
+                                onClick={() => handleDownloadInvoice(p.id)}
+                                variant="ghost"
+                                size="sm"
+                                disabled={downloadingId === p.id}
+                                className="h-8 w-8 p-0 text-indigo-600 hover:bg-indigo-50"
+                              >
+                                {downloadingId === p.id ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+                                ) : (
+                                  <Download className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="border-b border-neutral-200 bg-neutral-50 text-xs font-medium uppercase text-gray-500">
-                        <tr>
-                          <th className="px-4 py-3">Date</th>
-                          <th className="px-4 py-3">Modules</th>
-                          <th className="px-4 py-3">Amount</th>
-                          <th className="px-4 py-3">Status</th>
-                          <th className="px-4 py-3 text-right">Invoice</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-neutral-100">
-                        {payments.map((p) => (
-                          <tr key={p.id} className="hover:bg-neutral-50">
-                            <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                              <div>{new Date(p.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                              <div className="text-xs text-gray-400">{new Date(p.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
-                            </td>
-                            <td className="px-4 py-3 text-gray-700">
-                              {p.modules_purchased.map((entry) => {
-                                if (typeof entry === 'string') return MODULE_LABELS[entry] || entry;
-                                return `${MODULE_LABELS[entry.module] || entry.module} - ${entry.quantity}`;
-                              }).join(', ') || '—'}
-                            </td>
-                            <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">
-                              {p.currency === 'INR' ? '₹' : p.currency}{' '}
-                              {Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize bg-neutral-100 text-gray-600`}
-                              >
-                                {p.status}
-                              </span>
-                            </td>
-                            <td className="whitespace-nowrap px-4 py-3 text-right">
-                              {p.status === 'completed' ? (
-                                <button
-                                  onClick={() => handleDownloadInvoice(p.id)}
-                                  disabled={downloadingId === p.id}
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-neutral-50 hover:text-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 disabled:opacity-50"
-                                  style={{ color: '#8B0000' }}
-                                >
-                                  <Download size={14} className={downloadingId === p.id ? 'animate-bounce' : ''} />
-                                  {downloadingId === p.id ? 'Downloading...' : 'PDF'}
-                                </button>
-                              ) : (
-                                <span className="text-xs text-gray-400">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <p className="text-sm text-gray-400 italic">No payments found</p>
               )}
             </div>
           )}
@@ -908,7 +876,7 @@ export default function AdminUserDetailPage() {
         </div>
       </div>}
 
-      {/* Change Password Modal */}
+      {/* Modals & Dialogs */}
       <UserPasswordChangeModal
         open={pwOpen}
         onOpenChange={setPwOpen}
@@ -919,7 +887,6 @@ export default function AdminUserDetailPage() {
         minPasswordLength={8}
       />
 
-      {/* Edit Details Modal */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-md">
           <DialogTitle>Edit User Details</DialogTitle>
@@ -991,7 +958,6 @@ export default function AdminUserDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Assign Module Modal */}
       <ModuleAssignDialog
         open={addModuleOpen}
         onOpenChange={setAddModuleOpen}
@@ -1001,7 +967,6 @@ export default function AdminUserDetailPage() {
         onSubmit={handleAddModule}
       />
 
-      {/* Edit Module Modal */}
       <Dialog open={editModuleOpen} onOpenChange={setEditModuleOpen}>
         <DialogContent className="max-w-md">
           <DialogTitle>Edit Module</DialogTitle>
@@ -1024,7 +989,6 @@ export default function AdminUserDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Module Confirmation */}
       <Dialog open={deleteModuleId !== null} onOpenChange={(open) => { if (!open) setDeleteModuleId(null); }}>
         <DialogContent className="max-w-sm">
           <DialogTitle>Remove Module</DialogTitle>
@@ -1036,15 +1000,107 @@ export default function AdminUserDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Deactivate / Activate Confirmation Modal */}
       <UserStatusToggleModal
         open={deactivateOpen}
         onOpenChange={setDeactivateOpen}
-        onSubmit={handleToggleActive}
         isActive={user.is_active}
+        onConfirm={handleToggleActive}
         loading={deactivateSaving}
-        userEmail={user.email}
       />
+
+      <Dialog open={logsOpen} onOpenChange={setLogsOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogTitle className="text-xl font-bold border-b pb-4">
+            User Logs & Activity History
+          </DialogTitle>
+
+          {logsLoading ? (
+            <div className="py-20 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4" />
+              <p className="text-gray-500">Fetching comprehensive logs...</p>
+            </div>
+          ) : logsData ? (
+            <div className="space-y-6 pt-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                  <p className="text-[10px] text-indigo-600 font-semibold uppercase mb-1">Logins</p>
+                  <p className="text-xl font-bold text-indigo-900">{logsData.stats.total_logins}</p>
+                </div>
+                <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                  <p className="text-[10px] text-emerald-600 font-semibold uppercase mb-1">Payments</p>
+                  <p className="text-xl font-bold text-emerald-900">{logsData.stats.total_payments}</p>
+                </div>
+                <div className="bg-amber-50 p-3 rounded-xl border border-amber-100">
+                  <p className="text-[10px] text-amber-600 font-semibold uppercase mb-1">Started</p>
+                  <p className="text-xl font-bold text-amber-900">{(logsData.stats as any).sessions_started || 0}</p>
+                </div>
+                <div className="bg-green-50 p-3 rounded-xl border border-green-100">
+                  <p className="text-[10px] text-green-600 font-semibold uppercase mb-1">Completed</p>
+                  <p className="text-xl font-bold text-green-900">{logsData.stats.completed_sessions}</p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
+                  <p className="text-[10px] text-purple-600 font-semibold uppercase mb-1">AI Chat</p>
+                  <p className="text-xl font-bold text-purple-900">{(logsData.stats as any).total_interactions || 0}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900">Activity Timeline (Real-time)</h3>
+                <div className="space-y-3">
+                  {logsData.timeline.map((item, idx) => (
+                    <div key={idx} className="flex gap-4 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition">
+                      <div className="shrink-0 pt-1">
+                        {item.type === 'activity' && (
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.data.event_type === 'login' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                            <span className="text-xs font-bold uppercase">{item.data.event_type[0]}</span>
+                          </div>
+                        )}
+                        {item.type === 'session' && (
+                          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                            <span className="text-xs font-bold uppercase">S</span>
+                          </div>
+                        )}
+                        {item.type === 'payment' && (
+                          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <span className="text-xs font-bold font-serif">₹</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <p className="text-sm font-medium text-gray-900 capitalize">
+                            {item.type === 'activity' ? item.data.event_type.replace('_', ' ') : item.type}
+                          </p>
+                          <span className="text-xs text-gray-500 whitespace-nowrap">
+                            {formatDateTime(item.timestamp)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {item.type === 'activity' ? item.data.description :
+                            item.type === 'session' ? `${item.data.module.replace('_', ' ')}: ${item.data.type}` :
+                              `Payment of ₹${item.data.amount} (${item.data.status})`}
+                        </p>
+                        {item.type === 'activity' && item.data.ip_address && (
+                          <p className="text-[10px] text-gray-400 mt-1">IP: {item.data.ip_address}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {logsData.timeline.length === 0 && (
+                    <p className="text-center py-10 text-gray-400 italic">No activity logs found for this user.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center py-20 text-red-500">Failed to load logs.</p>
+          )}
+
+          <div className="flex justify-end pt-4 border-t mt-6">
+            <Button onClick={() => setLogsOpen(false)} variant="outline">Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
