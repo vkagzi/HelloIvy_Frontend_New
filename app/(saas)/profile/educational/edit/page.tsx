@@ -89,6 +89,31 @@ const EducationalDetailsForm: React.FC = () => {
         }
       }
     }
+
+    // Normalize startYear / endYear to 4-digit year strings in all degree sections
+    const extractYear = (val: unknown): unknown => {
+      if (typeof val !== 'string' || !val) return val;
+      if (/^\d{4}$/.test(val)) return val;
+      const m = val.match(/(\d{4})/);
+      return m ? m[1] : val;
+    };
+
+    const yearSections = ['undergraduate', 'postgraduate', 'tenPlus', 'undergraduate_prereq'];
+    for (const sec of yearSections) {
+      const arr = details[sec];
+      if (Array.isArray(arr)) {
+        details[sec] = arr.map((item: unknown) => {
+          if (!item || typeof item !== 'object') return item;
+          const rec = item as Record<string, unknown>;
+          return {
+            ...rec,
+            startYear: extractYear(rec.startYear),
+            endYear: extractYear(rec.endYear),
+          };
+        });
+      }
+    }
+
     return details;
   }, [contextEducationalDetails, defaultValues]);
 
