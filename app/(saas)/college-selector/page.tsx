@@ -240,12 +240,12 @@ function CollegeSelectorPage() {
         return;
       }
 
-      if (testScores.length === 0) {
-        setError(
-          'Please add your standardized test scores before starting a session.'
-        );
-        return;
-      }
+      // if (testScores.length === 0) {
+      //   setError(
+      //     'Please add your standardized test scores before starting a session.'
+      //   );
+      //   return;
+      // }
 
       const session = await collegeSelectorApi.createSession();
       sessionsCache = { data: null, promise: null, timestamp: 0 };
@@ -591,8 +591,8 @@ function CollegeSelectorPage() {
                     <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                       <p className="text-sm text-yellow-800">
                         You haven&apos;t added any standardized test scores yet.
-                        Test scores are required to start a college selection
-                        session.
+                        You can add them to get more accurate college
+                        recommendations.
                       </p>
                       <Link
                         href="/profile/educational/edit#standardised-test-score"
@@ -627,8 +627,7 @@ function CollegeSelectorPage() {
                 disabled={
                   isLoading ||
                   !hasReadInstructions ||
-                  profileLoading ||
-                  testScores.length === 0
+                  profileLoading
                 }
                 iconRight={
                   <FiIcon name="arrow-small-right" className="h-5 w-5" />
