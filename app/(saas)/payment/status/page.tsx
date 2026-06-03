@@ -114,6 +114,24 @@ export default function PaymentStatusPage() {
   const successRedirect = isGuest ? '/pay-as-student' : (paymentType === 'school' ? '/school/dashboard' : '/subscription');
   const retryUrl = paymentType === 'school' ? '/school/payment' : '/pay-as-student';
 
+  const [countdown, setCountdown] = useState(5);
+
+  useEffect(() => {
+    if (status === 'failed') {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            router.push(retryUrl);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [status, retryUrl, router]);
+
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm text-center">
@@ -138,6 +156,14 @@ export default function PaymentStatusPage() {
             </div>
             <h2 className="text-lg font-bold text-gray-900">Processing Payment</h2>
             <p className="mt-2 text-sm text-gray-500">{message}</p>
+            <div className="mt-6">
+              <button
+                onClick={() => router.push(retryUrl)}
+                className="w-full cursor-pointer rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              >
+                Back to Payment Page
+              </button>
+            </div>
           </>
         )}
 
@@ -197,11 +223,14 @@ export default function PaymentStatusPage() {
             )}
 
             <div className="mt-6 space-y-3">
+              <p className="text-xs text-gray-400 italic">
+                Redirecting you back to the payment page in {countdown} seconds...
+              </p>
               <button
                 onClick={() => router.push(retryUrl)}
                 className="w-full cursor-pointer rounded-lg bg-purple-600 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700"
               >
-                Try Again
+                Try Again Now
               </button>
               <button
                 onClick={() => router.push(successRedirect)}

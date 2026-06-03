@@ -51,17 +51,18 @@ async function handleReturn(
   // orderId is the HDFC order reference: "{paymentId}_{randomHex}"
   const orderIdForStatus = orderId;
 
+  let responseData: any = null;
   try {
     // Call Django's unauthenticated return-verify endpoint
     const verifyUrl = `${getApiBase()}/accounts/payment/return-verify/${orderId}/${paymentType}/`;
     const res = await fetch(verifyUrl, { cache: 'no-store' });
 
     if (res.ok) {
-      const data = await res.json();
-      paymentId = data.payment_id ? String(data.payment_id) : '';
-      status = data.status || 'pending';
-      amount = data.amount != null ? String(data.amount) : '';
-      currency = data.currency || '';
+      responseData = await res.json();
+      paymentId = responseData.payment_id ? String(responseData.payment_id) : '';
+      status = responseData.status || 'pending';
+      amount = responseData.amount != null ? String(responseData.amount) : '';
+      currency = responseData.currency || '';
     } else {
       // If verify failed, try to extract payment_id from orderId format: "{id}_{hex}"
       const parts = orderId.split('_');
@@ -78,15 +79,21 @@ async function handleReturn(
     }
   }
 
-  // Redirect to the frontend status page with all context in query params.
-  // This is OUR redirect (not HDFC's), so query params are preserved.
+  // If status is failed, redirect directly back to the payment selection page to preserve flow
+  if (status === 'failed') {
+    const retryUrl = new URL(paymentType === 'school' ? '/school/payment' : '/pay-as-student', baseUrl);
+    if (responseData && responseData.modules) retryUrl.searchParams.set('modules', responseData.modules);
+    if (responseData && responseData.billing_state) retryUrl.searchParams.set('state', responseData.billing_state);
+    return NextResponse.redirect(retryUrl);
+  }
+
+  // Otherwise redirect to the frontend status page (for completed or pending)
   const redirectUrl = new URL('/payment/status', baseUrl);
   if (paymentId) redirectUrl.searchParams.set('payment_id', paymentId);
   redirectUrl.searchParams.set('status', status);
   redirectUrl.searchParams.set('type', paymentType);
   if (amount) redirectUrl.searchParams.set('amount', amount);
   if (currency) redirectUrl.searchParams.set('currency', currency);
-  // Pass order_id so the guest status page can verify without auth
   if (orderIdForStatus) redirectUrl.searchParams.set('order_id', orderIdForStatus);
 
   return NextResponse.redirect(redirectUrl);

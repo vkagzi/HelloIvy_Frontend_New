@@ -380,18 +380,22 @@ function PaymentHistoryTable({
   loading,
   labelFor,
   showGateway,
+  isSchool,
 }: {
   payments: Payment[];
   loading: boolean;
   labelFor: (value: string) => string;
   showGateway?: boolean;
+  isSchool: boolean;
 }) {
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [retryingId, setRetryingId] = useState<number | null>(null);
 
   const handleDownloadInvoice = async (paymentId: number) => {
     setDownloadingId(paymentId);
     try {
-      const blob = await api<Blob>(`/api/accounts/me/payments/${paymentId}/invoice/`, {
+      const baseUrl = isSchool ? '/api/accounts/school/payments' : '/api/accounts/me/payments';
+      const blob = await api<Blob>(`${baseUrl}/${paymentId}/invoice/`, {
         responseType: 'blob',
       });
       const url = window.URL.createObjectURL(blob);
@@ -407,6 +411,29 @@ function PaymentHistoryTable({
       alert('Failed to download invoice. Please try again.');
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const handleRetryPayment = async (paymentId: number) => {
+    setRetryingId(paymentId);
+    try {
+      const baseUrl = isSchool ? `/api/accounts/school/payments` : `/api/accounts/me/payments`;
+      const data = await api<{ payment_url: string }>(`${baseUrl}/${paymentId}/retry/`, {
+        method: 'POST',
+      });
+
+      if (data.payment_url) {
+        window.location.href = data.payment_url;
+      } else {
+        alert('Failed to get payment URL. Gateway response: ' + JSON.stringify(data));
+      }
+    } catch (err: any) {
+      console.error('Failed to retry payment:', err);
+      const status = err.cause?.status;
+      const body = err.cause?.body;
+      alert(`Failed to resume payment session (Status: ${status}). ${body?.error || err.message}`);
+    } finally {
+      setRetryingId(paymentId); // We don't clear it because we are redirecting
     }
   };
 
@@ -442,6 +469,9 @@ function PaymentHistoryTable({
           <tbody className="divide-y divide-neutral-100">
             {payments.map((p) => {
               const currencySymbol = p.currency === 'INR' ? '₹' : p.currency;
+              const isPending = p.status === 'pending';
+              const isRetrying = retryingId === p.id;
+
               return (
                 <tr key={p.id} className="hover:bg-neutral-50">
                   {/* ID */}
@@ -509,12 +539,30 @@ function PaymentHistoryTable({
 
                   {/* Status */}
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_COLORS[p.status] ?? 'bg-gray-100 text-gray-600'
-                        }`}
-                    >
-                      {p.status}
-                    </span>
+                    {isPending ? (
+                      <button
+                        onClick={() => handleRetryPayment(p.id)}
+                        disabled={isRetrying}
+                        title="Resume Payment"
+                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize transition-all hover:opacity-80 active:scale-95 ${STATUS_COLORS.pending} cursor-pointer shadow-sm`}
+                      >
+                        {isRetrying ? (
+                          <span className="flex items-center gap-1">
+                            <span className="h-2 w-2 animate-ping rounded-full bg-yellow-400" />
+                            Redirecting...
+                          </span>
+                        ) : (
+                          'Pending'
+                        )}
+                      </button>
+                    ) : (
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_COLORS[p.status] ?? 'bg-gray-100 text-gray-600'
+                          }`}
+                      >
+                        {p.status}
+                      </span>
+                    )}
                   </td>
 
                   {/* Gateway */}
@@ -538,8 +586,9 @@ function PaymentHistoryTable({
                     <button
                       onClick={() => handleDownloadInvoice(p.id)}
                       disabled={downloadingId === p.id}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-neutral-50 hover:text-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium shadow-sm hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-red-900/20 disabled:opacity-50"
                       style={{ color: '#8B0000' }}
+                      title="Download Invoice PDF"
                     >
                       <Download size={14} className={downloadingId === p.id ? 'animate-bounce' : ''} />
                       {downloadingId === p.id ? 'Downloading...' : 'PDF'}
@@ -659,6 +708,7 @@ export default function ModuleSubscriptions(props: ModuleSubscriptionsProps) {
             loading={false}
             labelFor={labelFor}
             showGateway={isSchool}
+            isSchool={isSchool}
           />
         </section>
       )}
