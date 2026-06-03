@@ -41,16 +41,49 @@ const ProfessionalFormDetails: React.FC = () => {
   const onSubmit: SubmitHandler<Record<string, unknown>> = async (_data) => {
     // Parse formatted city strings to extract city, state, country
     const parsedData = parseFormLocationData(_data);
+    
+    // Normalize dates to YYYY-MM-DD for the backend/Zod validation
+    if (Array.isArray(parsedData.experiences)) {
+      parsedData.experiences = (parsedData.experiences as any[]).map((exp) => {
+        const normalize = (d: any) => {
+          if (!d) return '';
+          // If already YYYY-MM-DD, return as is
+          if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+          // If DD/MM/YYYY, convert to YYYY-MM-DD
+          const match = String(d).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+          if (match) return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
+          // Fallback to JS Date parsing
+          const date = new Date(d);
+          if (!isNaN(date.getTime())) {
+            return date.toISOString().split('T')[0];
+          }
+          return d;
+        };
+        return {
+          ...exp,
+          startDate: normalize(exp.startDate),
+          endDate: normalize(exp.endDate),
+        };
+      });
+    }
+
     console.log('Professional form data being submitted:', parsedData);
     try {
       setIsSubmitting(true);
       // Fetch latest profile data to ensure we have the most recent data
       const latestData = await getProfileData();
-      const existingProfile =
-        ((latestData?.profile as Record<string, unknown>)?.profile as Record<
-          string,
-          unknown
-        >) || {};
+      
+      // Robust extraction: backend returns {"profile": {"profile": {...}}} or {"profile": {...}}
+      // depending on whether it was already unwrapped or not.
+      let existingProfile: Record<string, any> = {};
+      const firstLevel = latestData?.profile as any;
+      if (firstLevel) {
+        if (firstLevel.profile && typeof firstLevel.profile === 'object') {
+          existingProfile = firstLevel.profile;
+        } else {
+          existingProfile = firstLevel;
+        }
+      }
 
       const educational = existingProfile.educational ?? {};
       const extraCurricular = existingProfile.extraCurricular ?? {};
