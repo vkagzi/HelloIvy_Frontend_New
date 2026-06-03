@@ -620,14 +620,14 @@ export default function AdminUserDetailPage() {
                   onClick={() => setActiveTab(tab.key)}
                   variant="ghost"
                   className={`justify-between px-4 py-3 text-left text-sm font-medium transition border-l-2 rounded-none min-w-0 ${activeTab === tab.key
-                      ? 'border-l-indigo-600 bg-indigo-50 text-indigo-700'
-                      : 'border-l-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'border-l-indigo-600 bg-indigo-50 text-indigo-700'
+                    : 'border-l-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                 >
                   <span className="truncate">{tab.label}</span>
                   {'badge' in tab && <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${activeTab === tab.key
-                      ? 'bg-indigo-100 text-indigo-700'
-                      : 'bg-gray-100 text-gray-500'
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'bg-gray-100 text-gray-500'
                     }`}>
                     {tab.badge}
                   </span>}
@@ -781,8 +781,8 @@ export default function AdminUserDetailPage() {
                           </td>
                           <td className="py-2">
                             <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${p.status === 'success' || p.status === 'captured'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-amber-100 text-amber-700'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-amber-100 text-amber-700'
                               }`}>
                               {p.status}
                             </span>
@@ -1003,8 +1003,8 @@ export default function AdminUserDetailPage() {
       <UserStatusToggleModal
         open={deactivateOpen}
         onOpenChange={setDeactivateOpen}
-        isActive={user.is_active}
-        onConfirm={handleToggleActive}
+        isActive={user?.is_active ?? true}
+        onSubmit={handleToggleActive}
         loading={deactivateSaving}
       />
 
