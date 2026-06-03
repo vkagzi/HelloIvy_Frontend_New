@@ -107,17 +107,21 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
   const VOICE_MAP: Record<string, string> = { male: 'cedar', female: 'marin' };
   const [realtimeVoiceName, setRealtimeVoiceName] = useState<string | undefined>(undefined);
   const [realtimeVoiceAccent, setRealtimeVoiceAccent] = useState<string>('american');
+  const [realtimeVoiceLanguage, setRealtimeVoiceLanguage] = useState<string>('en');
   useEffect(() => {
-    apiClient<{ settings: { voice_persona?: string; voice_accent?: string } }>('/api/accounts/settings/')
+    apiClient<{ settings: { voice_persona?: string; voice_accent?: string; voice_language?: string } }>('/api/accounts/settings/')
       .then((data) => {
         const persona = data.settings?.voice_persona || 'male';
         const accent = data.settings?.voice_accent || 'american';
+        const language = data.settings?.voice_language || 'en';
         setRealtimeVoiceName(VOICE_MAP[persona] || 'cedar');
         setRealtimeVoiceAccent(accent);
+        setRealtimeVoiceLanguage(language);
       })
       .catch(() => {
         setRealtimeVoiceName('cedar');
         setRealtimeVoiceAccent('american');
+        setRealtimeVoiceLanguage('en');
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -140,6 +144,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     label: featureLabel,
     voice: realtimeVoiceName,
     accent: realtimeVoiceAccent,
+    language: realtimeVoiceLanguage,
     onError: (error) => {
       addToast(`Voice error: ${error}`, { type: 'error' });
       setConversationMode('chat');
@@ -258,7 +263,8 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
         method: 'PUT',
         body: { voice_accent: newAccent },
       });
-      addToast(`Accent updated to ${newAccent === 'indian' ? 'Indian' : newAccent === 'british' ? 'British' : 'American'}!`, { type: 'success' });
+      const displayName = newAccent === 'indian' ? 'Indian Accent' : newAccent === 'british' ? 'British Accent' : 'American Accent';
+      addToast(`Accent updated to ${displayName}!`, { type: 'success' });
 
       // If active in voice mode, automatically restart to apply the new accent seamlessly!
       if (conversationMode === 'voice' && (voiceConnected || voiceConnecting)) {
@@ -272,6 +278,29 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
       addToast('Failed to save accent preference.', { type: 'error' });
     }
   }, [realtimeVoiceAccent, conversationMode, voiceConnected, voiceConnecting, disconnectVoice, addToast]);
+
+  const handleLanguageChange = useCallback(async (newLanguage: string) => {
+    if (newLanguage === realtimeVoiceLanguage) return;
+    setRealtimeVoiceLanguage(newLanguage);
+    try {
+      await apiClient('/api/accounts/settings/', {
+        method: 'PUT',
+        body: { voice_language: newLanguage },
+      });
+      addToast(`Language switched to ${newLanguage === 'hi' ? 'Hindi' : 'English'}!`, { type: 'success' });
+
+      // If active in voice mode, automatically restart to apply the new language seamlessly!
+      if (conversationMode === 'voice' && (voiceConnected || voiceConnecting)) {
+        addToast('Applying language change...', { type: 'info' });
+        await disconnectVoice({ silent: true });
+        setTimeout(async () => {
+          await activateVoiceModeRef.current({ resuming: true, silent: true });
+        }, 1000);
+      }
+    } catch {
+      addToast('Failed to save language preference.', { type: 'error' });
+    }
+  }, [realtimeVoiceLanguage, conversationMode, voiceConnected, voiceConnecting, disconnectVoice, addToast]);
 
   // useAudioTranscription commented out — realtime voice is used instead
   // const {
@@ -954,13 +983,33 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
 
               {/* Footer row: status hint + End button */}
               <div className="mt-2 flex items-center justify-between">
-                <p className="text-xs text-gray-400">
-                  {voiceConnected ? (
-                    <span className="text-emerald-500">Realtime voice active — click mic to stop.</span>
-                  ) : (
-                    <>Press <span className="font-semibold text-gray-600">Enter</span> to send, <span className="font-semibold text-gray-600">Shift+Enter</span> for new line.</>
+                <div className="flex items-center gap-4">
+                  <p className="text-xs text-gray-400">
+                    {voiceConnected ? (
+                      <span className="text-emerald-500">Realtime voice active — click mic to stop.</span>
+                    ) : (
+                      <>Press <span className="font-semibold text-gray-600">Enter</span> to send, <span className="font-semibold text-gray-600">Shift+Enter</span> for new line.</>
+                    )}
+                  </p>
+                  
+                  {/* Language Switcher */}
+                  {!sessionEnded && (
+                    <div className="flex items-center gap-1 bg-neutral-100 rounded-lg p-0.5 border border-neutral-200">
+                      <button
+                        onClick={() => handleLanguageChange('en')}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${realtimeVoiceLanguage === 'en' ? 'bg-white text-neutral-800 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'}`}
+                      >
+                        English
+                      </button>
+                      <button
+                        onClick={() => handleLanguageChange('hi')}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${realtimeVoiceLanguage === 'hi' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 hover:text-indigo-600'}`}
+                      >
+                        Hindi
+                      </button>
+                    </div>
                   )}
-                </p>
+                </div>
                 {canEnd && (
                   <button
                     onClick={handleEnd}

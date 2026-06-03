@@ -36,6 +36,8 @@ export interface RealtimeVoiceClientConfig {
   voice?: string;
   /** OpenAI Realtime voice accent (e.g. 'indian', 'british', 'american') */
   accent?: string;
+  /** Conversation language setting (e.g. 'en', 'hi') */
+  language?: string;
 
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -138,6 +140,7 @@ export class RealtimeVoiceClient {
         });
         if (this.config.voice) params.set('voice', this.config.voice);
         if (this.config.accent) params.set('accent', this.config.accent);
+        if (this.config.language) params.set('language', this.config.language);
         const wsUrl =
           apiBaseUrl
             .replace('https://', 'wss://')
@@ -299,6 +302,11 @@ export class RealtimeVoiceClient {
     this._skipTranscriptCount += 1;
     this.config.onHighlightLastBot?.(true);
 
+    const isHindi = this.config.accent === 'hindi';
+    const textPrompt = isHindi
+      ? `[System: The user has switched from text chat to voice mode in Hindi. Your last message was: "${lastBotMessage}". You MUST now speak in Hindi, but write your text transcript in English. Please briefly acknowledge the switch to voice mode in Hindi and continue the conversation naturally in Hindi. Do NOT repeat the full message — just smoothly pick up where you left off. Be concise and conversational. Remember to output your text transcript in English only.]`
+      : `[System: The user has switched from text chat to voice mode. Your last message was: "${lastBotMessage}". Please briefly acknowledge the switch to voice mode and continue the conversation naturally. Do NOT repeat the full message — just smoothly pick up where you left off. Be concise and conversational. IMPORTANT: Maintain exactly the same voice style, tone, pacing, and energy level you have been using throughout this conversation. Do not change your speaking style.]`;
+
     this.ws.send(
       JSON.stringify({
         type: 'conversation.item.create',
@@ -308,7 +316,7 @@ export class RealtimeVoiceClient {
           content: [
             {
               type: 'input_text',
-              text: `[System: The user has switched from text chat to voice mode. Your last message was: "${lastBotMessage}". Please briefly acknowledge the switch to voice mode and continue the conversation naturally. Do NOT repeat the full message — just smoothly pick up where you left off. Be concise and conversational. IMPORTANT: Maintain exactly the same voice style, tone, pacing, and energy level you have been using throughout this conversation. Do not change your speaking style.]`,
+              text: textPrompt,
             },
           ],
         },
@@ -328,6 +336,11 @@ export class RealtimeVoiceClient {
     this._skipTranscriptCount += 1;
     this.config.onHighlightLastBot?.(true);
 
+    const isHindi = this.config.accent === 'hindi';
+    const textPrompt = isHindi
+      ? `[System: The session is resuming in Hindi. Your last message was: "${lastBotMessage}". You MUST now speak in Hindi, but write your text transcript in English. Briefly welcome the student back in Hindi and continue the conversation naturally in Hindi from where you left off. Do NOT repeat your last message — just smoothly pick up. Be concise and conversational. Remember to output your text transcript in English only.]`
+      : `[System: The student paused the session and has now resumed. Your last message was: "${lastBotMessage}". Briefly welcome them back and continue the conversation naturally from where you left off. Do NOT repeat your last message — just smoothly pick up. Be concise and conversational. IMPORTANT: Maintain exactly the same voice style, tone, pacing, and energy level you were using before the pause. Your voice should sound like the conversation never stopped.]`;
+
     this.ws.send(
       JSON.stringify({
         type: 'conversation.item.create',
@@ -337,7 +350,7 @@ export class RealtimeVoiceClient {
           content: [
             {
               type: 'input_text',
-              text: `[System: The student paused the session and has now resumed. Your last message was: "${lastBotMessage}". Briefly welcome them back and continue the conversation naturally from where you left off. Do NOT repeat your last message — just smoothly pick up. Be concise and conversational. IMPORTANT: Maintain exactly the same voice style, tone, pacing, and energy level you were using before the pause. Your voice should sound like the conversation never stopped.]`,
+              text: textPrompt,
             },
           ],
         },
@@ -359,6 +372,11 @@ export class RealtimeVoiceClient {
     this._skipTranscriptCount += 1;
     this.config.onHighlightLastBot?.(true);
 
+    const isHindi = this.config.accent === 'hindi';
+    const textPrompt = isHindi
+      ? `[System: A new voice session has started in Hindi. Please speak the following intro message to the student in Hindi (translate it to natural, warm Hindi) verbatim. Do not add anything else, do not paraphrase, and do not follow up with a question yet. Just speak the intro naturally in Hindi. Output your text transcript in English only:\n\n${introMessage}]`
+      : `[System: A new voice session has started. Please speak the following intro message to the student exactly as written, word for word. Do not add anything else, do not paraphrase, and do not follow up with a question yet. Just speak the intro naturally. Use a warm, friendly, and conversational tone — this sets the voice style for the entire session:\n\n${introMessage}]`;
+
     this.ws.send(
       JSON.stringify({
         type: 'conversation.item.create',
@@ -368,7 +386,7 @@ export class RealtimeVoiceClient {
           content: [
             {
               type: 'input_text',
-              text: `[System: A new voice session has started. Please speak the following intro message to the student exactly as written, word for word. Do not add anything else, do not paraphrase, and do not follow up with a question yet. Just speak the intro naturally. Use a warm, friendly, and conversational tone — this sets the voice style for the entire session:\n\n${introMessage}]`,
+              text: textPrompt,
             },
           ],
         },
@@ -535,6 +553,7 @@ export class RealtimeVoiceClient {
         });
         if (this.config.voice) params.set('voice', this.config.voice);
         if (this.config.accent) params.set('accent', this.config.accent);
+        if (this.config.language) params.set('language', this.config.language);
         const wsUrl =
           apiBaseUrl
             .replace('https://', 'wss://')
