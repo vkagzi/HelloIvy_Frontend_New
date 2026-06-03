@@ -196,19 +196,22 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     }
   }, [sessionEnded, voiceConnected, voiceConnecting, voiceSpeaking, disconnectVoice]);
 
-  const activateVoiceMode = useCallback(async (options?: { resuming?: boolean }) => {
+  const activateVoiceMode = useCallback(async (options?: { resuming?: boolean; silent?: boolean }) => {
     const resuming = options?.resuming ?? false;
+    const silent = options?.silent ?? false;
     setIsVoiceEnded(false);
     voiceSessionRef.current += 1;
-    // Insert a medium-switch indicator
-    const switchMsg: ConversationMessage = {
-      id: `switch-to-voice-${Date.now()}`,
-      type: 'system',
-      content: 'Switched to voice mode',
-      timestamp: new Date().toISOString(),
-      medium: 'voice',
-    };
-    setMessages((prev) => [...prev, switchMsg]);
+    if (!silent) {
+      // Insert a medium-switch indicator
+      const switchMsg: ConversationMessage = {
+        id: `switch-to-voice-${Date.now()}`,
+        type: 'system',
+        content: 'Switched to voice mode',
+        timestamp: new Date().toISOString(),
+        medium: 'voice',
+      };
+      setMessages((prev) => [...prev, switchMsg]);
+    }
     const chatHistory = messages
       .filter((m) => m.type !== 'system')
       .map((m) => ({
@@ -260,9 +263,9 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
       // If active in voice mode, automatically restart to apply the new accent seamlessly!
       if (conversationMode === 'voice' && (voiceConnected || voiceConnecting)) {
         addToast('Applying new accent...', { type: 'info' });
-        await disconnectVoice();
+        await disconnectVoice({ silent: true });
         setTimeout(async () => {
-          await activateVoiceModeRef.current({ resuming: true });
+          await activateVoiceModeRef.current({ resuming: true, silent: true });
         }, 1000);
       }
     } catch {
@@ -686,8 +689,8 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                       <DropdownMenuTrigger asChild>
                         <Button
                           size="sm"
-                          disabled={voiceConnecting || voiceDisconnecting || voiceSpeaking || isLoading}
-                          className="group flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 transition-all hover:border-teal-300 hover:bg-teal-100 hover:shadow-sm"
+                          disabled={conversationMode !== 'voice' || voiceConnecting || voiceDisconnecting || voiceSpeaking || isLoading}
+                          className="group flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 transition-all hover:border-teal-300 hover:bg-teal-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                           title="Select counsellor voice accent"
                         >
                           <span className="text-sm select-none" aria-hidden>{realtimeVoiceAccent === 'indian' ? '🇮🇳' : realtimeVoiceAccent === 'british' ? '🇬🇧' : '🇺🇸'}</span>
