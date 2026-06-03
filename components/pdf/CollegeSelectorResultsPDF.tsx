@@ -98,7 +98,7 @@ const CollegeSelectorResultsPDF: React.FC<CollegeSelectorResultsPDFProps> = ({ r
   return (
     <Document>
       {/* ===== Summary page ===== */}
-      <Page size="A4" style={s.page} wrap>
+      <Page size="A4" style={s.page} wrap={false}>
         <Image src={LOGO_APP_BASE64} style={{ width: 120, height: 25, marginBottom: 12 }} />
         <View style={s.summaryHeader}>
           <Text style={s.summaryTitle}>College Selection Results</Text>
@@ -382,7 +382,7 @@ const CollegeSelectorResultsPDF: React.FC<CollegeSelectorResultsPDFProps> = ({ r
         }
 
         return (
-          <Page key={index} size="A4" style={s.page} wrap>
+          <Page key={index} size="A4" style={s.page} wrap={false}>
             <Image src={LOGO_APP_BASE64} style={{ width: 80, height: 16, marginBottom: 8 }} />
             <View style={s.card}>
               <View wrap={false} style={[s.cardHeader, { backgroundColor: emerald }]}>
