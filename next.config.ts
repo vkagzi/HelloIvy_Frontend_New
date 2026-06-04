@@ -47,6 +47,50 @@ const nextConfig: NextConfig = {
         source: '/api/essay-brainstorm/:path*',
         destination: `${API_BASE_URL}/essay-brainstorm/:path*`,
       },
+      {
+        source: '/api/locations/:path*',
+        destination: `${API_BASE_URL}/locations/:path*`,
+      },
+      {
+        source: '/api/career-discovery/:path*',
+        destination: `${API_BASE_URL}/career-discovery/:path*`,
+      },
+      {
+        source: '/api/domain-discovery/:path*',
+        destination: `${API_BASE_URL}/domain-discovery/:path*`,
+      },
+      {
+        source: '/api/college-selector/:path*',
+        destination: `${API_BASE_URL}/college-selector/:path*`,
+      },
+      {
+        source: '/api/tts/:path*',
+        destination: `${API_BASE_URL}/tts/:path*`,
+      },
+      {
+        source: '/api/schools/:path*',
+        destination: `${API_BASE_URL}/schools/:path*`,
+      },
+      {
+        source: '/api/notifications/:path*',
+        destination: `${API_BASE_URL}/notifications/:path*`,
+      },
+      {
+        source: '/api/deadlines/:path*',
+        destination: `${API_BASE_URL}/deadlines/:path*`,
+      },
+      {
+        source: '/api/documents/:path*',
+        destination: `${API_BASE_URL}/documents/:path*`,
+      },
+      {
+        source: '/api/payments/:path*',
+        destination: `${API_BASE_URL}/payments/:path*`,
+      },
+      {
+        source: '/api/pricing/:path*',
+        destination: `${API_BASE_URL}/pricing/:path*`,
+      },
       // Add other Django API routes here as needed
       // Any /api/* routes not listed above will be handled by Next.js
     ];
