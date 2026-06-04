@@ -205,23 +205,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
         });
       }
 
-      if (career.related_subjects?.length > 0) {
-        sections.push({
-          weight: 1 + Math.ceil(career.related_subjects.length / 4),
-          el: (
-            <View wrap={false} key="subjects">
-              <Text style={s.sectionTitle}>Related Subjects</Text>
-              <View style={s.chipRow}>
-                {career.related_subjects.map((subj, i) => (
-                  <View key={i} style={[s.chip, { backgroundColor: lightBlue }]}>
-                    <Text style={[s.chipText, { color: blue }]}>{subj}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ),
-        });
-      }
+
 
       if (career.degrees?.length > 0) {
         sections.push({
