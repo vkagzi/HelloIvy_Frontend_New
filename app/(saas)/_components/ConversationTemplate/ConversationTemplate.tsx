@@ -156,6 +156,96 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     },
   });
 
+  // ─── Initialize session ──────────────────────────────────────
+  const initializeSession = useCallback(async (options?: { skipModal?: boolean }): Promise<void> => {
+    if (!sessionId) {
+      router.push(baseRoute);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      try {
+        const historyResponse = await api.getMessages(sessionId);
+        if (historyResponse.messages.length > 0) {
+          let sessionInfo = null;
+          try {
+            sessionInfo = await api.getSession(sessionId);
+            if (sessionInfo?.created_at) {
+              setSessionCreatedAt(sessionInfo.created_at);
+            }
+            if (sessionInfo?.metadata) {
+              const meta = sessionInfo.metadata;
+              if (meta.is_paused) setIsPaused(true);
+              // Calculate effective paused seconds including any ongoing pause
+              let effectivePaused = typeof meta.total_paused_seconds === 'number'
+                ? meta.total_paused_seconds
+                : 0;
+              if (meta.is_paused && Array.isArray(meta.pause_events)) {
+                const lastEvent = meta.pause_events[meta.pause_events.length - 1] as
+                  | { paused_at?: string; resumed_at?: string | null }
+                  | undefined;
+                if (lastEvent?.paused_at && !lastEvent.resumed_at) {
+                  const pausedAt = new Date(lastEvent.paused_at).getTime();
+                  const ongoingSeconds = Math.floor((Date.now() - pausedAt) / 1000);
+                  effectivePaused += ongoingSeconds;
+                }
+              }
+              setTotalPausedSeconds(effectivePaused);
+            }
+          } catch (e) {
+            const error = e as { message?: string };
+            if (error.message?.includes('No active')) {
+              setSessionEnded(true);
+              setProgressPercentage(100);
+            }
+          }
+
+          if (!sessionInfo?.created_at) {
+            const firstMessageTimestamp = historyResponse.messages[0]?.timestamp;
+            if (firstMessageTimestamp) {
+              setSessionCreatedAt(firstMessageTimestamp);
+            }
+          }
+
+          const parsed = callbacks.parseHistory(historyResponse, sessionInfo);
+          setMessages(parsed.messages);
+          setQuestionsCompleted(parsed.questionsCompleted);
+          setProgressPercentage(parsed.progressPercentage);
+          if (parsed.sessionEnded) {
+            setSessionEnded(true);
+          } else if (!options?.skipModal) {
+            setShowModeModal(true);
+          }
+          saveTranscript(transcriptKeyPrefix, sessionId, parsed.messages);
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        addToast('Session not found. Please start a new session.', {
+          type: 'error',
+        });
+        router.push(baseRoute);
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to initialize session:', error);
+      addToast('Failed to load conversation. Please try again.', {
+        type: 'error',
+      });
+      router.push(baseRoute);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sessionId, router, baseRoute, api, callbacks, transcriptKeyPrefix, addToast]);
+
+  useEffect(() => {
+    if (sessionId) {
+      initializeSession();
+    }
+  }, [sessionId, initializeSession]);
+
   // Sync voice transcript to main messages list.
   // Uses full reconciliation: the transcript array is the single source of
   // truth for voice messages.  A per-session prefix ensures that messages
@@ -281,6 +371,11 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
 
   const handleLanguageChange = useCallback(async (newLanguage: string) => {
     if (newLanguage === realtimeVoiceLanguage) return;
+    const isLanguageFixed = messages.some((m) => m.type === 'user') || voiceConnected || voiceConnecting;
+    if (isLanguageFixed) {
+      addToast('Language cannot be changed once the conversation has started.', { type: 'warning' });
+      return;
+    }
     setRealtimeVoiceLanguage(newLanguage);
     try {
       await apiClient('/api/accounts/settings/', {
@@ -288,6 +383,9 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
         body: { voice_language: newLanguage },
       });
       addToast(`Language switched to ${newLanguage === 'hi' ? 'Hindi' : 'English'}!`, { type: 'success' });
+
+      // Re-initialize session to pull the updated first message from DB
+      await initializeSession({ skipModal: true });
 
       // If active in voice mode, automatically restart to apply the new language seamlessly!
       if (conversationMode === 'voice' && (voiceConnected || voiceConnecting)) {
@@ -300,7 +398,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     } catch {
       addToast('Failed to save language preference.', { type: 'error' });
     }
-  }, [realtimeVoiceLanguage, conversationMode, voiceConnected, voiceConnecting, disconnectVoice, addToast]);
+  }, [realtimeVoiceLanguage, conversationMode, voiceConnected, voiceConnecting, disconnectVoice, addToast, messages, initializeSession]);
 
   // useAudioTranscription commented out — realtime voice is used instead
   // const {
@@ -347,96 +445,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     questionsCompleted,
   });
 
-  // ─── Initialize session ──────────────────────────────────────
-  useEffect(() => {
-    if (sessionId) {
-      initializeSession();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
 
-  async function initializeSession(): Promise<void> {
-    if (!sessionId) {
-      router.push(baseRoute);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      try {
-        const historyResponse = await api.getMessages(sessionId);
-        if (historyResponse.messages.length > 0) {
-          let sessionInfo = null;
-          try {
-            sessionInfo = await api.getSession(sessionId);
-            if (sessionInfo?.created_at) {
-              setSessionCreatedAt(sessionInfo.created_at);
-            }
-            if (sessionInfo?.metadata) {
-              const meta = sessionInfo.metadata;
-              if (meta.is_paused) setIsPaused(true);
-              // Calculate effective paused seconds including any ongoing pause
-              let effectivePaused = typeof meta.total_paused_seconds === 'number'
-                ? meta.total_paused_seconds
-                : 0;
-              if (meta.is_paused && Array.isArray(meta.pause_events)) {
-                const lastEvent = meta.pause_events[meta.pause_events.length - 1] as
-                  | { paused_at?: string; resumed_at?: string | null }
-                  | undefined;
-                if (lastEvent?.paused_at && !lastEvent.resumed_at) {
-                  const pausedAt = new Date(lastEvent.paused_at).getTime();
-                  const ongoingSeconds = Math.floor((Date.now() - pausedAt) / 1000);
-                  effectivePaused += ongoingSeconds;
-                }
-              }
-              setTotalPausedSeconds(effectivePaused);
-            }
-          } catch (e) {
-            const error = e as { message?: string };
-            if (error.message?.includes('No active')) {
-              setSessionEnded(true);
-              setProgressPercentage(100);
-            }
-          }
-
-          if (!sessionInfo?.created_at) {
-            const firstMessageTimestamp = historyResponse.messages[0]?.timestamp;
-            if (firstMessageTimestamp) {
-              setSessionCreatedAt(firstMessageTimestamp);
-            }
-          }
-
-          const parsed = callbacks.parseHistory(historyResponse, sessionInfo);
-          setMessages(parsed.messages);
-          setQuestionsCompleted(parsed.questionsCompleted);
-          setProgressPercentage(parsed.progressPercentage);
-          if (parsed.sessionEnded) {
-            setSessionEnded(true);
-          } else {
-            setShowModeModal(true);
-          }
-          saveTranscript(transcriptKeyPrefix, sessionId, parsed.messages);
-          setIsLoading(false);
-          return;
-        }
-      } catch {
-        addToast('Session not found. Please start a new session.', {
-          type: 'error',
-        });
-        router.push(baseRoute);
-        return;
-      }
-    } catch (error) {
-      console.error('Failed to initialize session:', error);
-      addToast('Failed to load conversation. Please try again.', {
-        type: 'error',
-      });
-      router.push(baseRoute);
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   // Persist transcript on change
   useEffect(() => {
@@ -993,22 +1002,29 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                   </p>
                   
                   {/* Language Switcher */}
-                  {!sessionEnded && (
-                    <div className="flex items-center gap-1 bg-neutral-100 rounded-lg p-0.5 border border-neutral-200">
-                      <button
-                        onClick={() => handleLanguageChange('en')}
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${realtimeVoiceLanguage === 'en' ? 'bg-white text-neutral-800 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'}`}
-                      >
-                        English
-                      </button>
-                      <button
-                        onClick={() => handleLanguageChange('hi')}
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${realtimeVoiceLanguage === 'hi' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 hover:text-indigo-600'}`}
-                      >
-                        Hindi
-                      </button>
-                    </div>
-                  )}
+                  {!sessionEnded && (() => {
+                    const isLanguageFixed = messages.some((m) => m.type === 'user') || voiceConnected || voiceConnecting;
+                    return (
+                      <div className="flex items-center gap-1 bg-neutral-100 rounded-lg p-0.5 border border-neutral-200">
+                        <button
+                          onClick={() => handleLanguageChange('en')}
+                          disabled={isLanguageFixed}
+                          className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${realtimeVoiceLanguage === 'en' ? 'bg-white text-neutral-800 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'}`}
+                          title={isLanguageFixed ? "Language is locked once conversation starts" : "Switch to English"}
+                        >
+                          English
+                        </button>
+                        <button
+                          onClick={() => handleLanguageChange('hi')}
+                          disabled={isLanguageFixed}
+                          className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${realtimeVoiceLanguage === 'hi' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 hover:text-indigo-600'}`}
+                          title={isLanguageFixed ? "Language is locked once conversation starts" : "Switch to Hindi"}
+                        >
+                          Hindi
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {canEnd && (
                   <button
@@ -1028,6 +1044,8 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
       <CommunicationModeModal
         open={showModeModal && !sessionEnded && !isInputBlockedByTimer}
         isPaused={isPaused}
+        selectedLanguage={realtimeVoiceLanguage}
+        onLanguageChange={handleLanguageChange}
         onSelectText={async () => {
           // If paused, resume the session when user picks text
           if (isPaused && sessionId) {
