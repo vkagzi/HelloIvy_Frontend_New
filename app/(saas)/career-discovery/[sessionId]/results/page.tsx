@@ -361,12 +361,11 @@ const CareerResultsPage: React.FC = () => {
                   <Button
                     onClick={downloadResultsFile}
                     disabled={isDownloadingResults}
-                    variant="secondary"
-                    className="bg-white/20 text-white hover:bg-white/30"
+                    className="bg-white text-[#7f12f3] hover:bg-white/90 font-semibold shadow-xs border-none"
                   >
                     {isDownloadingResults ? (
                       <>
-                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-[#7f12f3]/30 border-t-[#7f12f3]"></div>
                         Downloading...
                       </>
                     ) : (

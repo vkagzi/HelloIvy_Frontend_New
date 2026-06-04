@@ -240,6 +240,13 @@ function CollegeSelectorPage() {
         return;
       }
 
+      // if (testScores.length === 0) {
+      //   setError(
+      //     'Please add your standardized test scores before starting a session.'
+      //   );
+      //   return;
+      // }
+
       const session = await collegeSelectorApi.createSession();
       sessionsCache = { data: null, promise: null, timestamp: 0 };
       router.push(`/college-selector/${session.session_id}/preferences`);
