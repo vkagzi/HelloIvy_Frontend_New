@@ -20,8 +20,30 @@ export function reconstructFormLocationData(
   const result = { ...data };
 
   // Helper to process a single object
+  // Extract just the 4-digit year from a date string (e.g. "2023-01-01" → "2023")
+  const normalizeYearField = (value: unknown): string | unknown => {
+    if (typeof value !== 'string' || !value) return value;
+    // Already a 4-digit year
+    if (/^\d{4}$/.test(value)) return value;
+    // ISO date: YYYY-MM-DD
+    const isoMatch = value.match(/^(\d{4})-\d{2}-\d{2}/);
+    if (isoMatch) return isoMatch[1];
+    // Fallback: extract first 4-digit sequence
+    const anyYear = value.match(/\d{4}/);
+    if (anyYear) return anyYear[0];
+    return value;
+  };
+
   const processObject = (obj: Record<string, unknown>): Record<string, unknown> => {
     const processed = { ...obj };
+
+    // Normalize year-only fields
+    if (processed.startYear !== undefined) {
+      processed.startYear = normalizeYearField(processed.startYear);
+    }
+    if (processed.endYear !== undefined) {
+      processed.endYear = normalizeYearField(processed.endYear);
+    }
 
     // If this object has separate city, state, country fields, combine them
     if (processed.city && (processed.state || processed.country)) {

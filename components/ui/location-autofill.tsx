@@ -98,7 +98,7 @@ export function LocationAutofill({
 
       debounceTimerRef.current = setTimeout(() => {
         searchCities(query);
-      }, 300);
+      }, 150);
     },
     [searchCities]
   );
@@ -195,9 +195,8 @@ export function LocationAutofill({
           <button
             id={id}
             type="button"
-            className={`flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-left text-sm shadow-sm transition-colors hover:border-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50 ${
-              error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
-            } ${isOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : ''}`}
+            className={`flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-left text-sm shadow-sm transition-colors hover:border-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50 ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
+              } ${isOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : ''}`}
           >
             <span className={`flex-1 truncate ${!value && 'text-neutral-400'}`}>
               {value || placeholder}
@@ -270,9 +269,8 @@ export function LocationAutofill({
                     key={`${option}-${index}`}
                     type="button"
                     onClick={() => handleSelectOption(option)}
-                    className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-neutral-100 ${
-                      value === option ? 'bg-neutral-50' : ''
-                    }`}
+                    className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-neutral-100 ${value === option ? 'bg-neutral-50' : ''
+                      }`}
                   >
                     <span className="flex-1">{formatLocationDisplay(option)}</span>
                   </button>

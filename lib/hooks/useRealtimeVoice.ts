@@ -117,6 +117,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, onE
     // but some browsers require a connected graph to keep processing alive.
     worklet.connect(ctx.destination);
     setIsRecording(true);
+    console.log('[Voice] Microphone opened and worklet connected');
   }, []);
 
   // ─── public API ───────────────────────────────────────────
@@ -284,9 +285,12 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, onE
         }
       }
       // Now safe to tear down the connection and audio pipeline
-      clientRef.current.disconnect();
+      const client = clientRef.current;
+      if (client) {
+        client.disconnect();
+        console.log('[Voice] Client disconnected successfully');
+      }
       clientRef.current = null;
-      console.log('[Voice] Client disconnected and cleared');
     } else {
       console.log('[Voice] No client to disconnect — already cleaned up');
     }
