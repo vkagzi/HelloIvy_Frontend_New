@@ -462,6 +462,64 @@ const CareerResultsPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Feasibility + Skill Gaps Strip */}
+                  {(career.feasibility || (career.skill_gaps && career.skill_gaps.length > 0)) && (
+                    <div className="border-b border-gray-100 bg-gray-50 px-6 py-4 flex flex-col sm:flex-row gap-4">
+
+                      {/* Feasibility Metric */}
+                      {career.feasibility && (
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                              Feasibility
+                            </span>
+                            <span
+                              className={`inline-flex items-center rounded-full px-3 py-0.5 text-xs font-bold ${
+                                career.feasibility.level === 'High'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : career.feasibility.level === 'Medium'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}
+                            >
+                              {career.feasibility.level === 'High' && '🟢 '}
+                              {career.feasibility.level === 'Medium' && '🟡 '}
+                              {career.feasibility.level === 'Low' && '🔴 '}
+                              {career.feasibility.level}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            {career.feasibility.reason}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Skill Gaps */}
+                      {career.skill_gaps && career.skill_gaps.length > 0 && (
+                        <div className="flex-1 min-w-0 sm:border-l sm:border-gray-200 sm:pl-4">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <svg className="h-3.5 w-3.5 text-[#7f12f3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                              Top Skill Gaps
+                            </span>
+                          </div>
+                          <ol className="space-y-1">
+                            {career.skill_gaps.slice(0, 5).map((gap, gapIdx) => (
+                              <li key={gapIdx} className="flex items-start gap-1.5">
+                                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#e9d5ff] text-[9px] font-bold text-[#7f12f3]">
+                                  {gapIdx + 1}
+                                </span>
+                                <span className="text-xs text-gray-700">{gap}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Body */}
                   <div className="p-6">
                     <div className="md:columns-2 gap-8 [&>div]:mb-6 [&>div]:break-inside-avoid">
