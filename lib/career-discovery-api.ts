@@ -58,6 +58,11 @@ export interface Degree {
   decision_filter: DegreeDecisionFilter;
 }
 
+export interface FeasibilityRating {
+  level: 'High' | 'Medium' | 'Low';
+  reason: string;
+}
+
 export interface CareerRecommendation {
   id?: number;
   career_title: string;
@@ -72,6 +77,8 @@ export interface CareerRecommendation {
   day_in_life: string;
   pros_and_cons: { pros: string[]; cons: string[] };
   work_life_balance: string;
+  feasibility?: FeasibilityRating;
+  skill_gaps?: string[];
   rank?: number;
 }
 
