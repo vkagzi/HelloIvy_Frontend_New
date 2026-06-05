@@ -77,6 +77,7 @@ export interface ConversationApi {
   getSession: (sessionId: string) => Promise<SessionInfo>;
   getMessages: (sessionId: string) => Promise<HistoryResponse>;
   sendMessage: (sessionId: string, content: string) => Promise<SendResponse>;
+  streamMessage: (sessionId: string, content: string) => Promise<ReadableStream<Uint8Array>>;
   togglePause: (sessionId: string) => Promise<PauseResponse>;
 }
 

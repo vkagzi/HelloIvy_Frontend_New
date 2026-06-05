@@ -18,6 +18,7 @@ import {
   type MessageHistoryResponse,
   type SendMessageResponse,
 } from '@/lib/domain-discovery-api';
+import { streamApi } from '@/lib/api-client';
 import { DomainDebugDialog } from '@/components/DomainDebugDialog';
 
 // ─── API Adapter ────────────────────────────────────────────────
@@ -53,6 +54,11 @@ const domainApi: ConversationConfig['api'] = {
     const r: SendMessageResponse = await domainDiscoveryApi.sendMessage(sessionId, content);
     return r as unknown as SendResponse;
   },
+  streamMessage: (sessionId, content) =>
+    streamApi(`/api/domain-discovery/${sessionId}/messages/stream/`, {
+      method: 'POST',
+      body: { content },
+    }),
   togglePause: (sessionId) => domainDiscoveryApi.togglePause(sessionId),
 };
 

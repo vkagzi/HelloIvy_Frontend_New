@@ -188,5 +188,56 @@ export const clearAuthCache = (): void => {
   pendingSessionRequest = null;
 };
 
+export const streamApi = async (
+  url: string,
+  options: ApiOptions = {}
+): Promise<ReadableStream<Uint8Array>> => {
+  let token = options.tokenOverride;
+
+  if (!token && typeof window !== 'undefined') {
+    token = (await getAuthToken()) || undefined;
+  }
+
+  const headers: Record<string, string> = {
+    ...(options.headers || {}),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+
+  // Build query params if GET and body exists
+  let finalUrl = fullUrl;
+  if (options.method === 'GET' && options.body) {
+    const params = new URLSearchParams();
+    Object.entries(options.body).forEach(([key, value]) => {
+      params.append(key, String(value));
+    });
+    const connector = finalUrl.includes('?') ? '&' : '?';
+    finalUrl += `${connector}${params.toString()}`;
+  }
+
+  const res = await fetch(finalUrl, {
+    method: options.method || 'GET',
+    headers,
+    body: options.method !== 'GET' && options.body ? JSON.stringify(options.body) : undefined,
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Streaming request failed: ${res.status}`);
+  }
+
+  if (!res.body) {
+    throw new Error('Response body is null');
+  }
+
+  return res.body;
+};
+
 export default api;
 export { getToken, setToken, removeToken, getAuthToken };
