@@ -215,8 +215,6 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
           setProgressPercentage(parsed.progressPercentage);
           if (parsed.sessionEnded) {
             setSessionEnded(true);
-          } else if (!options?.skipModal) {
-            setShowModeModal(true);
           }
           saveTranscript(transcriptKeyPrefix, sessionId, parsed.messages);
           setIsLoading(false);
@@ -1040,42 +1038,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
         </div>
       </div>
 
-      {/* Communication Mode Selection Modal */}
-      <CommunicationModeModal
-        open={showModeModal && !sessionEnded && !isInputBlockedByTimer}
-        isPaused={isPaused}
-        selectedLanguage={realtimeVoiceLanguage}
-        onLanguageChange={handleLanguageChange}
-        onSelectText={async () => {
-          // If paused, resume the session when user picks text
-          if (isPaused && sessionId) {
-            try {
-              const resp = await api.togglePause(sessionId);
-              setIsPaused(resp.is_paused);
-              setTotalPausedSeconds(resp.total_paused_seconds);
-            } catch {
-              addToast('Failed to resume session.', { type: 'error' });
-            }
-          }
-          setShowModeModal(false);
-        }}
-        onSelectVoice={async () => {
-          // If paused, resume the session when user picks voice
-          if (isPaused && sessionId) {
-            try {
-              const resp = await api.togglePause(sessionId);
-              setIsPaused(resp.is_paused);
-              setTotalPausedSeconds(resp.total_paused_seconds);
-            } catch {
-              addToast('Failed to resume session.', { type: 'error' });
-              return;
-            }
-          }
-          setShowModeModal(false);
-          // small delay so the modal closes first
-          setTimeout(() => activateVoiceMode({ resuming: isPaused }), 300);
-        }}
-      />
+      {/* Communication Mode Selection Modal removed - language and voice mode are managed directly via header & dashboard */}
 
       {/* Exit Confirmation Dialog (optional) */}
       {showExitDialog &&

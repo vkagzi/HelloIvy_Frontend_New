@@ -11,6 +11,7 @@ import { useSession } from 'next-auth/react';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
 import { FiIcon } from '@/app/_components/Icons';
+import { useToast } from '@/app/_components/Toast';
 
 type VoicePersona = 'male' | 'female';
 
@@ -37,6 +38,8 @@ export default function Dashboard(): React.ReactElement {
   const schoolName = session?.user?.school_name;
 
   const [currentPersona, setCurrentPersona] = useState<VoicePersona>('male');
+  const [currentLanguage, setCurrentLanguage] = useState<string>('en');
+  const { addToast } = useToast();
   const { modules: allModules } = useModuleChoices();
   const { moduleDetails, loading: modulesLoading } = useModuleAccess();
 
@@ -66,15 +69,33 @@ export default function Dashboard(): React.ReactElement {
   }, [allModules, moduleDetails, session]);
 
   useEffect(() => {
-    api<{ settings: { voice_persona?: string } }>('/api/accounts/settings/')
+    api<{ settings: { voice_persona?: string; voice_language?: string } }>('/api/accounts/settings/')
       .then((data) => {
         const persona = data.settings?.voice_persona;
         if (persona && persona in PERSONA_META) {
           setCurrentPersona(persona as VoicePersona);
         }
+        const language = data.settings?.voice_language;
+        if (language) {
+          setCurrentLanguage(language);
+        }
       })
       .catch(() => {});
   }, []);
+
+  const handleLanguageChange = async (newLanguage: string) => {
+    if (newLanguage === currentLanguage) return;
+    try {
+      await api('/api/accounts/settings/', {
+        method: 'PUT',
+        body: { voice_language: newLanguage },
+      });
+      setCurrentLanguage(newLanguage);
+      addToast(`Language updated to ${newLanguage === 'hi' ? 'Hindi' : 'English'} successfully!`, { type: 'success' });
+    } catch {
+      addToast('Failed to update language. Please try again.', { type: 'error' });
+    }
+  };
 
   const profileExists = profileData !== null;
   const loading = profileLoading || modulesLoading;
@@ -220,6 +241,53 @@ export default function Dashboard(): React.ReactElement {
           >
             Change Voice
           </Link>
+        </div>
+      </div>
+
+      {/* Select Agent Language quick-link */}
+      <div className="mx-auto mt-4 max-w-3xl rounded-xl border border-neutral-200 bg-white px-6 py-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-teal-400 to-cyan-600 text-white shadow ring-2 ring-white"
+            >
+              <FiIcon name="globe" className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <Label size="md" className="font-semibold text-neutral-900">
+                Select Your Voice Agent Language
+              </Label>
+              <br />
+              <Label size="sm" className="text-neutral-500">
+                Currently set to{' '}
+                <span className="font-medium text-neutral-700">
+                  {currentLanguage === 'hi' ? 'Hindi' : 'English'}
+                </span>
+              </Label>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleLanguageChange('en')}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                currentLanguage === 'en'
+                  ? 'bg-teal-600 text-white shadow-sm font-semibold'
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900'
+              }`}
+            >
+              English
+            </button>
+            <button
+              onClick={() => handleLanguageChange('hi')}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                currentLanguage === 'hi'
+                  ? 'bg-teal-600 text-white shadow-sm font-semibold'
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900'
+              }`}
+            >
+              Hindi
+            </button>
+          </div>
         </div>
       </div>
 
