@@ -18,6 +18,7 @@ import {
   type MessageHistoryResponse,
   type SendMessageResponse,
 } from '@/lib/career-discovery-api';
+import { streamApi } from '@/lib/api-client';
 import { CareerDebugDialog } from '@/components/CareerDebugDialog';
 
 // ─── API Adapter ────────────────────────────────────────────────
@@ -50,6 +51,11 @@ const careerApi: ConversationConfig['api'] = {
     const r: SendMessageResponse = await careerDiscoveryApi.sendMessage(sessionId, content);
     return r as unknown as SendResponse;
   },
+  streamMessage: (sessionId, content) =>
+    streamApi(`/api/career-discovery/${sessionId}/messages/stream/`, {
+      method: 'POST',
+      body: { content },
+    }),
   togglePause: (sessionId) => careerDiscoveryApi.togglePause(sessionId),
 };
 

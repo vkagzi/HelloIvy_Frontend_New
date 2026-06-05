@@ -530,17 +530,70 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     setIsLoading(true);
 
     try {
-      const response = await api.sendMessage(sessionId, userMessage);
-      const parsed = callbacks.parseSendResponse(response);
-      setProgressPercentage(parsed.progressPercentage);
-      setQuestionsCompleted(parsed.questionsCompleted);
-      if (parsed.sessionEnded) setSessionEnded(true);
-      setMessages((prev) => [...prev, parsed.botMessage]);
+      const stream = await api.streamMessage(sessionId, userMessage);
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      let botContent = '';
+      const botMessageId = `bot-${Date.now()}`;
+
+      // Insert an empty bot message first
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: botMessageId,
+          type: 'bot',
+          content: '',
+          timestamp: new Date().toISOString(),
+          medium: 'text',
+        },
+      ]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            if (!dataStr) continue;
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.delta) {
+                botContent += data.delta;
+                // Update the last message content
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === botMessageId ? { ...m, content: botContent } : m
+                  )
+                );
+              }
+              if (data.is_complete || data.questions_completed !== undefined) {
+                if (data.progress_percentage !== undefined) setProgressPercentage(data.progress_percentage);
+                if (data.questions_completed !== undefined) setQuestionsCompleted(data.questions_completed);
+                if (data.is_complete !== undefined) setSessionEnded(data.is_complete);
+                
+                // If there's extra data (like choices/question_type), update the message
+                if (data.extra) {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === botMessageId ? { ...m, extra: data.extra } : m
+                    )
+                  );
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing SSE chunk:', e, dataStr);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
       addToast('Could not get a response. Please try again.', { type: 'error' });
-      setMessages((prev) => prev.slice(0, -1));
-      setInput(userMessage);
+      // We don't remove the user message, but maybe remove the partial bot message if it failed early
     } finally {
       setIsLoading(false);
     }
@@ -569,16 +622,67 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
     setIsLoading(true);
 
     try {
-      const response = await api.sendMessage(sessionId, choice);
-      const parsed = callbacks.parseSendResponse(response);
-      setProgressPercentage(parsed.progressPercentage);
-      setQuestionsCompleted(parsed.questionsCompleted);
-      if (parsed.sessionEnded) setSessionEnded(true);
-      setMessages((prev) => [...prev, parsed.botMessage]);
+      const stream = await api.streamMessage(sessionId, choice);
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      let botContent = '';
+      const botMessageId = `bot-${Date.now()}`;
+
+      // Insert an empty bot message first
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: botMessageId,
+          type: 'bot',
+          content: '',
+          timestamp: new Date().toISOString(),
+          medium: 'text',
+        },
+      ]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            if (!dataStr) continue;
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.delta) {
+                botContent += data.delta;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === botMessageId ? { ...m, content: botContent } : m
+                  )
+                );
+              }
+              if (data.is_complete || data.questions_completed !== undefined) {
+                if (data.progress_percentage !== undefined) setProgressPercentage(data.progress_percentage);
+                if (data.questions_completed !== undefined) setQuestionsCompleted(data.questions_completed);
+                if (data.is_complete !== undefined) setSessionEnded(data.is_complete);
+                
+                if (data.extra) {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === botMessageId ? { ...m, extra: data.extra } : m
+                    )
+                  );
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing SSE chunk:', e, dataStr);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
       addToast('Could not get a response. Please try again.', { type: 'error' });
-      setMessages((prev) => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
     }

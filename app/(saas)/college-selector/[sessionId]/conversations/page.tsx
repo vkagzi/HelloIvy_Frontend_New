@@ -17,6 +17,7 @@ import {
   type MessageHistoryResponse,
   type SendMessageResponse,
 } from '@/lib/college-selector-api';
+import { streamApi } from '@/lib/api-client';
 import { CollegeDebugDialog } from '@/components/CollegeDebugDialog';
 
 // ─── API Adapter ────────────────────────────────────────────────
@@ -52,6 +53,11 @@ const collegeSelectorApiAdapter: ConversationConfig['api'] = {
     const r: SendMessageResponse = await collegeSelectorApi.sendMessage(sessionId, content);
     return r as unknown as SendResponse;
   },
+  streamMessage: (sessionId, content) =>
+    streamApi(`/api/college-selector/${sessionId}/messages/stream/`, {
+      method: 'POST',
+      body: { content },
+    }),
   togglePause: (sessionId) => collegeSelectorApi.togglePause(sessionId),
 };
 
