@@ -943,12 +943,12 @@ export default function LandingPageContent(): React.ReactElement {
             >
               Book a Demo
             </Link>
-            <Link
+            {/* <Link
               href={`${AUTH_URL}/signup`}
               className="bg-brand-indigo inline-flex min-h-11 items-center justify-center rounded-full border-none px-6 py-3 text-center text-[15px] font-semibold text-white no-underline transition-all duration-200 outline-none hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(76,74,246,0.3)] active:translate-y-0"
             >
               Login / Register
-            </Link>
+            </Link> */}
           </div>
         </div>
 
@@ -998,13 +998,13 @@ export default function LandingPageContent(): React.ReactElement {
                   >
                     Book a Demo
                   </Link>
-                  <Link
+                  {/* <Link
                     href={`${AUTH_URL}/signup`}
                     className="bg-brand-teal text-brand-navy inline-flex min-h-11 items-center justify-center rounded-full border-none px-6 py-3 text-center font-semibold no-underline transition-all duration-200 outline-none hover:-translate-y-0.5"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     Login/Register
-                  </Link>
+                  </Link> */}
                 </div>
               </nav>
             </div>
