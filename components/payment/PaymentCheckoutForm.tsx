@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import api from '@/lib/api-client';
 import { Input } from '@/components/ui/input';
@@ -84,9 +84,15 @@ export default function PaymentCheckoutForm({
   const modulesParam = searchParams?.get('modules') ?? '';
   const stateParam = searchParams?.get('state') ?? '';
   const couponCode = searchParams?.get('coupon_code') ?? '';
+  const pathname = usePathname();
+  const currencyParam = (searchParams?.get('currency') || (pathname?.includes('-usd') ? 'USD' : 'INR')).toUpperCase();
+  const isUSD = currencyParam === 'USD';
   const discountAmount = parseFloat(searchParams?.get('discount') ?? '0');
   const taxAmount = parseFloat(searchParams?.get('tax') ?? '0');
   const grandTotal = parseFloat(searchParams?.get('total') ?? '0');
+
+  const getCurrencySymbol = () => isUSD ? '$' : '₹';
+  const formatAmt = (num: number) => num.toLocaleString(isUSD ? 'en-US' : 'en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const maxQty = config.mode === 'school' ? 200 : 10;
   const lineItems = parseLineItems(modulesParam, maxQty, getPrice);
@@ -202,6 +208,7 @@ export default function PaymentCheckoutForm({
           modules,
           billing_state: stateParam || undefined,
           coupon_code: couponCode || undefined,
+          currency: currencyParam,
           ...contactDetails,
         };
 
@@ -214,6 +221,7 @@ export default function PaymentCheckoutForm({
           module_quantities: moduleQuantities,
           billing_state: stateParam || undefined,
           coupon_code: couponCode || undefined,
+          currency: currencyParam,
           ...contactDetails
         };
         result = await api<CheckoutSession>(config.createEndpoint, { method: 'POST', body });
@@ -412,7 +420,7 @@ export default function PaymentCheckoutForm({
                 Redirecting to payment…
               </span>
             ) : (
-              `Pay ₹${formatCurrency(displayTotal)}`
+              `Pay ${getCurrencySymbol()}${formatAmt(displayTotal)}`
             )}
           </button>
         </div>
@@ -429,7 +437,7 @@ export default function PaymentCheckoutForm({
                   <span className="font-medium text-gray-800">{item.label}</span>
                   {item.quantity > 1 && <span className="ml-1 text-gray-400">× {item.quantity}</span>}
                 </div>
-                <span className="font-medium text-gray-900">₹{formatCurrency(item.lineTotal)}</span>
+                <span className="font-medium text-gray-900">{getCurrencySymbol()}{formatAmt(item.lineTotal)}</span>
               </div>
             ))}
           </div>
@@ -438,14 +446,14 @@ export default function PaymentCheckoutForm({
             {/* Subtotal */}
             <div className="flex items-center justify-between text-sm text-gray-600">
               <span>Subtotal</span>
-              <span>₹{formatCurrency(subtotal)}</span>
+              <span>{getCurrencySymbol()}{formatAmt(subtotal)}</span>
             </div>
-            
+
             {/* Discount */}
             {discountAmount > 0 && (
               <div className="flex items-center justify-between text-sm text-green-600 font-medium">
                 <span>Discount {couponCode ? `(${couponCode})` : ''}</span>
-                <span>- ₹{formatCurrency(discountAmount)}</span>
+                <span>- {getCurrencySymbol()}{formatAmt(discountAmount)}</span>
               </div>
             )}
 
@@ -455,7 +463,7 @@ export default function PaymentCheckoutForm({
             {taxAmount > 0 && stateParam && (
               <div className="flex items-center justify-between text-sm text-gray-500">
                 <span>{taxLabel}</span>
-                <span>₹{formatCurrency(taxAmount)}</span>
+                <span>{getCurrencySymbol()}{formatAmt(taxAmount)}</span>
               </div>
             )}
 
@@ -466,7 +474,7 @@ export default function PaymentCheckoutForm({
           <div className="mt-3 border-t border-neutral-100 pt-3 flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-900">Total</span>
             <span className="text-lg font-bold text-purple-700">
-              ₹{formatCurrency(displayTotal)}
+              {getCurrencySymbol()}{formatAmt(displayTotal)}
             </span>
           </div>
 

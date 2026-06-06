@@ -2,6 +2,7 @@ export type NavItem = {
   label: string;
   icon: string;
   href: string;
+  children?: NavItem[];
 };
 
 export const navItems: NavItem[] = [
@@ -53,7 +54,15 @@ export const navItems: NavItem[] = [
     icon: 'comment-alt',
     href: '/counselor-connect',
   },
-  { label: 'Buy Modules', icon: 'star', href: '/pay-as-student' },
+  {
+    label: 'Buy Modules',
+    icon: 'star',
+    href: '/pay-as-student',
+    children: [
+      { label: 'Pay now INR', icon: 'india', href: '/pay-now-inr' },
+      { label: 'Pay now USD', icon: 'usd', href: '/pay-now-usd' },
+    ],
+  },
   { label: 'Checkout', icon: 'credit-card', href: '/pay-as-student/checkout' },
 ];
 

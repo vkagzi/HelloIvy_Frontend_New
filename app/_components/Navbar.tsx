@@ -13,6 +13,7 @@ import { useSession } from 'next-auth/react';
 
 const Navbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const pathname = usePathname();
   const { isDrawerOpen, closeDrawer } = useNavbar();
   const { data: session, status } = useSession();
@@ -43,7 +44,7 @@ const Navbar: React.FC = () => {
       '/pay-as-student',
     ];
 
-    const sortNavItems = (items: { label: string; icon: string; href: string }[]) => {
+    const sortNavItems = (items: (typeof sidebarNavItems[0])[]) => {
       return [...items].sort((a, b) => {
         const idxA = desiredOrder.indexOf(a.href);
         const idxB = desiredOrder.indexOf(b.href);
@@ -63,7 +64,7 @@ const Navbar: React.FC = () => {
     }
 
     // Map backend modules to NavItem shape and avoid duplicates
-    const extra: { label: string; icon: string; href: string }[] = [];
+    const extra: (typeof sidebarNavItems[0])[] = [];
     for (const m of dynamicModules) {
       // Map database/backend underscores to frontend url hyphens
       let href = `/${m.value}`;
@@ -82,7 +83,7 @@ const Navbar: React.FC = () => {
     // Insert extras after the college selector if present, otherwise append
     const insertAfter = '/college-selector';
     const idx = filteredNavItems.findIndex((i) => i.href === insertAfter);
-    let combined: { label: string; icon: string; href: string }[];
+    let combined: (typeof sidebarNavItems[0])[];
     if (idx >= 0) {
       const copy = [...filteredNavItems];
       copy.splice(idx + 1, 0, ...extra);
@@ -157,13 +158,19 @@ const Navbar: React.FC = () => {
       {/* NAV ITEMS */}
       <ul className="mt-2 flex-1">
         {sidebarWithCustom.map((item) => {
-          const active = pathname === item.href;
+          const isExpanded = expandedItem === item.href;
+          const hasChildren = item.children && item.children.length > 0;
+          const active = pathname === item.href || (hasChildren && item.children?.some(c => pathname === c.href));
 
           return (
-            <li key={item.href} className="h-10">
+            <li key={item.href}>
               <Link
                 href={item.href}
-                className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all ${
+                onClick={hasChildren ? (e) => {
+                  e.preventDefault();
+                  setExpandedItem(isExpanded ? null : item.href);
+                } : undefined}
+                className={`flex h-10 items-center gap-2 rounded-md px-3 py-2 transition-all ${
                   active
                     ? 'bg-action-gradient-800 font-semibold text-white'
                     : 'hover:bg-purple-50'
@@ -180,16 +187,43 @@ const Navbar: React.FC = () => {
                   }`}
                 />
 
-                {/* Hide labels when collapsed */}
                 {!collapsed && (
                   <Label
                     size="sm"
-                    className="overflow-hidden text-nowrap text-ellipsis"
+                    className="flex-1 overflow-hidden text-nowrap text-ellipsis"
                   >
                     {item.label}
                   </Label>
                 )}
+                {hasChildren && !collapsed && (
+                  <FiIcon
+                    name={isExpanded ? 'angle-small-up' : 'angle-small-down'}
+                    className={`block h-4 w-4 shrink-0 ${active ? 'text-white' : 'text-neutral-400'}`}
+                  />
+                )}
               </Link>
+
+              {hasChildren && isExpanded && !collapsed && (
+                <ul className="ml-8 mt-1 border-l border-neutral-200 pl-2 space-y-1">
+                  {item.children!.map((child) => {
+                    const childActive = pathname === child.href;
+                    return (
+                      <li key={child.href}>
+                        <Link
+                          href={child.href}
+                          className={`flex items-center rounded-md px-3 py-1.5 text-xs transition-all ${
+                            childActive
+                              ? 'font-semibold text-purple-700 bg-purple-50'
+                              : 'text-neutral-600 hover:bg-purple-50 hover:text-neutral-800'
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </li>
           );
         })}

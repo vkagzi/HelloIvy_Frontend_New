@@ -59,6 +59,10 @@ interface FormData {
   label_override: string;
 
   is_active: boolean;
+  // Combined module creation fields
+  is_new_module: boolean;
+  new_module_value: string;
+  new_module_label: string;
 }
 
 const EMPTY_FORM: FormData = {
@@ -69,8 +73,10 @@ const EMPTY_FORM: FormData = {
   user: '',
   label_override: '',
 
-
   is_active: true,
+  is_new_module: false,
+  new_module_value: '',
+  new_module_label: '',
 };
 
 export default function PricingPage() {
@@ -78,7 +84,6 @@ export default function PricingPage() {
   const [pricing, setPricing] = useState<ModulePricing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [scopeFilter, setScopeFilter] = useState<string>('all');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -106,60 +111,7 @@ export default function PricingPage() {
   const moduleLabels: Record<string, string> = {};
   for (const m of modules) moduleLabels[m.value] = m.label;
 
-  // Custom module creation states
-  const [createModuleOpen, setCreateModuleOpen] = useState(false);
-  const [customModuleForm, setCustomModuleForm] = useState({
-    value: '',
-    label: '',
-    price: '',
-  });
   const [savingModule, setSavingModule] = useState(false);
-
-  const handleCreateCustomModule = async () => {
-    if (!customModuleForm.value || !customModuleForm.label) {
-      addToast('Module ID and Display Name are required', { type: 'error' });
-      return;
-    }
-    const sanitizedValue = customModuleForm.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
-    setSavingModule(true);
-    try {
-      await api('/api/accounts/custom-modules/', {
-        method: 'POST',
-        body: {
-          value: sanitizedValue,
-          label: customModuleForm.label,
-          price: customModuleForm.price ? Number(customModuleForm.price) : 999,
-          icon: 'briefcase',
-          color: 'bg-purple-100 text-purple-700',
-        },
-      });
-      addToast('Custom module created successfully', { type: 'success' });
-      setCreateModuleOpen(false);
-      setCustomModuleForm({
-        value: '',
-        label: '',
-        price: '',
-      });
-      refetchModuleChoices();
-      fetchPricing();
-    } catch (err: unknown) {
-      let message = 'Failed to create custom module';
-      if (err instanceof Error) {
-        const body = (err.cause as { body?: Record<string, unknown> })?.body;
-        if (body) {
-          const parts = Object.entries(body)
-            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
-            .join('; ');
-          if (parts) message = parts;
-        } else if (err.message) {
-          message = err.message;
-        }
-      }
-      addToast(message, { type: 'error' });
-    } finally {
-      setSavingModule(false);
-    }
-  };
 
   const customModulesList = useMemo(() => {
     const STATIC_KEYS = ['college_selector', 'career_discovery', 'domain_discovery'];
@@ -216,26 +168,22 @@ export default function PricingPage() {
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams();
-      if (scopeFilter !== 'all') params.set('scope', scopeFilter);
-      const data = await api<{ pricing: ModulePricing[] }>(`/api/pricing/?${params.toString()}`);
+      const data = await api<{ pricing: ModulePricing[] }>('/api/pricing/');
       setPricing(data.pricing);
     } catch {
       setError('Failed to load pricing data');
     } finally {
       setLoading(false);
     }
-  }, [scopeFilter]);
+  }, []);
 
   useEffect(() => { fetchPricing(); }, [fetchPricing]);
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({ ...EMPTY_FORM, currency_variants: { USD: '', EUR: '', AED: '' } });
+    setForm({ ...EMPTY_FORM });
     setScopeType('none');
     setScopeOpen(false);
-    setSelectedSchoolLabel('');
-    setSelectedUserLabel('');
     setSchoolQuery('');
     setUserQuery('');
     setDialogOpen(true);
@@ -255,8 +203,9 @@ export default function PricingPage() {
       user: p.user != null ? String(p.user) : '',
       is_active: p.is_active,
       label_override: p.label_override ?? '',
-
-
+      is_new_module: false,
+      new_module_value: '',
+      new_module_label: '',
     });
     if (p.school) {
       setScopeType('school');
@@ -291,9 +240,27 @@ export default function PricingPage() {
         school: form.school ? Number(form.school) : null,
         user: form.user ? Number(form.user) : null,
         label_override: form.label_override || null,
-
-
       };
+
+      if (form.is_new_module) {
+        if (!form.new_module_value || !form.new_module_label) {
+          addToast('Module ID and Display Name are required for new modules', { type: 'error' });
+          setSaving(false);
+          return;
+        }
+        const sanitizedValue = form.new_module_value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+        await api('/api/accounts/custom-modules/', {
+          method: 'POST',
+          body: {
+            value: sanitizedValue,
+            label: form.new_module_label,
+            price: Number(form.price) || 999,
+            icon: 'briefcase',
+            color: 'bg-purple-100 text-purple-700',
+          },
+        });
+        payload.module_name = sanitizedValue;
+      }
 
       if (editingId) {
         await api(`/api/pricing/${editingId}/`, { method: 'PATCH', body: payload });
@@ -346,26 +313,7 @@ export default function PricingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Module Pricing</h1>
-        <div className="flex gap-2">
-          <Button onClick={openCreate}>Create Pricing</Button>
-          <Button variant="outline" onClick={() => setCreateModuleOpen(true)}>Create Custom Module</Button>
-        </div>
-      </div>
-
-      {/* Filter */}
-      <div className="flex items-center gap-3">
-        <Label className="text-sm text-gray-600">Scope:</Label>
-        <Select value={scopeFilter} onValueChange={setScopeFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="global">Global</SelectItem>
-            <SelectItem value="school">School</SelectItem>
-            <SelectItem value="user">User</SelectItem>
-          </SelectContent>
-        </Select>
+        <Button onClick={openCreate} className="bg-purple-600 hover:bg-purple-700">+ Create Module and Pricing</Button>
       </div>
 
       {/* Table */}
@@ -424,7 +372,7 @@ export default function PricingPage() {
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[95vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-purple-600" />
@@ -437,24 +385,65 @@ export default function PricingPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-5">
-            {/* Module */}
-            <div className="space-y-1.5">
-              <Label htmlFor="pricing-module">Module</Label>
-              <Select value={form.module_name} onValueChange={(v) => setForm({ ...form, module_name: v })} disabled={!!editingId}>
-                <SelectTrigger id="pricing-module" className="w-full">
-                  <SelectValue placeholder="Select module" />
-                </SelectTrigger>
-                <SelectContent>
-                  {modules.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-3">
+            {/* Module Selection / Creation */}
+            <div className="space-y-3 rounded-lg border border-purple-100 bg-purple-50/30 p-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="pricing-module" className="font-semibold text-purple-900">Module Configuration</Label>
+                {!editingId && (
+                  <button 
+                    type="button"
+                    onClick={() => setForm({ ...form, is_new_module: !form.is_new_module, module_name: '' })}
+                    className="text-xs font-medium text-purple-600 hover:text-purple-800"
+                  >
+                    {form.is_new_module ? "← Select Existing" : "+ New Custom Module"}
+                  </button>
+                )}
+              </div>
+
+              {!form.is_new_module ? (
+                <Select
+                  value={form.module_name}
+                  onValueChange={(v) => setForm({ ...form, module_name: v })}
+                  disabled={!!editingId}
+                >
+                  <SelectTrigger id="pricing-module" className="w-full bg-white">
+                    <SelectValue placeholder="Select module" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modules.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-1">
+                  <div className="space-y-1">
+                    <Label htmlFor="new-module-id" className="text-xs font-medium text-purple-700">Module ID / Slug</Label>
+                    <Input
+                      id="new-module-id"
+                      placeholder="essay_evaluator"
+                      value={form.new_module_value}
+                      onChange={(e) => setForm({ ...form, new_module_value: e.target.value })}
+                      className="h-9 border-purple-200 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="new-module-label" className="text-xs font-medium text-purple-700">Display Name</Label>
+                    <Input
+                      id="new-module-label"
+                      placeholder="Essay Evaluator"
+                      value={form.new_module_label}
+                      onChange={(e) => setForm({ ...form, new_module_label: e.target.value })}
+                      className="h-9 border-purple-200 bg-white"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Pricing Section */}
-            <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/50 p-4">
+            <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50/50 p-3">
               <Label className="text-sm font-medium text-gray-700">Pricing</Label>
               <div className="space-y-1.5">
                 <Label htmlFor="pricing-base" className="text-xs text-gray-500">Base Price (INR)</Label>
@@ -473,7 +462,7 @@ export default function PricingPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-gray-500">Currency Variants (optional)</Label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   {CURRENCIES.map((c) => (
                     <div key={c} className="space-y-1">
                       <Label className="text-xs text-gray-400">{c}</Label>
@@ -502,7 +491,7 @@ export default function PricingPage() {
             </div>
 
             {/* Override fields */}
-            <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/50 p-4">
+            <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50/50 p-3">
               <Label className="text-sm font-medium text-gray-700">Overrides (optional)</Label>
               <div className="space-y-1.5">
                 <Label htmlFor="override-label" className="text-xs text-gray-500">Display Name Override</Label>
@@ -513,31 +502,13 @@ export default function PricingPage() {
                   onChange={(e) => setForm({ ...form, label_override: e.target.value })}
                 />
               </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-              </div>
             </div>
 
             {/* Scope Section – collapsible, collapsed by default */}
             <div className="rounded-lg border border-gray-200 bg-gray-50/50">
               <button
                 type="button"
-                className="flex w-full items-center justify-between p-4"
+                className="flex w-full items-center justify-between p-3"
                 onClick={() => setScopeOpen(!scopeOpen)}
               >
                 <span className="text-sm font-medium text-gray-700">Scope</span>
@@ -550,7 +521,7 @@ export default function PricingPage() {
               </button>
 
               {scopeOpen && (
-                <div className="space-y-4 border-t border-gray-200 px-4 pb-4 pt-3">
+                <div className="space-y-3 border-t border-gray-200 px-3 pb-3 pt-2">
                   {/* Radio options */}
                   <div className="flex items-center gap-4">
                     {(['none', 'school', 'user'] as const).map((opt) => (
@@ -726,88 +697,29 @@ export default function PricingPage() {
               />
               <Label htmlFor="pricing-active" className="cursor-pointer text-sm">Active</Label>
             </div>
-
-
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving || !form.module_name || !form.price}>
-              {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Module Dialog */}
-      <Dialog open={createModuleOpen} onOpenChange={setCreateModuleOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-purple-700">
-              <Building2 className="h-5 w-5" />
-              Create New Custom Module
-            </DialogTitle>
-            <DialogDescription>
-              Add a new custom module. Once created, it will immediately appear in all subscription and pricing dropdowns.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="module-id">Module ID / Slug (lowercase, e.g. essay_evaluator)</Label>
-              <Input
-                id="module-id"
-                placeholder="essay_evaluator"
-                value={customModuleForm.value}
-                onChange={(e) => setCustomModuleForm({ ...customModuleForm, value: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="module-label">Display Name (e.g. Essay Evaluator)</Label>
-              <Input
-                id="module-label"
-                placeholder="Essay Evaluator"
-                value={customModuleForm.label}
-                onChange={(e) => setCustomModuleForm({ ...customModuleForm, label: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="module-price">Price (INR)</Label>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₹</span>
-                <Input
-                  id="module-price"
-                  type="number"
-                  min={0}
-                  placeholder="999"
-                  value={customModuleForm.price}
-                  onChange={(e) => setCustomModuleForm({ ...customModuleForm, price: e.target.value })}
-                  className="pl-7"
-                />
-              </div>
-            </div>
           </div>
 
-          {/* List of custom modules */}
-          <div className="mt-4 border-t border-gray-100 pt-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Created Custom Modules</h3>
+          <div className="mt-3 border-t border-gray-100 pt-3">
+            <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5" />
+              Existing Custom Modules
+            </h3>
             {customModulesList.length === 0 ? (
-              <p className="text-xs text-gray-500 italic">No custom modules created yet.</p>
+              <p className="text-xs text-gray-400 italic">No custom modules created yet.</p>
             ) : (
-              <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+              <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
                 {customModulesList.map((cm) => (
-                  <div key={cm.value} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm border border-gray-100">
-                    <div>
-                      <span className="font-medium text-gray-900">{cm.label}</span>
-                      <span className="ml-2 text-xs text-gray-500">({cm.value}) — ₹{cm.price}</span>
+                  <div key={cm.value} className="group flex items-center justify-between rounded-md bg-gray-50/80 px-2 py-1 text-[11px] border border-gray-100 hover:bg-gray-100/50 transition-colors">
+                    <div className="truncate pr-2">
+                      <span className="font-medium text-gray-700">{cm.label}</span>
+                      <span className="ml-1.5 text-gray-400">({cm.value})</span>
                     </div>
                     <button
                       onClick={() => handleDeleteCustomModule(cm.value)}
-                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"
+                      className="text-red-400 hover:text-red-600 transition-colors"
                       title="Delete module"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 ))}
@@ -815,14 +727,10 @@ export default function PricingPage() {
             )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateModuleOpen(false)}>Cancel</Button>
-            <Button
-              onClick={handleCreateCustomModule}
-              disabled={savingModule || !customModuleForm.value || !customModuleForm.label || !customModuleForm.price}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              {savingModule ? 'Creating...' : 'Create Module'}
+          <DialogFooter className="pt-1 mt-1">
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving || (!form.is_new_module && !form.module_name) || !form.price}>
+              {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>
         </DialogContent>

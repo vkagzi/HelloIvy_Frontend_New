@@ -37,7 +37,7 @@ const STATIC_MODULES: ModuleChoice[] = [
   },
 ];
 
-export function useModuleChoices() {
+export function useModuleChoices(currencyOverride?: string) {
   const [modules, setModules] = useState<ModuleChoice[]>(STATIC_MODULES);
   const [loading, setLoading] = useState<boolean>(true);
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
@@ -50,7 +50,10 @@ export function useModuleChoices() {
 
   useEffect(() => {
     let active = true;
-    api<ModuleChoicesResponse>('/api/accounts/module-choices/')
+    const endpoint = currencyOverride
+      ? `/api/accounts/module-choices/?currency=${currencyOverride}`
+      : '/api/accounts/module-choices/';
+    api<ModuleChoicesResponse>(endpoint)
       .then((data) => {
         if (!active) return;
         if (data && Array.isArray(data.modules)) {
@@ -66,7 +69,7 @@ export function useModuleChoices() {
     return () => {
       active = false;
     };
-  }, [trigger]);
+  }, [trigger, currencyOverride]);
 
   const prices: Record<string, number> = {};
   for (const m of modules) {

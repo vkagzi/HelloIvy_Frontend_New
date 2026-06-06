@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
+import { useSearchParams } from 'next/navigation';
 import { Download } from 'lucide-react';
 import { downloadPDF } from '@/lib/pdf-from-component';
 import { InvoicePDF, type InvoiceData } from '@/components/pdf/InvoicePDF';
@@ -72,6 +73,9 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function SchoolPaymentsPage() {
   const { modules: moduleChoices } = useModuleChoices();
+  const searchParams = useSearchParams();
+  const initialCurrency = searchParams?.get('currency') || 'INR';
+
   const [payments, setPayments] = useState<SchoolPayment[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -81,10 +85,11 @@ export default function SchoolPaymentsPage() {
   // Filter state
   const [filterStatus, setFilterStatus] = useState('');
   const [filterSchool, setFilterSchool] = useState('');
+  const [filterCurrency, setFilterCurrency] = useState(initialCurrency);
 
   // Add modal
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ school: '', amount: '', currency: 'INR', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+  const [addForm, setAddForm] = useState({ school: '', amount: '', currency: initialCurrency, status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
   const [addModules, setAddModules] = useState<string[]>([]);
   const [addCustomModule, setAddCustomModule] = useState(''); // free-text "Other" module
   const [activeSchoolModules, setActiveSchoolModules] = useState<string[]>([]);
@@ -115,6 +120,7 @@ export default function SchoolPaymentsPage() {
       const params = new URLSearchParams();
       if (filterStatus) params.set('status', filterStatus);
       if (filterSchool) params.set('school_id', filterSchool);
+      if (filterCurrency) params.set('currency', filterCurrency);
       const data = await api<{ payments: SchoolPayment[]; total: number }>(
         `/api/payments/schools/?${params.toString()}`
       );
@@ -125,7 +131,7 @@ export default function SchoolPaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, filterSchool]);
+  }, [filterStatus, filterSchool, filterCurrency]);
 
   useEffect(() => {
     fetchPayments();
@@ -160,7 +166,7 @@ export default function SchoolPaymentsPage() {
         body: { ...addForm, school: Number(addForm.school), amount: parseFloat(addForm.amount), modules_purchased: allModules.map(m => ({ module: m, quantity: 1 })) },
       });
       setAddOpen(false);
-      setAddForm({ school: '', amount: '', currency: 'INR', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+      setAddForm({ school: '', amount: '', currency: filterCurrency, status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
       setAddModules([]);
       setAddCustomModule('');
       fetchPayments();
@@ -277,7 +283,7 @@ export default function SchoolPaymentsPage() {
           <Button variant="outline" onClick={() => exportSchoolPaymentsCSV(payments)} className="flex items-center gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
             <Download className="mr-1 h-4 w-4" /> Export CSV
           </Button>
-          <Button onClick={() => { setAddError(null); setAddModules([]); setAddCustomModule(''); setActiveSchoolModules([]); setAddOpen(true); }}>+ Record Payment</Button>
+          <Button onClick={() => { setAddError(null); setAddForm({ ...addForm, currency: filterCurrency }); setAddModules([]); setAddCustomModule(''); setActiveSchoolModules([]); setAddOpen(true); }}>+ Record Payment</Button>
         </div>
       </div>
 
