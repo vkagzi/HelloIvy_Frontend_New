@@ -300,7 +300,7 @@ const Navbar: React.FC = () => {
       {/* Desktop sidebar */}
       <nav
         className={`relative hidden min-h-screen flex-col bg-white px-2 transition-all duration-200 lg:flex ${
-          collapsed ? 'w-16' : 'w-60 border-r border-neutral-200'
+          collapsed ? 'w-16' : 'w-72 border-r border-neutral-200'
         }`}
       >
         {sidebarContent}
@@ -314,7 +314,7 @@ const Navbar: React.FC = () => {
             onClick={closeDrawer}
           />
 
-          <nav className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white px-2 shadow-xl">
+          <nav className="absolute inset-y-0 left-0 flex w-72 flex-col bg-white px-2 shadow-xl">
             {sidebarContent}
           </nav>
         </div>
