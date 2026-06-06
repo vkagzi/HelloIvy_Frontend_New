@@ -9,7 +9,15 @@ import { Label } from '@/app/_components/Typography';
 import { sidebarNavItems } from '@/app/_constants/navItems';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
+import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
 import { useSession } from 'next-auth/react';
+
+/** Map sidebar href → backend module_name for lock/unlock display */
+const HREF_TO_MODULE: Record<string, string> = {
+  '/domain-discovery': 'domain_discovery',
+  '/career-discovery': 'career_discovery',
+  '/college-selector': 'college_selector',
+};
 
 const Navbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
@@ -17,6 +25,7 @@ const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { isDrawerOpen, closeDrawer } = useNavbar();
   const { data: session, status } = useSession();
+  const { hasAccess, loading: modulesLoading } = useModuleAccess();
   const userRole = session?.user?.role ?? 'student';
   const isAdmin = ['superadmin', 'operationadmin'].includes(userRole);
   const isSchoolAdmin = ['schooladmin', 'schoolopsadmin'].includes(userRole);
@@ -188,12 +197,37 @@ const Navbar: React.FC = () => {
                 />
 
                 {!collapsed && (
-                  <Label
-                    size="sm"
-                    className="flex-1 overflow-hidden text-nowrap text-ellipsis"
-                  >
-                    {item.label}
-                  </Label>
+                  <>
+                    <Label
+                      size="sm"
+                      className="flex-1 overflow-hidden text-nowrap text-ellipsis"
+                    >
+                      {item.label}
+                    </Label>
+                    {(() => {
+                      const moduleName = HREF_TO_MODULE[item.href];
+                      if (!moduleName || modulesLoading) return null;
+                      const unlocked = hasAccess(moduleName);
+                      return (
+                        <span
+                          title={unlocked ? 'Module unlocked' : 'Module locked'}
+                          className="ml-auto flex-shrink-0"
+                        >
+                          {unlocked ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                          )}
+                        </span>
+                      );
+                    })()}
+                  </>
                 )}
                 {hasChildren && !collapsed && (
                   <FiIcon
