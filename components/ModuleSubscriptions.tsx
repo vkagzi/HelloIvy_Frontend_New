@@ -585,10 +585,10 @@ function PaymentHistoryTable({
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <button
                       onClick={() => handleDownloadInvoice(p.id)}
-                      disabled={downloadingId === p.id}
+                      disabled={downloadingId === p.id || p.status !== 'completed'}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium shadow-sm hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-red-900/20 disabled:opacity-50"
                       style={{ color: '#8B0000' }}
-                      title="Download Invoice PDF"
+                      title={p.status !== 'completed' ? 'Invoice available after payment' : 'Download Invoice PDF'}
                     >
                       <Download size={14} className={downloadingId === p.id ? 'animate-bounce' : ''} />
                       {downloadingId === p.id ? 'Downloading...' : 'PDF'}

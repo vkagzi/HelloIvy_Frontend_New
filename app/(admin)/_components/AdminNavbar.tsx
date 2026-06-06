@@ -12,7 +12,7 @@ interface NavItem {
   label: string;
   icon: string;
   href: string;
-  children?: { label: string; href: string }[];
+  children?: (NavItem | { label: string; href: string })[];
 }
 
 const adminNavItems: NavItem[] = [
@@ -33,8 +33,24 @@ const adminNavItems: NavItem[] = [
     icon: 'credit-card',
     href: '/admin/payments/b2c',
     children: [
-      { label: 'Individual', href: '/admin/payments/b2c' },
-      { label: 'Institution', href: '/admin/payments/schools' },
+      {
+        label: 'INR',
+        icon: 'india',
+        href: '/admin/payments/b2c?currency=INR',
+        children: [
+          { label: 'Individual', href: '/admin/payments/b2c?currency=INR' },
+          { label: 'Institution', href: '/admin/payments/schools?currency=INR' },
+        ],
+      },
+      {
+        label: 'USD',
+        icon: 'usd',
+        href: '/admin/payments/b2c?currency=USD',
+        children: [
+          { label: 'Individual', href: '/admin/payments/b2c?currency=USD' },
+          { label: 'Institution', href: '/admin/payments/schools?currency=USD' },
+        ],
+      },
     ],
   },
   { label: 'Pricing', icon: 'badge-dollar', href: '/admin/pricing' },
@@ -169,22 +185,64 @@ const AdminNavbar: React.FC = () => {
               {hasChildren && isExpanded && !collapsed && (
                 <ul className="ml-6 border-l border-neutral-200 pl-2">
                   {item.children!.map((child) => {
+                    const isNestedChild = 'children' in child && child.children && child.children.length > 0;
                     const childUrl = new URL(child.href, 'http://x');
                     const childType = childUrl.searchParams.get('type');
+                    const childCurrency = childUrl.searchParams.get('currency');
+                    const currentCurrency = searchParams?.get('currency');
+                    
                     const childActive =
-                      pathname === childUrl.pathname && currentType === childType;
+                      pathname === childUrl.pathname && 
+                      currentType === childType && 
+                      (!childCurrency || currentCurrency === childCurrency);
+
                     return (
-                      <li key={child.href} className="h-8">
-                        <Link
-                          href={child.href}
-                          className={`flex items-center rounded-md px-3 py-1.5 text-sm transition-all ${
-                            childActive
-                              ? 'font-semibold text-purple-700 bg-purple-50'
-                              : 'text-neutral-600 hover:bg-purple-50 hover:text-neutral-800'
-                          }`}
-                        >
-                          {child.label}
-                        </Link>
+                      <li key={child.href}>
+                        {isNestedChild ? (
+                          <>
+                            <div className={`flex items-center rounded-md px-3 py-1.5 text-sm font-medium ${childActive ? 'text-purple-700' : 'text-neutral-500'}`}>
+                               <FiIcon name={child.icon} className="mr-2 h-3.5 w-3.5" />
+                               {child.label}
+                            </div>
+                            <ul className="ml-4 border-l border-neutral-100 pl-2 mb-2">
+                              {(child as NavItem).children!.map((subChild) => {
+                                const subChildUrl = new URL(subChild.href, 'http://x');
+                                const subChildType = subChildUrl.searchParams.get('type');
+                                const subChildCurrency = subChildUrl.searchParams.get('currency');
+                                const subChildActive = 
+                                  pathname === subChildUrl.pathname && 
+                                  currentType === subChildType && 
+                                  currentCurrency === subChildCurrency;
+
+                                return (
+                                  <li key={subChild.href}>
+                                    <Link
+                                      href={subChild.href}
+                                      className={`flex items-center rounded-md px-3 py-1 text-xs transition-all ${
+                                        subChildActive
+                                          ? 'font-semibold text-purple-700 bg-purple-50'
+                                          : 'text-neutral-500 hover:bg-purple-50 hover:text-neutral-800'
+                                      }`}
+                                    >
+                                      {subChild.label}
+                                    </Link>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </>
+                        ) : (
+                          <Link
+                            href={child.href}
+                            className={`flex items-center rounded-md px-3 py-1.5 text-sm transition-all ${
+                              childActive
+                                ? 'font-semibold text-purple-700 bg-purple-50'
+                                : 'text-neutral-600 hover:bg-purple-50 hover:text-neutral-800'
+                            }`}
+                          >
+                            {child.label}
+                          </Link>
+                        )}
                       </li>
                     );
                   })}

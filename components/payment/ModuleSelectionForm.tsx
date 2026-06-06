@@ -17,12 +17,6 @@ const TAX_CONFIG = {
 
 type StateOption = keyof typeof TAX_CONFIG;
 
-const CURRENCY_MAP: Record<StateOption, 'INR' | 'USD'> = {
-  maharashtra: 'INR',
-  rest_of_india: 'INR',
-  outside_india: 'USD',
-};
-
 interface ModuleRow {
   value: string;
   label: string;
@@ -31,33 +25,29 @@ interface ModuleRow {
 
 export interface ModuleSelectionConfig {
   mode: 'student' | 'school';
-  /** Max quantity per module (student: 10, school: 200) */
   maxQuantity: number;
-  /** Column header for quantity (e.g. "Quantity" or "Students") */
   quantityLabel: string;
-  /** Unit label for subtotal (e.g. "unit" or "student seat") */
   unitLabel: string;
-  /** Where the "Pay Now" button redirects */
   checkoutUrl: string;
-  /** Optional back link */
   backLink?: { href: string; label: string };
-  /** Optional top right button link */
   topRightLink?: { href: string; label: string };
-  /** Page title */
   title: string;
-  /** Page subtitle */
   subtitle: string;
-  /** Show active module badges (student mode) */
   showActiveModules?: boolean;
-  /** Restore state from URL search params (student mode) */
   restoreFromUrl?: boolean;
+  /** Force a specific currency ('INR' | 'USD'). Defaults to 'INR'. */
+  currency?: 'INR' | 'USD';
 }
 
 export default function ModuleSelectionForm({ config }: { config: ModuleSelectionConfig }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
-  const { modules: moduleChoices, loading: modulesLoading, getPrice, currency: priceCurrency } = useModuleChoices();
+  
+  // Use currency from config prop (locked by page), default INR
+  const currency: 'INR' | 'USD' = config.currency ?? 'INR';
+  const isUSD = currency === 'USD';
+  const { modules: moduleChoices, loading: modulesLoading, getPrice } = useModuleChoices(currency);
   const { modules: activeModules, loading: accessLoading } = useModuleAccess();
 
   const [rows, setRows] = useState<ModuleRow[]>([]);
@@ -79,7 +69,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
     if (moduleChoices.length === 0) return;
 
     if (config.restoreFromUrl) {
-      // Parse quantities from URL params (set when returning from checkout)
+      // Parse quantities from URL params
       const modulesParam = searchParams?.get('modules') ?? '';
       const quantityMap: Record<string, number> = {};
       modulesParam
@@ -101,15 +91,17 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
       // Restore state selection
       const stateParam = searchParams?.get('state');
       if (stateParam === 'maharashtra' || stateParam === 'rest_of_india' || stateParam === 'outside_india') {
-        setSelectedState(stateParam);
+        setSelectedState(stateParam as StateOption);
       }
-
-
     } else {
       setRows(moduleChoices.map((m) => ({ value: m.value, label: m.label, quantity: 0 })));
     }
+
+    if (isUSD) {
+        setSelectedState('outside_india');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moduleChoices]);
+  }, [moduleChoices, isUSD]);
 
   const setQuantity = (value: string, quantity: number) =>
     setRows((prev) => prev.map((r) => (r.value === value ? { ...r, quantity } : r)));
@@ -129,14 +121,14 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
   }
 
   const formatCurrency = (num: number) => {
-    return num.toLocaleString('en-IN', {
-      minimumFractionDigits: 0,
+    return num.toLocaleString(isUSD ? 'en-US' : 'en-IN', {
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
   };
 
   const getCurrencySymbol = () => {
-    return '₹';
+    return currency === 'USD' ? '$' : '₹';
   };
 
   const taxableAmount = subtotal - discountAmount;
@@ -148,14 +140,11 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
   const totalTax = cgstAmount + sgstAmount + igstAmount;
   const grandTotal = taxableAmount + totalTax;
 
-  // Round amounts to standard format
   const convert = (amount: number) => {
     return Math.round((amount + Number.EPSILON) * 100) / 100;
   };
 
-
-
-  const canCheckout = selectedRows.length > 0 && selectedState !== '' && agreeTerms;
+  const canCheckout = selectedRows.length > 0 && (currency === 'USD' || selectedState !== '') && agreeTerms;
 
   const handleApplyCoupon = async () => {
     const code = couponInput.trim();
@@ -194,21 +183,17 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
   const handlePayNow = () => {
     if (!canCheckout) return;
     const modulesParam = selectedRows.map((r) => `${r.value}:${r.quantity}`).join(',');
-    const params = new URLSearchParams({ modules: modulesParam, state: selectedState });
+    const params = new URLSearchParams({ modules: modulesParam, state: selectedState || 'outside_india' });
     if (appliedCoupon) params.set('coupon_code', appliedCoupon.code);
-    // send converted values in display currency
     params.set('discount', String(convert(discountAmount)));
     params.set('tax', String(convert(totalTax)));
     params.set('total', String(convert(grandTotal)));
-    params.set('currency', String(CURRENCY_MAP[selectedState as StateOption] ?? 'INR'));
+    // params.set('currency', currency); // No longer needed as it's in the path
     router.push(`${config.checkoutUrl}?${params.toString()}`);
   };
 
   const loading = modulesLoading || (config.showActiveModules ? accessLoading : false) || status === 'loading';
 
-
-
-  // Access-denied guard for student mode (school admins can't buy as student)
   if (config.mode === 'student' && status === 'authenticated' && session?.user?.school_id) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -218,7 +203,6 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
     );
   }
 
-  // Access-denied guard for school mode (only schooladmin)
   if (config.mode === 'school' && status === 'authenticated' && session?.user?.role !== 'schooladmin') {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -240,7 +224,6 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      {/* Optional back link */}
       {config.backLink && (
         <div>
           <Link href={config.backLink.href} className="text-sm text-purple-600 hover:underline">
@@ -251,23 +234,50 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{config.title}</h1>
-          <p className="mt-1 text-sm text-gray-500">{config.subtitle}</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">{config.title}</h1>
+            <p className="mt-1 text-sm text-gray-500">{config.subtitle}</p>
+          </div>
+          {isUSD && (
+            <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 shadow-sm ring-1 ring-inset ring-blue-700/10">
+              💵 USD Mode
+            </span>
+          )}
         </div>
-        {config.topRightLink && (
-          <Link
-            href={config.topRightLink.href}
-            className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700"
-          >
-            {config.topRightLink.label}
-          </Link>
-        )}
+
+        <div className="flex items-center gap-4">
+          <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50 p-1">
+            <Link
+              href="/pay-now-inr"
+              className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                currency === 'INR' ? 'bg-white text-purple-700 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="text-sm">₹</span> INR
+            </Link>
+            <Link
+              href="/pay-now-usd"
+              className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                currency === 'USD' ? 'bg-white text-purple-700 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="text-sm">$</span> USD
+            </Link>
+          </div>
+
+          {config.topRightLink && (
+            <Link
+              href={config.topRightLink.href}
+              className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700"
+            >
+              {config.topRightLink.label}
+            </Link>
+          )}
+        </div>
       </div>
 
-      {/* Module line-item table */}
       <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-        {/* Table header */}
         <div className="grid grid-cols-[1fr_100px_130px_100px] gap-4 border-b border-neutral-200 bg-neutral-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
           <span>Module</span>
           <span className="text-right">Price</span>
@@ -275,7 +285,6 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
           <span className="text-right">Total</span>
         </div>
 
-        {/* Table rows */}
         {rows.map((row, idx) => {
           const isActive = config.showActiveModules && activeModules.includes(row.value);
           const isSelected = row.quantity > 0;
@@ -285,7 +294,6 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
               className={`grid grid-cols-[1fr_100px_130px_100px] gap-4 items-center px-5 py-4 transition-colors ${idx !== rows.length - 1 ? 'border-b border-neutral-100' : ''
                 } ${isActive && !isSelected ? 'bg-green-50' : isSelected ? 'bg-purple-50' : 'hover:bg-neutral-50'}`}
             >
-              {/* Module name */}
               <div className="flex items-center gap-2 min-w-0">
                 <span className={`text-sm font-medium ${isActive && !isSelected ? 'text-gray-500' : 'text-gray-900'}`}>
                   {row.label}
@@ -297,10 +305,8 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
                 )}
               </div>
 
-              {/* Unit price */}
               <span className="text-right text-sm text-gray-600">{getCurrencySymbol()}{formatCurrency(convert(getPrice(row.value)))}</span>
 
-              {/* Quantity selector */}
               <div className="flex justify-center">
                 <select
                   value={row.quantity}
@@ -315,7 +321,6 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
                 </select>
               </div>
 
-              {/* Line total */}
               <span className={`text-right text-sm font-semibold ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>
                 {isSelected ? `${getCurrencySymbol()}${formatCurrency(convert(getPrice(row.value) * row.quantity))}` : '—'}
               </span>
@@ -324,9 +329,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
         })}
       </div>
 
-      {/* Order summary panel */}
       <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-5">
-        {/* Subtotal */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-600">
             Subtotal{totalUnits > 0 ? ` (${totalUnits} ${config.unitLabel}${totalUnits !== 1 ? 's' : ''})` : ''}
@@ -336,7 +339,6 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
         <div className="border-t border-neutral-100" />
 
-        {/* Coupon Input */}
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">Coupon Code</label>
           <div className="flex gap-2">
@@ -376,40 +378,49 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
           {appliedCoupon && (
             <p className="mt-1 text-xs text-green-600 flex items-center gap-1">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-              Coupon applied! {appliedCoupon.isFlat ? `₹${appliedCoupon.discountAmount} off` : `${appliedCoupon.discountPct}% off`}
+              Coupon applied! {appliedCoupon.isFlat ? `${getCurrencySymbol()}${appliedCoupon.discountAmount} off` : `${appliedCoupon.discountPct}% off`}
             </p>
           )}
         </div>
 
         <div className="border-t border-neutral-100" />
 
-        {/* State selection */}
-        <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">State (for GST calculation)</label>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { value: 'maharashtra' as StateOption, label: 'Maharashtra', sub: '9% CGST + 9% SGST' },
-              { value: 'rest_of_india' as StateOption, label: 'Rest of India', sub: '18% IGST' },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setSelectedState(opt.value)}
-                className={`cursor-pointer rounded-lg border px-3 py-2 text-left transition ${selectedState === opt.value
-                  ? 'border-purple-400 bg-purple-50'
-                  : 'border-neutral-200 bg-white hover:border-purple-300'
-                  }`}
-              >
-                <p className={`text-xs font-semibold ${selectedState === opt.value ? 'text-purple-700' : 'text-gray-800'}`}>
-                  {opt.label}
-                </p>
-                <p className="mt-0.5 text-xs text-gray-400">{opt.sub}</p>
-              </button>
-            ))}
+        {currency === 'INR' && (
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">State (for GST calculation)</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 'maharashtra' as StateOption, label: 'Maharashtra', sub: '9% CGST + 9% SGST' },
+                { value: 'rest_of_india' as StateOption, label: 'Rest of India', sub: '18% IGST' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setSelectedState(opt.value)}
+                  className={`cursor-pointer rounded-lg border px-3 py-2 text-left transition ${selectedState === opt.value
+                    ? 'border-purple-400 bg-purple-50'
+                    : 'border-neutral-200 bg-white hover:border-purple-300'
+                    }`}
+                >
+                  <p className={`text-xs font-semibold ${selectedState === opt.value ? 'text-purple-700' : 'text-gray-800'}`}>
+                    {opt.label}
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-400">{opt.sub}</p>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Tax breakdown */}
-        {selectedState && taxableAmount > 0 && (
+        {isUSD && (
+            <div className="rounded-lg bg-blue-50 px-4 py-3 border border-blue-100">
+                <p className="text-xs text-blue-700 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    Paying in USD. No GST applicable for international payments.
+                </p>
+            </div>
+        )}
+
+        {currency === 'INR' && selectedState && taxableAmount > 0 && (
           <div className="space-y-2 rounded-lg bg-neutral-50 px-4 py-3">
             {appliedCoupon && (
               <div className="flex items-center justify-between text-sm text-green-600 font-medium">
@@ -437,13 +448,11 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
           </div>
         )}
 
-        {/* Grand total */}
         <div className="flex items-center justify-between border-t border-neutral-200 pt-4">
           <span className="text-base font-semibold text-gray-900">Total</span>
           <span className="text-xl font-bold text-purple-700">{getCurrencySymbol()}{formatCurrency(convert(grandTotal))}</span>
         </div>
 
-        {/* Terms & Conditions */}
         <label className="flex cursor-pointer items-start gap-3">
           <input
             type="checkbox"
@@ -459,23 +468,21 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
           </span>
         </label>
 
-        {/* Pay Now */}
         <button
           onClick={handlePayNow}
           disabled={!canCheckout}
           className="w-full cursor-pointer rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Pay Now — {getCurrencySymbol()}{formatCurrency(grandTotal)}
+          Pay Now — {getCurrencySymbol()}{formatCurrency(convert(grandTotal))}
         </button>
 
-        {/* Inline hints */}
         {selectedRows.length === 0 && (
           <p className="text-center text-xs text-gray-400">Select at least one module to continue.</p>
         )}
-        {selectedRows.length > 0 && !selectedState && (
+        {selectedRows.length > 0 && currency === 'INR' && !selectedState && (
           <p className="text-center text-xs text-gray-400">Please select your state for tax calculation.</p>
         )}
-        {selectedRows.length > 0 && selectedState && !agreeTerms && (
+        {selectedRows.length > 0 && (currency === 'USD' || selectedState) && !agreeTerms && (
           <p className="text-center text-xs text-gray-400">Please agree to the Terms and Conditions.</p>
         )}
       </div>
