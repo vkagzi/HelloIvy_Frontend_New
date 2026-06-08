@@ -11,14 +11,14 @@ const config: ModuleSelectionConfig = {
   unitLabel: 'student seat',
   checkoutUrl: '/school/payment/checkout',
   backLink: { href: '/school/subscription', label: 'Back to Buy Module' },
-  title: 'Purchase New Modules',
+  title: 'Purchase New Modules (INR)',
   subtitle: 'Set the number of students for each module you want to purchase.',
   showActiveModules: true,
   restoreFromUrl: false,
   currency: 'INR',
 };
 
-export default function SchoolPaymentPage() {
+export default function SchoolPaymentINRPage() {
   return (
     <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-neutral-100" />}>
       <ModuleSelectionForm config={config} />

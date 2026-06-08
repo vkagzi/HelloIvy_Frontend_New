@@ -823,36 +823,6 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                     <span>Debug</span>
                   </Button>
 
-                  {/* Switch Accent Dropdown */}
-                  {!sessionEnded && !isInputBlockedByTimer && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          size="sm"
-                          disabled={conversationMode !== 'voice' || voiceConnecting || voiceDisconnecting || voiceSpeaking || isLoading}
-                          className="group flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 transition-all hover:border-teal-300 hover:bg-teal-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-                          title="Select counsellor voice accent"
-                        >
-                          <span className="text-sm select-none" aria-hidden>{realtimeVoiceAccent === 'indian' ? '🇮🇳' : realtimeVoiceAccent === 'british' ? '🇬🇧' : '🇺🇸'}</span>
-                          <span>{realtimeVoiceAccent === 'indian' ? 'Indian' : realtimeVoiceAccent === 'british' ? 'British' : 'American'} Accent</span>
-                          <svg className="h-3 w-3 text-teal-600 transition-transform group-data-[state=open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-[150px] bg-white border border-neutral-200 rounded-lg shadow-md p-1 z-50">
-                        <DropdownMenuItem onClick={() => handleAccentChange('american')} className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold hover:bg-neutral-100 rounded-md cursor-pointer text-neutral-700">
-                          <span className="text-sm">🇺🇸</span> American Accent
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleAccentChange('british')} className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold hover:bg-neutral-100 rounded-md cursor-pointer text-neutral-700">
-                          <span className="text-sm">🇬🇧</span> British Accent
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleAccentChange('indian')} className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold hover:bg-neutral-100 rounded-md cursor-pointer text-neutral-700">
-                          <span className="text-sm">🇮🇳</span> Indian Accent
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
                 </div>
               </div>
               <Paragraph className="mt-1 text-sm text-gray-600">
@@ -1102,31 +1072,6 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                       <>Press <span className="font-semibold text-gray-600">Enter</span> to send, <span className="font-semibold text-gray-600">Shift+Enter</span> for new line.</>
                     )}
                   </p>
-                  
-                  {/* Language Switcher */}
-                  {!sessionEnded && (() => {
-                    const isLanguageFixed = messages.some((m) => m.type === 'user') || voiceConnected || voiceConnecting;
-                    return (
-                      <div className="flex items-center gap-1 bg-neutral-100 rounded-lg p-0.5 border border-neutral-200">
-                        <button
-                          onClick={() => handleLanguageChange('en')}
-                          disabled={isLanguageFixed}
-                          className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${realtimeVoiceLanguage === 'en' ? 'bg-white text-neutral-800 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'}`}
-                          title={isLanguageFixed ? "Language is locked once conversation starts" : "Switch to English"}
-                        >
-                          English
-                        </button>
-                        <button
-                          onClick={() => handleLanguageChange('hi')}
-                          disabled={isLanguageFixed}
-                          className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${realtimeVoiceLanguage === 'hi' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 hover:text-indigo-600'}`}
-                          title={isLanguageFixed ? "Language is locked once conversation starts" : "Switch to Hindi"}
-                        >
-                          Hindi
-                        </button>
-                      </div>
-                    );
-                  })()}
                 </div>
                 {canEnd && (
                   <button

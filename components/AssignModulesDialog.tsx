@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import api from '@/lib/api-client';
 import type { SchoolSubscription } from '@/components/ModuleSubscriptions';
+import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 
 interface AssignModulesDialogProps {
   open: boolean;
@@ -38,6 +39,7 @@ export default function AssignModulesDialog({
   const [autoAssign, setAutoAssign] = useState(false);
   const [loading, setLoading] = useState(false);
   const [subsLoading, setSubsLoading] = useState(true);
+  const { modules: allModuleChoices } = useModuleChoices();
   const [result, setResult] = useState<{
     count: number;
     skipped: number;
@@ -64,7 +66,7 @@ export default function AssignModulesDialog({
       .then((d) => {
         if (!cancelled) setSubscriptions(d.subscriptions ?? []);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (!cancelled) setSubsLoading(false);
       });
@@ -74,6 +76,11 @@ export default function AssignModulesDialog({
   }, [open]);
 
   const activeSubscriptions = subscriptions.filter((s) => s.is_active);
+  // Build subscription lookup by module name
+  const subByModule: Record<string, SchoolSubscription> = {};
+  for (const s of activeSubscriptions) subByModule[s.module_name] = s;
+  // Use all module choices — subscribed or not
+  const modulesToShow = allModuleChoices;
 
   const toggleModule = (moduleName: string) => {
     setSelectedModules((prev) =>
@@ -200,23 +207,23 @@ export default function AssignModulesDialog({
                   />
                 ))}
               </div>
-            ) : activeSubscriptions.length === 0 ? (
+            ) : modulesToShow.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No active module subscriptions found.
+                No modules available.
               </p>
             ) : (
               <div className="space-y-2">
                 <p className="text-sm font-medium">
                   Select modules to assign:
                 </p>
-                {activeSubscriptions.map((sub) => {
-                  const isSelected = selectedModules.includes(sub.module_name);
-                  const remaining = sub.remaining_students;
-                  const wouldExceed =
-                    remaining !== null && remaining < snap.studentCount;
+                {modulesToShow.map((mod) => {
+                  const isSelected = selectedModules.includes(mod.value);
+                  const sub = subByModule[mod.value];
+                  const remaining = sub?.remaining_students ?? null;
+                  const wouldExceed = remaining !== null && remaining < snap.studentCount;
                   return (
                     <label
-                      key={sub.module_name}
+                      key={mod.value}
                       className={`flex items-center justify-between rounded-lg border px-4 py-3 cursor-pointer transition-colors ${
                         isSelected
                           ? 'border-primary/40 bg-primary/5'
@@ -226,16 +233,19 @@ export default function AssignModulesDialog({
                       <div className="flex items-center gap-3">
                         <Checkbox
                           checked={isSelected}
-                          onCheckedChange={() => toggleModule(sub.module_name)}
+                          onCheckedChange={() => toggleModule(mod.value)}
                         />
                         <div>
-                          <span className="text-sm font-medium">
-                            {sub.module_display}
-                          </span>
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            {sub.used_students}/{sub.max_students ?? '∞'}{' '}
-                            assigned
-                          </span>
+                          <span className="text-sm font-medium">{mod.label}</span>
+                          {sub ? (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {sub.used_students}/{sub.max_students ?? '∞'} assigned
+                            </span>
+                          ) : (
+                            <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
+                              Manual
+                            </span>
+                          )}
                         </div>
                       </div>
                       {wouldExceed && isSelected && (
