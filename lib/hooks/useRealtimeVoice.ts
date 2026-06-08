@@ -136,7 +136,7 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, lan
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = language === 'hi' ? 'hi-IN' : (accent === 'british' ? 'en-GB' : 'en-US');
+      recognition.lang = language === 'hi' ? 'hi-IN' : (accent === 'indian' ? 'en-IN' : accent === 'british' ? 'en-GB' : 'en-US');
       
       recognition.onresult = (event: any) => {
         if (isMutedRef.current) {
@@ -144,12 +144,9 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, lan
         }
         let interimTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            // Final results from browser are less accurate than OpenAI's
-            // so we only use interim results for the live preview.
-          } else {
-            interimTranscript += event.results[i][0].transcript;
-          }
+          // Accumulate both interim and final results to ensure the chat bubble
+          // shows the completed text even if the Azure Whisper model deployment is missing.
+          interimTranscript += event.results[i][0].transcript;
         }
 
         if (interimTranscript.trim()) {

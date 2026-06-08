@@ -115,12 +115,6 @@ function feasBgColor(level: string) {
   return                         { bg: '#fee2e2', text: '#991b1b' };
 }
 
-function feasDot(level: string) {
-  if (level === 'High')   return '● High';
-  if (level === 'Medium') return '● Medium';
-  return '● Low';
-}
-
 /* ── Footer / page-number ─────────────────────────────────── */
 const PageFooter = () => (
   <>
@@ -422,9 +416,10 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                       const col = feasBgColor(career.feasibility!.level);
                       return (
                         <>
-                          <View style={[s.feasBadge, { backgroundColor: col.bg }]}>
+                          <View style={[s.feasBadge, { backgroundColor: col.bg, flexDirection: 'row', alignItems: 'center' }]}>
+                            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: col.text, marginRight: 3 }} />
                             <Text style={[s.feasText, { color: col.text }]}>
-                              {feasDot(career.feasibility!.level)}
+                              {career.feasibility!.level}
                             </Text>
                           </View>
                           <Text style={s.feasReason}>{career.feasibility!.reason}</Text>
@@ -437,7 +432,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                 {/* Skill Gaps */}
                 {hasSkillGaps && (
                   <View style={[s.stripRight, !hasFeasibility ? { borderLeftWidth: 0, paddingLeft: 0 } : {}]}>
-                    <Text style={s.stripLabel}>⚡ Top Skill Gaps</Text>
+                    <Text style={s.stripLabel}>Top Skill Gaps</Text>
                     {career.skill_gaps!.slice(0, 5).map((gap, gi) => (
                       <View key={gi} style={[s.bulletItem, { marginBottom: 2 }]}>
                         <View style={s.gapNumCircle}>
