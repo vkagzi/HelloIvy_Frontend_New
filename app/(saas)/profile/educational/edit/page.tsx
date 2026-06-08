@@ -44,7 +44,6 @@ const EducationalDetailsForm: React.FC = () => {
   const [fieldDefs, setFieldDefs] = useState<FieldDefinition[]>(fieldDefss);
   const prevAcademicLevelRef = useRef<string | undefined>(undefined);
   const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
-  const [forceRefreshKey, setForceRefreshKey] = useState<number>(0);
 
   // Extract educational details from the context or defaultValues
   const educationalDetails = React.useMemo(() => {
@@ -859,14 +858,7 @@ const EducationalDetailsForm: React.FC = () => {
         delete next.testScores;
         return next;
       });
-      
-      // Refetch profile data from server
       await refetch();
-      
-      // Force form to re-render by updating the refresh key
-      // This ensures the form is completely re-initialized with fresh data
-      setForceRefreshKey(prev => prev + 1);
-      
       addToast('Educational details saved successfully!', { type: 'success' });
     } catch (error: any) {
       console.error('Update failed detailed:', {
@@ -898,20 +890,11 @@ const EducationalDetailsForm: React.FC = () => {
       // A scan is active — do not overwrite it with old server data.
       return;
     }
-    
     if (educationalDetails && Object.keys(educationalDetails).length > 0) {
-      console.log("[EducationalDetailsForm] No active scan. Loading saved server data.", educationalDetails);
-      
-      // Deep copy and validate the data before setting as defaults
-      const sanitizedDefaults = JSON.parse(JSON.stringify(educationalDetails));
-      console.log("[EducationalDetailsForm] Sanitized defaults:", sanitizedDefaults);
-      
-      setFormDefaults(sanitizedDefaults);
-    } else {
-      console.log("[EducationalDetailsForm] No educational details available. Using empty defaults.");
-      setFormDefaults({});
+      console.log("[EducationalDetailsForm] No active scan. Loading saved server data.");
+      setFormDefaults(educationalDetails);
     }
-  }, [educationalDetails, parsedTranscriptData, forceRefreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [educationalDetails, parsedTranscriptData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to hash element (e.g. #standardised-test-score) after form renders
   useEffect(() => {
@@ -931,7 +914,7 @@ const EducationalDetailsForm: React.FC = () => {
       <Instructions />
       <Tabs />
       <DynamicForm
-        key={`edu-form-${forceRefreshKey}-${formDefaults.academicLevel || 'default'}`}
+        key={JSON.stringify(formDefaults)}
         defaultValues={formDefaults}
         fieldDefs={fieldDefs}
         layout={layout}

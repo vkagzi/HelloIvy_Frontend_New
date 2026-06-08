@@ -28,7 +28,6 @@ const ProfessionalFormDetails: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const [formDefaults, setFormDefaults] = useState<Record<string, unknown>>({});
-  const [forceRefreshKey, setForceRefreshKey] = useState<number>(0);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
     () =>
@@ -113,10 +112,6 @@ const ProfessionalFormDetails: React.FC = () => {
         });
         setFormDefaults({});
         await refetch();
-        
-        // Force form to re-render with fresh data
-        setForceRefreshKey(prev => prev + 1);
-        
         addToast('Professional details saved successfully!', { type: 'success' });
       } else {
         addToast('Failed to update profile.', { type: 'error' });
@@ -213,7 +208,7 @@ const ProfessionalFormDetails: React.FC = () => {
       </div>
       <Tabs />
       <DynamicForm
-        key={`prof-form-${forceRefreshKey}-${JSON.stringify(formDefaults).substring(0, 50)}`}
+        key={JSON.stringify(formDefaults)}
         defaultValues={{
           ...professionalDetails,
           ...formDefaults,

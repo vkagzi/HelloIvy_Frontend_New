@@ -73,7 +73,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       const data = await getProfileData();
-      console.log('[ProfileContext] Raw API data:', data);
+      // console.log('ProfileContext - Raw API data:', data);
 
       // Store the raw API response for edit pages
       setRawApiResponse(data as { profile: Record<string, unknown> });
@@ -102,47 +102,30 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
           profile.profile !== null
         ) {
           const fullProfileData = profile.profile as Record<string, unknown>;
-          console.log('[ProfileContext] Full profile data:', fullProfileData);
-          
-          // Deep clone to ensure data is not shared by reference
-          const profileDataCopy = JSON.parse(JSON.stringify(fullProfileData));
-          setProfileData(profileDataCopy);
+          // console.log('ProfileContext - Full profile data:', fullProfileData);
+          setProfileData(fullProfileData);
 
-          // Extract all sections with deep cloning and validation
-          if ('personalDetails' in fullProfileData && fullProfileData.personalDetails) {
-            const personalCopy = JSON.parse(JSON.stringify(fullProfileData.personalDetails));
-            console.log('[ProfileContext] Setting personalDetails:', personalCopy);
-            setPersonalDetails(personalCopy as ProfileData);
+          // Extract all sections
+          if ('personalDetails' in fullProfileData) {
+            setPersonalDetails(fullProfileData.personalDetails as ProfileData);
           }
-          
-          if ('educational' in fullProfileData && fullProfileData.educational) {
-            const educationalCopy = JSON.parse(JSON.stringify(fullProfileData.educational));
-            console.log('[ProfileContext] Setting educational:', educationalCopy);
-            setEducationalDetails(educationalCopy as ProfileData);
+          if ('educational' in fullProfileData) {
+            setEducationalDetails(fullProfileData.educational as ProfileData);
           }
-          
-          if ('professional' in fullProfileData && fullProfileData.professional) {
-            const professionalCopy = JSON.parse(JSON.stringify(fullProfileData.professional));
-            console.log('[ProfileContext] Setting professional:', professionalCopy);
-            setProfessionalDetails(professionalCopy as ProfileData);
+          if ('professional' in fullProfileData) {
+            setProfessionalDetails(fullProfileData.professional as ProfileData);
           }
-          
-          if ('additional' in fullProfileData && fullProfileData.additional) {
-            const additionalCopy = JSON.parse(JSON.stringify(fullProfileData.additional));
-            console.log('[ProfileContext] Setting additional:', additionalCopy);
-            setAdditionalDetails(additionalCopy as ProfileData);
+          if ('additional' in fullProfileData) {
+            setAdditionalDetails(fullProfileData.additional as ProfileData);
           }
-          
-          if ('extraCurricular' in fullProfileData && fullProfileData.extraCurricular) {
-            const extraCurrCopy = JSON.parse(JSON.stringify(fullProfileData.extraCurricular));
-            console.log('[ProfileContext] Setting extraCurricular:', extraCurrCopy);
-            setExtraCurricularDetails(extraCurrCopy as ProfileData);
+          if ('extraCurricular' in fullProfileData) {
+            setExtraCurricularDetails(fullProfileData.extraCurricular as ProfileData);
           }
         } else {
-          console.warn('[ProfileContext] Profile nested object not found in:', profile);
+          console.warn('Profile nested object not found');
         }
       } else {
-        console.warn('[ProfileContext] Invalid profile data structure received:', data);
+        console.warn('Invalid profile data structure received');
       }
     } catch (err) {
       console.error('Error fetching profile data:', err);
