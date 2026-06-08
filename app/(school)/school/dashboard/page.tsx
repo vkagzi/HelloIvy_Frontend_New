@@ -333,6 +333,30 @@ export default function SchoolDashboardPage() {
                   </td>
                 </tr>
               ))}
+              {dashboard.grade_overview.length > 0 && (
+                <tr className="bg-gray-50 font-bold">
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                    Total
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                    {dashboard.grade_overview.reduce((acc, g) => acc + g.student_count, 0)}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                    {dashboard.grade_overview.reduce((acc, g) => acc + g.domain_discovery_count, 0)}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                    {dashboard.grade_overview.reduce((acc, g) => acc + g.career_discovery_count, 0)}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm">
+                    <a
+                      href="/school/students"
+                      className="text-purple-600 hover:text-purple-800"
+                    >
+                      View All
+                    </a>
+                  </td>
+                </tr>
+              )}
               {dashboard.grade_overview.length === 0 && (
                 <tr>
                   <td

@@ -189,7 +189,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
     params.set('discount', String(convert(discountAmount)));
     params.set('tax', String(convert(totalTax)));
     params.set('total', String(convert(grandTotal)));
-    // params.set('currency', currency); // No longer needed as it's in the path
+    params.set('currency', currency);
     router.push(`${config.checkoutUrl}?${params.toString()}`);
   };
 
@@ -250,7 +250,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
         <div className="flex items-center gap-4">
           <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50 p-1">
             <Link
-              href="/pay-now-inr"
+              href={config.mode === 'school' ? '/school/payment/inr' : '/pay-now-inr'}
               className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-all ${
                 currency === 'INR' ? 'bg-white text-purple-700 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -258,7 +258,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
               <span className="text-sm">₹</span> INR
             </Link>
             <Link
-              href="/pay-now-usd"
+              href={config.mode === 'school' ? '/school/payment/usd' : '/pay-now-usd'}
               className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-all ${
                 currency === 'USD' ? 'bg-white text-purple-700 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'
               }`}

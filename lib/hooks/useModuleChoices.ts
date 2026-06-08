@@ -63,9 +63,8 @@ export function useModuleChoices(currencyOverride?: string) {
         if (data?.default_price != null) {
           setDefaultPrice(data.default_price);
         } else if (currencyOverride === 'USD' || data.currency === 'USD') {
-          // If in USD mode and no default price is set, use null to indicate "unset"
-          // instead of falling back to the INR default (999)
-          setDefaultPrice(null);
+          // If in USD mode and no default price is set, use 10.00
+          setDefaultPrice(10);
         }
         setLoading(false);
       })
