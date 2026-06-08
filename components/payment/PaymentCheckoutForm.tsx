@@ -42,14 +42,14 @@ export interface CheckoutConfig {
   title: string;
 }
 
-function parseLineItems(modulesParam: string, maxQty: number, priceGetter: (mod: string) => number): LineItem[] {
+function parseLineItems(modulesParam: string, maxQty: number, priceGetter: (mod: string) => number | null): LineItem[] {
   return modulesParam
     .split(',')
     .filter(Boolean)
     .map((entry) => {
       const [mod, qtyStr] = entry.split(':');
       const quantity = qtyStr ? Math.max(1, Math.min(maxQty, parseInt(qtyStr, 10) || 1)) : 1;
-      const price = priceGetter(mod);
+      const price = priceGetter(mod) ?? 0;
       return {
         module: mod,
         label: mod.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
@@ -77,15 +77,15 @@ export default function PaymentCheckoutForm({
   confirmPayment?: (paymentId: number) => Promise<void>;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const currencyParam = (searchParams?.get('currency') || (pathname?.includes('-usd') ? 'USD' : 'INR')).toUpperCase();
+  const { getPrice } = useModuleChoices(currencyParam);
   const { data: authSession, status: authStatus } = useSession();
-  const { getPrice } = useModuleChoices();
   const isLoggedIn = authStatus === 'authenticated' && !!authSession?.user;
   const modulesParam = searchParams?.get('modules') ?? '';
   const stateParam = searchParams?.get('state') ?? '';
   const couponCode = searchParams?.get('coupon_code') ?? '';
-  const pathname = usePathname();
-  const currencyParam = (searchParams?.get('currency') || (pathname?.includes('-usd') ? 'USD' : 'INR')).toUpperCase();
   const isUSD = currencyParam === 'USD';
   const discountAmount = parseFloat(searchParams?.get('discount') ?? '0');
   const taxAmount = parseFloat(searchParams?.get('tax') ?? '0');
