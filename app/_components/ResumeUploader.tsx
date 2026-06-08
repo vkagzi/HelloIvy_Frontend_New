@@ -33,6 +33,18 @@ export default function ResumeUploader() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    const allowedExtensions = ['.pdf', '.jpg', '.jpeg'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    if (!allowedExtensions.includes(fileExtension)) {
+      addToast('File format not supported, pls upload file in pdf/jpg format', { type: 'error' });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
     setLoading(true);
     setIsExtracting(false);
     setUploadProgress(0);
@@ -146,7 +158,7 @@ export default function ResumeUploader() {
           <span>
             {loading
               ? 'Scanning Resume...'
-              : 'Upload your resume here (PDF, DOCX, or JPG) to create/update your profile instantly!'}
+              : 'Upload your resume here (PDF or JPG) to create/update your profile instantly!'}
           </span>
         </button>
 
@@ -177,7 +189,7 @@ export default function ResumeUploader() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.docx,.doc,.jpg,.jpeg,.png,.txt"
+        accept=".pdf,.jpg,.jpeg"
         className="hidden"
         onChange={handleFileChange}
       />
