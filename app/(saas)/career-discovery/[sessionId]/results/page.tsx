@@ -502,7 +502,7 @@ const CareerResultsPage: React.FC = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                             <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                              Top Skill Gaps
+                              Skill Gaps
                             </span>
                           </div>
                           <ol className="space-y-1">
