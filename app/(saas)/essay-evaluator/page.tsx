@@ -555,13 +555,13 @@ const EssayEvaluatorPage: React.FC = () => {
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = ['.pdf', '.docx', '.txt'];
+    const allowedTypes = ['.pdf', '.jpg', '.jpeg'];
     const fileExtension = file.name
       .toLowerCase()
       .substring(file.name.lastIndexOf('.'));
 
     if (!allowedTypes.includes(fileExtension)) {
-      addToast('Please upload only PDF, DOCX, or TXT files.', {
+      addToast('File format not supported, pls upload file in pdf/jpg format', {
         type: 'error',
       });
       return;
@@ -624,13 +624,13 @@ const EssayEvaluatorPage: React.FC = () => {
     const file = files[0];
 
     // Validate file type
-    const allowedTypes = ['.pdf', '.docx', '.txt'];
+    const allowedTypes = ['.pdf', '.jpg', '.jpeg'];
     const fileExtension = file.name
       .toLowerCase()
       .substring(file.name.lastIndexOf('.'));
 
     if (!allowedTypes.includes(fileExtension)) {
-      addToast('Please drop only PDF, DOCX, or TXT files.', { type: 'error' });
+      addToast('File format not supported, pls upload file in pdf/jpg format', { type: 'error' });
       return;
     }
 

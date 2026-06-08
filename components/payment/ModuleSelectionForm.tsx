@@ -108,7 +108,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
 
   const selectedRows = rows.filter((r) => r.quantity > 0);
   const totalUnits = selectedRows.reduce((s, r) => s + r.quantity, 0);
-  const subtotal = selectedRows.reduce((s, r) => s + getPrice(r.value) * r.quantity, 0);
+  const subtotal = selectedRows.reduce((s, r) => s + (getPrice(r.value) ?? 0) * r.quantity, 0);
 
   let discountAmount = 0;
   if (appliedCoupon) {
@@ -120,7 +120,8 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
     discountAmount = Math.min(discountAmount, subtotal);
   }
 
-  const formatCurrency = (num: number) => {
+  const formatCurrency = (num: number | null) => {
+    if (num === null) return '---';
     return num.toLocaleString(isUSD ? 'en-US' : 'en-IN', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -305,13 +306,23 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
                 )}
               </div>
 
-              <span className="text-right text-sm text-gray-600">{getCurrencySymbol()}{formatCurrency(convert(getPrice(row.value)))}</span>
+              <span className="text-right text-sm text-gray-600">
+                {getPrice(row.value) !== null ? (
+                  <>
+                    {getCurrencySymbol()}
+                    {formatCurrency(convert(getPrice(row.value) as number))}
+                  </>
+                ) : (
+                  '---'
+                )}
+              </span>
 
               <div className="flex justify-center">
                 <select
                   value={row.quantity}
                   onChange={(e) => setQuantity(row.value, Number(e.target.value))}
-                  className="w-20 cursor-pointer rounded-lg border border-neutral-200 px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  disabled={getPrice(row.value) === null}
+                  className="w-20 cursor-pointer rounded-lg border border-neutral-200 px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-300 disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed"
                 >
                   {Array.from({ length: config.maxQuantity + 1 }, (_, i) => i).map((n) => (
                     <option key={n} value={n}>
@@ -322,7 +333,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
               </div>
 
               <span className={`text-right text-sm font-semibold ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>
-                {isSelected ? `${getCurrencySymbol()}${formatCurrency(convert(getPrice(row.value) * row.quantity))}` : '—'}
+                {isSelected && getPrice(row.value) !== null ? `${getCurrencySymbol()}${formatCurrency(convert((getPrice(row.value) as number) * row.quantity))}` : '—'}
               </span>
             </div>
           );
