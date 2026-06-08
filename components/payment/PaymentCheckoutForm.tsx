@@ -79,7 +79,7 @@ export default function PaymentCheckoutForm({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currencyParam = (searchParams?.get('currency') || (pathname?.includes('-usd') ? 'USD' : 'INR')).toUpperCase();
+  const currencyParam = (searchParams?.get('currency') || (pathname?.includes('/usd') || pathname?.includes('-usd') ? 'USD' : 'INR')).toUpperCase();
   const { getPrice } = useModuleChoices(currencyParam);
   const { data: authSession, status: authStatus } = useSession();
   const isLoggedIn = authStatus === 'authenticated' && !!authSession?.user;

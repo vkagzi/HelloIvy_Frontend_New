@@ -100,6 +100,7 @@ export default function SchoolStudentsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ group_by: 'grade' });
+      if (moduleFilter) params.append('module', moduleFilter);
 
       const data = await api<{
         grouped_students?: Record<string, StudentItem[]>;
@@ -263,7 +264,7 @@ export default function SchoolStudentsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Students</h1>
-          <p className="text-sm text-gray-500">{total} total students</p>
+          <p className="text-sm text-gray-500">{filteredAllStudents.length} total students</p>
         </div>
         <div className="flex items-center gap-2">
           <Button asChild className="">
@@ -368,7 +369,7 @@ export default function SchoolStudentsPage() {
             >
               All Students
               <span className="ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700">
-                {total}
+                {filteredAllStudents.length}
               </span>
             </TabsTrigger>
             {sortedGrades.map((grade) => {
@@ -382,7 +383,7 @@ export default function SchoolStudentsPage() {
                 >
                   {grade}
                   <span className="ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700">
-                    {count}
+                    {filteredGrouped[grade]?.length ?? 0}
                   </span>
                   {hasAutoAssign && (
                     <span className="ml-1 inline-flex h-4 items-center rounded-full bg-green-100 px-1.5 text-[10px] font-medium text-green-700" title="Auto-assign active">
