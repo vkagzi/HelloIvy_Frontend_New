@@ -159,22 +159,38 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
       // Build sections with weight estimates for balanced column layout
       const sections: { weight: number; el: React.ReactNode }[] = [];
 
-      sections.push({
-        weight: 2 + ((domain.why_recommended || domain.description)?.length || 0) / 80,
-        el: (
-          <View wrap={false} key="why">
-            <Text style={s.sectionTitle}>Why This Domain Fits You</Text>
-            <Text style={s.sectionText}>{domain.why_recommended || domain.description}</Text>
-          </View>
-        ),
-      });
+      // Domain Overview (description) — shown separately in web UI
+      if (domain.description) {
+        sections.push({
+          weight: 2 + (domain.description.length || 0) / 80,
+          el: (
+            <View wrap={false} key="overview">
+              <Text style={s.sectionTitle}>Domain Overview</Text>
+              <Text style={s.sectionText}>{domain.description}</Text>
+            </View>
+          ),
+        });
+      }
+
+      // Why This Domain Fits You — separate from description
+      if (domain.why_recommended) {
+        sections.push({
+          weight: 2 + (domain.why_recommended.length || 0) / 80,
+          el: (
+            <View wrap={false} key="why">
+              <Text style={s.sectionTitle}>Why This Domain Fits You</Text>
+              <Text style={s.sectionText}>{domain.why_recommended}</Text>
+            </View>
+          ),
+        });
+      }
 
       if (domain.key_interests?.length > 0) {
         sections.push({
           weight: 1 + Math.ceil(domain.key_interests.length / 4),
           el: (
             <View wrap={false} key="interests">
-              <Text style={s.sectionTitle}>Key Interests</Text>
+              <Text style={s.sectionTitle}>Your Key Interests</Text>
               <View style={s.chipRow}>
                 {domain.key_interests.map((item, i) => (
                   <View key={i} style={s.chip}>
@@ -192,7 +208,7 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
           weight: 1 + domain.sub_domains.length * 1.2,
           el: (
             <View wrap={false} key="subdomains">
-              <Text style={s.sectionTitle}>Sub-domains</Text>
+              <Text style={s.sectionTitle}>Sub-Domains to Explore</Text>
               {domain.sub_domains.map((sd, i) => (
                 <View key={i} style={s.bulletItem}>
                   <Text style={s.bullet}>•</Text>

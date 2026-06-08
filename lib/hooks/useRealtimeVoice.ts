@@ -139,6 +139,9 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, lan
       recognition.lang = language === 'hi' ? 'hi-IN' : (accent === 'british' ? 'en-GB' : 'en-US');
       
       recognition.onresult = (event: any) => {
+        if (isMutedRef.current) {
+          return;
+        }
         let interimTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
