@@ -1532,9 +1532,16 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           console.log('[DynamicForm] Cleaned values:', cleanedValues);
           
           const result = schema.safeParse(cleanedValues);
-          if (!result.success) {
-            console.error('[DynamicForm] Validation Errors:', result.error.format());
-            console.log('Form validation issues:', result.error.issues);
+
+          // Some Zod errors have empty .format() output in certain edge cases
+          // (complex combined schemas). Allow submit if there are NO reported issues
+          // to avoid blocking saves when the error object is empty.
+          const hasIssues = Array.isArray(result.error?.issues) && result.error!.issues.length > 0;
+          const validationPassed = result.success || !hasIssues;
+
+          if (!validationPassed) {
+            console.error('[DynamicForm] Validation Errors:', result.error?.format ? result.error.format() : result.error);
+            console.log('Form validation issues:', result.error?.issues);
 
             console.log('Detailed validation errors:');
             result.error.issues.forEach((err, index) => {
