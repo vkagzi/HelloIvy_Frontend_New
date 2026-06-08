@@ -1533,9 +1533,28 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           
           const result = schema.safeParse(cleanedValues);
           if (!result.success) {
-            console.error('[DynamicForm] Validation Errors:', result.error.format());
+            // Print a readable formatted error object
+            try {
+              console.error(
+                '[DynamicForm] Validation Errors:',
+                JSON.stringify(result.error.format(), null, 2)
+              );
+            } catch (e) {
+              console.error('[DynamicForm] Validation Errors (format failed)', result.error.format(), e);
+            }
             console.log('Form validation issues:', result.error.issues);
-            
+
+            // Show the first validation problem to the user via toast
+            try {
+              const firstIssue = result.error.issues && result.error.issues[0];
+              const firstMsg = firstIssue
+                ? `${firstIssue.path.join('.') || 'form'}: ${firstIssue.message}`
+                : 'Validation failed. Please check the form fields.';
+              addToast(`Validation error: ${firstMsg}`, { type: 'error' });
+            } catch (e) {
+              // swallow - logging only
+              console.error('[DynamicForm] Failed to show validation toast', e);
+            }
 
             console.log('Detailed validation errors:');
             result.error.issues.forEach((err, index) => {
