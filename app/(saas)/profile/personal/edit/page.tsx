@@ -29,6 +29,7 @@ const PersonalDetailsForm: React.FC = () => {
     Record<string, unknown>
   >({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [forceRefreshKey, setForceRefreshKey] = React.useState<number>(0);
 
   const transformedResponse = React.useMemo(
     () =>
@@ -113,6 +114,10 @@ const PersonalDetailsForm: React.FC = () => {
         });
         setResumeFormDefaults({});
         await refetch();
+        
+        // Force form to re-render with fresh data
+        setForceRefreshKey(prev => prev + 1);
+        
         addToast('Personal details saved successfully!', { type: 'success' });
       } else {
         addToast('Failed to update profile. Please try again.', {
@@ -267,7 +272,7 @@ const PersonalDetailsForm: React.FC = () => {
       </div>
       <Tabs />
       <DynamicForm
-        key={JSON.stringify(formDefaults)}
+        key={`personal-form-${forceRefreshKey}-${formDefaults.firstName || 'default'}`}
         fieldDefs={fieldDefs}
         layout={layout}
         onSubmit={onSubmit}
