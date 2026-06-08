@@ -30,7 +30,6 @@ const AdditionalFormDetails: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [pendingData, setPendingData] = React.useState<Record<string, unknown> | null>(null);
-  const [forceRefreshKey, setForceRefreshKey] = React.useState<number>(0);
   // Track which action was requested: 'navigate' (Complete Profile) or 'save' (Save)
   const pendingActionRef = React.useRef<'navigate' | 'save' | null>(null);
   // Use a ref so DynamicForm's synchronous callbacks can check it immediately
@@ -85,10 +84,6 @@ const AdditionalFormDetails: React.FC = () => {
           return next;
         });
         await refetch();
-        
-        // Force form to re-render with fresh data
-        setForceRefreshKey(prev => prev + 1);
-        
         // Now perform the post-save action
         if (action === 'navigate') {
           addToast('Profile completed successfully!', { type: 'success' });
@@ -172,7 +167,7 @@ const AdditionalFormDetails: React.FC = () => {
       </div>
       <Tabs />
       <DynamicForm
-        key={`additional-form-${forceRefreshKey}-${JSON.stringify(formDefaults).substring(0, 50)}`}
+        key={JSON.stringify(formDefaults)}
         fieldDefs={fieldDefs}
         defaultValues={formDefaults}
         layout={layout}
