@@ -21,6 +21,7 @@ const ExtraCurricularFormDetails: React.FC = () => {
   const router = useRouter();
   const { rawApiResponse, refetch, parsedTranscriptData, setParsedTranscriptData } = useProfile();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [forceRefreshKey, setForceRefreshKey] = React.useState<number>(0);
   // Reconstruct formatted location data for display
   const transformedResponse = React.useMemo(
     () => reconstructFormLocationData((rawApiResponse ?? {}) as Record<string, unknown>),
@@ -91,6 +92,10 @@ const ExtraCurricularFormDetails: React.FC = () => {
           return next;
         });
         await refetch();
+        
+        // Force form to re-render with fresh data
+        setForceRefreshKey(prev => prev + 1);
+        
         addToast('Extra-curricular details saved successfully!', { type: 'success' });
       } else {
         addToast('Failed to update profile.', { type: 'error' });
@@ -141,7 +146,7 @@ const ExtraCurricularFormDetails: React.FC = () => {
       </div>
       <Tabs />
       <DynamicForm
-        key={JSON.stringify(formDefaults)}
+        key={`extracurr-form-${forceRefreshKey}-${Array.isArray(formDefaults.extraCurricular) ? formDefaults.extraCurricular.length : 0}`}
         defaultValues={formDefaults}
         fieldDefs={fieldDefs}
         layout={layout}
