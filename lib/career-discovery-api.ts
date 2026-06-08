@@ -58,6 +58,11 @@ export interface Degree {
   decision_filter: DegreeDecisionFilter;
 }
 
+export interface FeasibilityRating {
+  level: 'High' | 'Medium' | 'Low';
+  reason: string;
+}
+
 export interface CareerRecommendation {
   id?: number;
   career_title: string;
@@ -72,6 +77,8 @@ export interface CareerRecommendation {
   day_in_life: string;
   pros_and_cons: { pros: string[]; cons: string[] };
   work_life_balance: string;
+  feasibility?: FeasibilityRating;
+  skill_gaps?: string[];
   rank?: number;
 }
 
@@ -142,6 +149,7 @@ class CareerDiscoveryAPI {
     primaryDomain: string,
     secondaryDomain?: string,
     domainSessionId?: string,
+    degreePreference?: 'career_only' | 'career_and_postgrad',
   ): Promise<CareerDiscoverySession> {
     const body: Record<string, string> = {
       primary_domain: primaryDomain,
@@ -151,6 +159,9 @@ class CareerDiscoveryAPI {
     }
     if (domainSessionId) {
       body.domain_session_id = domainSessionId;
+    }
+    if (degreePreference) {
+      body.degree_preference = degreePreference;
     }
     return api<CareerDiscoverySession>(`${this.baseUrl}/`, {
       method: 'POST',

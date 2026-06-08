@@ -159,22 +159,38 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
       // Build sections with weight estimates for balanced column layout
       const sections: { weight: number; el: React.ReactNode }[] = [];
 
-      sections.push({
-        weight: 2 + ((domain.why_recommended || domain.description)?.length || 0) / 80,
-        el: (
-          <View wrap={false} key="why">
-            <Text style={s.sectionTitle}>Why This Domain Fits You</Text>
-            <Text style={s.sectionText}>{domain.why_recommended || domain.description}</Text>
-          </View>
-        ),
-      });
+      // Domain Overview (description) — shown separately in web UI
+      if (domain.description) {
+        sections.push({
+          weight: 2 + (domain.description.length || 0) / 80,
+          el: (
+            <View wrap={false} key="overview">
+              <Text style={s.sectionTitle}>Domain Overview</Text>
+              <Text style={s.sectionText}>{domain.description}</Text>
+            </View>
+          ),
+        });
+      }
+
+      // Why This Domain Fits You — separate from description
+      if (domain.why_recommended) {
+        sections.push({
+          weight: 2 + (domain.why_recommended.length || 0) / 80,
+          el: (
+            <View wrap={false} key="why">
+              <Text style={s.sectionTitle}>Why This Domain Fits You</Text>
+              <Text style={s.sectionText}>{domain.why_recommended}</Text>
+            </View>
+          ),
+        });
+      }
 
       if (domain.key_interests?.length > 0) {
         sections.push({
           weight: 1 + Math.ceil(domain.key_interests.length / 4),
           el: (
             <View wrap={false} key="interests">
-              <Text style={s.sectionTitle}>Key Interests</Text>
+              <Text style={s.sectionTitle}>Your Key Interests</Text>
               <View style={s.chipRow}>
                 {domain.key_interests.map((item, i) => (
                   <View key={i} style={s.chip}>
@@ -192,7 +208,7 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
           weight: 1 + domain.sub_domains.length * 1.2,
           el: (
             <View wrap={false} key="subdomains">
-              <Text style={s.sectionTitle}>Sub-domains</Text>
+              <Text style={s.sectionTitle}>Sub-Domains to Explore</Text>
               {domain.sub_domains.map((sd, i) => (
                 <View key={i} style={s.bulletItem}>
                   <Text style={s.bullet}>•</Text>
@@ -223,42 +239,7 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
         });
       }
 
-      if (domain.related_subjects?.length > 0) {
-        sections.push({
-          weight: 1 + domain.related_subjects.length * 2.5,
-          el: (
-            <View wrap={false} key="subjects">
-              <Text style={s.sectionTitle}>Related Subjects</Text>
-              {domain.related_subjects.map((subj, i) => {
-                if (typeof subj === 'string') {
-                  return (
-                    <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
-                      <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{subj}</Text>
-                    </View>
-                  );
-                }
-                const subject = subj && typeof subj === 'object' ? subj : { subject: String(subj), relevance: '', importance: 'supporting', importance_reason: '', combination_pathways: [] };
-                const importanceLabel = { core: 'Core', supporting: 'Supporting', optional: 'Optional' }[subject.importance] || String(subject.importance || '');
-                const importanceColor = { core: '#dc2626', supporting: '#d97706', optional: '#2563eb' }[subject.importance] || gray;
-                return (
-                  <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{String(subject.subject || '')}</Text>
-                      <Text style={{ fontSize: 7, color: importanceColor, fontFamily: 'Helvetica-Bold' }}>{importanceLabel}</Text>
-                    </View>
-                    {subject.relevance ? <Text style={{ fontSize: 8, color: gray, marginTop: 2 }}>{String(subject.relevance)}</Text> : null}
-                    {Array.isArray(subject.combination_pathways) && subject.combination_pathways.map((pw, pi) => (
-                      <View key={pi} style={{ marginTop: 2, paddingLeft: 6 }}>
-                        <Text style={{ fontSize: 7, color: '#374151' }}>{String(pw.pathway_name || '')}: {Array.isArray(pw.paired_with) ? pw.paired_with.join(', ') : ''} {'-> '}{Array.isArray(pw.leads_to) ? pw.leads_to.join(', ') : ''}</Text>
-                      </View>
-                    ))}
-                  </View>
-                );
-              })}
-            </View>
-          ),
-        });
-      }
+
 
       if (domain.potential_careers?.length > 0) {
         sections.push({

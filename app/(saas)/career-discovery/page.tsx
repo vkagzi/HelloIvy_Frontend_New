@@ -162,6 +162,8 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   >([]);
   const [isCheckingDomain, setIsCheckingDomain] = useState(true);
   const hasFetchedRef = useRef(false);
+  // Degree preference (only shown for non-high-school students)
+  const [degreePreference, setDegreePreference] = useState<'career_only' | 'career_and_postgrad'>('career_only');
 
   // Domain selection state
   const [allDomains, setAllDomains] = useState<DomainItem[]>([]);
@@ -181,6 +183,14 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   const profileExists = profileData !== null;
   const linkText = profileExists ? 'View/Edit your profile' : 'Create your profile';
   const linkHref = '/profile/personal';
+
+  // Detect student's academic level from profile to conditionally show degree preference
+  const academicLevel: string = (
+    (profileData as any)?.educational?.academicLevel ||
+    (profileData as any)?.profile_data?.educational?.academicLevel ||
+    ''
+  );
+  const isHighSchool = academicLevel === 'High School (8th\u201312th grade)';
 
   useEffect(() => {
     if (hasFetchedRef.current) return;
@@ -306,7 +316,8 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       const session = await careerDiscoveryApi.createSession(
         selectedPrimary,
         selectedSecondary ?? undefined,
-        latestDomainSession?.session_id
+        latestDomainSession?.session_id,
+        isHighSchool ? undefined : degreePreference,
       );
       console.log('Created new session:', session);
 
@@ -651,7 +662,61 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           )}
         </div>
 
-        {/* Instructions */}
+        {/* Degree Preference — only for non-high-school students */}
+        {!profileLoading && !isHighSchool && (
+          <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50/60 p-5">
+            <h2 className="mb-1 text-base font-semibold text-slate-900">What would you like in your career report?</h2>
+            <p className="mb-4 text-sm text-slate-500">Choose what your report should include. You can always start a new session to switch.</p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              {/* Option 1 */}
+              <label
+                className={`flex flex-1 cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${
+                  degreePreference === 'career_only'
+                    ? 'border-blue-500 bg-white shadow-md'
+                    : 'border-gray-200 bg-white hover:border-blue-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="degreePreference"
+                  value="career_only"
+                  checked={degreePreference === 'career_only'}
+                  onChange={() => setDegreePreference('career_only')}
+                  className="mt-1 accent-blue-600"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-800">I only want a career report</span>
+                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-700">Default</span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500">Get 5 career options with skill gaps, feasibility, and next steps — without postgrad degree suggestions.</p>
+                </div>
+              </label>
+              {/* Option 2 */}
+              <label
+                className={`flex flex-1 cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${
+                  degreePreference === 'career_and_postgrad'
+                    ? 'border-indigo-500 bg-white shadow-md'
+                    : 'border-gray-200 bg-white hover:border-indigo-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="degreePreference"
+                  value="career_and_postgrad"
+                  checked={degreePreference === 'career_and_postgrad'}
+                  onChange={() => setDegreePreference('career_and_postgrad')}
+                  className="mt-1 accent-indigo-600"
+                />
+                <div>
+                  <span className="text-sm font-semibold text-slate-800">I want a career report &amp; post grad degree options</span>
+                  <p className="mt-0.5 text-xs text-slate-500">Get 5 career options AND postgraduate degree recommendations (Masters, MBA, etc.) alongside each career.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+        )}
+
         <div className="mb-6 rounded-3xl border border-white bg-white p-6 shadow-xs">
           <div className="mb-6 flex flex-col gap-1">
             <h2 className="text-xl font-bold text-slate-800">

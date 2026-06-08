@@ -22,6 +22,8 @@ import {
   niosSubjects,
   stateBoardSubjects,
   seniorSecondarySubjects,
+  mypSubjects,
+  ibcpSubjects,
 } from '@/app/(saas)/profile/_config/fieldDefinitions';
 
 /** Returns the list of grades to display in descending order (always 2 grades) */
@@ -610,9 +612,11 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                                 'Cambridge - IGCSE': cambridgeIGCSESubjects,
                                 CBSE: cbseSubjects,
                                 HSC: hscSubjects,
+                                IBCP: ibcpSubjects,
                                 ICSE: icseSubjects,
                                 'International Baccalaureate (IB)': ibSubjects,
                                 ISC: iscSubjects,
+                                MYP: mypSubjects,
                                 NIOS: niosSubjects,
                                 'State Board': stateBoardSubjects,
                               };

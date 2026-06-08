@@ -56,6 +56,9 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, lan
   // exceeding React's nested-update limit during rapid streaming deltas.
   const transcriptRef = useRef<RealtimeVoiceMessage[]>([]);
   const transcriptRafRef = useRef<number | null>(null);
+  const recognitionRef = useRef<any>(null);
+  // Track if the current user bubble was created by the local speech recognition
+  const isLocalTranscriptActiveRef = useRef(false);
 
   onErrorRef.current = onError;
   onSessionProgressRef.current = onSessionProgress;
@@ -71,17 +74,24 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, lan
     });
   }, []);
 
-  const updateTranscriptRef = useCallback(
-    (updater: (prev: RealtimeVoiceMessage[]) => RealtimeVoiceMessage[]) => {
-      transcriptRef.current = updater(transcriptRef.current);
-      scheduleTranscriptFlush();
-    },
-    [scheduleTranscriptFlush],
-  );
+  const updateTranscriptRef = useCallback((updater: (prev: RealtimeVoiceMessage[]) => RealtimeVoiceMessage[]) => {
+    transcriptRef.current = updater(transcriptRef.current);
+    setTranscript([...transcriptRef.current]);
+  }, []);
 
   // ─── helpers ──────────────────────────────────────────────
 
   const teardownMic = useCallback(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Already stopped or not started
+      }
+      recognitionRef.current = null;
+    }
+    isLocalTranscriptActiveRef.current = false;
+
     if (workletNodeRef.current) { workletNodeRef.current.disconnect(); workletNodeRef.current = null; }
     if (sourceNodeRef.current) { sourceNodeRef.current.disconnect(); sourceNodeRef.current = null; }
     if (audioContextRef.current) { audioContextRef.current.close(); audioContextRef.current = null; }
@@ -119,8 +129,59 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, lan
     // but some browsers require a connected graph to keep processing alive.
     worklet.connect(ctx.destination);
     setIsRecording(true);
+
+    // Initialize Web Speech API for live transcription preview
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = language === 'hi' ? 'hi-IN' : (accent === 'indian' ? 'en-IN' : accent === 'british' ? 'en-GB' : 'en-US');
+      
+      recognition.onresult = (event: any) => {
+        if (isMutedRef.current) {
+          return;
+        }
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          // Accumulate both interim and final results to ensure the chat bubble
+          // shows the completed text even if the Azure Whisper model deployment is missing.
+          interimTranscript += event.results[i][0].transcript;
+        }
+
+        if (interimTranscript.trim()) {
+          updateTranscriptRef((prev) => {
+            // Find the most recent user message bubble (could be an ellipsis placeholder or a previous draft)
+            const lastUserIdx = [...prev].reverse().findIndex(m => m.role === 'user');
+            if (lastUserIdx !== -1) {
+              const actualIdx = prev.length - 1 - lastUserIdx;
+              const updated = [...prev];
+              updated[actualIdx] = { ...updated[actualIdx], content: interimTranscript };
+              isLocalTranscriptActiveRef.current = true;
+              return updated;
+            }
+            
+            // If no user bubble exists yet, create one
+            isLocalTranscriptActiveRef.current = true;
+            return [...prev, { role: 'user', content: interimTranscript, timestamp: new Date() }];
+          });
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('[Voice] Speech recognition error:', event.error);
+      };
+
+      try {
+        recognition.start();
+        recognitionRef.current = recognition;
+      } catch (e) {
+        console.error('[Voice] Failed to start speech recognition:', e);
+      }
+    }
+
     console.log('[Voice] Microphone opened and worklet connected');
-  }, []);
+  }, [language, accent, updateTranscriptRef]);
 
   // ─── public API ───────────────────────────────────────────
 
@@ -166,6 +227,12 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, lan
             setIsConnecting(false);
           },
           onTranscriptUpdate: (text, role, isNewTurn) => {
+            if (role === 'user') {
+              // Once OpenAI sends a user transcript (delta or completed), 
+              // we stop the local preview from being the "active" bubble.
+              isLocalTranscriptActiveRef.current = false;
+            }
+
             updateTranscriptRef((prev) => {
               const last = prev[prev.length - 1];
 

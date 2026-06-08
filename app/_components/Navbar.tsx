@@ -9,13 +9,23 @@ import { Label } from '@/app/_components/Typography';
 import { sidebarNavItems } from '@/app/_constants/navItems';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 import { useNavbar } from '@/app/_contexts/NavbarContext';
+import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
 import { useSession } from 'next-auth/react';
+
+/** Map sidebar href → backend module_name for lock/unlock display */
+const HREF_TO_MODULE: Record<string, string> = {
+  '/domain-discovery': 'domain_discovery',
+  '/career-discovery': 'career_discovery',
+  '/college-selector': 'college_selector',
+};
 
 const Navbar: React.FC = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const pathname = usePathname();
   const { isDrawerOpen, closeDrawer } = useNavbar();
   const { data: session, status } = useSession();
+  const { hasAccess, loading: modulesLoading } = useModuleAccess();
   const userRole = session?.user?.role ?? 'student';
   const isAdmin = ['superadmin', 'operationadmin'].includes(userRole);
   const isSchoolAdmin = ['schooladmin', 'schoolopsadmin'].includes(userRole);
@@ -43,7 +53,7 @@ const Navbar: React.FC = () => {
       '/pay-as-student',
     ];
 
-    const sortNavItems = (items: { label: string; icon: string; href: string }[]) => {
+    const sortNavItems = (items: (typeof sidebarNavItems[0])[]) => {
       return [...items].sort((a, b) => {
         const idxA = desiredOrder.indexOf(a.href);
         const idxB = desiredOrder.indexOf(b.href);
@@ -63,7 +73,7 @@ const Navbar: React.FC = () => {
     }
 
     // Map backend modules to NavItem shape and avoid duplicates
-    const extra: { label: string; icon: string; href: string }[] = [];
+    const extra: (typeof sidebarNavItems[0])[] = [];
     for (const m of dynamicModules) {
       // Map database/backend underscores to frontend url hyphens
       let href = `/${m.value}`;
@@ -82,7 +92,7 @@ const Navbar: React.FC = () => {
     // Insert extras after the college selector if present, otherwise append
     const insertAfter = '/college-selector';
     const idx = filteredNavItems.findIndex((i) => i.href === insertAfter);
-    let combined: { label: string; icon: string; href: string }[];
+    let combined: (typeof sidebarNavItems[0])[];
     if (idx >= 0) {
       const copy = [...filteredNavItems];
       copy.splice(idx + 1, 0, ...extra);
@@ -157,13 +167,19 @@ const Navbar: React.FC = () => {
       {/* NAV ITEMS */}
       <ul className="mt-2 flex-1">
         {sidebarWithCustom.map((item) => {
-          const active = pathname === item.href;
+          const isExpanded = expandedItem === item.href;
+          const hasChildren = item.children && item.children.length > 0;
+          const active = pathname === item.href || (hasChildren && item.children?.some(c => pathname === c.href));
 
           return (
-            <li key={item.href} className="h-10">
+            <li key={item.href}>
               <Link
                 href={item.href}
-                className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all ${
+                onClick={hasChildren ? (e) => {
+                  e.preventDefault();
+                  setExpandedItem(isExpanded ? null : item.href);
+                } : undefined}
+                className={`flex h-10 items-center gap-2 rounded-md px-3 py-2 transition-all ${
                   active
                     ? 'bg-action-gradient-800 font-semibold text-white'
                     : 'hover:bg-purple-50'
@@ -180,16 +196,68 @@ const Navbar: React.FC = () => {
                   }`}
                 />
 
-                {/* Hide labels when collapsed */}
                 {!collapsed && (
-                  <Label
-                    size="sm"
-                    className="overflow-hidden text-nowrap text-ellipsis"
-                  >
-                    {item.label}
-                  </Label>
+                  <>
+                    <Label
+                      size="sm"
+                      className="flex-1 overflow-hidden text-nowrap text-ellipsis"
+                    >
+                      {item.label}
+                    </Label>
+                    {(() => {
+                      const moduleName = HREF_TO_MODULE[item.href];
+                      if (!moduleName || modulesLoading) return null;
+                      const unlocked = hasAccess(moduleName);
+                      return (
+                        <span
+                          title={unlocked ? 'Module unlocked' : 'Module locked'}
+                          className="ml-auto flex-shrink-0"
+                        >
+                          {unlocked ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                          )}
+                        </span>
+                      );
+                    })()}
+                  </>
+                )}
+                {hasChildren && !collapsed && (
+                  <FiIcon
+                    name={isExpanded ? 'angle-small-up' : 'angle-small-down'}
+                    className={`block h-4 w-4 shrink-0 ${active ? 'text-white' : 'text-neutral-400'}`}
+                  />
                 )}
               </Link>
+
+              {hasChildren && isExpanded && !collapsed && (
+                <ul className="ml-8 mt-1 border-l border-neutral-200 pl-2 space-y-1">
+                  {item.children!.map((child) => {
+                    const childActive = pathname === child.href;
+                    return (
+                      <li key={child.href}>
+                        <Link
+                          href={child.href}
+                          className={`flex items-center rounded-md px-3 py-1.5 text-xs transition-all ${
+                            childActive
+                              ? 'font-semibold text-purple-700 bg-purple-50'
+                              : 'text-neutral-600 hover:bg-purple-50 hover:text-neutral-800'
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </li>
           );
         })}
@@ -232,7 +300,7 @@ const Navbar: React.FC = () => {
       {/* Desktop sidebar */}
       <nav
         className={`relative hidden min-h-screen flex-col bg-white px-2 transition-all duration-200 lg:flex ${
-          collapsed ? 'w-16' : 'w-60 border-r border-neutral-200'
+          collapsed ? 'w-16' : 'w-72 border-r border-neutral-200'
         }`}
       >
         {sidebarContent}
@@ -246,7 +314,7 @@ const Navbar: React.FC = () => {
             onClick={closeDrawer}
           />
 
-          <nav className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white px-2 shadow-xl">
+          <nav className="absolute inset-y-0 left-0 flex w-72 flex-col bg-white px-2 shadow-xl">
             {sidebarContent}
           </nav>
         </div>

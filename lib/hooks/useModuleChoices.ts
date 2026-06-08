@@ -8,13 +8,13 @@ export interface ModuleChoice {
   label: string;
   icon?: string;
   color?: string;
-  price?: number;
+  price?: number | null;
 }
 
 interface ModuleChoicesResponse {
   modules: ModuleChoice[];
   currency?: string;
-  default_price?: number;
+  default_price?: number | null;
 }
 
 const DEFAULT_PRICE = 999;
@@ -37,11 +37,11 @@ const STATIC_MODULES: ModuleChoice[] = [
   },
 ];
 
-export function useModuleChoices() {
+export function useModuleChoices(currencyOverride?: string) {
   const [modules, setModules] = useState<ModuleChoice[]>(STATIC_MODULES);
   const [loading, setLoading] = useState<boolean>(true);
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
-  const [defaultPrice, setDefaultPrice] = useState<number>(DEFAULT_PRICE);
+  const [defaultPrice, setDefaultPrice] = useState<number | null>(DEFAULT_PRICE);
   const [trigger, setTrigger] = useState(0);
 
   const refetch = useCallback(() => {
@@ -50,14 +50,23 @@ export function useModuleChoices() {
 
   useEffect(() => {
     let active = true;
-    api<ModuleChoicesResponse>('/api/accounts/module-choices/')
+    const endpoint = currencyOverride
+      ? `/api/accounts/module-choices/?currency=${currencyOverride}`
+      : '/api/accounts/module-choices/';
+    api<ModuleChoicesResponse>(endpoint)
       .then((data) => {
         if (!active) return;
         if (data && Array.isArray(data.modules)) {
           setModules(data.modules);
         }
         if (data?.currency) setCurrency(data.currency);
-        if (data?.default_price != null) setDefaultPrice(data.default_price);
+        if (data?.default_price != null) {
+          setDefaultPrice(data.default_price);
+        } else if (currencyOverride === 'USD' || data.currency === 'USD') {
+          // If in USD mode and no default price is set, use null to indicate "unset"
+          // instead of falling back to the INR default (999)
+          setDefaultPrice(null);
+        }
         setLoading(false);
       })
       .catch(() => {
@@ -66,15 +75,18 @@ export function useModuleChoices() {
     return () => {
       active = false;
     };
-  }, [trigger]);
+  }, [trigger, currencyOverride]);
 
   const prices: Record<string, number> = {};
   for (const m of modules) {
     if (m.price != null) prices[m.value] = m.price;
   }
 
-  const getPrice = (moduleName: string): number =>
-    prices[moduleName] ?? defaultPrice;
+  const getPrice = (moduleName: string): number | null => {
+    const val = prices[moduleName];
+    if (val !== undefined && val !== null) return val;
+    return defaultPrice;
+  };
 
   return { modules, currency, defaultPrice, getPrice, loading, refetch };
 }

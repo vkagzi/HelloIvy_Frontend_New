@@ -11,6 +11,7 @@ import Button from '@/app/_components/Button';
 
 type VoicePersona = 'male' | 'female';
 type VoiceAccent = 'indian' | 'british' | 'american';
+type VoiceLanguage = 'en' | 'hi';
 
 type PersonaOption = {
   id: VoicePersona;
@@ -102,6 +103,8 @@ export default function SettingsPage(): React.ReactElement {
   const [saved, setSaved] = useState<VoicePersona>('male');
   const [selectedAccent, setSelectedAccent] = useState<VoiceAccent>('american');
   const [savedAccent, setSavedAccent] = useState<VoiceAccent>('american');
+  const [selectedLanguage, setSelectedLanguage] = useState<VoiceLanguage>('en');
+  const [savedLanguage, setSavedLanguage] = useState<VoiceLanguage>('en');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [playingPersona, setPlayingPersona] = useState<VoicePersona | null>(null);
@@ -159,7 +162,7 @@ export default function SettingsPage(): React.ReactElement {
   );
 
   useEffect(() => {
-    api<{ settings: { voice_persona?: VoicePersona; voice_accent?: VoiceAccent } }>('/api/accounts/settings/')
+    api<{ settings: { voice_persona?: VoicePersona; voice_accent?: VoiceAccent; voice_language?: VoiceLanguage } }>('/api/accounts/settings/')
       .then((data) => {
         const persona = data.settings?.voice_persona || 'male';
         setSelected(persona);
@@ -168,6 +171,10 @@ export default function SettingsPage(): React.ReactElement {
         const accent = data.settings?.voice_accent || 'american';
         setSelectedAccent(accent);
         setSavedAccent(accent);
+
+        const language = data.settings?.voice_language || 'en';
+        setSelectedLanguage(language);
+        setSavedLanguage(language);
       })
       .catch(() => {
         // keep defaults
@@ -180,19 +187,20 @@ export default function SettingsPage(): React.ReactElement {
     try {
       await api('/api/accounts/settings/', {
         method: 'PUT',
-        body: { voice_persona: selected, voice_accent: selectedAccent },
+        body: { voice_persona: selected, voice_accent: selectedAccent, voice_language: selectedLanguage },
       });
       setSaved(selected);
       setSavedAccent(selectedAccent);
-      addToast('Voice and accent preferences saved successfully!', { type: 'success' });
+      setSavedLanguage(selectedLanguage);
+      addToast('Voice, accent and language preferences saved successfully!', { type: 'success' });
     } catch {
       addToast('Failed to save voice preferences. Please try again.', { type: 'error' });
     } finally {
       setSaving(false);
     }
-  }, [selected, selectedAccent, addToast]);
+  }, [selected, selectedAccent, selectedLanguage, addToast]);
 
-  const dirty = selected !== saved || selectedAccent !== savedAccent;
+  const dirty = selected !== saved || selectedAccent !== savedAccent || selectedLanguage !== savedLanguage;
 
   return (
     <div className="mx-auto max-w-2xl py-4">
@@ -429,6 +437,95 @@ export default function SettingsPage(): React.ReactElement {
         )}
       </div>
 
+      {/* Select Agent Language card */}
+      <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl select-none" aria-hidden>🌐</span>
+          <Label size="lg" className="font-bold">
+            Select Agent Language
+          </Label>
+        </div>
+        <Paragraph size="sm" className="mt-1 text-neutral-500">
+          Choose the language for your HelloIvy counsellor when using live voice mode.
+        </Paragraph>
+
+        {loading ? (
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-32 animate-pulse rounded-xl bg-neutral-100"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {[
+              { id: 'en', label: 'English', flag: '🇬🇧/🇺🇸', desc: 'Default language for all interactions.' },
+              { id: 'hi', label: 'Hindi (हिंदी)', flag: '🇮🇳', desc: 'Interactions and counsellor voice in Hindi.' },
+            ].map((lang) => {
+              const isSelected = selectedLanguage === lang.id;
+              return (
+                <div
+                  key={lang.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedLanguage(lang.id as VoiceLanguage)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedLanguage(lang.id as VoiceLanguage);
+                    }
+                  }}
+                  className={`group relative flex cursor-pointer flex-col justify-between gap-2.5 rounded-xl border-2 p-4 transition-all ${
+                    isSelected
+                      ? 'border-teal-500 bg-teal-50/40 shadow-md'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-3xl filter drop-shadow-sm select-none" aria-hidden>{lang.flag}</span>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold select-none ${
+                      isSelected ? 'bg-teal-100 text-teal-700' : 'bg-neutral-100 text-neutral-700'
+                    }`}>
+                      {lang.id.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div>
+                    <Label size="sm" className="font-bold text-neutral-900 block group-hover:text-teal-600 transition-colors">
+                      {lang.label}
+                    </Label>
+                    <Paragraph size="xs" className="mt-1 text-neutral-500 leading-normal">
+                      {lang.desc}
+                    </Paragraph>
+                  </div>
+
+                  {/* Selection check */}
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-teal-500 text-white shadow-sm">
+                      <svg
+                        className="h-2.5 w-2.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={4.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M4.5 12.75l6 6 9-13.5"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Actions */}
       <div className="mt-6 flex justify-end gap-3">
         <Button
@@ -437,6 +534,7 @@ export default function SettingsPage(): React.ReactElement {
           onClick={() => {
             setSelected(saved);
             setSelectedAccent(savedAccent);
+            setSelectedLanguage(savedLanguage);
           }}
           className="rounded-lg border border-neutral-300 px-5 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
         >

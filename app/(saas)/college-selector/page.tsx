@@ -235,10 +235,7 @@ function CollegeSelectorPage() {
       setIsLoading(true);
       setError(null);
 
-      if (!isProfileComplete) {
-        setError('Please complete your profile before starting a session.');
-        return;
-      }
+      // Profile completion check removed to allow independent module access.
 
       // if (testScores.length === 0) {
       //   setError(
@@ -460,68 +457,9 @@ function CollegeSelectorPage() {
             </div>
           )}
 
-          {!profileLoading && !isProfileComplete ? (
-            <div className="mt-6 rounded-lg border border-orange-200 bg-orange-50 p-4">
-              <div className="flex items-start gap-3">
-                <FiIcon
-                  name="exclamation-circle"
-                  className="mt-0.5 h-5 w-5 shrink-0 text-orange-500"
-                />
-                <div className="flex-1">
-                  <p className="font-semibold text-orange-800">
-                    Profile incomplete ({completionPercentage}%)
-                  </p>
-                  <p className="mt-1 text-sm text-orange-700">
-                    You need to complete your profile before starting College
-                    Selector.
-                    {missingSections.some(
-                      (s: string) =>
-                        s === 'personalDetails' || s === 'educational'
-                    ) && (
-                      <>
-                        {' '}
-                        Missing:{' '}
-                        {missingSections.map((s: string, i: number) => {
-                          const slugMap: Record<string, string> = {
-                            personalDetails: 'personal',
-                            educational: 'educational',
-                            extraCurricular: 'extra-curricular',
-                          };
-                          const labelMap: Record<string, string> = {
-                            personalDetails: 'Personal Details',
-                            educational: 'Educational',
-                            extraCurricular: 'Extra Curricular',
-                          };
-                          return (
-                            <span key={s}>
-                              {i > 0 && ', '}
-                              <Link
-                                href={`/profile/${slugMap[s] ?? s}/edit`}
-                                className="font-medium underline underline-offset-2 hover:text-orange-900"
-                              >
-                                {labelMap[s] ??
-                                  s.charAt(0).toUpperCase() + s.slice(1)}
-                              </Link>
-                            </span>
-                          );
-                        })}
-                        .
-                      </>
-                    )}
-                  </p>
-                  <Link
-                    href="/profile/personal/edit"
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
-                  >
-                    <FiIcon name="pencil" className="h-4 w-4" />
-                    Complete my profile
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Standardized Test Scores */}
+          {/* Profile and module completion gates removed. Content is now directly rendered. */}
+          <>
+            {/* Standardized Test Scores */}
               {!profileLoading && (
                 <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-5">
                   <h3 className="mb-3 text-base font-semibold text-gray-900">
@@ -636,8 +574,7 @@ function CollegeSelectorPage() {
               >
                 {isLoading ? 'Starting...' : 'Start College Selection'}
               </Button>
-            </>
-          )}
+          </>
       </div>
     </div>
   );

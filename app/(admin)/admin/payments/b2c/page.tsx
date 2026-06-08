@@ -11,6 +11,7 @@ import { RefreshCw, Download } from 'lucide-react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/app/_components/Select';
 import { LoadingState, ErrorState } from '@/components/admin/LoadingState';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
+import { useSearchParams } from 'next/navigation';
 import { downloadPDF } from '@/lib/pdf-from-component';
 import { InvoicePDF, type InvoiceData } from '@/components/pdf/InvoicePDF';
 
@@ -122,6 +123,9 @@ function exportPaymentsCSV(payments: UserPayment[]) {
 
 export default function B2CPaymentsPage() {
   const { modules: moduleChoices } = useModuleChoices();
+  const searchParams = useSearchParams();
+  const initialCurrency = searchParams?.get('currency') || 'INR';
+
   const [payments, setPayments] = useState<UserPayment[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -129,10 +133,11 @@ export default function B2CPaymentsPage() {
 
   // Filter state
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterCurrency, setFilterCurrency] = useState(initialCurrency);
 
   // Add modal
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ user: '', amount: '', currency: 'INR', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+  const [addForm, setAddForm] = useState({ user: '', amount: '', currency: initialCurrency, status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
   const [addModules, setAddModules] = useState<string[]>([]);
   const [addCustomModule, setAddCustomModule] = useState(''); // free-text "Other" module
   const [addSaving, setAddSaving] = useState(false);
@@ -167,6 +172,7 @@ export default function B2CPaymentsPage() {
     try {
       const params = new URLSearchParams();
       if (filterStatus) params.set('status', filterStatus);
+      if (filterCurrency) params.set('currency', filterCurrency);
       const data = await api<{ payments: UserPayment[]; total: number }>(
         `/api/payments/b2c/?${params.toString()}`
       );
@@ -177,7 +183,7 @@ export default function B2CPaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filterStatus]);
+  }, [filterStatus, filterCurrency]);
 
   useEffect(() => {
     fetchPayments();
@@ -212,7 +218,7 @@ export default function B2CPaymentsPage() {
         body: { ...addForm, modules_purchased: allModules.map(m => ({ module: m, quantity: 1 })), user: Number(addForm.user), amount: parseFloat(addForm.amount) },
       });
       setAddOpen(false);
-      setAddForm({ user: '', amount: '', currency: 'INR', status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+      setAddForm({ user: '', amount: '', currency: filterCurrency, status: 'completed', payment_gateway: '', gateway_transaction_id: '', notes: '' });
       setAddModules([]);
       setAddCustomModule('');
       setSelectedUser(null);
@@ -327,7 +333,7 @@ export default function B2CPaymentsPage() {
           <Button variant="outline" onClick={() => exportPaymentsCSV(payments)} className="flex items-center gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
             <Download className="h-4 w-4" /> Export CSV
           </Button>
-          <Button onClick={() => { setAddError(null); setAddModules([]); setAddCustomModule(''); setSelectedUser(null); setUserQuery(''); setActiveUserModules([]); setAddOpen(true); }}>+ Record Payment</Button>
+          <Button onClick={() => { setAddError(null); setAddForm({ ...addForm, currency: filterCurrency }); setAddModules([]); setAddCustomModule(''); setSelectedUser(null); setUserQuery(''); setActiveUserModules([]); setAddOpen(true); }}>+ Record Payment</Button>
         </div>
       </div>
 

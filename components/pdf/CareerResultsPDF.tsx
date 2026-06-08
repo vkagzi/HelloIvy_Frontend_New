@@ -4,37 +4,58 @@ import type { CareerRecommendation } from '@/lib/career-discovery-api';
 import { LOGO_APP_BASE64 } from './logo-base64';
 
 /* ── colour tokens ─────────────────────────────────────── */
-const purple = '#7f12f3';
-const blue = '#1a86f1';
+const purple   = '#7f12f3';
+const blue     = '#1a86f1';
 const lightPurple = '#e9d5ff';
-const lightBlue = '#dbeafe';
-const teal = '#14cecf';
-const tealBg = '#d0f5f5';
-const green = '#40c795';
-const gray = '#4b5563';
-const grayLight = '#f3f4f6';
+const tealBg   = '#d0f5f5';
+const green    = '#40c795';
+const gray     = '#4b5563';
+const gray100  = '#f3f4f6';
+const gray200  = '#e5e7eb';
+const amber    = '#d97706';
 
 /* ── styles ─────────────────────────────────────────────── */
 const s = StyleSheet.create({
   page: { padding: 30, fontFamily: 'Helvetica', fontSize: 9, color: '#1f2937' },
-  pageNumber: { position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center', fontSize: 7, color: '#9ca3af' },
+  pageNumber: {
+    position: 'absolute', bottom: 16, left: 0, right: 0,
+    textAlign: 'center', fontSize: 7, color: '#9ca3af',
+  },
 
   /* summary page */
   summaryHeader: { backgroundColor: purple, borderRadius: 8, padding: 16, marginBottom: 14 },
   summaryTitle: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: '#fff', textAlign: 'center' },
-  summarySubtitle: { fontSize: 10, color: '#e9d5ff', textAlign: 'center', marginTop: 4 },
+  summarySubtitle: { fontSize: 10, color: lightPurple, textAlign: 'center', marginTop: 4 },
   statBox: { backgroundColor: lightPurple, borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 10 },
   statNumber: { fontSize: 28, fontFamily: 'Helvetica-Bold', color: purple },
   statLabel: { fontSize: 10, color: purple, marginTop: 2 },
 
-  /* career card */
+  /* career card header */
   card: { borderRadius: 8, overflow: 'hidden', marginBottom: 0 },
   cardHeader: { padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardRank: { fontSize: 10, color: 'rgba(255,255,255,0.7)', fontFamily: 'Helvetica-Bold' },
   cardTitle: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#fff', marginTop: 2 },
-  cardSalary: { fontSize: 9, color: '#e9d5ff', marginTop: 2 },
   badge: { backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontFamily: 'Helvetica-Bold', fontSize: 9 },
+
+  /* feasibility + skill gaps strip */
+  strip: {
+    flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: gray200,
+    backgroundColor: gray100, paddingHorizontal: 12, paddingVertical: 8,
+  },
+  stripLeft: { flex: 1 },
+  stripRight: { flex: 1, borderLeftWidth: 1, borderLeftColor: gray200, paddingLeft: 10 },
+  stripLabel: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 },
+
+  feasBadge: { borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 3, alignSelf: 'flex-start' },
+  feasText: { fontSize: 7, fontFamily: 'Helvetica-Bold' },
+  feasReason: { fontSize: 7.5, color: gray, lineHeight: 1.4 },
+
+  gapNumCircle: { width: 13, height: 13, borderRadius: 7, backgroundColor: lightPurple, alignItems: 'center', justifyContent: 'center', marginRight: 4, marginTop: 0.5 },
+  gapNumText: { fontSize: 6, fontFamily: 'Helvetica-Bold', color: purple },
+  gapText: { fontSize: 7.5, color: gray, flex: 1, lineHeight: 1.4 },
+
+  /* card body */
   cardBody: { padding: 14, backgroundColor: '#fff' },
   twoCol: { flexDirection: 'row', gap: 14 },
   col: { flex: 1 },
@@ -67,9 +88,15 @@ const s = StyleSheet.create({
   conItem: { fontSize: 8, color: '#dc2626', marginBottom: 2 },
 
   /* disclaimer & footer */
-  disclaimer: { marginTop: 14, padding: 10, backgroundColor: '#fdf4ff', borderRadius: 6, borderWidth: 0.5, borderColor: '#d8b4fe' },
+  disclaimer: {
+    marginTop: 14, padding: 10, backgroundColor: '#fdf4ff',
+    borderRadius: 6, borderWidth: 0.5, borderColor: '#d8b4fe',
+  },
   disclaimerText: { fontSize: 7, color: '#6b21a8', lineHeight: 1.5, textAlign: 'center', fontStyle: 'italic' },
-  footer: { position: 'absolute', bottom: 26, left: 30, right: 30, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+  footer: {
+    position: 'absolute', bottom: 26, left: 30, right: 30,
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
+  },
   footerText: { fontSize: 7, color: '#9ca3af' },
   footerLink: { fontSize: 7, color: '#9ca3af', textDecoration: 'none' },
 });
@@ -82,6 +109,28 @@ function matchColor(pct: number) {
   return '#6b7280';
 }
 
+function feasBgColor(level: string) {
+  if (level === 'High')   return { bg: '#d1fae5', text: '#065f46' };
+  if (level === 'Medium') return { bg: '#fef3c7', text: '#92400e' };
+  return                         { bg: '#fee2e2', text: '#991b1b' };
+}
+
+/* ── Footer / page-number ─────────────────────────────────── */
+const PageFooter = () => (
+  <>
+    <View style={s.footer} fixed>
+      <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
+      <Text style={s.footerText}>|</Text>
+      <Text style={s.footerText}>partners@reachivy.com</Text>
+    </View>
+    <Text
+      style={s.pageNumber}
+      render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
+      fixed
+    />
+  </>
+);
+
 /* ── component ──────────────────────────────────────────── */
 export interface CareerResultsPDFProps {
   recommendations: CareerRecommendation[];
@@ -90,27 +139,32 @@ export interface CareerResultsPDFProps {
 
 const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, studentName }) => (
   <Document>
-    {/* ===== Summary page ===== */}
+
+    {/* ===== Summary / cover page ===== */}
     <Page size="A4" style={s.page} wrap={false}>
       <Image src={LOGO_APP_BASE64} style={{ width: 120, height: 25, marginBottom: 12 }} />
+
       <View style={s.summaryHeader}>
-        <Text style={s.summaryTitle}>Career & Degree Selection Results</Text>
+        <Text style={s.summaryTitle}>Career &amp; Degree Selection Results</Text>
         {studentName && <Text style={s.summarySubtitle}>{studentName}</Text>}
       </View>
+
       <View style={s.statBox}>
         <Text style={s.statNumber}>{recommendations.length}</Text>
         <Text style={s.statLabel}>Career Matches</Text>
       </View>
 
-      {/* Horizontal Bar Chart */}
-      <View style={{ marginTop: 16, padding: 12, backgroundColor: '#fff', borderRadius: 8, border: '1 solid #e5e7eb' }}>
-        <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: '#1f2937', marginBottom: 10 }}>Match Overview</Text>
-        {recommendations.map((career, index) => (
-          <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-            <Text style={{ width: 150, fontSize: 8, color: gray, textAlign: 'right', paddingRight: 8, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      {/* Horizontal bar chart */}
+      <View style={{ marginTop: 16, padding: 12, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: gray200 }}>
+        <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: '#1f2937', marginBottom: 10 }}>
+          Match Overview
+        </Text>
+        {recommendations.map((career, idx) => (
+          <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+            <Text style={{ width: 150, fontSize: 8, color: gray, textAlign: 'right', paddingRight: 8 }}>
               {career.career_title}
             </Text>
-            <View style={{ flex: 1, height: 14, backgroundColor: '#f3f4f6', borderRadius: 7, overflow: 'hidden' }}>
+            <View style={{ flex: 1, height: 14, backgroundColor: gray100, borderRadius: 7, overflow: 'hidden' }}>
               <View style={{ width: `${career.match_percentage}%`, height: 14, borderRadius: 7, backgroundColor: purple }} />
             </View>
             <Text style={{ width: 32, fontSize: 8, fontFamily: 'Helvetica-Bold', color: matchColor(career.match_percentage), textAlign: 'right', paddingLeft: 4 }}>
@@ -121,21 +175,21 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
       </View>
 
       <View style={s.disclaimer}>
-        <Text style={s.disclaimerText}>This report is generated using AI based on your responses and is intended for career exploration purposes only; results may not be fully accurate or definitive.</Text>
+        <Text style={s.disclaimerText}>
+          This report is generated using AI based on your responses and is intended for career exploration purposes only; results may not be fully accurate or definitive.
+        </Text>
       </View>
 
-      <View style={s.footer} fixed>
-        <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
-        <Text style={s.footerText}>|</Text>
-        <Text style={s.footerText}>partners@reachivy.com</Text>
-      </View>
-
-      <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
+      <PageFooter />
     </Page>
 
     {/* ===== One page per career ===== */}
     {recommendations.map((career, index) => {
-      // Build sections with weight estimates for balanced column layout
+      const hasFeasibility = !!career.feasibility;
+      const hasSkillGaps   = (career.skill_gaps?.length ?? 0) > 0;
+      const showStrip      = hasFeasibility || hasSkillGaps;
+
+      // Build section list (same order as web UI)
       const sections: { weight: number; el: React.ReactNode }[] = [];
 
       sections.push({
@@ -205,24 +259,6 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
         });
       }
 
-      if (career.related_subjects?.length > 0) {
-        sections.push({
-          weight: 1 + Math.ceil(career.related_subjects.length / 4),
-          el: (
-            <View wrap={false} key="subjects">
-              <Text style={s.sectionTitle}>Related Subjects</Text>
-              <View style={s.chipRow}>
-                {career.related_subjects.map((subj, i) => (
-                  <View key={i} style={[s.chip, { backgroundColor: lightBlue }]}>
-                    <Text style={[s.chipText, { color: blue }]}>{subj}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ),
-        });
-      }
-
       if (career.degrees?.length > 0) {
         sections.push({
           weight: 1 + career.degrees.length * 3,
@@ -238,23 +274,37 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                   );
                 }
                 const pathwayLabel = String(deg.pathway?.rank || '');
-                const pathwayColor = { 'Core Path': '#059669', 'Alternate Path': '#2563eb', 'Differentiated Path': '#7c3aed' }[pathwayLabel] || gray;
-                const stars = Array.from({ length: 5 }, (_, si) => si < (deg.fit_score || 0) ? '*' : ' ').join('');
+                const pathwayColor = {
+                  'Core Path': '#059669',
+                  'Alternate Path': '#2563eb',
+                  'Differentiated Path': '#7c3aed',
+                }[pathwayLabel] || gray;
+                const stars = Array.from({ length: 5 }, (_, si) =>
+                  si < (deg.fit_score || 0) ? '*' : ' '
+                ).join('');
                 return (
                   <View key={i} style={{ marginBottom: 4, padding: 4, backgroundColor: '#f9fafb', borderRadius: 4 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 9, fontWeight: 700, color: '#111827' }}>{String(deg.degree || '')}</Text>
-                      <Text style={{ fontSize: 7, color: pathwayColor, fontFamily: 'Helvetica-Bold' }}>{pathwayLabel}</Text>
+                      <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#111827' }}>
+                        {String(deg.degree || '')}
+                      </Text>
+                      <Text style={{ fontSize: 7, color: pathwayColor, fontFamily: 'Helvetica-Bold' }}>
+                        {pathwayLabel}
+                      </Text>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 4, marginTop: 1 }}>
-                      <Text style={{ fontSize: 8, color: '#d97706' }}>{stars}</Text>
+                      <Text style={{ fontSize: 8, color: amber }}>{stars}</Text>
                       <Text style={{ fontSize: 7, color: gray }}>{String(deg.fit_reason || '')}</Text>
                     </View>
                     {deg.pathway?.label ? (
-                      <Text style={{ fontSize: 7, color: '#374151', marginTop: 1 }}>{String(deg.pathway.label)}: {String(deg.pathway.why || '')}</Text>
+                      <Text style={{ fontSize: 7, color: '#374151', marginTop: 1 }}>
+                        {String(deg.pathway.label)}: {String(deg.pathway.why || '')}
+                      </Text>
                     ) : null}
                     {deg.decision_filter?.condition ? (
-                      <Text style={{ fontSize: 7, color: '#9ca3af', marginTop: 1, fontStyle: 'italic' }}>If {String(deg.decision_filter.condition)}</Text>
+                      <Text style={{ fontSize: 7, color: '#9ca3af', marginTop: 1, fontStyle: 'italic' }}>
+                        If {String(deg.decision_filter.condition)}
+                      </Text>
                     ) : null}
                   </View>
                 );
@@ -288,7 +338,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
           weight: 1 + (career.pros_and_cons.pros?.length || 0) * 1.2 + (career.pros_and_cons.cons?.length || 0) * 1.2,
           el: (
             <View wrap={false} key="proscons">
-              <Text style={s.sectionTitle}>Pros & Cons</Text>
+              <Text style={s.sectionTitle}>Pros &amp; Cons</Text>
               {career.pros_and_cons.pros?.length > 0 && (
                 <View style={s.prosBox}>
                   <Text style={s.prosTitle}>Pros</Text>
@@ -322,7 +372,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
         });
       }
 
-      // Greedy partition into balanced columns
+      // Greedy balanced two-column partition (same as before)
       const leftCol: React.ReactNode[] = [];
       const rightCol: React.ReactNode[] = [];
       let leftW = 0, rightW = 0;
@@ -339,7 +389,9 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
       return (
         <Page key={index} size="A4" style={s.page} wrap={false}>
           <Image src={LOGO_APP_BASE64} style={{ width: 80, height: 16, marginBottom: 8 }} />
+
           <View style={s.card}>
+            {/* ── Card header (purple gradient simulation) ── */}
             <View wrap={false} style={[s.cardHeader, { backgroundColor: purple }]}>
               <View style={{ flex: 1 }}>
                 <Text style={s.cardRank}>#{index + 1}</Text>
@@ -351,6 +403,51 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                 </Text>
               </View>
             </View>
+
+            {/* ── Feasibility + Skill Gaps strip (mirrors web UI) ── */}
+            {showStrip && (
+              <View style={s.strip} wrap={false}>
+
+                {/* Feasibility */}
+                {hasFeasibility && (
+                  <View style={[s.stripLeft, !hasSkillGaps ? { flex: 1 } : {}]}>
+                    <Text style={s.stripLabel}>Feasibility</Text>
+                    {(() => {
+                      const col = feasBgColor(career.feasibility!.level);
+                      return (
+                        <>
+                          <View style={[s.feasBadge, { backgroundColor: col.bg, flexDirection: 'row', alignItems: 'center' }]}>
+                            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: col.text, marginRight: 3 }} />
+                            <Text style={[s.feasText, { color: col.text }]}>
+                              {career.feasibility!.level}
+                            </Text>
+                          </View>
+                          <Text style={s.feasReason}>{career.feasibility!.reason}</Text>
+                        </>
+                      );
+                    })()}
+                  </View>
+                )}
+
+                {/* Skill Gaps */}
+                {hasSkillGaps && (
+                  <View style={[s.stripRight, !hasFeasibility ? { borderLeftWidth: 0, paddingLeft: 0 } : {}]}>
+                    <Text style={s.stripLabel}>Top Skill Gaps</Text>
+                    {career.skill_gaps!.slice(0, 5).map((gap, gi) => (
+                      <View key={gi} style={[s.bulletItem, { marginBottom: 2 }]}>
+                        <View style={s.gapNumCircle}>
+                          <Text style={s.gapNumText}>{gi + 1}</Text>
+                        </View>
+                        <Text style={s.gapText}>{gap}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+              </View>
+            )}
+
+            {/* ── Card body — two-column layout ── */}
             <View style={s.cardBody}>
               <View style={s.twoCol}>
                 <View style={s.col}>{leftCol}</View>
@@ -358,12 +455,8 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
               </View>
             </View>
           </View>
-          <View style={s.footer} fixed>
-            <Link src="https://helloivy.ai" style={s.footerLink}>helloivy.ai</Link>
-            <Text style={s.footerText}>|</Text>
-            <Text style={s.footerText}>partners@reachivy.com</Text>
-          </View>
-          <Text style={s.pageNumber} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
+
+          <PageFooter />
         </Page>
       );
     })}
