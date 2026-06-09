@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import imgDashboardGraphic from '@/assets/images/iconGIF.gif';
