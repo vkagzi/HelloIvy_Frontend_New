@@ -9,6 +9,105 @@ import { IvyWithoutBGLottie } from '@/app/_components/LottieAnimation';
 import { useToast } from '@/app/_components/Toast';
 import Button from '@/app/_components/Button';
 
+const IndiaFlag = ({ className = 'w-full h-full' }: { className?: string }) => (
+  <svg viewBox="0 0 900 600" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect width="900" height="200" fill="#FF9933" />
+    <rect y="200" width="900" height="200" fill="#FFFFFF" />
+    <rect y="400" width="900" height="200" fill="#138808" />
+    <circle cx="450" cy="300" r="80" fill="none" stroke="#000080" strokeWidth="10" />
+    <circle cx="450" cy="300" r="15" fill="#000080" />
+    {[...Array(24)].map((_, i) => (
+      <line
+        key={i}
+        x1="450"
+        y1="300"
+        x2={450 + 80 * Math.cos((i * 15 * Math.PI) / 180)}
+        y2={300 + 80 * Math.sin((i * 15 * Math.PI) / 180)}
+        stroke="#000080"
+        strokeWidth="4"
+      />
+    ))}
+  </svg>
+);
+
+const UKFlag = ({ className = 'w-full h-full' }: { className?: string }) => (
+  <svg viewBox="0 0 60 30" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect width="60" height="30" fill="#012169" />
+    <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" strokeWidth="6" />
+    <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" strokeWidth="2" />
+    <path d="M30,0 L30,30 M0,15 L60,15" stroke="#fff" strokeWidth="10" />
+    <path d="M30,0 L30,30 M0,15 L60,15" stroke="#C8102E" strokeWidth="6" />
+  </svg>
+);
+
+const USFlag = ({ className = 'w-full h-full' }: { className?: string }) => (
+  <svg viewBox="0 0 741 390" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect width="741" height="390" fill="#b22234" />
+    <path d="M0,30h741M0,90h741M0,150h741M0,210h741M0,270h741M0,330h741" stroke="#fff" strokeWidth="30" />
+    <rect width="296" height="210" fill="#3c3b6e" />
+    {[...Array(5)].map((_, row) =>
+      [...Array(6)].map((_, col) => (
+        <circle
+          key={`${row}-${col}`}
+          cx={25 + col * 49}
+          cy={20 + row * 42}
+          r="4"
+          fill="#fff"
+        />
+      ))
+    )}
+  </svg>
+);
+
+const EnglishCombinedFlag = ({ className = 'w-full h-full' }: { className?: string }) => (
+  <svg viewBox="0 0 60 30" className={className} xmlns="http://www.w3.org/2000/svg">
+    <g clipPath="url(#left-half)">
+      <rect width="60" height="30" fill="#012169" />
+      <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" strokeWidth="6" />
+      <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" strokeWidth="2" />
+      <path d="M30,0 L30,30 M0,15 L60,15" stroke="#fff" strokeWidth="10" />
+      <path d="M30,0 L30,30 M0,15 L60,15" stroke="#C8102E" strokeWidth="6" />
+    </g>
+    <g clipPath="url(#right-half)">
+      <rect x="30" width="30" height="30" fill="#b22234" />
+      <path d="M30,2.3h30M30,6.9h30M30,11.5h30M30,16.1h30M30,20.7h30M30,25.3h30" stroke="#fff" strokeWidth="2.3" />
+      <rect x="30" width="12" height="16.1" fill="#3c3b6e" />
+      <circle cx="33" cy="4" r="0.6" fill="#fff" />
+      <circle cx="39" cy="4" r="0.6" fill="#fff" />
+      <circle cx="36" cy="8" r="0.6" fill="#fff" />
+      <circle cx="33" cy="12" r="0.6" fill="#fff" />
+      <circle cx="39" cy="12" r="0.6" fill="#fff" />
+    </g>
+    <defs>
+      <clipPath id="left-half">
+        <rect x="0" y="0" width="30" height="30" />
+      </clipPath>
+      <clipPath id="right-half">
+        <rect x="30" y="0" width="30" height="30" />
+      </clipPath>
+    </defs>
+  </svg>
+);
+
+const ACCENT_FLAGS: Record<VoiceAccent, React.ComponentType<{ className?: string }>> = {
+  indian: IndiaFlag,
+  british: UKFlag,
+  american: USFlag,
+};
+
+const LANGUAGE_META = {
+  en: {
+    label: 'English',
+    code: 'EN',
+    gradient: 'from-blue-500 to-indigo-600',
+  },
+  hi: {
+    label: 'Hindi (हिंदी)',
+    code: 'HI',
+    gradient: 'from-orange-500 to-rose-600',
+  },
+};
+
 type VoicePersona = 'male' | 'female';
 type VoiceAccent = 'indian' | 'british' | 'american';
 type VoiceLanguage = 'en' | 'hi';
@@ -214,7 +313,9 @@ export default function SettingsPage(): React.ReactElement {
       {/* Select Your Counsellor Voice card */}
       <div className="mt-8 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3">
-          <Image src={logoApp} alt="HelloIvy" height={28} className="w-auto" />
+          <svg className="h-6 w-6 text-teal-600 animate-pulse" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+          </svg>
           <Label size="lg" className="font-bold">
             Select Your Counsellor Voice
           </Label>
@@ -351,23 +452,21 @@ export default function SettingsPage(): React.ReactElement {
         )}
       </div>
 
-      {/* Select Your Voice Accent card */}
+      {/* Select Agent Language card */}
       <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3">
-          <svg className="h-6 w-6 text-teal-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h2a2.5 2.5 0 002.5-2.5V10a2 2 0 00-2-2h-1.5a2 2 0 01-2-2V4.5A2.5 2.5 0 0012 2h-.5a2.5 2.5 0 00-2.5 2.5v.14M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <span className="text-2xl select-none" aria-hidden>🌐</span>
           <Label size="lg" className="font-bold">
-            Select Your Voice Accent
+            Select Agent Language
           </Label>
         </div>
         <Paragraph size="sm" className="mt-1 text-neutral-500">
-          Choose the regional accent for your HelloIvy counsellor when using live voice mode.
+          Choose the language for your HelloIvy counsellor.
         </Paragraph>
 
         {loading ? (
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {[1, 2, 3].map((i) => (
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {[1, 2].map((i) => (
               <div
                 key={i}
                 className="h-32 animate-pulse rounded-xl bg-neutral-100"
@@ -375,52 +474,68 @@ export default function SettingsPage(): React.ReactElement {
             ))}
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {ACCENTS.map((acc) => {
-              const isSelected = selectedAccent === acc.id;
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {[
+              { id: 'en' },
+              { id: 'hi' },
+            ].map((lang) => {
+              const isSelected = selectedLanguage === lang.id;
+              const meta = LANGUAGE_META[lang.id as VoiceLanguage];
               return (
                 <div
-                  key={acc.id}
+                  key={lang.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => setSelectedAccent(acc.id)}
+                  onClick={() => setSelectedLanguage(lang.id as VoiceLanguage)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      setSelectedAccent(acc.id);
+                      setSelectedLanguage(lang.id as VoiceLanguage);
                     }
                   }}
-                  className={`group relative flex cursor-pointer flex-col justify-between gap-2.5 rounded-xl border-2 p-4 transition-all ${
+                  className={`group relative flex cursor-pointer flex-col items-center justify-center gap-6 h-[240px] rounded-xl border-2 px-3 py-5 text-center transition-all ${
                     isSelected
-                      ? `${acc.selectedBorder} ${acc.selectedBG} shadow-md`
-                      : `border-neutral-200 bg-white ${acc.hoverBorder} hover:shadow-sm`
+                      ? 'border-teal-500 bg-teal-50/40 shadow-md'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-3xl filter drop-shadow-sm select-none" aria-hidden>{acc.flag}</span>
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold select-none ${acc.tagColor}`}>
-                      {acc.id.toUpperCase()}
-                    </span>
+                  {/* Ivy lottie avatar with gradient ring */}
+                  <div
+                    className={`relative flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-br ${meta.gradient} p-1 shadow-lg ring-4 transition-all ${
+                      isSelected ? 'ring-teal-400' : 'ring-white'
+                    }`}
+                  >
+                    <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-white">
+                      <IvyWithoutBGLottie
+                        loop={0}
+                        animate={false}
+                        className="h-20 w-20"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <Label size="sm" className="font-bold text-neutral-900 block group-hover:text-teal-600 transition-colors">
-                      {acc.label}
+                    <Label size="md" className="font-semibold text-neutral-900">
+                      {meta.label}
                     </Label>
-                    <Paragraph size="xs" className="mt-1 text-neutral-500 leading-normal">
-                      {acc.description}
-                    </Paragraph>
+                    <span
+                      className={`mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold select-none ${
+                        isSelected ? 'bg-teal-100 text-teal-700' : 'bg-neutral-100 text-neutral-700'
+                      }`}
+                    >
+                      {lang.id.toUpperCase()}
+                    </span>
                   </div>
 
                   {/* Selection check */}
                   {isSelected && (
-                    <div className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-teal-500 text-white shadow-sm">
+                    <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-teal-500 text-white">
                       <svg
-                        className="h-2.5 w-2.5"
+                        className="h-3 w-3"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
-                        strokeWidth={4.5}
+                        strokeWidth={3}
                       >
                         <path
                           strokeLinecap="round"
@@ -437,21 +552,28 @@ export default function SettingsPage(): React.ReactElement {
         )}
       </div>
 
-      {/* Select Agent Language card */}
+      {/* Select Your Voice Accent card */}
       <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="text-2xl select-none" aria-hidden>🌐</span>
+          <svg className="h-6 w-6 text-teal-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h2a2.5 2.5 0 002.5-2.5V10a2 2 0 00-2-2h-1.5a2 2 0 01-2-2V4.5A2.5 2.5 0 0012 2h-.5a2.5 2.5 0 00-2.5 2.5v.14M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           <Label size="lg" className="font-bold">
-            Select Agent Language
+            Select Your Voice Accent
           </Label>
+          {selectedLanguage === 'hi' && (
+            <span className="text-xs font-semibold text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-md ml-auto animate-fade-in">
+              Not applicable for Hindi
+            </span>
+          )}
         </div>
         <Paragraph size="sm" className="mt-1 text-neutral-500">
-          Choose the language for your HelloIvy counsellor when using live voice mode.
+          Choose the accent for your HelloIvy counsellor.
         </Paragraph>
 
         {loading ? (
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {[1, 2].map((i) => (
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[1, 2, 3].map((i) => (
               <div
                 key={i}
                 className="h-32 animate-pulse rounded-xl bg-neutral-100"
@@ -459,50 +581,57 @@ export default function SettingsPage(): React.ReactElement {
             ))}
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {[
-              { id: 'en', label: 'English', flag: '🇬🇧/🇺🇸', desc: 'Default language for all interactions.' },
-              { id: 'hi', label: 'Hindi (हिंदी)', flag: '🇮🇳', desc: 'Interactions and counsellor voice in Hindi.' },
-            ].map((lang) => {
-              const isSelected = selectedLanguage === lang.id;
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {ACCENTS.map((acc) => {
+              const isSelected = selectedAccent === acc.id;
+              const isDisabled = selectedLanguage === 'hi';
+              const FlagComponent = ACCENT_FLAGS[acc.id];
               return (
                 <div
-                  key={lang.id}
+                  key={acc.id}
                   role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedLanguage(lang.id as VoiceLanguage)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedLanguage(lang.id as VoiceLanguage);
+                  tabIndex={isDisabled ? undefined : 0}
+                  onClick={() => {
+                    if (!isDisabled) {
+                      setSelectedAccent(acc.id);
                     }
                   }}
-                  className={`group relative flex cursor-pointer flex-col justify-between gap-2.5 rounded-xl border-2 p-4 transition-all ${
-                    isSelected
-                      ? 'border-teal-500 bg-teal-50/40 shadow-md'
-                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm'
+                  onKeyDown={(e) => {
+                    if (isDisabled) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedAccent(acc.id);
+                    }
+                  }}
+                  className={`group relative flex cursor-pointer flex-col gap-2 rounded-xl border-2 p-4 transition-all ${
+                    isDisabled
+                      ? 'border-neutral-100 bg-neutral-50/50 opacity-40 cursor-not-allowed pointer-events-none'
+                      : isSelected
+                        ? `${acc.selectedBorder} ${acc.selectedBG} shadow-md`
+                        : `border-neutral-200 bg-white ${acc.hoverBorder} hover:shadow-sm`
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-3xl filter drop-shadow-sm select-none" aria-hidden>{lang.flag}</span>
+                    <div className="h-8 w-12 overflow-hidden rounded shadow-sm border border-neutral-100 flex items-center justify-center bg-white">
+                      <FlagComponent className="h-full w-full object-cover" />
+                    </div>
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold select-none ${
-                      isSelected ? 'bg-teal-100 text-teal-700' : 'bg-neutral-100 text-neutral-700'
+                      isDisabled ? 'bg-neutral-200 text-neutral-400' : acc.tagColor
                     }`}>
-                      {lang.id.toUpperCase()}
+                      {acc.id.toUpperCase()}
                     </span>
                   </div>
 
                   <div>
-                    <Label size="sm" className="font-bold text-neutral-900 block group-hover:text-teal-600 transition-colors">
-                      {lang.label}
+                    <Label size="sm" className={`font-bold block transition-colors ${
+                      isDisabled ? 'text-neutral-400' : 'text-neutral-900 group-hover:text-teal-600'
+                    }`}>
+                      {acc.label}
                     </Label>
-                    <Paragraph size="xs" className="mt-1 text-neutral-500 leading-normal">
-                      {lang.desc}
-                    </Paragraph>
                   </div>
 
                   {/* Selection check */}
-                  {isSelected && (
+                  {isSelected && !isDisabled && (
                     <div className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-teal-500 text-white shadow-sm">
                       <svg
                         className="h-2.5 w-2.5"
