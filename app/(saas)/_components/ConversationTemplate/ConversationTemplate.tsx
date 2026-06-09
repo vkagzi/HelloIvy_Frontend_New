@@ -563,12 +563,13 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
               const data = JSON.parse(dataStr);
               if (data.delta) {
                 botContent += data.delta;
-                // Update the last message content
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === botMessageId ? { ...m, content: botContent } : m
                   )
                 );
+                // Yield to browser between tokens so each one paints in its own frame
+                await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
               }
               if (data.is_complete || data.questions_completed !== undefined) {
                 if (data.progress_percentage !== undefined) setProgressPercentage(data.progress_percentage);
