@@ -24,6 +24,7 @@ interface GradeInfo {
   student_count: number;
   domain_discovery_count: number;
   career_discovery_count: number;
+  college_selector_count: number;
 }
 
 interface DashboardData {
@@ -304,6 +305,9 @@ export default function SchoolDashboardPage() {
                   Career & Degree Selection 
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  College Selector
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Actions
                 </th>
               </tr>
@@ -322,6 +326,9 @@ export default function SchoolDashboardPage() {
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {g.career_discovery_count}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                    {g.college_selector_count}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm">
                     <a
@@ -347,6 +354,9 @@ export default function SchoolDashboardPage() {
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                     {dashboard.grade_overview.reduce((acc, g) => acc + g.career_discovery_count, 0)}
                   </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                    {dashboard.grade_overview.reduce((acc, g) => acc + g.college_selector_count, 0)}
+                  </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm">
                     <a
                       href="/school/students"
@@ -360,7 +370,7 @@ export default function SchoolDashboardPage() {
               {dashboard.grade_overview.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-6 py-8 text-center text-sm text-gray-400"
                   >
                     No grade data available yet.

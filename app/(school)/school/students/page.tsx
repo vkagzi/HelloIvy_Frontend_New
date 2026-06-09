@@ -43,6 +43,9 @@ import { useModuleChoices, buildModuleLookups } from '@/lib/hooks/useModuleChoic
 interface ModuleAssignment {
   id: number;
   module_name: string;
+  used?: boolean;
+  reminder_last_sent_at?: string | null;
+  reminder_count?: number;
 }
 
 interface StudentItem {
@@ -457,6 +460,9 @@ export default function SchoolStudentsPage() {
                                       }
                                     >
                                       {MODULE_LABELS[m.module_name] ?? m.module_name}
+                                      {!m.used && (
+                                        <div className="ml-1 size-1.5 rounded-full bg-orange-400" title="Not yet started" />
+                                      )}
                                       <svg
                                         className="size-3 opacity-0 transition-opacity group-hover/badge:opacity-70"
                                         fill="none"
@@ -474,7 +480,17 @@ export default function SchoolStudentsPage() {
                                   </span>
                                 </TooltipTrigger>
                                 <TooltipContent side="top">
-                                  Click to revoke access
+                                  <div className="space-y-1">
+                                    <p className="font-medium">Click to revoke access</p>
+                                    <p className="text-[10px] opacity-70">
+                                      {m.used ? 'Student has started this module' : 'Not yet started'}
+                                    </p>
+                                    {m.reminder_count && m.reminder_count > 0 ? (
+                                      <p className="text-[10px] opacity-70">
+                                        Reminders sent: {m.reminder_count} (Last: {m.reminder_last_sent_at ? new Date(m.reminder_last_sent_at).toLocaleDateString() : 'N/A'})
+                                      </p>
+                                    ) : null}
+                                  </div>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
