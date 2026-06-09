@@ -541,7 +541,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
   // Add a term to a specific grade
   const handleAddTerm = (grade: number, schoolIdx: number): void => {
-    const currentTerms = (form.getValues(`${sectionType}.${schoolIdx}.terms`) as any[]) || [];
+    const currentTerms = (form.getValues(`${sectionType}.${schoolIdx}.terms`) as unknown as any[]) || [];
     if (currentTerms.length >= 4) return;
 
     const nextTermIdx = currentTerms.length;
@@ -580,7 +580,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
   // Remove a term from a specific grade
   const handleRemoveTerm = (grade: number, schoolIdx: number, termIdx: number): void => {
-    const currentTerms = (form.getValues(`${sectionType}.${schoolIdx}.terms`) as any[]) || [];
+    const currentTerms = (form.getValues(`${sectionType}.${schoolIdx}.terms`) as unknown as any[]) || [];
     if (currentTerms.length <= 1 || termIdx === 0) return;
 
     setTermSubjectRowsByGrade((prev) => {
