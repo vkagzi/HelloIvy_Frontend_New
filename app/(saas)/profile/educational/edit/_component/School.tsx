@@ -154,6 +154,48 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     return map;
   });
 
+  const [termSubjectRowsByGrade, setTermSubjectRowsByGrade] = useState<
+    Record<number, Record<number, SubjectRows>>
+  >(() => {
+    const initialGrades = computeGradesToShow(
+      selectedGrade,
+      hasCurrentGradeScores
+    );
+    const existingSchools = form.getValues(sectionType) as unknown[];
+    const map: Record<number, Record<number, SubjectRows>> = {};
+
+    initialGrades.forEach((grade, idx) => {
+      const schoolData =
+        Array.isArray(existingSchools) && existingSchools[idx]
+          ? (existingSchools[idx] as Record<string, unknown>)
+          : null;
+      
+      if (schoolData && schoolData.hasTermWiseScores === 'Yes') {
+        const termsList = schoolData.terms as any[];
+        if (Array.isArray(termsList)) {
+          const gradeTerms: Record<number, SubjectRows> = {};
+          termsList.forEach((term, termIdx) => {
+            const termSubjects = term?.subjects;
+            const subjectsCount = Array.isArray(termSubjects)
+              ? termSubjects.length
+              : minSubjects;
+            gradeTerms[termIdx] = Array.from({ length: subjectsCount }, (_, sIdx) => ({
+              _id: nanoid(),
+              ...Object.fromEntries(
+                (section.repeatables?.fields ?? []).map((fid: string) => [
+                  fid,
+                  (Array.isArray(termSubjects) && termSubjects[sIdx]?.[fid]) ?? '',
+                ])
+              ),
+            }));
+          });
+          map[grade] = gradeTerms;
+        }
+      }
+    });
+    return map;
+  });
+
   useEffect(() => {
     // Sync subject rows map and form grade values whenever gradesToShow changes
 
@@ -300,6 +342,112 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     });
   }, [watchedSectionData, gradesToShow, section.repeatables?.name]);
 
+  // Sync term subject rows map when watchedSectionData changes
+  useEffect(() => {
+    if (!Array.isArray(watchedSectionData)) return;
+
+    setTermSubjectRowsByGrade((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      watchedSectionData.forEach((entry, idx) => {
+        const grade = gradesToShow[idx];
+        if (grade === undefined) return;
+
+        // Ensure the record actually belongs to this grade
+        const rawEntryGrade = String((entry as Record<string, unknown>).gradeLevel || (entry as Record<string, unknown>).grade || '').toUpperCase();
+        let entryGrade = parseInt(rawEntryGrade.replace(/GRADE\s+|TH|ST|ND|RD/gi, ''), 10);
+        if (isNaN(entryGrade)) {
+          const romanMap: Record<string, number> = { 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'VIII': 8 };
+          for (const [rom, num] of Object.entries(romanMap)) {
+            if (new RegExp(`\\b${rom}\\b`).test(rawEntryGrade)) {
+              entryGrade = num;
+              break;
+            }
+          }
+        }
+        
+        if (!isNaN(entryGrade) && entryGrade !== grade) return;
+
+        const hasTermWise = (entry as Record<string, unknown>)?.hasTermWiseScores === 'Yes';
+        if (!hasTermWise) return;
+
+        const termsList = (entry as Record<string, unknown>)?.terms as any[];
+        if (Array.isArray(termsList)) {
+          const currentGradeTerms = prev[grade] || {};
+          let gradeChanged = false;
+          const nextGradeTerms: Record<number, SubjectRows> = { ...currentGradeTerms };
+
+          termsList.forEach((term, termIdx) => {
+            const formSubjects = term?.subjects as any[];
+            if (Array.isArray(formSubjects)) {
+              const currentRows = currentGradeTerms[termIdx] || [];
+              if (formSubjects.length !== currentRows.length) {
+                gradeChanged = true;
+                nextGradeTerms[termIdx] = formSubjects.map((s, sIdx) => ({
+                  _id: currentRows[sIdx]?._id || nanoid(),
+                  ...s
+                }));
+              }
+            }
+          });
+
+          if (gradeChanged || Object.keys(nextGradeTerms).length !== Object.keys(currentGradeTerms).length) {
+            changed = true;
+            next[grade] = nextGradeTerms;
+          }
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [watchedSectionData, gradesToShow, section.repeatables?.name]);
+
+  // Watch for changes in hasTermWiseScores to initialize terms list with Term 1
+  useEffect(() => {
+    if (!Array.isArray(watchedSectionData)) return;
+
+    watchedSectionData.forEach((entry, idx) => {
+      const grade = gradesToShow[idx];
+      if (grade === undefined) return;
+
+      const hasTermWise = (entry as Record<string, unknown>)?.hasTermWiseScores === 'Yes';
+      const termsList = (entry as Record<string, unknown>)?.terms as any[];
+
+      if (hasTermWise && (!Array.isArray(termsList) || termsList.length === 0)) {
+        // Initialize with Term 1
+        const initialTermSubjects = Array.from({ length: minSubjects }, () => ({
+          _id: nanoid(),
+          ...Object.fromEntries(
+            (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+          ),
+        }));
+
+        setTermSubjectRowsByGrade((prev) => {
+          const gradeTerms = prev[grade] || {};
+          return {
+            ...prev,
+            [grade]: {
+              ...gradeTerms,
+              [0]: initialTermSubjects,
+            },
+          };
+        });
+
+        const initialTerm = {
+          termName: 'Term 1',
+          subjects: initialTermSubjects.map(({ _id, ...fields }) => fields),
+        };
+
+        form.setValue(
+          `${sectionType}.${idx}.terms` as keyof Record<string, unknown>,
+          [initialTerm] as never,
+          { shouldDirty: true }
+        );
+      }
+    });
+  }, [watchedSectionData, gradesToShow, sectionType, minSubjects, section.repeatables?.fields, form]);
+
   // Add a subject row to a specific grade
   const handleAddSubjectRow = (grade: number, schoolIdx: number): void => {
     const newRow = {
@@ -391,6 +539,190 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     }
   };
 
+  // Add a term to a specific grade
+  const handleAddTerm = (grade: number, schoolIdx: number): void => {
+    const currentTerms = (form.getValues(`${sectionType}.${schoolIdx}.terms`) as any[]) || [];
+    if (currentTerms.length >= 4) return;
+
+    const nextTermIdx = currentTerms.length;
+    const termLabel = `Term ${nextTermIdx + 1}`;
+
+    const newTermSubjects = Array.from({ length: minSubjects }, () => ({
+      _id: nanoid(),
+      ...Object.fromEntries(
+        (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+      ),
+    }));
+
+    setTermSubjectRowsByGrade((prev) => {
+      const gradeTerms = prev[grade] || {};
+      return {
+        ...prev,
+        [grade]: {
+          ...gradeTerms,
+          [nextTermIdx]: newTermSubjects,
+        },
+      };
+    });
+
+    const newTermData = {
+      termName: termLabel,
+      subjects: newTermSubjects.map(({ _id, ...fields }) => fields),
+    };
+
+    const updatedTerms = [...currentTerms, newTermData];
+    form.setValue(
+      `${sectionType}.${schoolIdx}.terms` as keyof Record<string, unknown>,
+      updatedTerms as never,
+      { shouldDirty: true }
+    );
+  };
+
+  // Remove a term from a specific grade
+  const handleRemoveTerm = (grade: number, schoolIdx: number, termIdx: number): void => {
+    const currentTerms = (form.getValues(`${sectionType}.${schoolIdx}.terms`) as any[]) || [];
+    if (currentTerms.length <= 1 || termIdx === 0) return;
+
+    setTermSubjectRowsByGrade((prev) => {
+      const gradeTerms = { ...(prev[grade] || {}) };
+      const nextGradeTerms: Record<number, SubjectRows> = {};
+      Object.keys(gradeTerms).forEach((key) => {
+        const k = parseInt(key, 10);
+        if (k < termIdx) {
+          nextGradeTerms[k] = gradeTerms[k];
+        } else if (k > termIdx) {
+          nextGradeTerms[k - 1] = gradeTerms[k];
+        }
+      });
+      return {
+        ...prev,
+        [grade]: nextGradeTerms,
+      };
+    });
+
+    const updatedTerms = currentTerms.filter((_, i) => i !== termIdx);
+    const renamedTerms = updatedTerms.map((t, idx) => ({
+      ...t,
+      termName: `Term ${idx + 1}`,
+    }));
+
+    form.setValue(
+      `${sectionType}.${schoolIdx}.terms` as keyof Record<string, unknown>,
+      renamedTerms as never,
+      { shouldDirty: true }
+    );
+  };
+
+  // Add subject row to a specific term of a grade
+  const handleAddTermSubjectRow = (
+    grade: number,
+    schoolIdx: number,
+    termIdx: number
+  ): void => {
+    const newRow = {
+      _id: nanoid(),
+      ...Object.fromEntries(
+        (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+      ),
+    };
+
+    setTermSubjectRowsByGrade((prev) => {
+      const gradeTerms = prev[grade] || {};
+      const termRows = gradeTerms[termIdx] || [];
+      return {
+        ...prev,
+        [grade]: {
+          ...gradeTerms,
+          [termIdx]: [...termRows, newRow],
+        },
+      };
+    });
+
+    const subjectsFieldName = section.repeatables?.name ?? 'subjects';
+    const currentSubjects = form.getValues(
+      `${sectionType}.${schoolIdx}.terms.${termIdx}.${subjectsFieldName}`
+    ) as SubjectRows | undefined;
+    const newSubjectIdx = Array.isArray(currentSubjects)
+      ? currentSubjects.length
+      : 0;
+
+    setTimeout(() => {
+      section.repeatables?.fields.forEach((fieldId: string) => {
+        form.setValue(
+          `${sectionType}.${schoolIdx}.terms.${termIdx}.${subjectsFieldName}.${newSubjectIdx}.${fieldId}` as keyof Record<
+            string,
+            unknown
+          >,
+          '' as never
+        );
+      });
+    }, 0);
+  };
+
+  // Remove subject row from a specific term of a grade
+  const handleRemoveTermSubjectRow = (
+    grade: number,
+    schoolIdx: number,
+    termIdx: number,
+    rowIdx: number
+  ): void => {
+    const currentRows = termSubjectRowsByGrade[grade]?.[termIdx] ?? [];
+    if (currentRows.length <= minSubjects) return;
+
+    setTermSubjectRowsByGrade((prev) => {
+      const gradeTerms = prev[grade] || {};
+      const termRows = gradeTerms[termIdx] || [];
+      return {
+        ...prev,
+        [grade]: {
+          ...gradeTerms,
+          [termIdx]: termRows.filter((_, i) => i !== rowIdx),
+        },
+      };
+    });
+
+    const subjectsFieldName = section.repeatables?.name ?? 'subjects';
+    const currentSubjects = form.getValues(
+      `${sectionType}.${schoolIdx}.terms.${termIdx}.${subjectsFieldName}`
+    ) as SubjectRows | undefined;
+
+    if (Array.isArray(currentSubjects)) {
+      const updatedSubjects = currentSubjects.filter((_, i) => i !== rowIdx);
+
+      form.setValue(
+        `${sectionType}.${schoolIdx}.terms.${termIdx}.${subjectsFieldName}` as keyof Record<
+          string,
+          unknown
+        >,
+        updatedSubjects as never,
+        { shouldDirty: true }
+      );
+
+      updatedSubjects.forEach((subject, newIdx) => {
+        section.repeatables?.fields.forEach((fieldId: string) => {
+          const value = subject[fieldId];
+          form.setValue(
+            `${sectionType}.${schoolIdx}.terms.${termIdx}.${subjectsFieldName}.${newIdx}.${fieldId}` as keyof Record<
+              string,
+              unknown
+            >,
+            (value ?? '') as never
+          );
+        });
+      });
+
+      const lastIdx = currentSubjects.length - 1;
+      section.repeatables?.fields.forEach((fieldId: string) => {
+        form.unregister(
+          `${sectionType}.${schoolIdx}.terms.${termIdx}.${subjectsFieldName}.${lastIdx}.${fieldId}` as keyof Record<
+            string,
+            unknown
+          >
+        );
+      });
+    }
+  };
+
   const columns = section.columns ?? 1;
 
   // Watch all form values to reactively show/hide fields based on visibility config
@@ -426,6 +758,12 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
       {gradesToShow.map((gradeForSchool, schoolIdx) => {
         const gradeLabel = `Grade ${gradeForSchool}`;
         const subjectRows = subjectRowsByGrade[gradeForSchool] ?? [];
+
+        const sectionValues = (formValues as Record<string, unknown>)?.[sectionType];
+        const schoolValues = Array.isArray(sectionValues)
+          ? ((sectionValues[schoolIdx] as Record<string, unknown>) ?? {})
+          : {};
+        const hasTermWiseScores = schoolValues?.hasTermWiseScores as string | undefined;
 
         return (
           <div
@@ -466,13 +804,6 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                   const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                   if (!fieldDef) return null;
                   // Check field-level visibility (e.g., boardOther only when board === 'Others')
-                  const sectionValues = (
-                    formValues as Record<string, unknown>
-                  )?.[sectionType];
-                  const schoolValues = Array.isArray(sectionValues)
-                    ? ((sectionValues[schoolIdx] as Record<string, unknown>) ??
-                      {})
-                    : {};
                   if (!isFieldVisible(fieldDef, schoolValues)) return null;
                   const controllerName = `${sectionType}.${schoolIdx}.${fieldDef.id}`;
                   const repeatableField: FieldDefinition = {
@@ -504,208 +835,402 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
               className="my-10 border-t border-neutral-200"
               aria-hidden="true"
             />
-            {/* Subjects Section */}
-            <Label size="lg" className="font-semibold text-neutral-900">
-              {gradeLabel} Subject Details
-            </Label>
-            <p className="text-label-sm text-neutral-600">
-              *All grades are required.
-            </p>
-            <div className="mt-5 overflow-x-auto">
-              {(() => {
-                const sectionValues = (formValues as Record<string, unknown>)?.[section.type] as any[];
-                const schoolValues = sectionValues?.[schoolIdx];
-                const schoolSubjects = schoolValues?.[section.repeatables?.name ?? 'subjects'] as any[];
+            {hasTermWiseScores === 'Yes' ? (
+              <div className="space-y-6">
+                {(() => {
+                  const terms = (schoolValues?.terms ?? []) as any[];
 
-                // Check if any subject in this school has 'Other' selected
-                const hasOtherSubject = Array.isArray(schoolSubjects) && schoolSubjects.some((s) => s.subject === 'Other');
+                  return (
+                    <>
+                      {terms.map((term, termIdx) => {
+                        const termLabel = term.termName || `Term ${termIdx + 1}`;
+                        const termSubjectRows = termSubjectRowsByGrade[gradeForSchool]?.[termIdx] ?? [];
+                        const termSubjects = term?.subjects as any[];
 
-                // Filter fields to exclude 'subjectOther' if no 'Other' subject exists
-                const visibleFields =
-                  section.repeatables?.fields.filter((fieldId: string) => {
-                    if (fieldId === 'subjectOther') {
-                      return hasOtherSubject;
-                    }
-                    return true;
-                  }) ?? [];
+                        // Check if any subject in this term has 'Other' selected
+                        const hasOtherSubject = Array.isArray(termSubjects) && termSubjects.some((s) => s.subject === 'Other');
 
-                return (
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b border-neutral-200">
-                        {visibleFields.map((fieldId: string) => {
-                          const fieldDef = fieldDefs.find(
-                            (def) => def.id === fieldId
-                          );
-                          if (!fieldDef) return null;
-                          return (
-                            <th
-                              key={fieldId}
-                              className="text-label-md px-4 py-3 text-left font-semibold text-neutral-900"
-                            >
-                              {fieldDef.label}
-                              {fieldDef.required && (
-                                <span className="ml-1 text-orange-500">*</span>
-                              )}
-                            </th>
-                          );
-                        })}
-                        <th className="text-label-md px-4 py-3 text-right font-semibold text-neutral-900">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {subjectRows.map((row, rowIdx) => {
-                        // Get the subject value for this row from schoolSubjects
-                        const subjectValue = schoolSubjects?.[rowIdx]?.subject as string | undefined;
-                        const showSubjectOther = subjectValue === 'Other';
-
-                        // Collect subjects already selected in OTHER rows (exclude 'Other' since multiple custom subjects are allowed)
-                        const alreadySelectedSubjects = subjectRows.reduce<
-                          string[]
-                        >((acc, _, otherIdx) => {
-                          if (otherIdx === rowIdx) return acc;
-                          const otherSubject = form.getValues(
-                            `${section.type}.${schoolIdx}.${section.repeatables?.name}.${otherIdx}.subject`
-                          ) as string | undefined;
-                          if (
-                            otherSubject &&
-                            otherSubject !== 'Other' &&
-                            otherSubject.trim() !== ''
-                          ) {
-                            acc.push(otherSubject);
-                          }
-                          return acc;
-                        }, []);
+                        // Filter fields to exclude 'subjectOther' if no 'Other' subject exists
+                        const visibleFields =
+                          section.repeatables?.fields.filter((fieldId: string) => {
+                            if (fieldId === 'subjectOther') {
+                              return hasOtherSubject;
+                            }
+                            return true;
+                          }) ?? [];
 
                         return (
-                          <tr
-                            key={(row._id as string) ?? rowIdx}
-                            className="border-b border-neutral-200"
+                          <div
+                            key={termIdx}
+                            className="rounded-lg border border-neutral-100 p-4 bg-neutral-50/50 space-y-4"
                           >
+                            <div className="flex items-center justify-between">
+                              <Label size="md" className="font-semibold text-neutral-800">
+                                {gradeLabel} - {termLabel} Subject Details
+                              </Label>
+                              {termIdx > 0 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  type="button"
+                                  label="Remove Term"
+                                  className="text-red-500 hover:text-red-700 font-medium"
+                                  onClick={() => handleRemoveTerm(gradeForSchool, schoolIdx, termIdx)}
+                                />
+                              )}
+                            </div>
+                            <p className="text-label-sm text-neutral-600">
+                              *All grades are required.
+                            </p>
+                            <div className="overflow-x-auto">
+                              <table className="w-full border-collapse">
+                                <thead>
+                                  <tr className="border-b border-neutral-200">
+                                    {visibleFields.map((fieldId: string) => {
+                                      const fieldDef = fieldDefs.find(
+                                        (def) => def.id === fieldId
+                                      );
+                                      if (!fieldDef) return null;
+                                      return (
+                                        <th
+                                          key={fieldId}
+                                          className="text-label-md px-4 py-3 text-left font-semibold text-neutral-900"
+                                        >
+                                          {fieldDef.label}
+                                          {fieldDef.required && (
+                                            <span className="ml-1 text-orange-500">*</span>
+                                          )}
+                                        </th>
+                                      );
+                                    })}
+                                    <th className="text-label-md px-4 py-3 text-right font-semibold text-neutral-900">
+                                      Actions
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {termSubjectRows.map((row, rowIdx) => {
+                                    // Get the subject value for this row from termSubjects
+                                    const subjectValue = termSubjects?.[rowIdx]?.subject as string | undefined;
+                                    const showSubjectOther = subjectValue === 'Other';
+
+                                    // Collect subjects already selected in OTHER rows
+                                    const alreadySelectedSubjects = termSubjectRows.reduce<string[]>((acc, _, otherIdx) => {
+                                      if (otherIdx === rowIdx) return acc;
+                                      const otherSubject = form.getValues(
+                                        `${section.type}.${schoolIdx}.terms.${termIdx}.subjects.${otherIdx}.subject`
+                                      ) as string | undefined;
+                                      if (otherSubject && otherSubject !== 'Other' && otherSubject.trim() !== '') {
+                                        acc.push(otherSubject);
+                                      }
+                                      return acc;
+                                    }, []);
+
+                                    // Get the board value
+                                    const boardValue = schoolValues?.board as string | undefined;
+                                    const boardSubjectMap: Record<string, string[]> = {
+                                      'American (AP / US High School Diploma)': americanSubjects,
+                                      'Cambridge - A Levels': cambridgeALevelSubjects,
+                                      'Cambridge - IGCSE': cambridgeIGCSESubjects,
+                                      CBSE: cbseSubjects,
+                                      HSC: hscSubjects,
+                                      IBCP: ibcpSubjects,
+                                      ICSE: icseSubjects,
+                                      'International Baccalaureate (IB)': ibSubjects,
+                                      ISC: iscSubjects,
+                                      MYP: mypSubjects,
+                                      NIOS: niosSubjects,
+                                      'State Board': stateBoardSubjects,
+                                    };
+
+                                    const currentBoardSubjects = (boardValue && boardSubjectMap[boardValue]) || seniorSecondarySubjects;
+
+                                    return (
+                                      <tr
+                                        key={(row._id as string) ?? rowIdx}
+                                        className="border-b border-neutral-200"
+                                      >
+                                        {visibleFields.map((fieldId: string) => {
+                                          const fieldDef = fieldDefs.find((def) => def.id === fieldId);
+                                          if (!fieldDef) return null;
+
+                                          if (fieldId === 'subjectOther' && !showSubjectOther) {
+                                            return (
+                                              <td key={fieldId} className="px-4 py-3">
+                                                <span className="text-neutral-400">-</span>
+                                              </td>
+                                            );
+                                          }
+
+                                          const controllerName = `${section.type}.${schoolIdx}.terms.${termIdx}.subjects.${rowIdx}.${fieldId}`;
+                                          const subjectsToShow = fieldId === 'subject'
+                                            ? currentBoardSubjects.filter((opt) => opt === 'Other' || !alreadySelectedSubjects.includes(opt))
+                                            : undefined;
+                                          const fieldForRenderer: FieldDefinition = {
+                                            ...fieldDef,
+                                            id: controllerName,
+                                            label: '',
+                                          };
+
+                                          return (
+                                            <td key={controllerName} className="px-4 py-3">
+                                              <Controller
+                                                name={controllerName}
+                                                control={form.control}
+                                                defaultValue={form.getValues(controllerName) ?? ''}
+                                                render={() => (
+                                                  <FieldRenderer
+                                                    field={fieldForRenderer}
+                                                    form={form}
+                                                    error={errors[controllerName]}
+                                                    inputHeightClass="py-2"
+                                                    labelHeightClass="text-label-md"
+                                                    inputWidthClass="w-full"
+                                                    optionsOverride={subjectsToShow}
+                                                  />
+                                                )}
+                                              />
+                                            </td>
+                                          );
+                                        })}
+                                        <td className="px-4 py-3 text-right">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            type="button"
+                                            label="Remove"
+                                            className="text-blue-500"
+                                            onClick={() => handleRemoveTermSubjectRow(gradeForSchool, schoolIdx, termIdx, rowIdx)}
+                                            disabled={termSubjectRows.length <= minSubjects}
+                                          />
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                            <button
+                              type="button"
+                              className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"
+                              onClick={() => handleAddTermSubjectRow(gradeForSchool, schoolIdx, termIdx)}
+                            >
+                              + Add Subject
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {terms.length < 4 && (
+                        <button
+                          type="button"
+                          className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-500/30 bg-white px-4 py-2 text-label-md font-semibold text-blue-600 shadow-xs transition-all hover:border-blue-500 hover:bg-blue-50/50 hover:text-blue-700 hover:shadow-sm active:bg-blue-100 self-start cursor-pointer"
+                          onClick={() => handleAddTerm(gradeForSchool, schoolIdx)}
+                        >
+                          + Add Term
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            ) : (
+              <>
+                {/* Subjects Section */}
+                <Label size="lg" className="font-semibold text-neutral-900">
+                  {gradeLabel} Subject Details
+                </Label>
+                <p className="text-label-sm text-neutral-600">
+                  *All grades are required.
+                </p>
+                <div className="mt-5 overflow-x-auto">
+                  {(() => {
+                    const schoolSubjects = schoolValues?.[section.repeatables?.name ?? 'subjects'] as any[];
+
+                    // Check if any subject in this school has 'Other' selected
+                    const hasOtherSubject = Array.isArray(schoolSubjects) && schoolSubjects.some((s) => s.subject === 'Other');
+
+                    // Filter fields to exclude 'subjectOther' if no 'Other' subject exists
+                    const visibleFields =
+                      section.repeatables?.fields.filter((fieldId: string) => {
+                        if (fieldId === 'subjectOther') {
+                          return hasOtherSubject;
+                        }
+                        return true;
+                      }) ?? [];
+
+                    return (
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b border-neutral-200">
                             {visibleFields.map((fieldId: string) => {
                               const fieldDef = fieldDefs.find(
                                 (def) => def.id === fieldId
                               );
                               if (!fieldDef) return null;
-
-                              // For subjectOther field, only render if this row has 'Other' selected
-                              if (
-                                fieldId === 'subjectOther' &&
-                                !showSubjectOther
-                              ) {
-                                return (
-                                  <td key={fieldId} className="px-4 py-3">
-                                    <span className="text-neutral-400">-</span>
-                                  </td>
-                                );
-                              }
-
-                              // Get the board value for this school from formValues
-                              const boardValue = schoolValues?.board as string | undefined;
-
-                              // Map board names to subject lists
-                              const boardSubjectMap: Record<string, string[]> = {
-                                'American (AP / US High School Diploma)': americanSubjects,
-                                'Cambridge - A Levels': cambridgeALevelSubjects,
-                                'Cambridge - IGCSE': cambridgeIGCSESubjects,
-                                CBSE: cbseSubjects,
-                                HSC: hscSubjects,
-                                IBCP: ibcpSubjects,
-                                ICSE: icseSubjects,
-                                'International Baccalaureate (IB)': ibSubjects,
-                                ISC: iscSubjects,
-                                MYP: mypSubjects,
-                                NIOS: niosSubjects,
-                                'State Board': stateBoardSubjects,
-                              };
-
-                              const currentBoardSubjects =
-                                (boardValue && boardSubjectMap[boardValue]) || seniorSecondarySubjects;
-
-                              const controllerName = `${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.${fieldDef.id}`;
-
-                              // For subject field, filter out subjects already selected in other rows
-                              const subjectsToShow = fieldId === 'subject'
-                                ? currentBoardSubjects.filter(
-                                  (opt) => opt === 'Other' || !alreadySelectedSubjects.includes(opt)
-                                )
-                                : undefined;
-
-                              const fieldForRenderer: FieldDefinition = {
-                                ...fieldDef,
-                                id: controllerName,
-                                label: '', // Remove label in table cells
-                              };
-
                               return (
-                                <td key={controllerName} className="px-4 py-3">
-                                  <Controller
-                                    name={controllerName}
-                                    control={form.control}
-                                    defaultValue={
-                                      form.getValues(controllerName) ?? ''
-                                    }
-                                    render={() => (
-                                      <FieldRenderer
-                                        field={fieldForRenderer}
-                                        form={form}
-                                        error={errors[controllerName]}
-                                        inputHeightClass="py-2"
-                                        labelHeightClass="text-label-md"
-                                        inputWidthClass="w-full"
-                                        optionsOverride={subjectsToShow}
-                                      />
-                                    )}
-                                  />
-                                </td>
+                                <th
+                                  key={fieldId}
+                                  className="text-label-md px-4 py-3 text-left font-semibold text-neutral-900"
+                                >
+                                  {fieldDef.label}
+                                  {fieldDef.required && (
+                                    <span className="ml-1 text-orange-500">*</span>
+                                  )}
+                                </th>
                               );
                             })}
-                            <td className="px-4 py-3 text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                type="button"
-                                label="Remove"
-                                className="text-blue-500"
-                                onClick={() =>
-                                  handleRemoveSubjectRow(
-                                    gradeForSchool,
-                                    schoolIdx,
-                                    rowIdx
-                                  )
-                                }
-                                disabled={subjectRows.length <= minSubjects}
-                              />
-                            </td>
+                            <th className="text-label-md px-4 py-3 text-right font-semibold text-neutral-900">
+                              Actions
+                            </th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                );
-              })()}
-            </div>
-            {/* Show array-level subjects error (e.g. "At least 3 subjects required") */}
-            {errors[
-              `${sectionType}.${schoolIdx}.${section.repeatables?.name ?? 'subjects'}`
-            ] && (
-                <p className="mt-1 text-sm text-red-500">
-                  {
-                    errors[
-                    `${sectionType}.${schoolIdx}.${section.repeatables?.name ?? 'subjects'}`
-                    ]
-                  }
-                </p>
-              )}
-            <button
-              type="button"
-              className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"
-              onClick={() => handleAddSubjectRow(gradeForSchool, schoolIdx)}
-            >
-              {section.repeatables?.repeatable_option?.add ?? '+ Add Subject'}
-            </button>
+                        </thead>
+                        <tbody>
+                          {subjectRows.map((row, rowIdx) => {
+                            // Get the subject value for this row from schoolSubjects
+                            const subjectValue = schoolSubjects?.[rowIdx]?.subject as string | undefined;
+                            const showSubjectOther = subjectValue === 'Other';
+
+                            // Collect subjects already selected in OTHER rows
+                            const alreadySelectedSubjects = subjectRows.reduce<string[]>((acc, _, otherIdx) => {
+                              if (otherIdx === rowIdx) return acc;
+                              const otherSubject = form.getValues(
+                                `${section.type}.${schoolIdx}.${section.repeatables?.name}.${otherIdx}.subject`
+                              ) as string | undefined;
+                              if (otherSubject && otherSubject !== 'Other' && otherSubject.trim() !== '') {
+                                acc.push(otherSubject);
+                              }
+                              return acc;
+                            }, []);
+
+                            return (
+                              <tr
+                                key={(row._id as string) ?? rowIdx}
+                                className="border-b border-neutral-200"
+                              >
+                                {visibleFields.map((fieldId: string) => {
+                                  const fieldDef = fieldDefs.find(
+                                    (def) => def.id === fieldId
+                                  );
+                                  if (!fieldDef) return null;
+
+                                  // For subjectOther field, only render if this row has 'Other' selected
+                                  if (
+                                    fieldId === 'subjectOther' &&
+                                    !showSubjectOther
+                                  ) {
+                                    return (
+                                      <td key={fieldId} className="px-4 py-3">
+                                        <span className="text-neutral-400">-</span>
+                                      </td>
+                                    );
+                                  }
+
+                                  // Get the board value for this school
+                                  const boardValue = schoolValues?.board as string | undefined;
+
+                                  // Map board names to subject lists
+                                  const boardSubjectMap: Record<string, string[]> = {
+                                    'American (AP / US High School Diploma)': americanSubjects,
+                                    'Cambridge - A Levels': cambridgeALevelSubjects,
+                                    'Cambridge - IGCSE': cambridgeIGCSESubjects,
+                                    CBSE: cbseSubjects,
+                                    HSC: hscSubjects,
+                                    IBCP: ibcpSubjects,
+                                    ICSE: icseSubjects,
+                                    'International Baccalaureate (IB)': ibSubjects,
+                                    ISC: iscSubjects,
+                                    MYP: mypSubjects,
+                                    NIOS: niosSubjects,
+                                    'State Board': stateBoardSubjects,
+                                  };
+
+                                  const currentBoardSubjects =
+                                    (boardValue && boardSubjectMap[boardValue]) || seniorSecondarySubjects;
+
+                                  const controllerName = `${section.type}.${schoolIdx}.${section.repeatables?.name}.${rowIdx}.${fieldDef.id}`;
+
+                                  // For subject field, filter out subjects already selected in other rows
+                                  const subjectsToShow = fieldId === 'subject'
+                                    ? currentBoardSubjects.filter(
+                                      (opt) => opt === 'Other' || !alreadySelectedSubjects.includes(opt)
+                                    )
+                                    : undefined;
+
+                                  const fieldForRenderer: FieldDefinition = {
+                                    ...fieldDef,
+                                    id: controllerName,
+                                    label: '', // Remove label in table cells
+                                  };
+
+                                  return (
+                                    <td key={controllerName} className="px-4 py-3">
+                                      <Controller
+                                        name={controllerName}
+                                        control={form.control}
+                                        defaultValue={
+                                          form.getValues(controllerName) ?? ''
+                                        }
+                                        render={() => (
+                                          <FieldRenderer
+                                            field={fieldForRenderer}
+                                            form={form}
+                                            error={errors[controllerName]}
+                                            inputHeightClass="py-2"
+                                            labelHeightClass="text-label-md"
+                                            inputWidthClass="w-full"
+                                            optionsOverride={subjectsToShow}
+                                          />
+                                        )}
+                                      />
+                                    </td>
+                                  );
+                                })}
+                                <td className="px-4 py-3 text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    type="button"
+                                    label="Remove"
+                                    className="text-blue-500"
+                                    onClick={() =>
+                                      handleRemoveSubjectRow(
+                                        gradeForSchool,
+                                        schoolIdx,
+                                        rowIdx
+                                      )
+                                    }
+                                    disabled={subjectRows.length <= minSubjects}
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    );
+                  })()}
+                </div>
+                {/* Show array-level subjects error (e.g. "At least 3 subjects required") */}
+                {errors[
+                  `${sectionType}.${schoolIdx}.${section.repeatables?.name ?? 'subjects'}`
+                ] && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {
+                        errors[
+                        `${sectionType}.${schoolIdx}.${section.repeatables?.name ?? 'subjects'}`
+                        ]
+                      }
+                    </p>
+                  )}
+                <button
+                  type="button"
+                  className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"
+                  onClick={() => handleAddSubjectRow(gradeForSchool, schoolIdx)}
+                >
+                  {section.repeatables?.repeatable_option?.add ?? '+ Add Subject'}
+                </button>
+              </>
+            )}
             <hr className="mt-5 mb-10 border-t border-neutral-200" />
             <Label size="lg" className="font-semibold text-neutral-900">
               {gradeLabel} Other Details
