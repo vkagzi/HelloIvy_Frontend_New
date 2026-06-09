@@ -175,11 +175,11 @@ export default function Dashboard(): React.ReactElement {
             </div>
             <div>
               <Label size="md" className="font-semibold text-neutral-900">
-                Customize your Ivy
+                Customize Ivy
               </Label>
               <br />
               <Label size="sm" className="text-neutral-500">
-                Customize your counsellor&apos;s voice, language, and accent.
+                Edit your counsellor&apos;s voice, language, and accent.
               </Label>
             </div>
           </div>

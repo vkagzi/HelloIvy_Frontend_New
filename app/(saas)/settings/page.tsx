@@ -89,6 +89,32 @@ const EnglishCombinedFlag = ({ className = 'w-full h-full' }: { className?: stri
   </svg>
 );
 
+const MaleIcon = ({ className = 'h-6 w-6' }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+  >
+    <circle cx="12" cy="5.5" r="3.5" />
+    <path d="M12 11c-4 0-7.5 2.2-7.5 5v6h15v-6c0-2.8-3.5-5-7.5-5z" />
+    <line x1="8.5" y1="13" x2="8.5" y2="22" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+    <line x1="15.5" y1="13" x2="15.5" y2="22" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+  </svg>
+);
+
+const FemaleIcon = ({ className = 'h-6 w-6' }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+  >
+    <circle cx="12" cy="5.5" r="3.5" />
+    <path d="M12 11c-2 0-3.5.8-4 2l-3.5 9h15l-3.5-9c-.5-1.2-2-2-4-2z" />
+    <line x1="8.2" y1="13" x2="6.7" y2="22" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+    <line x1="15.8" y1="13" x2="17.3" y2="22" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+  </svg>
+);
+
 const ACCENT_FLAGS: Record<VoiceAccent, React.ComponentType<{ className?: string }>> = {
   indian: IndiaFlag,
   british: UKFlag,
@@ -126,7 +152,7 @@ const PERSONAS: PersonaOption[] = [
   {
     id: 'male',
     label: 'Male',
-    description: "I'm crisp & confident - choose me!",
+    description: "I'm crisp & confident",
     gradient: 'from-blue-500 to-indigo-600',
     playingRing: 'ring-blue-400',
     waveBarClass: 'bg-blue-500',
@@ -135,7 +161,7 @@ const PERSONAS: PersonaOption[] = [
   {
     id: 'female',
     label: 'Female',
-    description: "I'm calm & clear - pick me!",
+    description: "I'm calm & clear",
     gradient: 'from-pink-500 to-rose-600',
     playingRing: 'ring-pink-400',
     waveBarClass: 'bg-pink-500',
@@ -197,6 +223,8 @@ const VOICE_SAMPLE_URLS: Record<VoicePersona, string> = {
   female: '/audio/voice-sample-marin.mp3',
 };
 
+
+
 export default function SettingsPage(): React.ReactElement {
   const [selected, setSelected] = useState<VoicePersona>('male');
   const [saved, setSaved] = useState<VoicePersona>('male');
@@ -210,12 +238,23 @@ export default function SettingsPage(): React.ReactElement {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { addToast } = useToast();
 
+  // Pre-load synthesis voices on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+    }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
+      }
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        (window as any)._activeUtterance = null;
       }
     };
   }, []);
@@ -224,6 +263,10 @@ export default function SettingsPage(): React.ReactElement {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
+    }
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      (window as any)._activeUtterance = null;
     }
     setPlayingPersona(null);
   }, []);
@@ -259,6 +302,8 @@ export default function SettingsPage(): React.ReactElement {
     },
     [playingPersona, stopSample]
   );
+
+
 
   useEffect(() => {
     api<{ settings: { voice_persona?: VoicePersona; voice_accent?: VoiceAccent; voice_language?: VoiceLanguage } }>('/api/accounts/settings/')
@@ -330,7 +375,7 @@ export default function SettingsPage(): React.ReactElement {
             {[1, 2].map((i) => (
               <div
                 key={i}
-                className="h-40 animate-pulse rounded-xl bg-neutral-100"
+                className="h-20 animate-pulse rounded-xl bg-neutral-100"
               />
             ))}
           </div>
@@ -351,91 +396,93 @@ export default function SettingsPage(): React.ReactElement {
                       setSelected(persona.id);
                     }
                   }}
-                  className={`group relative flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 px-3 py-5 text-center transition-all ${
+                  className={`group relative flex cursor-pointer flex-row items-center gap-4 rounded-xl border-2 px-4 py-3 transition-all ${
                     isSelected
                       ? 'border-teal-500 bg-teal-50/40 shadow-md'
-                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-xs'
                   }`}
                 >
-                  {/* Ivy lottie avatar with gradient ring */}
+                  {/* Left: Standard Restroom Gender Icon */}
                   <div
-                    className={`relative flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-br ${persona.gradient} p-1 shadow-lg ring-4 transition-all ${
+                    className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br ${persona.gradient} p-0.5 shadow-sm ring-2 transition-all ${
                       isPlaying ? persona.playingRing : isSelected ? 'ring-teal-400' : 'ring-white'
                     }`}
                   >
                     <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-white">
-                      <IvyWithoutBGLottie
-                        loop={isPlaying ? true : 0}
-                        animate={isPlaying}
-                        className="h-20 w-20"
-                      />
+                      {persona.id === 'male' ? (
+                        <MaleIcon className="h-6 w-6 text-blue-500" />
+                      ) : (
+                        <FemaleIcon className="h-6 w-6 text-pink-500" />
+                      )}
                     </div>
-
                   </div>
 
-                  {/* Sound wave bars — visible only while playing */}
-                  <div
-                    className={`flex h-5 items-end gap-0.5 transition-opacity duration-300 ${
-                      isPlaying ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    aria-hidden
-                  >
-                    {WAVE_DELAYS.map((delay, i) => (
-                      <div
-                        key={i}
-                        className={`w-1 animate-bounce rounded-full ${persona.waveBarClass}`}
-                        style={{
-                          height: `${8 + (i % 3) * 6}px`,
-                          animationDelay: `${delay}ms`,
-                          animationDuration: `${0.6 + (i % 2) * 0.3}s`,
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  <div>
-                    <Label size="md" className="font-semibold text-neutral-900">
+                  {/* Middle: Name and description below it */}
+                  <div className="flex-1 text-left min-w-0">
+                    <Label size="md" className="font-bold text-neutral-900 block leading-tight">
                       {persona.label}
                     </Label>
-                    <Paragraph size="xs" className="mt-0.5 text-neutral-500">
+                    <Paragraph className="mt-0.5 text-neutral-500 text-[10px] sm:text-xs leading-normal">
                       {persona.description}
                     </Paragraph>
                   </div>
 
-                  {/* Play / Stop icon button */}
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handlePlaySample(persona.id);
-                    }}
-                    aria-label={isPlaying ? 'Stop voice sample' : 'Play voice sample'}
-                    className={`mt-1 flex h-10 w-10 items-center justify-center rounded-full shadow-md transition-all ${
-                      isPlaying
-                        ? `bg-linear-to-br ${persona.gradient} text-white`
-                        : 'border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'
-                    }`}
-                  >
-                    {isPlaying ? (
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                        <rect x="6" y="6" width="12" height="12" rx="1" />
-                      </svg>
-                    ) : (
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    )}
-                  </button>
+                  {/* Right: Audio Wave and Play/Stop controls */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* Sound wave bars — visible only while playing */}
+                    <div
+                      className={`flex h-4 items-end gap-0.5 transition-opacity duration-300 ${
+                        isPlaying ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      aria-hidden
+                    >
+                      {WAVE_DELAYS.map((delay, i) => (
+                        <div
+                          key={i}
+                          className={`w-0.5 animate-bounce rounded-full ${persona.waveBarClass}`}
+                          style={{
+                            height: `${6 + (i % 3) * 4}px`,
+                            animationDelay: `${delay}ms`,
+                            animationDuration: `${0.6 + (i % 2) * 0.3}s`,
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handlePlaySample(persona.id);
+                      }}
+                      aria-label={isPlaying ? 'Stop voice sample' : 'Play voice sample'}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full shadow-xs transition-all ${
+                        isPlaying
+                          ? `bg-linear-to-br ${persona.gradient} text-white`
+                          : 'border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'
+                      }`}
+                    >
+                      {isPlaying ? (
+                        <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                          <rect x="6" y="6" width="12" height="12" rx="1" />
+                        </svg>
+                      ) : (
+                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
 
                   {/* Selection check */}
                   {isSelected && (
-                    <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-teal-500 text-white">
+                    <div className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-teal-500 text-white shadow-xs">
                       <svg
-                        className="h-3 w-3"
+                        className="h-2.5 w-2.5"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
-                        strokeWidth={3}
+                        strokeWidth={4.5}
                       >
                         <path
                           strokeLinecap="round"
@@ -460,16 +507,13 @@ export default function SettingsPage(): React.ReactElement {
             Select Agent Language
           </Label>
         </div>
-        <Paragraph size="sm" className="mt-1 text-neutral-500">
-          Choose the language for your HelloIvy counsellor.
-        </Paragraph>
 
         {loading ? (
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {[1, 2].map((i) => (
               <div
                 key={i}
-                className="h-32 animate-pulse rounded-xl bg-neutral-100"
+                className="h-20 animate-pulse rounded-xl bg-neutral-100"
               />
             ))}
           </div>
@@ -493,33 +537,38 @@ export default function SettingsPage(): React.ReactElement {
                       setSelectedLanguage(lang.id as VoiceLanguage);
                     }
                   }}
-                  className={`group relative flex cursor-pointer flex-col items-center justify-center gap-6 h-[240px] rounded-xl border-2 px-3 py-5 text-center transition-all ${
+                  className={`group relative flex cursor-pointer flex-row items-center gap-4 rounded-xl border-2 px-4 py-3 transition-all ${
                     isSelected
                       ? 'border-teal-500 bg-teal-50/40 shadow-md'
-                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-xs'
                   }`}
                 >
-                  {/* Ivy lottie avatar with gradient ring */}
+                  {/* Left: Language Code Logo with Gradient Ring */}
                   <div
-                    className={`relative flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-br ${meta.gradient} p-1 shadow-lg ring-4 transition-all ${
+                    className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br ${meta.gradient} p-0.5 shadow-sm ring-2 transition-all ${
                       isSelected ? 'ring-teal-400' : 'ring-white'
                     }`}
                   >
-                    <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-white">
-                      <IvyWithoutBGLottie
-                        loop={0}
-                        animate={false}
-                        className="h-20 w-20"
-                      />
+                    <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-white select-none">
+                      {lang.id === 'en' ? (
+                        <span className="font-extrabold text-lg bg-linear-to-br from-blue-600 to-indigo-700 bg-clip-text text-transparent">
+                          A
+                        </span>
+                      ) : (
+                        <span className="font-extrabold text-lg bg-linear-to-br from-orange-600 to-rose-700 bg-clip-text text-transparent">
+                          अ
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div>
-                    <Label size="md" className="font-semibold text-neutral-900">
+                  {/* Middle: Language Label and Badge */}
+                  <div className="flex-1 text-left min-w-0">
+                    <Label size="md" className="font-bold text-neutral-900 block leading-tight">
                       {meta.label}
                     </Label>
                     <span
-                      className={`mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold select-none ${
+                      className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold select-none ${
                         isSelected ? 'bg-teal-100 text-teal-700' : 'bg-neutral-100 text-neutral-700'
                       }`}
                     >
@@ -529,13 +578,13 @@ export default function SettingsPage(): React.ReactElement {
 
                   {/* Selection check */}
                   {isSelected && (
-                    <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-teal-500 text-white">
+                    <div className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-teal-500 text-white shadow-xs">
                       <svg
-                        className="h-3 w-3"
+                        className="h-2.5 w-2.5"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
-                        strokeWidth={3}
+                        strokeWidth={4.5}
                       >
                         <path
                           strokeLinecap="round"
@@ -567,9 +616,6 @@ export default function SettingsPage(): React.ReactElement {
             </span>
           )}
         </div>
-        <Paragraph size="sm" className="mt-1 text-neutral-500">
-          Choose the accent for your HelloIvy counsellor.
-        </Paragraph>
 
         {loading ? (
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">

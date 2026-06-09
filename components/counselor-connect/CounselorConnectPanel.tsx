@@ -16,6 +16,8 @@ interface CounselorConnectPanelProps {
   apiEndpoint: string;
   editableRole: 'student' | 'counselor' | 'both';
   showEmail?: boolean;
+  schoolName?: string | null;
+  counselorEmail?: string | null;
 }
 
 // ── 5 topic definitions ──────────────────────────────────────────────
@@ -83,6 +85,8 @@ function joinMeetings(maps: TopicMap[]): string {
 export default function CounselorConnectPanel({
   apiEndpoint,
   editableRole,
+  schoolName,
+  counselorEmail,
 }: CounselorConnectPanelProps) {
   const [comments, setComments] = useState<UserComment>({
     counselor_comment: '',
@@ -169,10 +173,24 @@ export default function CounselorConnectPanel({
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 bg-gradient-to-r from-indigo-50/80 to-purple-50/60 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" /></svg>
-            Counselor Connect
-          </h2>
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" /></svg>
+              Counselor Connect
+            </h2>
+            {schoolName && (
+              <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
+                <span className="font-semibold text-indigo-600">{schoolName}</span>
+                {counselorEmail && (
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span className="text-gray-400">Admin Email:</span>
+                    <span className="font-medium text-gray-600">{counselorEmail}</span>
+                  </>
+                )}
+              </p>
+            )}
+          </div>
           <Button onClick={addMeeting} className="bg-indigo-600 hover:bg-indigo-700 shadow-sm gap-1.5" size="sm">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
             Add Meeting

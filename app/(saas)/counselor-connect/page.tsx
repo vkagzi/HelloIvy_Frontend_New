@@ -13,6 +13,7 @@ interface CounselorInfo {
 export default function StudentCounselorConnectPage() {
   const [counselor, setCounselor] = useState<CounselorInfo | null>(null);
   const [counselorLoading, setCounselorLoading] = useState(true);
+  const [schoolName, setSchoolName] = useState<string | null>(null);
 
   // Email state
   const [emailSubject, setEmailSubject] = useState('');
@@ -24,8 +25,9 @@ export default function StudentCounselorConnectPage() {
   useEffect(() => {
     const fetchCounselor = async () => {
       try {
-        const data = await api<{ counselor: CounselorInfo | null }>('/api/accounts/me/send-counselor-email/');
+        const data = await api<{ counselor: CounselorInfo | null; school_name: string | null }>('/api/accounts/me/send-counselor-email/');
         setCounselor(data.counselor);
+        setSchoolName(data.school_name);
       } catch {
         // ignore
       } finally {
@@ -61,6 +63,8 @@ export default function StudentCounselorConnectPage() {
       <CounselorConnectPanel
         apiEndpoint="/api/accounts/me/comments/"
         editableRole="student"
+        schoolName={schoolName}
+        counselorEmail={counselor?.email}
       />
 
       {/* Email Your Counselor Section */}
