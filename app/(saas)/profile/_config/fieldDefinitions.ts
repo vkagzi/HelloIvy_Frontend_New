@@ -705,7 +705,13 @@ export const educationalFieldDefs: FieldDefinition[] = [
     visibility: {
       depends_on: {
         field_id: 'gradeLevel',
-        value: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+        value: [
+          'Grade 8',
+          'Grade 9',
+          'Grade 10',
+          'Grade 11 (Lower Sixth)',
+          'Grade 12 (Upper Sixth)',
+        ],
       },
     },
   },
@@ -737,7 +743,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'select_autofill',
     label: 'Board',
     options: [
-      'American (AP / US High School Diploma)',
+      'American (AP / American High School Diploma)',
       'Cambridge - A Levels',
       'Cambridge - IGCSE',
       'CBSE',
@@ -748,7 +754,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
       'ISC',
       'MYP',
       'NIOS',
-      'State Board',
+      'Indian State Boards',
       'Other',
     ],
     placeholder: 'Enter board name',
@@ -782,7 +788,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
     optionsDependsOn: {
       fieldId: 'board',
       map: {
-        'American (AP / US High School Diploma)': americanSubjects,
+        'American (AP / American High School Diploma)': americanSubjects,
         'Cambridge - A Levels': cambridgeALevelSubjects,
         'Cambridge - IGCSE': cambridgeIGCSESubjects,
         CBSE: cbseSubjects,
@@ -793,7 +799,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
         ISC: iscSubjects,
         MYP: mypSubjects,
         NIOS: niosSubjects,
-        'State Board': stateBoardSubjects,
+        'Indian State Boards': stateBoardSubjects,
       },
       default: seniorSecondarySubjects,
     },
@@ -1184,15 +1190,15 @@ export const educationalFieldDefs: FieldDefinition[] = [
     required: true,
   },
   {
-  id: 'year',
-  type: 'select_autofill',
-  options: Array.from({ length: 2035 - 1960 + 1 }, (_, i) => {
-    return (1960 + i).toString();
-  }),
-  label: 'Year of Completion',
-  placeholder: 'Enter year',
-  required: true,
-},
+    id: 'year',
+    type: 'select_autofill',
+    options: Array.from({ length: 2035 - 1960 + 1 }, (_, i) => {
+      return (1960 + i).toString();
+    }),
+    label: 'Year of Completion',
+    placeholder: 'Enter year',
+    required: true,
+  },
   {
     id: 'testType',
     type: 'select',
