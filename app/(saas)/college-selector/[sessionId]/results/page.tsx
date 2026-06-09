@@ -12,7 +12,7 @@ import {
   CollegeRecommendation,
   TranscriptData,
 } from '@/lib/college-selector-api';
-import { downloadPDF } from '@/lib/pdf-from-component';
+import { downloadPDF, getPDFBlob } from '@/lib/pdf-from-component';
 import CollegeSelectorResultsPDF from '@/components/pdf/CollegeSelectorResultsPDF';
 import TranscriptReportPDF from '@/components/pdf/TranscriptReportPDF';
 import { useUserAuth } from '@/app/_hooks/useUserAuth';
@@ -67,6 +67,39 @@ export default function CollegeSelectorResultsPage() {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  // Trigger automatic email once results are loaded
+  useEffect(() => {
+    if (sessionId && recommendations.length > 0 && userDetails?.email) {
+      const emailSentKey = `email_sent_${sessionId}`;
+      const alreadySent = localStorage.getItem(emailSentKey);
+
+      if (!alreadySent) {
+        autoEmailReport();
+      }
+    }
+
+    async function autoEmailReport() {
+      try {
+        const firstName = userDetails.first_name || '';
+        const lastName = userDetails.last_name || '';
+        const studentName =
+          firstName && lastName
+            ? `${firstName} ${lastName}`
+            : firstName || lastName || userDetails.email || 'Student';
+
+        const pdfBlob = await getPDFBlob(
+          <CollegeSelectorResultsPDF recommendations={recommendations} studentName={studentName} />
+        );
+
+        await collegeSelectorApi.emailReport(sessionId!, pdfBlob);
+        localStorage.setItem(`email_sent_${sessionId}`, 'true');
+        addToast('Report emailed to your registered address!', { type: 'success' });
+      } catch (err) {
+        console.error('Failed to auto-email report:', err);
+      }
+    }
+  }, [sessionId, recommendations, userDetails, addToast]);
 
   useEffect(() => {
     if (sessionId) loadResults();
