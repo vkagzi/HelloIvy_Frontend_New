@@ -160,12 +160,18 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues; section?: str
   };
 
   // Helper to format repeatable section name properly
-  const formatRepeatableName = (name: string, item: Record<string, unknown>, idx: number): string => {
+  const formatRepeatableName = (
+    name: string,
+    item: Record<string, unknown>,
+    idx: number,
+    parentItem?: Record<string, unknown>
+  ): string => {
     // Special handling for 'years' - show as "1st Year", "2nd Year" etc.
     if (name.toLowerCase() === 'years') {
       const yearValue = item.year;
       const yearNum = typeof yearValue === 'number' ? yearValue : idx + 1;
-      return `${getOrdinalSuffix(yearNum)} Year`;
+      const labelType = parentItem?.hasSemesterWiseScores === 'Yes' ? 'Semester' : 'Year';
+      return `${getOrdinalSuffix(yearNum)} ${labelType}`;
     }
     // Special handling for 'subjects' - show as "Subject 1", "Subject 2" etc.
     if (name.toLowerCase() === 'subjects') {
@@ -180,13 +186,16 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues; section?: str
   const renderYearsTable = (
     fieldDefs: FieldDefinition[],
     fields: string[],
-    values: Record<string, unknown>[]
+    values: Record<string, unknown>[],
+    hasSemesterWiseScores?: boolean
   ): JSX.Element => {
     // Get field labels for table headers
     const fieldLabels = fields.map((fid) => {
       const def = fieldDefs.find((f) => f.id === fid);
       return def?.label ?? fid;
     });
+
+    const yearOrSemester = hasSemesterWiseScores ? 'Semester' : 'Year';
 
     return (
       <div className="mt-3 overflow-x-auto">
@@ -198,7 +207,7 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues; section?: str
             <tr className="bg-neutral-100">
               <th className="border border-neutral-200 px-4 py-2 text-left">
                 <Label size="sm" className="font-semibold text-neutral-700">
-                  Year
+                  {yearOrSemester}
                 </Label>
               </th>
               {fieldLabels.map((label, idx) => (
@@ -219,7 +228,7 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues; section?: str
                 <tr key={idx} className={bgClass}>
                   <td className="border border-neutral-200 px-4 py-2">
                     <Paragraph size="sm" className="font-medium text-blue-600">
-                      {getOrdinalSuffix(yearNum)} Year
+                      {getOrdinalSuffix(yearNum)} {yearOrSemester}
                     </Paragraph>
                   </td>
                   {fields.map((fid) => (
@@ -290,7 +299,8 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues; section?: str
     fieldDefs: FieldDefinition[],
     name: string,
     fields: string[],
-    values: unknown
+    values: unknown,
+    parentItem?: Record<string, unknown>
   ): JSX.Element => {
     if (!Array.isArray(values) || values.length === 0) {
       return (
@@ -302,7 +312,12 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues; section?: str
 
     // Special handling for years - render as a table
     if (name.toLowerCase() === 'years') {
-      return renderYearsTable(fieldDefs, fields, values as Record<string, unknown>[]);
+      return renderYearsTable(
+        fieldDefs,
+        fields,
+        values as Record<string, unknown>[],
+        parentItem?.hasSemesterWiseScores === 'Yes'
+      );
     }
 
     // Special handling for subjects - render as a table
@@ -315,7 +330,7 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues; section?: str
         {(values as Record<string, unknown>[]).map((item, idx) => (
           <div key={idx} className="rounded-md px-2">
             <Paragraph size="sm" className="font-semibold text-blue-600">
-              {formatRepeatableName(name, item, idx)}
+              {formatRepeatableName(name, item, idx, parentItem)}
             </Paragraph>
             {renderFields(fieldDefs, fields, item)}
           </div>
@@ -434,7 +449,8 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues; section?: str
               fieldDefs,
               block.name.charAt(0).toUpperCase() + block.name.slice(1),
               block.fields,
-              defaultValues[block.name]
+              defaultValues[block.name],
+              defaultValues
             )}
           </div>
         );
@@ -513,13 +529,32 @@ const ProfileViewDetails: React.FC<{ defaultValues: DefaultValues; section?: str
                 {headingText}
               </Heading>
               {renderFields(fieldDefs, block.fields!, row)}
-              {block.repeatables &&
+              {block.type === 'highSchool' && row.hasTermWiseScores === 'Yes' ? (
+                <div className="mt-4 space-y-4">
+                  {Array.isArray(row.terms) && row.terms.map((term: any, termIdx: number) => (
+                    <div key={termIdx} className="pl-4 border-l-2 border-blue-500/20">
+                      <Label size="sm" className="font-semibold text-blue-700 block mb-2">
+                        {term.termName || `Term ${termIdx + 1}`}
+                      </Label>
+                      {renderRepeatable(
+                        fieldDefs,
+                        'subjects',
+                        block.repeatables!.fields,
+                        term.subjects
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                block.repeatables &&
                 renderRepeatable(
                   fieldDefs,
                   block.repeatables.name,
                   block.repeatables.fields,
-                  row[block.repeatables.name]
-                )}
+                  row[block.repeatables.name],
+                  row
+                )
+              )}
             </div>
           );
           

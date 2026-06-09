@@ -197,6 +197,12 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
   // Add a year row to a specific degree
   const handleAddYear = (degreeIdx: number): void => {
+    const degree = degrees[degreeIdx];
+    if (!degree) return;
+
+    const isSemesterWise = form.getValues(`${sectionType}.${degreeIdx}.hasSemesterWiseScores`) === 'Yes';
+    if (isSemesterWise && degree.yearRows.length >= 8) return;
+
     // Pre-fill fields that have defaultValueFrom with the source value from the same degree
     const getInitialValue = (fid: string): string => {
       const field = fieldDefs.find((f) => f.id === fid);
@@ -231,7 +237,9 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
   const handleRemoveYear = (degreeIdx: number, yearIdx: number): void => {
     const degree = degrees[degreeIdx];
-    if (!degree || degree.yearRows.length <= minYears) return;
+    const isSemesterWise = form.getValues(`${sectionType}.${degreeIdx}.hasSemesterWiseScores`) === 'Yes';
+    const minRows = isSemesterWise ? 1 : minYears;
+    if (!degree || degree.yearRows.length <= minRows) return;
     
     // Update form data first to let index shifting happen correctly
     const currentSectionData = form.getValues(sectionType);
@@ -260,127 +268,72 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
   return (
     <div className="flex flex-col gap-7">
-      {degrees.map((degree, degreeIdx) => (
-        <div
-          key={degree.key}
-          className="flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
-        >
-          {/* Degree Header */}
-          <div className="mb-5 flex items-center justify-between">
-            <Label size="lg" className="font-semibold text-neutral-900">
-              Degree {degreeIdx + 1} - Basic Details
-            </Label>
-            <div className="flex items-center gap-3">
-              <TranscriptUploader targetSection={sectionType} targetIndex={degreeIdx} />
-              {degrees.length > minDegrees && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  label="Remove Degree"
-                  className="text-blue-500"
-                  onClick={() => handleRemoveDegree(degree.key, degreeIdx)}
-                />
-              )}
+      {degrees.map((degree, degreeIdx) => {
+        const sectionValues = (formValues as Record<string, unknown>)?.[sectionType];
+        const degreeValues = Array.isArray(sectionValues)
+          ? ((sectionValues[degreeIdx] as Record<string, unknown>) ?? {})
+          : {};
+        const hasSemesterWiseScores = degreeValues?.hasSemesterWiseScores as string | undefined;
+
+        return (
+          <div
+            key={degree.key}
+            className="flex flex-col space-y-2 rounded-xl border border-neutral-200 p-4"
+          >
+            {/* Degree Header */}
+            <div className="mb-5 flex items-center justify-between">
+              <Label size="lg" className="font-semibold text-neutral-900">
+                Degree {degreeIdx + 1} - Basic Details
+              </Label>
+              <div className="flex items-center gap-3">
+                <TranscriptUploader targetSection={sectionType} targetIndex={degreeIdx} />
+                {degrees.length > minDegrees && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    label="Remove Degree"
+                    className="text-blue-500"
+                    onClick={() => handleRemoveDegree(degree.key, degreeIdx)}
+                  />
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Degree Fields */}
-          <div
-            className="grid gap-4"
-            style={{
-              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-            }}
-          >
-            {section?.fields
-              ?.filter((fieldId: string) => !['redFlags'].includes(fieldId))
-              .map((fieldId: string) => {
-                const fieldDef = fieldDefs.find((def) => def.id === fieldId);
-                if (!fieldDef) return null;
-
-                const sectionValues = (
-                  formValues as Record<string, unknown>
-                )?.[sectionType];
-                const degreeValues = Array.isArray(sectionValues)
-                  ? ((sectionValues[degreeIdx] as Record<string, unknown>) ??
-                    {})
-                  : {};
-                if (!isFieldVisible(fieldDef, degreeValues)) return null;
-
-                const controllerName = `${sectionType}.${degreeIdx}.${fieldDef.id}`;
-                const repeatableField: FieldDefinition = {
-                  ...fieldDef,
-                  id: controllerName,
-                };
-                const getOptionsOverride = (fid: string) => {
-                  if (fid !== 'degree') return undefined;
-                  if (sectionType === 'undergraduate' || sectionType === 'undergraduate_prereq') {
-                    return UNDERGRADUATE_DEGREE_PROGRAMS;
-                  }
-                  if (sectionType === 'postgraduate') {
-                    return POSTGRADUATE_DEGREE_PROGRAMS;
-                  }
-                  return undefined;
-                };
-
-                return (
-                  <div key={fieldDef.id}>
-                    <Controller
-                      name={controllerName}
-                      control={form.control}
-                      defaultValue={form.getValues(controllerName) ?? ''}
-                      render={() => (
-                        <FieldRenderer
-                          field={repeatableField}
-                          form={form}
-                          error={errors[controllerName]}
-                          inputHeightClass="py-2"
-                          labelHeightClass="text-label-md"
-                          inputWidthClass="w-full"
-                          optionsOverride={getOptionsOverride(fieldDef.id)}
-                        />
-                      )}
-                    />
-                  </div>
-                );
-              })}
-          </div>
-
-          <hr className="my-10 border-t border-neutral-200" aria-hidden="true" />
-
-          {/* Year Score Details */}
-          <Label size="lg" className="font-semibold text-neutral-900">
-            Degree {degreeIdx + 1} - Year-wise Score Details
-          </Label>
-          
-          <div
-            className="mt-5 grid gap-4"
-            style={{
-              gridTemplateColumns: `auto ${getGridTemplateColumns(section.repeatables?.fields ?? [])} 100px`,
-            }}
-          >
-            {degree.yearRows.map((_, yearIdx) => (
-              <React.Fragment key={yearIdx}>
-                {/* Year label */}
-                <div className="flex items-center">
-                  <Label size="md" className="font-medium text-neutral-700">
-                    {getOrdinalSuffix(yearIdx + 1)} Year
-                  </Label>
-                </div>
-                
-                {/* Year fields */}
-                {section.repeatables?.fields.map((fieldId: string) => {
+            {/* Degree Fields */}
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+              }}
+            >
+              {section?.fields
+                ?.filter((fieldId: string) => !['redFlags'].includes(fieldId))
+                .map((fieldId: string) => {
                   const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                   if (!fieldDef) return null;
-                  const controllerName = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldDef.id}`;
+
+                  if (!isFieldVisible(fieldDef, degreeValues)) return null;
+
+                  const controllerName = `${sectionType}.${degreeIdx}.${fieldDef.id}`;
                   const repeatableField: FieldDefinition = {
                     ...fieldDef,
                     id: controllerName,
                   };
+                  const getOptionsOverride = (fid: string) => {
+                    if (fid !== 'degree') return undefined;
+                    if (sectionType === 'undergraduate' || sectionType === 'undergraduate_prereq') {
+                      return UNDERGRADUATE_DEGREE_PROGRAMS;
+                    }
+                    if (sectionType === 'postgraduate') {
+                      return POSTGRADUATE_DEGREE_PROGRAMS;
+                    }
+                    return undefined;
+                  };
+
                   return (
-                    <div key={controllerName}>
+                    <div key={fieldDef.id}>
                       <Controller
-                        key={controllerName} // Force re-render if name changes
                         name={controllerName}
                         control={form.control}
                         defaultValue={form.getValues(controllerName) ?? ''}
@@ -392,108 +345,165 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                             inputHeightClass="py-2"
                             labelHeightClass="text-label-md"
                             inputWidthClass="w-full"
+                            optionsOverride={getOptionsOverride(fieldDef.id)}
                           />
                         )}
                       />
                     </div>
                   );
                 })}
-                
-                {/* Remove year button */}
-                <div className="flex items-center justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    type="button"
-                    label="Remove"
-                    className="text-blue-500"
-                    onClick={() => handleRemoveYear(degreeIdx, yearIdx)}
-                    disabled={degree.yearRows.length <= minYears}
-                  />
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
+            </div>
 
-          <button
-            type="button"
-            className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"
-            onClick={() => handleAddYear(degreeIdx)}
-          >
-            + Add Year
-          </button>
+            <hr className="my-10 border-t border-neutral-200" aria-hidden="true" />
 
-          <hr className="mt-5 mb-10 border-t border-neutral-200" aria-hidden="true" />
-
-          {/* Other Details (redFlags) */}
-          <Label size="lg" className="font-semibold text-neutral-900">
-            Degree {degreeIdx + 1} - Other Details
-          </Label>
-          <div
-            className="mt-5 grid gap-4"
-            style={{
-              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-            }}
-          >
-            {section?.fields
-              ?.filter((fieldId: string) => ['redFlags'].includes(fieldId))
-              .map((fieldId: string) => {
-                const fieldDef = fieldDefs.find((def) => def.id === fieldId);
-                if (!fieldDef) return null;
-
-                const sectionValues = (
-                  formValues as Record<string, unknown>
-                )?.[sectionType];
-                const degreeValues = Array.isArray(sectionValues)
-                  ? ((sectionValues[degreeIdx] as Record<string, unknown>) ??
-                    {})
-                  : {};
-                if (!isFieldVisible(fieldDef, degreeValues)) return null;
-
-                const controllerName = `${sectionType}.${degreeIdx}.${fieldDef.id}`;
-                const repeatableField: FieldDefinition = {
-                  ...fieldDef,
-                  id: controllerName,
-                };
-                const getOptionsOverride = (fid: string) => {
-                  if (fid !== 'degree') return undefined;
-                  if (sectionType === 'undergraduate' || sectionType === 'undergraduate_prereq') {
-                    return UNDERGRADUATE_DEGREE_PROGRAMS;
-                  }
-                  if (sectionType === 'postgraduate') {
-                    return POSTGRADUATE_DEGREE_PROGRAMS;
-                  }
-                  return undefined;
-                };
-
-                return (
-                  <div key={fieldDef.id}>
-                    <Controller
-                      name={controllerName}
-                      control={form.control}
-                      defaultValue={form.getValues(controllerName) ?? ''}
-                      render={() => (
-                        <FieldRenderer
-                          field={repeatableField}
-                          form={form}
-                          error={errors[controllerName]}
-                          inputHeightClass="py-2"
-                          labelHeightClass="text-label-md"
-                          inputWidthClass="w-full"
-                          optionsOverride={getOptionsOverride(fieldDef.id)}
+            {/* Year Score Details */}
+            <Label size="lg" className="font-semibold text-neutral-900">
+              {hasSemesterWiseScores === 'Yes'
+                ? `Degree ${degreeIdx + 1} - Semester-wise Score Details`
+                : `Degree ${degreeIdx + 1} - Year-wise Score Details`}
+            </Label>
+            
+            <div
+              className="mt-5 grid gap-4"
+              style={{
+                gridTemplateColumns: `auto ${getGridTemplateColumns(section.repeatables?.fields ?? [])} 100px`,
+              }}
+            >
+              {degree.yearRows.map((_, yearIdx) => (
+                <React.Fragment key={yearIdx}>
+                  {/* Year label */}
+                  <div className="flex items-center">
+                    <Label size="md" className="font-medium text-neutral-700">
+                      {getOrdinalSuffix(yearIdx + 1)} {hasSemesterWiseScores === 'Yes' ? 'Semester' : 'Year'}
+                    </Label>
+                  </div>
+                  
+                  {/* Year fields */}
+                  {section.repeatables?.fields.map((fieldId: string) => {
+                    const fieldDef = fieldDefs.find((def) => def.id === fieldId);
+                    if (!fieldDef) return null;
+                    const controllerName = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldDef.id}`;
+                    const repeatableField: FieldDefinition = {
+                      ...fieldDef,
+                      id: controllerName,
+                    };
+                    return (
+                      <div key={controllerName}>
+                        <Controller
+                          key={controllerName} // Force re-render if name changes
+                          name={controllerName}
+                          control={form.control}
+                          defaultValue={form.getValues(controllerName) ?? ''}
+                          render={() => (
+                            <FieldRenderer
+                              field={repeatableField}
+                              form={form}
+                              error={errors[controllerName]}
+                              inputHeightClass="py-2"
+                              labelHeightClass="text-label-md"
+                              inputWidthClass="w-full"
+                            />
+                          )}
                         />
-                      )}
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Remove year button */}
+                  <div className="flex items-center justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      label="Remove"
+                      className="text-blue-500"
+                      onClick={() => handleRemoveYear(degreeIdx, yearIdx)}
+                      disabled={
+                        hasSemesterWiseScores === 'Yes'
+                          ? degree.yearRows.length <= 1
+                          : degree.yearRows.length <= minYears
+                      }
                     />
                   </div>
-                );
-              })}
+                </React.Fragment>
+              ))}
+            </div>
+
+            {!(hasSemesterWiseScores === 'Yes' && degree.yearRows.length >= 8) && (
+              <button
+                type="button"
+                className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-500/30 bg-white px-4 py-2 text-label-md font-semibold text-blue-600 shadow-xs transition-all hover:border-blue-500 hover:bg-blue-50/50 hover:text-blue-700 hover:shadow-sm active:bg-blue-100 self-start cursor-pointer"
+                onClick={() => handleAddYear(degreeIdx)}
+              >
+                {hasSemesterWiseScores === 'Yes' ? '+ Add Semester' : '+ Add Year'}
+              </button>
+            )}
+
+            <hr className="mt-5 mb-10 border-t border-neutral-200" aria-hidden="true" />
+
+            {/* Other Details (redFlags) */}
+            <Label size="lg" className="font-semibold text-neutral-900">
+              Degree {degreeIdx + 1} - Other Details
+            </Label>
+            <div
+              className="mt-5 grid gap-4"
+              style={{
+                gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+              }}
+            >
+              {section?.fields
+                ?.filter((fieldId: string) => ['redFlags'].includes(fieldId))
+                .map((fieldId: string) => {
+                  const fieldDef = fieldDefs.find((def) => def.id === fieldId);
+                  if (!fieldDef) return null;
+
+                  if (!isFieldVisible(fieldDef, degreeValues)) return null;
+
+                  const controllerName = `${sectionType}.${degreeIdx}.${fieldDef.id}`;
+                  const repeatableField: FieldDefinition = {
+                    ...fieldDef,
+                    id: controllerName,
+                  };
+                  const getOptionsOverride = (fid: string) => {
+                    if (fid !== 'degree') return undefined;
+                    if (sectionType === 'undergraduate' || sectionType === 'undergraduate_prereq') {
+                      return UNDERGRADUATE_DEGREE_PROGRAMS;
+                    }
+                    if (sectionType === 'postgraduate') {
+                      return POSTGRADUATE_DEGREE_PROGRAMS;
+                    }
+                    return undefined;
+                  };
+
+                  return (
+                    <div key={fieldDef.id}>
+                      <Controller
+                        name={controllerName}
+                        control={form.control}
+                        defaultValue={form.getValues(controllerName) ?? ''}
+                        render={() => (
+                          <FieldRenderer
+                            field={repeatableField}
+                            form={form}
+                            error={errors[controllerName]}
+                            inputHeightClass="py-2"
+                            labelHeightClass="text-label-md"
+                            inputWidthClass="w-full"
+                            optionsOverride={getOptionsOverride(fieldDef.id)}
+                          />
+                        )}
+                      />
+                    </div>
+                  );
+                })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <button
         type="button"
-        className="text-label-sm mt-2 cursor-pointer self-start font-medium text-blue-500"
+        className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-500/30 bg-white px-4 py-2 text-label-md font-semibold text-blue-600 shadow-xs transition-all hover:border-blue-500 hover:bg-blue-50/50 hover:text-blue-700 hover:shadow-sm active:bg-blue-100 self-start cursor-pointer"
         onClick={() => handleAddDegree()}
       >
         + Add Degree
