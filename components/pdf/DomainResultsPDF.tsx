@@ -65,6 +65,23 @@ const s = StyleSheet.create({
   chipPurple: { backgroundColor: '#f3e8ff', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   chipPurpleText: { fontSize: 8, color: '#7f12f3' },
 
+  /* feasibility + skill gaps strip */
+  strip: {
+    flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+    backgroundColor: '#f9fafb', paddingHorizontal: 12, paddingVertical: 8,
+  },
+  stripLeft: { flex: 1 },
+  stripRight: { flex: 1, borderLeftWidth: 1, borderLeftColor: '#e5e7eb', paddingLeft: 10 },
+  stripLabel: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 },
+
+  feasBadge: { borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 3, alignSelf: 'flex-start' },
+  feasText: { fontSize: 7, fontFamily: 'Helvetica-Bold' },
+  feasReason: { fontSize: 7.5, color: gray, lineHeight: 1.4 },
+
+  gapNumCircle: { width: 13, height: 13, borderRadius: 7, backgroundColor: chipBlue, alignItems: 'center', justifyContent: 'center', marginRight: 4, marginTop: 0.5 },
+  gapNumText: { fontSize: 6, fontFamily: 'Helvetica-Bold', color: brandBlue },
+  gapText: { fontSize: 7.5, color: gray, flex: 1, lineHeight: 1.4 },
+
   /* disclaimer & footer */
   disclaimer: { marginTop: 14, padding: 10, backgroundColor: '#fef9e7', borderRadius: 6, borderWidth: 0.5, borderColor: '#f5d063' },
   disclaimerText: { fontSize: 7, color: '#92700c', lineHeight: 1.5, textAlign: 'center', fontStyle: 'italic' },
@@ -79,6 +96,12 @@ function matchColor(pct: number) {
   if (pct >= 80) return '#3b82f6';
   if (pct >= 70) return '#f59e0b';
   return '#6b7280';
+}
+
+function feasBgColor(level: string) {
+  if (level === 'High')   return { bg: '#d1fae5', text: '#065f46' };
+  if (level === 'Medium') return { bg: '#fef3c7', text: '#92400e' };
+  return                         { bg: '#fee2e2', text: '#991b1b' };
 }
 
 /* ── component ──────────────────────────────────────────── */
@@ -156,6 +179,10 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
 
     {/* ===== One page per domain ===== */}
     {recommendations.map((domain, index) => {
+      const hasFeasibility = !!domain.feasibility;
+      const hasSkillGaps   = (domain.skill_gaps?.length ?? 0) > 0;
+      const showStrip      = hasFeasibility || hasSkillGaps;
+
       // Build sections with weight estimates for balanced column layout
       const sections: { weight: number; el: React.ReactNode }[] = [];
 
@@ -289,6 +316,50 @@ const DomainResultsPDF: React.FC<DomainResultsPDFProps> = ({
                 </Text>
               </View>
             </View>
+
+            {/* Feasibility + Skill Gaps strip (mirrors web UI) */}
+            {showStrip && (
+              <View style={s.strip} wrap={false}>
+
+                {/* Feasibility */}
+                {hasFeasibility && (
+                  <View style={[s.stripLeft, !hasSkillGaps ? { flex: 1 } : {}]}>
+                    <Text style={s.stripLabel}>Feasibility</Text>
+                    {(() => {
+                      const col = feasBgColor(domain.feasibility!.level);
+                      return (
+                        <>
+                          <View style={[s.feasBadge, { backgroundColor: col.bg, flexDirection: 'row', alignItems: 'center' }]}>
+                            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: col.text, marginRight: 3 }} />
+                            <Text style={[s.feasText, { color: col.text }]}>
+                              {domain.feasibility!.level}
+                            </Text>
+                          </View>
+                          <Text style={s.feasReason}>{domain.feasibility!.reason}</Text>
+                        </>
+                      );
+                    })()}
+                  </View>
+                )}
+
+                {/* Skill Gaps */}
+                {hasSkillGaps && (
+                  <View style={[s.stripRight, !hasFeasibility ? { borderLeftWidth: 0, paddingLeft: 0 } : {}]}>
+                    <Text style={s.stripLabel}>Areas for growth</Text>
+                    {domain.skill_gaps!.slice(0, 5).map((gap, gi) => (
+                      <View key={gi} style={[s.bulletItem, { marginBottom: 2 }]}>
+                        <View style={s.gapNumCircle}>
+                          <Text style={s.gapNumText}>{gi + 1}</Text>
+                        </View>
+                        <Text style={s.gapText}>{gap}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+              </View>
+            )}
+
             <View style={s.cardBody}>
               <View style={s.twoCol}>
                 <View style={s.col}>{leftCol}</View>
