@@ -134,7 +134,9 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
       watchedSectionData.forEach((formDegree, idx) => {
         const currentDegree = prev[idx];
-        const formYears = (formDegree as Record<string, unknown>)?.[yearsFieldName] as any[];
+        const isSemWise = (formDegree as Record<string, unknown>)?.hasSemesterWiseScores === 'Yes';
+        const currentActiveFieldName = isSemWise ? 'semesters' : yearsFieldName;
+        const formYears = (formDegree as Record<string, unknown>)?.[currentActiveFieldName] as any[];
         
         // If form has years, use that count, else use show_default or min
         const yearsCount = Array.isArray(formYears) && formYears.length > 0 
@@ -209,6 +211,8 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     const isSemesterWise = form.getValues(`${sectionType}.${degreeIdx}.hasSemesterWiseScores`) === 'Yes';
     if (isSemesterWise && degree.yearRows.length >= 8) return;
 
+    const activeFieldName = isSemesterWise ? 'semesters' : yearsFieldName;
+
     // Pre-fill fields that have defaultValueFrom with the source value from the same degree
     const getInitialValue = (fid: string): string => {
       const field = fieldDefs.find((f) => f.id === fid);
@@ -221,24 +225,22 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
       return '';
     };
 
+    const newRow = Object.fromEntries(
+      (section.repeatables?.fields ?? []).map((fid: string) => [fid, getInitialValue(fid)])
+    );
+
+    // Update local state
     setDegrees((prev) =>
-      prev.map((degree, idx) =>
+      prev.map((deg, idx) =>
         idx === degreeIdx
-          ? {
-              ...degree,
-              yearRows: [
-                ...degree.yearRows,
-                Object.fromEntries(
-                  (section.repeatables?.fields ?? []).map((fid: string) => [
-                    fid,
-                    getInitialValue(fid),
-                  ])
-                ),
-              ],
-            }
-          : degree
+          ? { ...deg, yearRows: [...deg.yearRows, newRow] }
+          : deg
       )
     );
+
+    // Also update the form directly so data doesn't get lost on re-render
+    const currentRows = (form.getValues(`${sectionType}.${degreeIdx}.${activeFieldName}`) as any[]) ?? [];
+    form.setValue(`${sectionType}.${degreeIdx}.${activeFieldName}`, [...currentRows, newRow], { shouldDirty: true });
   };
 
   const handleRemoveYear = (degreeIdx: number, yearIdx: number): void => {
@@ -251,10 +253,12 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     const currentSectionData = form.getValues(sectionType);
     if (Array.isArray(currentSectionData) && currentSectionData[degreeIdx]) {
       const degreeData = currentSectionData[degreeIdx];
-      const currentYears = degreeData[yearsFieldName];
+      const isSemWise = degreeData.hasSemesterWiseScores === 'Yes';
+      const currentActiveFieldName = isSemWise ? 'semesters' : yearsFieldName;
+      const currentYears = degreeData[currentActiveFieldName];
       if (Array.isArray(currentYears)) {
         const nextYears = currentYears.filter((_, idx) => idx !== yearIdx);
-        form.setValue(`${sectionType}.${degreeIdx}.${yearsFieldName}`, nextYears, { shouldDirty: true, shouldValidate: true });
+        form.setValue(`${sectionType}.${degreeIdx}.${currentActiveFieldName}`, nextYears, { shouldDirty: true, shouldValidate: true });
       }
     }
     
@@ -280,6 +284,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
           ? ((sectionValues[degreeIdx] as Record<string, unknown>) ?? {})
           : {};
         const hasSemesterWiseScores = degreeValues?.hasSemesterWiseScores as string | undefined;
+        const activeYearsFieldName = hasSemesterWiseScores === 'Yes' ? 'semesters' : yearsFieldName;
 
         return (
           <div
@@ -391,7 +396,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
                   {section.repeatables?.fields.map((fieldId: string) => {
                     const fieldDef = fieldDefs.find((def) => def.id === fieldId);
                     if (!fieldDef) return null;
-                    const controllerName = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fieldDef.id}`;
+                    const controllerName = `${sectionType}.${degreeIdx}.${activeYearsFieldName}.${yearIdx}.${fieldDef.id}`;
                     const repeatableField: FieldDefinition = {
                       ...fieldDef,
                       id: controllerName,

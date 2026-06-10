@@ -90,6 +90,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
   const [totalPausedSeconds, setTotalPausedSeconds] = useState(0);
   const [pauseLoading, setPauseLoading] = useState(false);
   const [isTimerExpired, setIsTimerExpired] = useState(false);
+  const [isTrialLocked, setIsTrialLocked] = useState(false);
   const [debugOverrideTimerBlock, setDebugOverrideTimerBlock] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -215,6 +216,9 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
           setProgressPercentage(parsed.progressPercentage);
           if (parsed.sessionEnded) {
             setSessionEnded(true);
+          }
+          if (parsed.isTrialLocked) {
+            setIsTrialLocked(true);
           }
           saveTranscript(transcriptKeyPrefix, sessionId, parsed.messages);
           setIsLoading(false);
@@ -574,6 +578,9 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                 if (data.progress_percentage !== undefined) setProgressPercentage(data.progress_percentage);
                 if (data.questions_completed !== undefined) setQuestionsCompleted(data.questions_completed);
                 if (data.is_complete !== undefined) setSessionEnded(data.is_complete);
+                if (data.error === 'TRIAL_LIMIT_REACHED') {
+                  setIsTrialLocked(true);
+                }
                 
                 // If there's extra data (like choices/question_type), update the message
                 if (data.extra) {
@@ -665,6 +672,9 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                 if (data.progress_percentage !== undefined) setProgressPercentage(data.progress_percentage);
                 if (data.questions_completed !== undefined) setQuestionsCompleted(data.questions_completed);
                 if (data.is_complete !== undefined) setSessionEnded(data.is_complete);
+                if (data.error === 'TRIAL_LIMIT_REACHED') {
+                  setIsTrialLocked(true);
+                }
                 
                 if (data.extra) {
                   setMessages((prev) =>
@@ -1023,6 +1033,36 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                   >
                     <FiIcon name="phone-slash" className="h-4 w-4" />
                   </button>
+                </div>
+              ) : isTrialLocked ? (
+                /* ── Trial Locked State: Paywall ── */
+                <div className="rounded-2xl border-2 border-dashed border-indigo-200 bg-linear-to-br from-indigo-50 to-white p-6 shadow-sm">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                      <FiIcon name="lock" className="h-6 w-6" />
+                    </div>
+                    <Heading level={3} className="mb-2 text-lg font-bold text-gray-900">
+                      Access Limited – Unlock Full Module
+                    </Heading>
+                    <Paragraph className="mb-4 max-w-md text-sm text-gray-600">
+                      You&apos;ve reached the trial limit of 5 questions. Purchase the full module to continue your journey and unlock depth-analysis, personalized roadmaps, and your comprehensive report.
+                    </Paragraph>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => router.push('/dashboard')}
+                        variant="outline"
+                        className="rounded-xl border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                      >
+                        Back to Dashboard
+                      </Button>
+                      <Button
+                        onClick={() => router.push('/dashboard')}
+                        className="rounded-xl bg-linear-to-r from-indigo-600 to-blue-600 px-8 text-white shadow-md transition-all hover:scale-105 hover:from-indigo-700 hover:to-blue-700"
+                      >
+                        Unlock Now
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 /* ── Default state: normal text input bar ── */

@@ -16,6 +16,7 @@ import {
 } from '@/app/(saas)/profile/_config/fieldDefinitions';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import ResumeUploader from '@/app/_components/ResumeUploader';
+import LinkedInImporter from '@/app/_components/LinkedInImporter';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import TranscriptUploader from '@/app/_components/TranscriptUploader';
 import { useSession } from 'next-auth/react';
@@ -146,6 +147,17 @@ const PersonalDetailsForm: React.FC = () => {
     setResumeFormDefaults((prev) => {
       const normalizedGender = p.gender ? p.gender.charAt(0).toUpperCase() + p.gender.slice(1).toLowerCase() : prev.gender;
       
+      // Map languages to the repeatable format the form expects
+      let mappedLanguages = prev.languages;
+      if (Array.isArray(p.languages) && p.languages.length > 0) {
+        mappedLanguages = p.languages.map((l: any) => ({
+          language: l.language ?? (typeof l === 'string' ? l : ""),
+          proficiency: l.proficiency ?? "Native",
+          type: l.type ?? ["Read", "Write", "Speak"],
+          comment: l.comment ?? ""
+        }));
+      }
+
       return {
         ...prev,
         ...p,
@@ -162,6 +174,7 @@ const PersonalDetailsForm: React.FC = () => {
         zipcode: p.zipcode ?? p.zip_code ?? prev.zipcode,
         mothersProfession: p.mothersProfession ?? p.mother_profession ?? prev.mothersProfession,
         fathersProfession: p.fathersProfession ?? p.father_profession ?? prev.fathersProfession,
+        languages: mappedLanguages
       };
     });
   }, [parsedTranscriptData]);
@@ -262,8 +275,9 @@ const PersonalDetailsForm: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
-      <div className="mt-2">
+      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <ResumeUploader />
+        <LinkedInImporter />
       </div>
       <Tabs />
       <DynamicForm

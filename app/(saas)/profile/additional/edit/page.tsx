@@ -15,6 +15,7 @@ import { hasProfileSection } from '@/app/(saas)/profile/utils/utils';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
 import ResumeUploader from '@/app/_components/ResumeUploader';
+import LinkedInImporter from '@/app/_components/LinkedInImporter';
 import {
   Dialog,
   DialogContent,
@@ -162,8 +163,9 @@ const AdditionalFormDetails: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
-      <div className="mt-2">
+      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <ResumeUploader />
+        <LinkedInImporter />
       </div>
       <Tabs />
       <DynamicForm

@@ -11,6 +11,7 @@ import { parseFormLocationData } from '@/lib/utils/location-parser';
 import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import ResumeUploader from '@/app/_components/ResumeUploader';
+import LinkedInImporter from '@/app/_components/LinkedInImporter';
 import Tabs from '@/app/(saas)/profile/_components/Tabs';
 import {
   professionalFieldDefs as fieldDefs,
@@ -203,8 +204,9 @@ const ProfessionalFormDetails: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
-      <div className="mt-2">
+      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <ResumeUploader />
+        <LinkedInImporter />
       </div>
       <Tabs />
       <DynamicForm

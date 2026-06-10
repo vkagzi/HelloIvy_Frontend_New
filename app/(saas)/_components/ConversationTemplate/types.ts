@@ -51,6 +51,7 @@ export interface PauseResponse {
 export interface SessionInfo {
   created_at?: string;
   is_completed?: boolean;
+  is_trial_locked?: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -92,6 +93,7 @@ export interface ConversationCallbacks {
     questionsCompleted: number;
     progressPercentage: number;
     sessionEnded: boolean;
+    isTrialLocked?: boolean;
   };
 
   /** Parse send-message response into a bot message + updated state. */
