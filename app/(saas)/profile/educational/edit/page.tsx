@@ -304,11 +304,13 @@ const EducationalDetailsForm: React.FC = () => {
       let aiHasSem = getValue(e, ['hasSemesterWiseScores']);
       let isSemWise = aiHasSem === 'Yes' ? 'Yes' : 'No';
 
-      // Advanced Inference: If AI didn't specify, check if labels contain "Semester" or if there are > 4 records
-      if (!aiHasSem && semestersData) {
-        const firstTermLabel = String(getValue(semestersData[0], ['semesterName', 'year', 'semester', 'termName']) || "").toLowerCase();
+      // Advanced Inference: Force Yes if count > 4 or if explicitly containing semester-like labels
+      if (semestersData) {
+        const firstTermLabel = String(getValue(semestersData[0], ['semesterName', 'year', 'semester', 'termName', 'yearName']) || "").toLowerCase();
         if (firstTermLabel.includes('semester') || firstTermLabel.includes('sem') || semestersData.length > 4) {
           isSemWise = 'Yes';
+        } else if (firstTermLabel.includes('year')) {
+          isSemWise = 'No';
         }
       }
 
@@ -532,7 +534,8 @@ const EducationalDetailsForm: React.FC = () => {
               if (isPG) {
                 sections.push('postgraduate');
               } else {
-                sections.push('undergraduate');
+                // If it's a Bachelors degree but user is marked as Postgrad,
+                // push to undergraduate_prereq ONLY (to avoid duplicate entries).
                 sections.push('undergraduate_prereq');
               }
             } else {
