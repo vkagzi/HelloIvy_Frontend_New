@@ -151,17 +151,17 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, lan
 
         if (interimTranscript.trim()) {
           updateTranscriptRef((prev) => {
-            // Find the most recent user message bubble (could be an ellipsis placeholder or a previous draft)
-            const lastUserIdx = [...prev].reverse().findIndex(m => m.role === 'user');
-            if (lastUserIdx !== -1) {
-              const actualIdx = prev.length - 1 - lastUserIdx;
+            // Only update the last message if it's already a user message.
+            // This prevents overwriting a user message from a previous turn once the assistant has responded.
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg && lastMsg.role === 'user') {
               const updated = [...prev];
-              updated[actualIdx] = { ...updated[actualIdx], content: interimTranscript };
+              updated[updated.length - 1] = { ...lastMsg, content: interimTranscript };
               isLocalTranscriptActiveRef.current = true;
               return updated;
             }
             
-            // If no user bubble exists yet, create one
+            // If no user bubble exists at the end of the transcript, create a new one
             isLocalTranscriptActiveRef.current = true;
             return [...prev, { role: 'user', content: interimTranscript, timestamp: new Date() }];
           });
@@ -258,6 +258,17 @@ export function useRealtimeVoice({ sessionId, feature, label, voice, accent, lan
               }
 
               // New turn — create a new transcript entry
+              if (role === 'user' && last && last.role === 'user') {
+                if (text === '\u2026') {
+                  // Keep our existing local transcript bubble; don't add a duplicate placeholder
+                  return prev;
+                } else {
+                  // Update the existing user bubble with the new final transcript text
+                  const updated = [...prev];
+                  updated[updated.length - 1] = { ...last, content: text };
+                  return updated;
+                }
+              }
               return [...prev, { role, content: text, timestamp: new Date() }];
             });
           },

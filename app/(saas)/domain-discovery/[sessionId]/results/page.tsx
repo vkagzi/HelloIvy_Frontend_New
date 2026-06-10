@@ -618,8 +618,66 @@ const DomainResultsPage: React.FC = () => {
                       >
                         {domain.match_percentage}% Match
                       </div>
-                    </div>
                   </div>
+                  </div>
+
+                  {/* Feasibility + Skill Gaps Strip */}
+                  {(domain.feasibility || (domain.skill_gaps && domain.skill_gaps.length > 0)) && (
+                    <div className="border-b border-gray-100 bg-gray-50 px-6 py-4 flex flex-col sm:flex-row gap-4">
+
+                      {/* Feasibility Metric */}
+                      {domain.feasibility && (
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                              Feasibility
+                            </span>
+                            <span
+                              className={`inline-flex items-center rounded-full px-3 py-0.5 text-xs font-bold ${
+                                domain.feasibility.level === 'High'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : domain.feasibility.level === 'Medium'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}
+                            >
+                              {domain.feasibility.level === 'High' && '🟢 '}
+                              {domain.feasibility.level === 'Medium' && '🟡 '}
+                              {domain.feasibility.level === 'Low' && '🔴 '}
+                              {domain.feasibility.level}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            {domain.feasibility.reason}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Skill Gaps */}
+                      {domain.skill_gaps && domain.skill_gaps.length > 0 && (
+                        <div className="flex-1 min-w-0 sm:border-l sm:border-gray-200 sm:pl-4">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <svg className="h-3.5 w-3.5 text-[#3377ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                              Areas for growth
+                            </span>
+                          </div>
+                          <ol className="space-y-1">
+                            {domain.skill_gaps.slice(0, 5).map((gap, gapIdx) => (
+                              <li key={gapIdx} className="flex items-start gap-1.5">
+                                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#d6e4ff] text-[9px] font-bold text-[#3377ff]">
+                                  {gapIdx + 1}
+                                </span>
+                                <span className="text-xs text-gray-700">{gap}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Body */}
                   <div className="p-6">

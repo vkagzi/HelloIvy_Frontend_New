@@ -126,6 +126,11 @@ export interface DomainRecommendation {
   why_recommended: string;
   exploration_activities: string[];
   potential_careers: string[];
+  feasibility?: {
+    level: 'High' | 'Medium' | 'Low';
+    reason: string;
+  };
+  skill_gaps?: string[];
   rank?: number;
 }
 

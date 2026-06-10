@@ -472,11 +472,6 @@ export const personalFieldDefs: FieldDefinition[] = [
       depends_on: {
         field_id: 'learningDifficulties',
         value: [
-          'Dyslexia',
-          'ADHD',
-          'Autism Spectrum Disorder',
-          'Dyscalculia',
-          'Dysgraphia',
           'Other (please specify)',
         ],
       },
@@ -518,13 +513,7 @@ export const personalFieldDefs: FieldDefinition[] = [
       depends_on: {
         field_id: 'physicalDisabilities',
         value: [
-          'Yes, locomotor disability (movement-related)',
-          'Yes, visual impairment (partial or total blindness)',
-          'Yes, hearing impairment (partial or total deafness)',
-          'Yes, speech or language disability',
-          'Yes, multiple disabilities',
           'Other (please specify)',
-          'Prefer not to say',
         ],
       },
     },
