@@ -306,8 +306,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     placeholder: 'Select income range',
     required: true,
     optionsDependsOn: {
-      fieldId: 'city',
-      extractCountry: true,
+      fieldId: 'citizenShip',
       map: {
         India: [
           'Below ₹5 lakhs',
@@ -320,7 +319,7 @@ export const personalFieldDefs: FieldDefinition[] = [
           'Above ₹1 crore',
         ],
       },
-      // approximate rounded USD equivalents (used when country !== India)
+      // approximate rounded USD equivalents (used when citizenship !== India)
       default: [
         '< USD 20K',
         'USD 21K - 100K',

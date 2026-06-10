@@ -28,6 +28,7 @@ const domainApi: ConversationConfig['api'] = {
     return {
       created_at: s.created_at,
       is_completed: s.is_completed,
+      is_trial_locked: (s as any).is_trial_locked,
       metadata: s.metadata,
     };
   },
@@ -48,6 +49,7 @@ const domainApi: ConversationConfig['api'] = {
       riasec_completed: r.riasec_completed,
       deepdive_completed: r.deepdive_completed,
       is_completed: r.is_completed,
+      is_trial_locked: (r as any).is_trial_locked,
     } as HistoryResponse;
   },
   sendMessage: async (sessionId, content) => {
@@ -89,11 +91,13 @@ const domainConversationConfig: ConversationConfig = {
         riasec_completed?: number;
         deepdive_completed?: number;
         is_completed?: boolean;
+        is_trial_locked?: boolean;
       };
       const si = sessionInfo as SessionInfo & {
         riasec_completed?: number;
         deepdive_completed?: number;
         current_step?: number;
+        is_trial_locked?: boolean;
       } | null;
 
       const rq = si?.riasec_completed ?? r.riasec_completed ?? 0;
@@ -123,7 +127,13 @@ const domainConversationConfig: ConversationConfig = {
         },
       }));
 
-      return { messages, questionsCompleted, progressPercentage, sessionEnded: ended };
+      return { 
+        messages, 
+        questionsCompleted, 
+        progressPercentage, 
+        sessionEnded: ended,
+        isTrialLocked: si?.is_trial_locked || r.is_trial_locked
+      };
     },
 
     parseSendResponse: (response: SendResponse) => {
@@ -132,6 +142,7 @@ const domainConversationConfig: ConversationConfig = {
         choices?: string[];
         progress_percentage: number;
         questions_completed: number;
+        is_trial_locked?: boolean;
       };
 
       return {
@@ -149,6 +160,7 @@ const domainConversationConfig: ConversationConfig = {
         questionsCompleted: r.questions_completed,
         progressPercentage: r.progress_percentage,
         sessionEnded: r.is_complete,
+        isTrialLocked: r.is_trial_locked,
       };
     },
 

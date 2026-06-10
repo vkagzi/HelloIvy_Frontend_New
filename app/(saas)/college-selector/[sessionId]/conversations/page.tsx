@@ -31,6 +31,7 @@ const collegeSelectorApiAdapter: ConversationConfig['api'] = {
     return {
       created_at: conversationStartedAt,
       is_completed: s.is_completed,
+      is_trial_locked: (s as any).is_trial_locked,
       metadata: s.metadata,
     };
   },
@@ -47,6 +48,7 @@ const collegeSelectorApiAdapter: ConversationConfig['api'] = {
       current_step: r.current_step,
       total_steps: r.total_steps,
       is_completed: r.is_completed,
+      is_trial_locked: (r as any).is_trial_locked,
     } as HistoryResponse;
   },
   sendMessage: async (sessionId, content) => {
@@ -88,6 +90,7 @@ const collegeSelectorConversationConfig: ConversationConfig = {
         current_step?: number;
         total_steps?: number;
         is_completed?: boolean;
+        is_trial_locked?: boolean;
       };
 
       if (!sessionInfo?.created_at && historyResponse.messages.length > 0) {
@@ -122,6 +125,7 @@ const collegeSelectorConversationConfig: ConversationConfig = {
         questionsCompleted: currentStep,
         progressPercentage,
         sessionEnded: ended,
+        isTrialLocked: (sessionInfo as any)?.is_trial_locked || r.is_trial_locked
       };
     },
 
@@ -129,6 +133,7 @@ const collegeSelectorConversationConfig: ConversationConfig = {
       const r = response as SendResponse & {
         progress_percentage: number;
         questions_completed: number;
+        is_trial_locked?: boolean;
       };
 
       return {
@@ -142,6 +147,7 @@ const collegeSelectorConversationConfig: ConversationConfig = {
         questionsCompleted: r.questions_completed,
         progressPercentage: r.progress_percentage,
         sessionEnded: r.is_complete,
+        isTrialLocked: r.is_trial_locked,
       };
     },
 

@@ -28,6 +28,7 @@ const careerApi: ConversationConfig['api'] = {
     return {
       created_at: s.created_at,
       is_completed: s.is_completed,
+      is_trial_locked: (s as any).is_trial_locked,
       metadata: s.metadata,
     };
   },
@@ -45,6 +46,7 @@ const careerApi: ConversationConfig['api'] = {
       total_steps: r.total_steps,
       total_questions: r.total_questions,
       is_completed: r.is_completed,
+      is_trial_locked: (r as any).is_trial_locked,
     } as HistoryResponse;
   },
   sendMessage: async (sessionId, content) => {
@@ -94,7 +96,11 @@ const CareerConversationPage: React.FC = () => {
             total_steps?: number;
             total_questions?: number;
             is_completed?: boolean;
+            is_trial_locked?: boolean;
           };
+          const si = sessionInfo as SessionInfo & {
+            is_trial_locked?: boolean;
+          } | null;
           const total = r.total_questions || r.total_steps || 20;
           const completed = r.current_step ?? 0;
           const progressPercentage = Math.round((completed / total) * 100);
@@ -113,6 +119,7 @@ const CareerConversationPage: React.FC = () => {
             questionsCompleted: completed,
             progressPercentage: ended ? 100 : progressPercentage,
             sessionEnded: ended,
+            isTrialLocked: si?.is_trial_locked || r.is_trial_locked
           };
         },
 
@@ -120,6 +127,7 @@ const CareerConversationPage: React.FC = () => {
           const r = response as SendResponse & {
             current_step: number;
             total_steps: number;
+            is_trial_locked?: boolean;
           };
           const total = r.total_steps || 20;
 
@@ -134,6 +142,7 @@ const CareerConversationPage: React.FC = () => {
             questionsCompleted: r.current_step,
             progressPercentage: Math.round((r.current_step / total) * 100),
             sessionEnded: r.is_complete,
+            isTrialLocked: r.is_trial_locked,
           };
         },
 

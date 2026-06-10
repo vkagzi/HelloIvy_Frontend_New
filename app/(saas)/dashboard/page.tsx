@@ -56,35 +56,9 @@ export default function Dashboard(): React.ReactElement {
     }
   }, [currentLanguage, addToast]);
 
-  const activeModules = useMemo(() => {
-    const isStaff = ['superadmin', 'operationadmin'].includes(session?.user?.role || '');
-    
-    // For staff, we show all modules as active
-    if (isStaff) {
-      return allModules
-        .filter((m) => m.value !== 'career_discovery')
-        .map(m => ({ ...m, expiry_date: null, is_expired: false }));
-    }
-
-    // For students, we show both active and recently expired modules
-    return moduleDetails
-      .filter((detail) => detail.module_name !== 'career_discovery')
-      .map((detail) => {
-        const baseModule = allModules.find((m) => m.value === detail.module_name);
-        return {
-          ...baseModule,
-          value: detail.module_name,
-          label: baseModule?.label || detail.module_name,
-          expiry_date: detail.expiry_date,
-          is_expired: detail.is_expired,
-        };
-      });
-  }, [allModules, moduleDetails, session]);
-
-
-
   const profileExists = profileData !== null;
-  const loading = profileLoading || modulesLoading;
+  const loading = profileLoading || (modulesLoading && false); // Keep loading if profile is loading
+  
 
   const { heading, description, linkText, linkHref } = (() => {
     if (!profileExists) {
@@ -223,109 +197,7 @@ export default function Dashboard(): React.ReactElement {
         </div>
       </div>
 
-      {/* Your Active Modules Grid */}
-      {activeModules.length > 0 && (
-        <div className="mx-auto mt-8 max-w-3xl">
-          <h2 className="mb-4 text-base font-bold text-neutral-800 flex items-center gap-2">
-            <FiIcon name="apps" className="h-5 w-5 text-purple-600" />
-            Your Active Modules
-          </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {activeModules.map((m) => {
-              let launchHref = `/${m.value}`;
-              if (m.value === 'college_selector') launchHref = '/college-selector';
-              if (m.value === 'career_discovery') launchHref = '/career-discovery';
-              if (m.value === 'domain_discovery') launchHref = '/domain-discovery';
-
-              const iconName = m.icon || 'briefcase';
-              const colorClass = m.color || 'bg-purple-100 text-purple-700';
-
-              const isExpired = m.is_expired;
-              const expiryDate = m.expiry_date ? new Date(m.expiry_date) : null;
-              const isExpiringSoon =
-                expiryDate &&
-                !isExpired &&
-                expiryDate.getTime() - new Date().getTime() < 7 * 24 * 60 * 60 * 1000;
-
-              return (
-                <div
-                  key={m.value}
-                  className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border bg-white p-5 shadow-sm transition-all duration-300 ${isExpired ? 'border-neutral-200 grayscale-50 opacity-90' : 'border-neutral-200 hover:-translate-y-0.5 hover:shadow-md hover:border-purple-200'}`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isExpired ? 'bg-neutral-100 text-neutral-400' : colorClass} shadow-sm group-hover:scale-105 transition-transform duration-300`}
-                      >
-                        <FiIcon name={iconName} className="h-5 w-5" />
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        {isExpired ? (
-                          <span className="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-600 border border-red-100 animate-pulse">
-                            Expired
-                          </span>
-                        ) : isExpiringSoon ? (
-                          <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 border border-amber-100">
-                            Expiring Soon
-                          </span>
-                        ) : (
-                          <span className="inline-flex rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-green-700 border border-green-100">
-                            Active
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <h3
-                      className={`mt-3 text-sm font-bold ${isExpired ? 'text-neutral-500' : 'text-neutral-900 group-hover:text-purple-600'} transition-colors`}
-                    >
-                      {m.label}
-                    </h3>
-
-                    {expiryDate && (
-                      <p
-                        className={`mt-0.5 text-[10px] font-medium ${isExpired ? 'text-red-400' : isExpiringSoon ? 'text-amber-500' : 'text-neutral-400'}`}
-                      >
-                        {isExpired ? 'Expired on ' : 'Expires on '}{' '}
-                        {expiryDate.toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    )}
-
-                    <p className="mt-2 text-xs text-neutral-500">
-                      Explore resources, personal counsel and recommendations.
-                    </p>
-                  </div>
-
-                  <div className="mt-4">
-                    {isExpired ? (
-                      <button
-                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-neutral-100 px-3 py-2 text-xs font-bold text-neutral-500 cursor-not-allowed"
-                        disabled
-                      >
-                        <span>Module Locked</span>
-                        <FiIcon name="lock" className="h-3 w-3" />
-                      </button>
-                    ) : (
-                      <Link
-                        href={launchHref}
-                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 transition-colors group-hover:bg-purple-600 group-hover:text-white"
-                      >
-                        <span>Launch Module</span>
-                        <FiIcon name="angle-small-right" className="h-3 w-3" />
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       
     </>

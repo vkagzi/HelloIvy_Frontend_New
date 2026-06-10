@@ -15,6 +15,7 @@ import { reconstructFormLocationData } from '@/lib/utils/form-data-transformer';
 import { transformEducationalData } from '@/lib/utils/educational-data-transformer';
 import Instructions from '@/app/(saas)/profile/_components/Instructions';
 import ResumeUploader from '@/app/_components/ResumeUploader';
+import LinkedInImporter from '@/app/_components/LinkedInImporter';
 import {
   educationalFieldDefs as fieldDefss,
   educationalLayout as layout,
@@ -373,14 +374,12 @@ const EducationalDetailsForm: React.FC = () => {
 
       // Map repeatable years/semesters for university
       if (section !== 'highSchool') {
-        // Fallback: legacy years/semesters/results key
         const legacyData = getValue(e, ['years', 'scoreDetails', 'academicDetails', 'results']) ?? [];
-
         const yearsData: any[] = semestersData ?? (Array.isArray(legacyData) ? legacyData : []);
 
         if (yearsData.length > 0) {
-          mapped.years = yearsData.map((y: any, idx: number) => {
-            // New format: sgpa / maxSgpa fields
+          const fieldName = isSemWise === 'Yes' ? 'semesters' : 'years';
+          mapped[fieldName] = yearsData.map((y: any, idx: number) => {
             const rawYScore = getValue(y, ['sgpa', 'score', 'cgpa', 'gpa', 'tgpa', 'percentage', 'yourTotalScore', 'marks', 'result', 'gradePoints']) ?? "";
             const yScore = cleanScoreValue(rawYScore);
             const rawMax = getValue(y, ['maxSgpa', 'highestTotalScore', 'maxScore', 'maxGPA', 'maxPossibleScore', 'outOf', 'scale']) ?? "";
@@ -391,7 +390,7 @@ const EducationalDetailsForm: React.FC = () => {
               highestTotalScore: maxScore
             };
           });
-          console.log(`[mapRecord] Mapped ${mapped.years.length} years/semesters for section ${section}`, mapped.years);
+          console.log(`[mapRecord] Mapped ${mapped[fieldName].length} ${fieldName} for section ${section}`, mapped[fieldName]);
         }
       }
 
@@ -581,7 +580,12 @@ const EducationalDetailsForm: React.FC = () => {
 
     // 2. Map Courses & Certifications
     const coursesKeys = ['courses', 'certifications', 'coursesAndCertifications', 'certificates', 'certificationsAndAwards', 'achievementsAndCertifications', 'achievements'];
-    const coursesData = findKey(parsedTranscriptData, coursesKeys);
+    let coursesData = findKey(rootData, coursesKeys);
+    
+    // Check nested educational object if not in root
+    if (!coursesData && rootData.educational) {
+      coursesData = findKey(rootData.educational, coursesKeys);
+    }
 
     if (coursesData && Array.isArray(coursesData) && coursesData.length > 0) {
       newDefaults.courses = coursesData.map((c: any) => ({
@@ -596,7 +600,12 @@ const EducationalDetailsForm: React.FC = () => {
 
     // 3. Map Awards & Scholarships
     const awardsKeys = ['awards', 'scholarships', 'honors', 'achievements', 'awardsAndScholarships', 'awardsAndFellowships', 'certificationsAndAwards', 'achievementsAndCertifications'];
-    const awardsData = findKey(parsedTranscriptData, awardsKeys);
+    let awardsData = findKey(rootData, awardsKeys);
+
+    // Check nested educational object if not in root
+    if (!awardsData && rootData.educational) {
+      awardsData = findKey(rootData.educational, awardsKeys);
+    }
 
     if (awardsData && Array.isArray(awardsData) && awardsData.length > 0) {
       newDefaults.awards = awardsData.map((a: any) => ({
@@ -954,6 +963,10 @@ const EducationalDetailsForm: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <Instructions />
+      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <ResumeUploader />
+        <LinkedInImporter />
+      </div>
       <Tabs />
       <DynamicForm
         key={JSON.stringify(formDefaults)}

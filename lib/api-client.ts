@@ -199,6 +199,7 @@ export const streamApi = async (
   }
 
   const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
 
