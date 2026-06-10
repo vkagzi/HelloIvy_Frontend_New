@@ -156,9 +156,6 @@ const Tabs: React.FC = () => {
                 >
                   {tab.label}
                 </Label>
-                <span className="text-violet-700 text-xs whitespace-nowrap">
-                  ⏳ {tab.timeEstimate}
-                </span>
               </div>
             </div>
             {isActive ? (

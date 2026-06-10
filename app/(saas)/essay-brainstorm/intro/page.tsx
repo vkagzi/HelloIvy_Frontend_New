@@ -154,7 +154,7 @@ const EssayBrainstormIntro: React.FC = () => {
                 className="mt-1"
               />
               <span className="text-sm text-neutral-700">
-                I have read all the instructions mentioned above.
+                I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs..
               </span>
             </label>
           </div>

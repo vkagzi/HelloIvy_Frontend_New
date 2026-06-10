@@ -22,7 +22,7 @@ function CollegeLandingPage() {
 
   const profileExists = profileData !== null;
   const linkText = profileExists ? 'View/Edit your profile' : 'Create your profile';
-  const linkHref = '/profile/personal';
+  const linkHref = '/profile/personal/edit';
 
   const instructions = `This module helps you discover colleges that align with your academic goals, preferences, and dreams. We'll explore colleges worldwide based on your preferred country, academic field, and budget. You'll receive customized college recommendations based on your profile and express your preferences naturally with voice or text. The process takes 15-20 minutes and covers preferred countries, academic fields, budget, and campus preferences. You'll get your top 5 personalized college recommendations with detailed insights.`;
 
@@ -158,7 +158,7 @@ function CollegeLandingPage() {
                 className="mt-1"
               />
               <span className="text-sm text-gray-700">
-                I have read all the instructions mentioned above.
+                I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs..
               </span>
             </label>
           </div>

@@ -91,9 +91,9 @@ export default function Dashboard(): React.ReactElement {
       return {
         heading: 'Create your profile',
         description:
-          'Create your profile to proceed with personalized recommendations, Stream & Subject Selection, and more.',
+          'to proceed with personalized recommendations, Stream & Subject Selection, and more.',
         linkText: 'Create your profile',
-        linkHref: '/profile/personal',
+        linkHref: '/profile/personal/edit',
       };
     }
     if (!isProfileComplete) {
@@ -102,7 +102,7 @@ export default function Dashboard(): React.ReactElement {
         description:
           'Your profile is partially complete. Fill in the remaining sections to unlock the best recommendations.',
         linkText: 'View/Edit your profile',
-        linkHref: '/profile/personal',
+        linkHref: '/profile/personal/edit',
       };
     }
     return {
@@ -110,14 +110,14 @@ export default function Dashboard(): React.ReactElement {
       description:
         'Your profile is completed ! \n You can proceed to Stream & Subject Selection and explore personalized recommendations.',
       linkText: 'View/Edit your profile',
-      linkHref: '/profile/personal',
+      linkHref: '/profile/personal/edit',
     };
   })();
 
   const renderCompleteProfile = (): React.ReactElement => {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-4 md:gap-6 md:p-6 lg:flex-row lg:gap-8 lg:p-8">
-        <div className="text-center lg:text-left">
+        <div className="text-center lg:text-left lg:self-start lg:pt-3">
           {loading ? (
             <div className="h-14 w-24 animate-pulse rounded bg-neutral-200" />
           ) : (
@@ -133,15 +133,17 @@ export default function Dashboard(): React.ReactElement {
           {/* <Heading level={3} className="font-extrabold">
             {heading}
           </Heading> */}
+          <div className="mb-4">
+            <Link
+              href={linkHref}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-105 hover:from-cyan-600 hover:to-blue-600 hover:shadow-xl active:scale-95"
+            >
+              {linkText}
+            </Link>
+          </div>
           <Label size="md" className="block whitespace-pre-line">
             {description}
           </Label>
-          <Link
-            href={linkHref}
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-105 hover:from-cyan-600 hover:to-blue-600 hover:shadow-xl active:scale-95"
-          >
-            {linkText}
-          </Link>
 
           <div className="mt-3 text-xs text-neutral-500">
             <ol className="ml-5 list-decimal space-y-1">
@@ -329,50 +331,7 @@ export default function Dashboard(): React.ReactElement {
         </div>
       )}
 
-      {/* Select Agent Language quick-link */}
-      <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white px-6 py-4 shadow-sm hover:shadow-md hover:border-teal-200 transition-all duration-300">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-teal-400 to-cyan-600 text-white shadow ring-2 ring-white">
-              <FiIcon name="globe" className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <Label size="md" className="font-semibold text-neutral-900">
-                Select Your Voice Agent Language
-              </Label>
-              <br />
-              <Label size="sm" className="text-neutral-500">
-                Currently set to{' '}
-                <span className="font-medium text-neutral-700">
-                  {currentLanguage === 'hi' ? 'Hindi' : 'English'}
-                </span>
-              </Label>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleLanguageChange('en')}
-              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                currentLanguage === 'en'
-                  ? 'bg-teal-600 text-white shadow-sm font-semibold'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900'
-              }`}
-            >
-              English
-            </button>
-            <button
-              onClick={() => handleLanguageChange('hi')}
-              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                currentLanguage === 'hi'
-                  ? 'bg-teal-600 text-white shadow-sm font-semibold'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900'
-              }`}
-            >
-              Hindi
-            </button>
-          </div>
-        </div>
-      </div>
+      
     </>
   );
 }

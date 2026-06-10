@@ -130,13 +130,14 @@ export default function ResumeUploader() {
           onClick={() => fileInputRef.current?.click()}
           className="
       flex items-center gap-3
-      rounded-2xl border border-blue-100
-      bg-[#EEF3FF]
+      rounded-2xl
+      bg-gradient-to-r from-cyan-500 to-blue-500
       px-6 py-4
-      text-[12px] font-semibold text-[#0B57D0]
-      shadow-sm transition-all
-      hover:bg-[#E4ECFF]
-      disabled:opacity-50
+      text-[12px] font-semibold text-white
+      shadow-sm transition-all duration-300
+      hover:from-cyan-600 hover:to-blue-600 hover:shadow-md hover:scale-[1.02]
+      active:scale-[0.98]
+      disabled:opacity-50 disabled:scale-100
     "
         >
           <svg

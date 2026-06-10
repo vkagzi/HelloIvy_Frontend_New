@@ -152,7 +152,7 @@ function CollegeSelectorPage() {
 
   const profileExists = profileData !== null;
   const linkText = profileExists ? 'View/Edit your profile' : 'Create your profile';
-  const linkHref = '/profile/personal';
+  const linkHref = '/profile/personal/edit';
 
   const testScores = (() => {
     const edu = educationalDetails as Record<string, unknown> | undefined;
@@ -554,7 +554,7 @@ function CollegeSelectorPage() {
                     className="mt-1"
                   />
                   <span className="text-sm text-gray-700">
-                    I have read all the instructions mentioned above.
+                    I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs..
                   </span>
                 </label>
               </div>
