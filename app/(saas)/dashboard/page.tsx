@@ -91,7 +91,7 @@ export default function Dashboard(): React.ReactElement {
       return {
         heading: 'Create your profile',
         description:
-          'to proceed with personalized recommendations, Stream & Subject Selection, and more.',
+          'to start your module.',
         linkText: 'Create your profile',
         linkHref: '/profile/personal/edit',
       };
@@ -100,7 +100,7 @@ export default function Dashboard(): React.ReactElement {
       return {
         heading: 'View/Edit your profile',
         description:
-          'Your profile is partially complete. Fill in the remaining sections to unlock the best recommendations.',
+          'your profile is partially complete.',
         linkText: 'View/Edit your profile',
         linkHref: '/profile/personal/edit',
       };
@@ -108,7 +108,7 @@ export default function Dashboard(): React.ReactElement {
     return {
       heading: 'View/Edit your profile',
       description:
-        'Your profile is completed ! \n You can proceed to Stream & Subject Selection and explore personalized recommendations.',
+        'You can start your module !',
       linkText: 'View/Edit your profile',
       linkHref: '/profile/personal/edit',
     };
@@ -148,13 +148,9 @@ export default function Dashboard(): React.ReactElement {
           <div className="mt-3 text-xs text-neutral-500">
             <ol className="ml-5 list-decimal space-y-1">
               <li>
-                Please complete your profile details carefully, to help me
-                understand you better and ensure that your results are accurate.
+                Please fill your profile details carefully and to the best of your ability.
               </li>
               <li>You can use this tool on your computer, iPad, or tablet.</li>
-              <li>
-                If using voice, wear your headphones and find a quiet place.
-              </li>
             </ol>
           </div>
         </div>

@@ -172,6 +172,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     null
   );
   const [isLoadingDomains, setIsLoadingDomains] = useState(true);
+  const [hoveredDomain, setHoveredDomain] = useState<string | null>(null);
   const {
     isProfileComplete,
     completionPercentage,
@@ -200,7 +201,9 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       try {
         setIsLoadingDomains(true);
         const response = await careerDiscoveryApi.getDomains();
-        setAllDomains(response.domains || []);
+        const domains = response.domains || [];
+        domains.sort((a, b) => a.name.localeCompare(b.name));
+        setAllDomains(domains);
       } catch (err) {
         console.error('Failed to load domains:', err);
       } finally {
@@ -402,6 +405,33 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     'Public Policy, Governance & Impact': '🏛️',
   };
 
+  const DOMAIN_DESCRIPTIONS: Record<string, string> = {
+    'Social Sciences':
+      'Explore human behavior, relationships, and society through fields like Psychology, Sociology, Political Science, and Economics. This domain helps individuals understand people, cultures, decision-making, and social systems.',
+    'Health & Life Science':
+      'Study living organisms, health, medicine, and biological processes through subjects such as Biology, Neuroscience, Biotechnology, and Public Health. Ideal for individuals interested in improving human health and understanding life sciences.',
+    'Public Policy, Governance & Impact':
+      'Focus on solving societal challenges through policy-making, governance, development, and social impact initiatives. Individuals learn how institutions, governments, and organizations create change at local and global levels.',
+    'Statistics / Finance / Data Analytics':
+      'Gather insights through quantitative analysis, data interpretation, and other data driven tools to use in financial decision-making, and problem-solving. This domain combines mathematics, technology, and business insights to drive evidence-based decisions.',
+    'Humanities':
+      'Examine human culture, history, language, philosophy, and ideas that shape societies. Individuals build critical thinking, communication, and analytical skills while exploring diverse perspectives.',
+    'Art & Aesthetics':
+      'Explore creativity, design, visual arts, and artistic expression across various mediums. This domain nurtures imagination, innovation, and an appreciation for beauty and culture.',
+    'Business / Entrepreneurship':
+      'Learn how organizations operate, create value, and solve market challenges. Individuals develop leadership, innovation, management, and entrepreneurial skills to build businesses or drive organizational success.',
+    'Engineering & Applied Technology':
+      'Apply scientific and technical principles to design solutions for real-world problems. This field includes areas such as computer science, all forms of engineering, robotics, and emerging technologies.',
+    'Law':
+      'Study legal systems, rights, justice, and the frameworks that govern society. Individuals develop strong reasoning, argumentation, and analytical skills while understanding legal processes and policy.',
+    'Performing Arts':
+      'Express creativity through disciplines such as music, theatre, dance, and performance. This domain develops artistic talent, communication, collaboration, and confidence.',
+    'Pure Science':
+      'Investigate the fundamental principles of the natural world through subjects like Physics, Chemistry, Mathematics, and Astronomy. Focuses on discovery, research, and advancing scientific knowledge.',
+    'Sports/Athletics':
+      'Combine physical performance, discipline, and teamwork through competitive sports and athletic pursuits. Individuals develop resilience, leadership, fitness, and sports-related expertise.',
+  };
+
   // Split domains into recommended vs other
   const recommendedDomains = allDomains
     .filter((d) => isRecommended(d.name))
@@ -420,6 +450,10 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
         key={domain.name}
         type="button"
         onClick={() => handleDomainClick(domain.name)}
+        onMouseEnter={() => setHoveredDomain(domain.name)}
+        onMouseLeave={() => setHoveredDomain(null)}
+        onFocus={() => setHoveredDomain(domain.name)}
+        onBlur={() => setHoveredDomain(null)}
         className={`relative flex items-center gap-2.5 rounded-lg border-2 px-3 py-2.5 text-left transition-all ${
           badge?.num === '1'
             ? 'border-blue-500 bg-blue-50/50 shadow-md ring-1 ring-blue-200'
@@ -454,6 +488,17 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           <span className="ml-auto shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
             {matchPct}%
           </span>
+        )}
+        {hoveredDomain === domain.name && DOMAIN_DESCRIPTIONS[domain.name] && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3.5 z-50 w-80 p-4 rounded-2xl bg-gradient-to-b from-white to-sky-50/95 border border-sky-200 shadow-xl pointer-events-none animate-in fade-in-0 zoom-in-95 duration-200 text-left">
+            <h4 className="text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+              <span className="text-base leading-none">{icon}</span>
+              {domain.name}
+            </h4>
+            <p className="text-xs text-slate-600 leading-relaxed font-normal">{DOMAIN_DESCRIPTIONS[domain.name]}</p>
+            {/* Arrow */}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1.5 w-3 h-3 bg-sky-50/95 border-r border-b border-sky-200 rotate-45"></div>
+          </div>
         )}
       </button>
     );
@@ -689,7 +734,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                     <span className="text-sm font-semibold text-slate-800">I only want a career report</span>
                     <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-700">Default</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-500">Get 5 career options with skill gaps, feasibility, and next steps — without postgrad degree suggestions.</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Get 5 career options with areas for growth, feasibility, and next steps — without postgrad degree suggestions.</p>
                 </div>
               </label>
               {/* Option 2 */}
