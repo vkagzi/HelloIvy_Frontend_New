@@ -11,7 +11,7 @@ import {
   CareerRecommendation,
   CareerMessage,
 } from '@/lib/career-discovery-api';
-import { downloadPDF } from '@/lib/pdf-from-component';
+import { downloadPDF, getPDFBlob } from '@/lib/pdf-from-component';
 import CareerResultsPDF from '@/components/pdf/CareerResultsPDF';
 import TranscriptReportPDF from '@/components/pdf/TranscriptReportPDF';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
@@ -53,6 +53,39 @@ const CareerResultsPage: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  // Trigger automatic email once results are loaded
+  useEffect(() => {
+    if (sessionId && recommendations.length > 0 && userDetails?.email) {
+      const emailSentKey = `email_sent_${sessionId}`;
+      const alreadySent = localStorage.getItem(emailSentKey);
+
+      if (!alreadySent) {
+        autoEmailReport();
+      }
+    }
+
+    async function autoEmailReport() {
+      try {
+        const firstName = userDetails.first_name || '';
+        const lastName = userDetails.last_name || '';
+        const studentName =
+          firstName && lastName
+            ? `${firstName} ${lastName}`
+            : firstName || lastName || userDetails.email || 'Student';
+
+        const pdfBlob = await getPDFBlob(
+          <CareerResultsPDF recommendations={recommendations} studentName={studentName} />
+        );
+
+        await careerDiscoveryApi.emailReport(sessionId!, pdfBlob);
+        localStorage.setItem(`email_sent_${sessionId}`, 'true');
+        addToast('Report emailed to your registered address!', { type: 'success' });
+      } catch (err) {
+        console.error('Failed to auto-email report:', err);
+      }
+    }
+  }, [sessionId, recommendations, userDetails, addToast]);
 
   // Load recommendations on mount
   useEffect(() => {

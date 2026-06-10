@@ -382,7 +382,13 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
             const formSubjects = term?.subjects as any[];
             if (Array.isArray(formSubjects)) {
               const currentRows = currentGradeTerms[termIdx] || [];
-              if (formSubjects.length !== currentRows.length) {
+              const subjectsChanged = formSubjects.some((s, sIdx) => {
+                const currentRow = currentRows[sIdx];
+                if (!currentRow) return true;
+                return Object.entries(s).some(([key, val]) => currentRow[key] !== val);
+              });
+
+              if (formSubjects.length !== currentRows.length || subjectsChanged) {
                 gradeChanged = true;
                 nextGradeTerms[termIdx] = formSubjects.map((s, sIdx) => ({
                   _id: currentRows[sIdx]?._id || nanoid(),
@@ -868,16 +874,19 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                               <Label size="md" className="font-semibold text-neutral-800">
                                 {gradeLabel} - {termLabel} Subject Details
                               </Label>
-                              {termIdx > 0 && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  type="button"
-                                  label="Remove Term"
-                                  className="text-red-500 hover:text-red-700 font-medium"
-                                  onClick={() => handleRemoveTerm(gradeForSchool, schoolIdx, termIdx)}
-                                />
-                              )}
+                              <div className="flex items-center gap-3">
+                                <TranscriptUploader targetSection="highSchool" targetIndex={schoolIdx} />
+                                {termIdx > 0 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    type="button"
+                                    label="Remove Term"
+                                    className="text-red-500 hover:text-red-700 font-medium"
+                                    onClick={() => handleRemoveTerm(gradeForSchool, schoolIdx, termIdx)}
+                                  />
+                                )}
+                              </div>
                             </div>
                             <p className="text-label-sm text-neutral-600">
                               *All grades are required.
@@ -1036,9 +1045,12 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
             ) : (
               <>
                 {/* Subjects Section */}
-                <Label size="lg" className="font-semibold text-neutral-900">
-                  {gradeLabel} Subject Details
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label size="lg" className="font-semibold text-neutral-900">
+                    {gradeLabel} Subject Details
+                  </Label>
+                  <TranscriptUploader targetSection="highSchool" targetIndex={schoolIdx} />
+                </div>
                 <p className="text-label-sm text-neutral-600">
                   *All grades are required.
                 </p>

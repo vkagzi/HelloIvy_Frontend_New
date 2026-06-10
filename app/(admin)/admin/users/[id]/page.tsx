@@ -71,6 +71,7 @@ interface LogsResponse {
     total_logins: number;
     total_payments: number;
     completed_sessions: number;
+    total_modules_purchased: number;
   };
 }
 
@@ -1021,26 +1022,39 @@ export default function AdminUserDetailPage() {
             </div>
           ) : logsData ? (
             <div className="space-y-6 pt-4">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
-                  <p className="text-[10px] text-indigo-600 font-semibold uppercase mb-1">Logins</p>
-                  <p className="text-xl font-bold text-indigo-900">{logsData.stats.total_logins}</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100 relative group">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] text-indigo-600 font-semibold uppercase mb-1">Logins</p>
+                      <p className="text-xl font-bold text-indigo-900">{logsData.stats.total_logins}</p>
+                    </div>
+                    {logsData.timeline.filter(t => t.type === 'activity' && t.data.event_type === 'login').length > 0 && (
+                      <Select onValueChange={() => {}}>
+                        <SelectTrigger className="h-6 w-24 text-[10px] bg-white/50 border-indigo-200">
+                          <SelectValue placeholder="Recent activity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {logsData.timeline
+                            .filter(t => t.type === 'activity' && t.data.event_type === 'login')
+                            .slice(0, 10)
+                            .map((t, idx) => (
+                              <SelectItem key={idx} value={String(idx)} className="text-[10px]">
+                                {formatDateTime(t.timestamp)}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
                 </div>
-                <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                  <p className="text-[10px] text-emerald-600 font-semibold uppercase mb-1">Payments</p>
-                  <p className="text-xl font-bold text-emerald-900">{logsData.stats.total_payments}</p>
-                </div>
-                <div className="bg-amber-50 p-3 rounded-xl border border-amber-100">
-                  <p className="text-[10px] text-amber-600 font-semibold uppercase mb-1">Started</p>
-                  <p className="text-xl font-bold text-amber-900">{(logsData.stats as any).sessions_started || 0}</p>
+                <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 italic">
+                  <p className="text-[10px] text-emerald-600 font-semibold uppercase mb-1">Modules Purchased</p>
+                  <p className="text-xl font-bold text-emerald-900">{(logsData.stats as any).total_modules_purchased || 0}</p>
                 </div>
                 <div className="bg-green-50 p-3 rounded-xl border border-green-100">
                   <p className="text-[10px] text-green-600 font-semibold uppercase mb-1">Completed</p>
                   <p className="text-xl font-bold text-green-900">{logsData.stats.completed_sessions}</p>
-                </div>
-                <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
-                  <p className="text-[10px] text-purple-600 font-semibold uppercase mb-1">AI Chat</p>
-                  <p className="text-xl font-bold text-purple-900">{(logsData.stats as any).total_interactions || 0}</p>
                 </div>
               </div>
 

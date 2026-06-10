@@ -1,35 +1,19 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import imgDashboardGraphic from '@/assets/images/iconGIF.gif';
 import Link from 'next/link';
 import { Heading, Label } from '@/app/_components/Typography';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
-import api from '@/lib/api-client';
 import { useSession } from 'next-auth/react';
 import { useModuleChoices } from '@/lib/hooks/useModuleChoices';
 import { useModuleAccess } from '@/app/_contexts/ModuleAccessContext';
 import { FiIcon } from '@/app/_components/Icons';
+import api from '@/lib/api';
 import { useToast } from '@/app/_components/Toast';
 
-type VoicePersona = 'male' | 'female';
 
-const PERSONA_META: Record<
-  VoicePersona,
-  { label: string; gradient: string; initials: string }
-> = {
-  male: {
-    label: 'Male',
-    gradient: 'from-blue-500 to-indigo-600',
-    initials: 'M',
-  },
-  female: {
-    label: 'Female',
-    gradient: 'from-pink-500 to-rose-600',
-    initials: 'F',
-  },
-};
 
 export default function Dashboard(): React.ReactElement {
   const { completionPercentage, isProfileComplete, profileData, loading: profileLoading } =
@@ -37,13 +21,42 @@ export default function Dashboard(): React.ReactElement {
   const { data: session } = useSession();
   const schoolName = session?.user?.school_name;
 
-  const [currentPersona, setCurrentPersona] = useState<VoicePersona>('male');
-  const [currentLanguage, setCurrentLanguage] = useState<string>('en');
-  const { addToast } = useToast();
+
   const { modules: allModules } = useModuleChoices();
   const { moduleDetails, loading: modulesLoading } = useModuleAccess();
+  const { addToast } = useToast();
 
-  const activeModules = React.useMemo(() => {
+  const [currentLanguage, setCurrentLanguage] = useState('en');
+
+  // Fetch current settings
+  useEffect(() => {
+    api<{ settings: { voice_language?: string } }>('/api/accounts/settings/')
+      .then((data) => {
+        if (data.settings?.voice_language) {
+          setCurrentLanguage(data.settings.voice_language);
+        }
+      })
+      .catch((err) => console.error('Failed to fetch settings:', err));
+  }, []);
+
+  const handleLanguageChange = useCallback(async (newLanguage: string) => {
+    if (newLanguage === currentLanguage) return;
+    try {
+      await api('/api/accounts/settings/', {
+        method: 'PUT',
+        body: { voice_language: newLanguage },
+      });
+      setCurrentLanguage(newLanguage);
+      addToast(
+        `Language switched to ${newLanguage === 'hi' ? 'Hindi' : 'English'}!`,
+        { type: 'success' }
+      );
+    } catch {
+      addToast('Failed to save language preference.', { type: 'error' });
+    }
+  }, [currentLanguage, addToast]);
+
+  const activeModules = useMemo(() => {
     const isStaff = ['superadmin', 'operationadmin'].includes(session?.user?.role || '');
     
     // For staff, we show all modules as active
@@ -68,34 +81,7 @@ export default function Dashboard(): React.ReactElement {
       });
   }, [allModules, moduleDetails, session]);
 
-  useEffect(() => {
-    api<{ settings: { voice_persona?: string; voice_language?: string } }>('/api/accounts/settings/')
-      .then((data) => {
-        const persona = data.settings?.voice_persona;
-        if (persona && persona in PERSONA_META) {
-          setCurrentPersona(persona as VoicePersona);
-        }
-        const language = data.settings?.voice_language;
-        if (language) {
-          setCurrentLanguage(language);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
-  const handleLanguageChange = async (newLanguage: string) => {
-    if (newLanguage === currentLanguage) return;
-    try {
-      await api('/api/accounts/settings/', {
-        method: 'PUT',
-        body: { voice_language: newLanguage },
-      });
-      setCurrentLanguage(newLanguage);
-      addToast(`Language updated to ${newLanguage === 'hi' ? 'Hindi' : 'English'} successfully!`, { type: 'success' });
-    } catch {
-      addToast('Failed to update language. Please try again.', { type: 'error' });
-    }
-  };
 
   const profileExists = profileData !== null;
   const loading = profileLoading || modulesLoading;
@@ -213,25 +199,20 @@ export default function Dashboard(): React.ReactElement {
       )}
       {renderCompleteProfile()}
 
-      {/* Select Your Counsellor Voice quick-link */}
-      <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white px-6 py-4 shadow-sm">
+      {/* Customize your Ivy quick-link */}
+      <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white px-6 py-4 shadow-sm hover:shadow-md hover:border-teal-200 transition-all duration-300">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br ${PERSONA_META[currentPersona].gradient} text-xs font-bold tracking-wider text-white shadow ring-2 ring-white`}
-            >
-              {PERSONA_META[currentPersona].initials}
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-teal-400 to-cyan-600 text-white shadow ring-2 ring-white">
+              <FiIcon name="settings" className="h-4 w-4 text-white" />
             </div>
             <div>
               <Label size="md" className="font-semibold text-neutral-900">
-                Select Your Counsellor Voice
+                Customize Ivy
               </Label>
               <br />
               <Label size="sm" className="text-neutral-500">
-                Currently set to{' '}
-                <span className="font-medium text-neutral-700">
-                  {PERSONA_META[currentPersona].label}
-                </span>
+                Choose your counsellor&apos;s voice, language, and accent.
               </Label>
             </div>
           </div>
@@ -239,55 +220,8 @@ export default function Dashboard(): React.ReactElement {
             href="/settings"
             className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700"
           >
-            Change Voice
+            Edit
           </Link>
-        </div>
-      </div>
-
-      {/* Select Agent Language quick-link */}
-      <div className="mx-auto mt-4 max-w-3xl rounded-xl border border-neutral-200 bg-white px-6 py-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-teal-400 to-cyan-600 text-white shadow ring-2 ring-white"
-            >
-              <FiIcon name="globe" className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <Label size="md" className="font-semibold text-neutral-900">
-                Select Your Voice Agent Language
-              </Label>
-              <br />
-              <Label size="sm" className="text-neutral-500">
-                Currently set to{' '}
-                <span className="font-medium text-neutral-700">
-                  {currentLanguage === 'hi' ? 'Hindi' : 'English'}
-                </span>
-              </Label>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleLanguageChange('en')}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                currentLanguage === 'en'
-                  ? 'bg-teal-600 text-white shadow-sm font-semibold'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900'
-              }`}
-            >
-              English
-            </button>
-            <button
-              onClick={() => handleLanguageChange('hi')}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                currentLanguage === 'hi'
-                  ? 'bg-teal-600 text-white shadow-sm font-semibold'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900'
-              }`}
-            >
-              Hindi
-            </button>
-          </div>
         </div>
       </div>
 
@@ -298,7 +232,7 @@ export default function Dashboard(): React.ReactElement {
             <FiIcon name="apps" className="h-5 w-5 text-purple-600" />
             Your Active Modules
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activeModules.map((m) => {
               let launchHref = `/${m.value}`;
@@ -308,19 +242,24 @@ export default function Dashboard(): React.ReactElement {
 
               const iconName = m.icon || 'briefcase';
               const colorClass = m.color || 'bg-purple-100 text-purple-700';
-              
+
               const isExpired = m.is_expired;
               const expiryDate = m.expiry_date ? new Date(m.expiry_date) : null;
-              const isExpiringSoon = expiryDate && !isExpired && (expiryDate.getTime() - new Date().getTime()) < 7 * 24 * 60 * 60 * 1000;
+              const isExpiringSoon =
+                expiryDate &&
+                !isExpired &&
+                expiryDate.getTime() - new Date().getTime() < 7 * 24 * 60 * 60 * 1000;
 
               return (
-                <div 
+                <div
                   key={m.value}
                   className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border bg-white p-5 shadow-sm transition-all duration-300 ${isExpired ? 'border-neutral-200 grayscale-50 opacity-90' : 'border-neutral-200 hover:-translate-y-0.5 hover:shadow-md hover:border-purple-200'}`}
                 >
                   <div>
                     <div className="flex items-center justify-between">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isExpired ? 'bg-neutral-100 text-neutral-400' : colorClass} shadow-sm group-hover:scale-105 transition-transform duration-300`}>
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isExpired ? 'bg-neutral-100 text-neutral-400' : colorClass} shadow-sm group-hover:scale-105 transition-transform duration-300`}
+                      >
                         <FiIcon name={iconName} className="h-5 w-5" />
                       </div>
                       <div className="flex flex-col items-end gap-1">
@@ -340,14 +279,22 @@ export default function Dashboard(): React.ReactElement {
                       </div>
                     </div>
 
-                    <h3 className={`mt-3 text-sm font-bold ${isExpired ? 'text-neutral-500' : 'text-neutral-900 group-hover:text-purple-600'} transition-colors`}>
+                    <h3
+                      className={`mt-3 text-sm font-bold ${isExpired ? 'text-neutral-500' : 'text-neutral-900 group-hover:text-purple-600'} transition-colors`}
+                    >
                       {m.label}
                     </h3>
-                    
+
                     {expiryDate && (
-                      <p className={`mt-0.5 text-[10px] font-medium ${isExpired ? 'text-red-400' : isExpiringSoon ? 'text-amber-500' : 'text-neutral-400'}`}>
-                        {isExpired ? 'Expired on ' : 'Expires on '} 
-                        {expiryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      <p
+                        className={`mt-0.5 text-[10px] font-medium ${isExpired ? 'text-red-400' : isExpiringSoon ? 'text-amber-500' : 'text-neutral-400'}`}
+                      >
+                        {isExpired ? 'Expired on ' : 'Expires on '}{' '}
+                        {expiryDate.toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
                       </p>
                     )}
 
@@ -381,6 +328,51 @@ export default function Dashboard(): React.ReactElement {
           </div>
         </div>
       )}
+
+      {/* Select Agent Language quick-link */}
+      <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white px-6 py-4 shadow-sm hover:shadow-md hover:border-teal-200 transition-all duration-300">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-teal-400 to-cyan-600 text-white shadow ring-2 ring-white">
+              <FiIcon name="globe" className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <Label size="md" className="font-semibold text-neutral-900">
+                Select Your Voice Agent Language
+              </Label>
+              <br />
+              <Label size="sm" className="text-neutral-500">
+                Currently set to{' '}
+                <span className="font-medium text-neutral-700">
+                  {currentLanguage === 'hi' ? 'Hindi' : 'English'}
+                </span>
+              </Label>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleLanguageChange('en')}
+              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                currentLanguage === 'en'
+                  ? 'bg-teal-600 text-white shadow-sm font-semibold'
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900'
+              }`}
+            >
+              English
+            </button>
+            <button
+              onClick={() => handleLanguageChange('hi')}
+              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                currentLanguage === 'hi'
+                  ? 'bg-teal-600 text-white shadow-sm font-semibold'
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900'
+              }`}
+            >
+              Hindi
+            </button>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

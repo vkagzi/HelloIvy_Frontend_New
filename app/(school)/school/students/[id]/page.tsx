@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import ProfileViewDetails from '@/app/(saas)/profile/_components/ProfileView';
 import { calculateProfileCompletion } from '@/app/(saas)/profile/utils/profileCompletion';
 import { useModuleChoices, buildModuleLookups } from '@/lib/hooks/useModuleChoices';
+import CounselorConnectPanel from '@/components/counselor-connect/CounselorConnectPanel';
 
 interface ModuleAssignment {
   id: number;
@@ -65,6 +66,34 @@ export default function SchoolStudentDetailPage() {
 
   const [activeTab, setActiveTab] = useState<string>('profile');
   const [activeProfileSection, setActiveProfileSection] = useState<string>('personal');
+
+  // Email section state
+  const [emailStudentSubject, setEmailStudentSubject] = useState('');
+  const [emailStudentBody, setEmailStudentBody] = useState('');
+  const [emailStudentSending, setEmailStudentSending] = useState(false);
+  const [emailStudentSuccess, setEmailStudentSuccess] = useState<string | null>(null);
+  const [emailStudentError, setEmailStudentError] = useState<string | null>(null);
+
+  const handleSendStudentEmail = async () => {
+    if (!userId || !emailStudentBody.trim()) return;
+    setEmailStudentSending(true);
+    setEmailStudentError(null);
+    setEmailStudentSuccess(null);
+    try {
+      const res = await api<{ message: string; sent_to: string }>(
+        `/api/accounts/admin/users/${userId}/send-email/`,
+        { method: 'POST', body: { subject: emailStudentSubject, body: emailStudentBody } }
+      );
+      setEmailStudentSuccess(`Email sent to ${res.sent_to}`);
+      setEmailStudentBody('');
+      setEmailStudentSubject('');
+      setTimeout(() => setEmailStudentSuccess(null), 4000);
+    } catch (err: unknown) {
+      setEmailStudentError(err instanceof Error ? err.message : 'Failed to send email');
+    } finally {
+      setEmailStudentSending(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -119,6 +148,10 @@ export default function SchoolStudentDetailPage() {
       key: 'career',
       label: 'Career & Degree Selection',
       badge: `${user.modules.career_discovery.completed_sessions}/${user.modules.career_discovery.total_sessions}`,
+    },
+    {
+      key: 'comments',
+      label: 'Counselor Connect',
     },
   ];
 
@@ -265,6 +298,65 @@ export default function SchoolStudentDetailPage() {
               stats={user.modules.career_discovery}
               studentName={studentName}
             />
+          )}
+
+          {/* Counselor Connect Tab */}
+          {activeTab === 'comments' && (
+            <div className="space-y-5">
+              <CounselorConnectPanel
+                apiEndpoint={`/api/accounts/admin/users/${userId}/comments/`}
+                editableRole="counselor"
+              />
+
+              {/* Email Section */}
+              <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div className="border-b border-gray-100 bg-gradient-to-r from-purple-50/60 to-indigo-50/40 px-6 py-3.5">
+                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-600" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
+                    Email the Student
+                    <span className="text-xs font-normal text-gray-400 ml-1">({user.email})</span>
+                  </h3>
+                </div>
+                <div className="px-5 py-4 space-y-3">
+                  <input
+                    id="email-student-subject"
+                    type="text"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                    placeholder="Subject (optional — defaults to 'Message from your Counselor')"
+                    value={emailStudentSubject}
+                    onChange={(e) => setEmailStudentSubject(e.target.value)}
+                  />
+                  <textarea
+                    id="email-student-body"
+                    rows={4}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 resize-vertical"
+                    placeholder="Compose your email message..."
+                    value={emailStudentBody}
+                    onChange={(e) => setEmailStudentBody(e.target.value)}
+                  />
+                  {emailStudentError && (
+                    <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{emailStudentError}</p>
+                  )}
+                  {emailStudentSuccess && (
+                    <p className="text-xs text-green-600 bg-green-50 rounded px-2 py-1 flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                      {emailStudentSuccess}
+                    </p>
+                  )}
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleSendStudentEmail}
+                      disabled={!emailStudentBody.trim() || emailStudentSending}
+                      className="bg-purple-600 hover:bg-purple-700 shadow-sm gap-1.5 text-white"
+                      size="sm"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                      {emailStudentSending ? 'Sending...' : 'Send Email'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
         </div>

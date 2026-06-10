@@ -154,7 +154,13 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
           yearRows: newYearRows
         };
 
-        if (!currentDegree || currentDegree.yearRows.length !== newYearRows.length) {
+        const subjectsChanged = newYearRows.some((row, yIdx) => {
+          const currentRow = currentDegree?.yearRows[yIdx];
+          if (!currentRow) return true;
+          return Object.entries(row).some(([key, val]) => currentRow[key] !== val);
+        });
+
+        if (!currentDegree || currentDegree.yearRows.length !== newYearRows.length || subjectsChanged) {
           changed = true;
         }
         next.push(newDegree);
@@ -164,7 +170,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
       return changed ? next : prev;
     });
-  }, [watchedSectionData, yearsFieldName, minYears, section.repeatables?.fields]);
+  }, [watchedSectionData, sectionType, yearsFieldName, minYears, section.repeatables?.fields]);
 
   // Add a new degree block
   const handleAddDegree = (): void => {
@@ -357,11 +363,14 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
             <hr className="my-10 border-t border-neutral-200" aria-hidden="true" />
 
             {/* Year Score Details */}
-            <Label size="lg" className="font-semibold text-neutral-900">
-              {hasSemesterWiseScores === 'Yes'
-                ? `Degree ${degreeIdx + 1} - Semester-wise Score Details`
-                : `Degree ${degreeIdx + 1} - Year-wise Score Details`}
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label size="lg" className="font-semibold text-neutral-900">
+                {hasSemesterWiseScores === 'Yes'
+                  ? `Degree ${degreeIdx + 1} - Semester-wise Score Details`
+                  : `Degree ${degreeIdx + 1} - Year-wise Score Details`}
+              </Label>
+              <TranscriptUploader targetSection={sectionType} targetIndex={degreeIdx} />
+            </div>
             
             <div
               className="mt-5 grid gap-4"

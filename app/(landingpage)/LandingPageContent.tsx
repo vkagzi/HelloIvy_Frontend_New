@@ -1927,13 +1927,6 @@ export default function LandingPageContent(): React.ReactElement {
                 className="text-white/90 no-underline transition-colors hover:text-white"
               >
                 Privacy policy
-              </Link>{' '}
-              |{' '}
-              <Link
-                href="/terms"
-                className="text-white/90 no-underline transition-colors hover:text-white"
-              >
-                Terms &amp; Condition
               </Link>
             </p>
           </div>
