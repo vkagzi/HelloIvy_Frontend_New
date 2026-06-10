@@ -347,6 +347,18 @@ class DomainDiscoveryAPI {
       method: 'POST',
     });
   }
+
+  /**
+   * Email the generated report PDF to the user
+   */
+  async emailReport(sessionId: string, pdfBlob: Blob): Promise<{ message: string }> {
+    const formData = new FormData();
+    formData.append('pdf', pdfBlob, 'report.pdf');
+    return api<{ message: string }>(`${this.baseUrl}/${sessionId}/email-report/`, {
+      method: 'POST',
+      body: formData,
+    });
+  }
 }
 
 export interface PauseResponse {

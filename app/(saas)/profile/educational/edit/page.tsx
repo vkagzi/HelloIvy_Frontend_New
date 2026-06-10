@@ -191,20 +191,20 @@ const EducationalDetailsForm: React.FC = () => {
     if (!parsedTranscriptData || Object.keys(parsedTranscriptData).length === 0) return;
 
     console.log("!!! [EducationalDetailsForm] Syncing scanned data to form:", parsedTranscriptData);
-    
+
     const target = (parsedTranscriptData as any)._target;
     const isTargeted = target && target.section && target.section !== 'personal';
 
     // Get current values to preserve fields that are NOT being updated by the scan
     const currentValues = formRef.current?.getValues() || {};
     const currentAcademicLevel = currentValues.academicLevel as string;
-    
+
     console.log("!!! [EducationalDetailsForm] Syncing scanned data. Current academicLevel in form:", currentAcademicLevel);
-    
+
     // Start with a merge of DB data and current values
-    let newDefaults: Record<string, any> = { 
+    let newDefaults: Record<string, any> = {
       ...educationalDetails,
-      ...currentValues 
+      ...currentValues
     };
 
     if (!isTargeted) {
@@ -242,7 +242,7 @@ const EducationalDetailsForm: React.FC = () => {
       // Single record at root
       educationalRecords = [rootData];
     }
-    
+
     console.log(`[EducationalDetailsForm] Extracted ${educationalRecords.length} educational records.`);
 
     const firstRec = educationalRecords[0];
@@ -250,7 +250,7 @@ const EducationalDetailsForm: React.FC = () => {
     // Determine Global Target Section from Resume Academic Level
     let globalTargetSection: "highSchool" | "undergraduate" | "postgraduate" | "tenPlus" | null = null;
     const globalLevel = (parsedTranscriptData.academicLevel || "").toLowerCase();
-    
+
     if (globalLevel.includes('working') || globalLevel.includes('professional') || globalLevel.includes('completed')) {
       globalTargetSection = 'tenPlus';
     } else if (globalLevel.includes('postgraduate') || globalLevel.includes('master') || globalLevel.includes('phd') || globalLevel.includes('mba')) {
@@ -276,7 +276,7 @@ const EducationalDetailsForm: React.FC = () => {
     // Helper to map a single record to form keys
     const mapRecord = (e: any, section: string) => {
       console.log(`[mapRecord] Mapping record for section ${section}:`, e);
-      
+
       const cleanScoreValue = (val: any) => {
         if (!val) return "";
         let s = String(val).trim();
@@ -285,10 +285,10 @@ const EducationalDetailsForm: React.FC = () => {
         s = s.replace(/(CGPA|GPA|%|marks)/i, "");
         return s.trim();
       };
-      
+
       const score = cleanScoreValue(getValue(e, ['yourTotalScore', 'score', 'percentage', 'cgpa', 'overallPercentage', 'totalScore', 'overallGPA', 'gpa', 'aggregateScore', 'marks']) ?? "");
       let maxScore = cleanScoreValue(getValue(e, ['highestTotalScore', 'maximumPossibleGPA', 'maxScore', 'maxGPA', 'maxPossibleScore', 'outOf']) ?? "");
-      
+
       // Smart default for max score if missing
       if (!maxScore && score) {
         const numScore = parseFloat(String(score));
@@ -297,9 +297,23 @@ const EducationalDetailsForm: React.FC = () => {
           else if (numScore <= 100) maxScore = "100";
         }
       }
-      
+
+      // Map repeatable years/semesters for university
+      const semestersData = Array.isArray(e.semesters) && e.semesters.length > 0 ? e.semesters : null;
+      let aiHasSem = getValue(e, ['hasSemesterWiseScores']);
+      let isSemWise = aiHasSem === 'Yes' ? 'Yes' : 'No';
+
+      // Advanced Inference: If AI didn't specify, check if labels contain "Semester" or if there are > 4 records
+      if (!aiHasSem && semestersData) {
+        const firstTermLabel = String(getValue(semestersData[0], ['semesterName', 'year', 'semester', 'termName']) || "").toLowerCase();
+        if (firstTermLabel.includes('semester') || firstTermLabel.includes('sem') || semestersData.length > 4) {
+          isSemWise = 'Yes';
+        }
+      }
+
       const mapped: any = {
         city: getValue(e, ['city', 'location', 'town', 'address']) ?? "",
+        hasSemesterWiseScores: isSemWise,
         // Common fields with different names
         ...(section === 'highSchool' ? {
           schoolName: getValue(e, ['schoolName', 'institutionName', 'universityName', 'university', 'collegeName', 'college', 'school', 'nameOfInstitution', 'institution', 'name']) ?? "",
@@ -359,30 +373,58 @@ const EducationalDetailsForm: React.FC = () => {
 
       // Map repeatable years/semesters for university
       if (section !== 'highSchool') {
-        const yearsData = getValue(e, ['years', 'semesters', 'scoreDetails', 'academicDetails', 'results']) ?? [];
-        if (Array.isArray(yearsData) && yearsData.length > 0) {
+        // Fallback: legacy years/semesters/results key
+        const legacyData = getValue(e, ['years', 'scoreDetails', 'academicDetails', 'results']) ?? [];
+
+        const yearsData: any[] = semestersData ?? (Array.isArray(legacyData) ? legacyData : []);
+
+        if (yearsData.length > 0) {
           mapped.years = yearsData.map((y: any, idx: number) => {
-            const rawYScore = getValue(y, ['score', 'cgpa', 'gpa', 'percentage', 'yourTotalScore', 'marks', 'result']) ?? "";
+            // New format: sgpa / maxSgpa fields
+            const rawYScore = getValue(y, ['sgpa', 'score', 'cgpa', 'gpa', 'tgpa', 'percentage', 'yourTotalScore', 'marks', 'result', 'gradePoints']) ?? "";
             const yScore = cleanScoreValue(rawYScore);
+            const rawMax = getValue(y, ['maxSgpa', 'highestTotalScore', 'maxScore', 'maxGPA', 'maxPossibleScore', 'outOf', 'scale']) ?? "";
+            const maxScore = rawMax ? cleanScoreValue(rawMax) : (parseFloat(String(yScore)) <= 10 ? "10" : "100");
             return {
-              year: getValue(y, ['year', 'semester', 'period', 'level']) ?? (idx + 1),
+              year: getValue(y, ['semesterName', 'year', 'semester', 'period', 'level', 'termLabel', 'termName']) ?? (idx + 1),
               score: yScore,
-              highestTotalScore: cleanScoreValue(getValue(y, ['highestTotalScore', 'maxScore', 'maxGPA', 'maxPossibleScore', 'outOf']) ?? (parseFloat(String(yScore)) <= 10 ? "10" : "100"))
+              highestTotalScore: maxScore
             };
           });
-          console.log(`[mapRecord] Mapped ${mapped.years.length} years for section ${section}`);
+          console.log(`[mapRecord] Mapped ${mapped.years.length} years/semesters for section ${section}`, mapped.years);
         }
       }
 
-      if (section === 'highSchool' && e.subjects) {
-        mapped.subjects = e.subjects.map((subj: any) => ({
-          subject: getValue(subj, ['subject', 'name', 'subjectName']) || "",
-          level: getValue(subj, ['level', 'grade', 'standard']) || "",
-          yourTotalScore: getValue(subj, ['yourTotalScore', 'score', 'marks']) || "",
-          highestTotalScore: getValue(subj, ['highestTotalScore', 'maxScore', 'outOf']) || "100"
-        }));
+      if (section === 'highSchool') {
+        // Map top-level subjects
+        if (e.subjects) {
+          mapped.subjects = e.subjects.map((subj: any) => ({
+            subject: getValue(subj, ['subject', 'name', 'subjectName']) || "",
+            level: getValue(subj, ['level', 'grade', 'standard']) || "",
+            yourTotalScore: getValue(subj, ['yourTotalScore', 'score', 'marks']) || "",
+            highestTotalScore: getValue(subj, ['highestTotalScore', 'maxScore', 'outOf']) || "100"
+          }));
+        }
+
+        // Map terms (nested subjects)
+        const termsData = getValue(e, ['terms', 'semesters']) ?? [];
+        if (Array.isArray(termsData) && termsData.length > 0) {
+          mapped.terms = termsData.map((t: any, idx: number) => {
+            const termSubjs = getValue(t, ['subjects', 'courses']) ?? [];
+            return {
+              termName: getValue(t, ['termName', 'termLabel', 'semester', 'name']) ?? `Term ${idx + 1}`,
+              subjects: Array.isArray(termSubjs) ? termSubjs.map((subj: any) => ({
+                subject: getValue(subj, ['subject', 'name', 'subjectName']) || "",
+                level: getValue(subj, ['level', 'grade', 'standard']) || "",
+                yourTotalScore: getValue(subj, ['yourTotalScore', 'score', 'marks', 'result', 'sgpa', 'cgpa', 'gpa']) || "",
+                highestTotalScore: getValue(subj, ['highestTotalScore', 'maxScore', 'outOf', 'scale']) || "100"
+              })) : []
+            };
+          });
+          console.log(`[mapRecord] Mapped ${mapped.terms.length} terms for highSchool`);
+        }
       }
-      
+
       console.log(`[mapRecord] Resulting mapped record for ${section}:`, mapped);
       return mapped;
     };
@@ -394,7 +436,7 @@ const EducationalDetailsForm: React.FC = () => {
         const sectionName = target.section;
         const index = target.index ?? 0;
         console.log(`[EducationalDetailsForm] Targeted scan detected for ${sectionName} index ${index}`);
-        
+
         const currentArray = Array.isArray(newDefaults[sectionName]) ? [...newDefaults[sectionName]] : [];
 
         // Smart Record Picking: Find the record that matches the specific grade for this index
@@ -404,11 +446,11 @@ const EducationalDetailsForm: React.FC = () => {
           const hasScores = currentValues.hasCurrentGradeScores as string | undefined;
           const parsedGrade = gradeLevel ? parseInt(gradeLevel.replace('Grade ', ''), 10) : 9;
           const selectedGrade = !isNaN(parsedGrade) ? parsedGrade : 9;
-          
+
           if (hasScores && ['Yes', 'No'].includes(hasScores)) {
             const startGrade = hasScores === 'Yes' ? selectedGrade : selectedGrade - 1;
             const targetGradeNum = startGrade - index;
-            
+
             const matchingRec = educationalRecords.find((e: any) => {
               const raw = String(getValue(e, ['gradeLevel', 'grade', 'academicLevel']) ?? "").toUpperCase();
               const romanMap: Record<string, number> = { 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'VIII': 8 };
@@ -420,7 +462,7 @@ const EducationalDetailsForm: React.FC = () => {
               }
               return extracted === targetGradeNum;
             });
-            
+
             if (matchingRec) bestRec = matchingRec;
           }
         }
@@ -428,16 +470,16 @@ const EducationalDetailsForm: React.FC = () => {
         if (!currentArray[index]) currentArray[index] = {};
         const mappedData = mapRecord(bestRec, sectionName);
         currentArray[index] = { ...currentArray[index], ...mappedData };
-        
+
         newDefaults[sectionName] = currentArray;
         console.log(`[EducationalDetailsForm] Updated ${sectionName}[${index}] with mapped data.`, newDefaults[sectionName]);
       } else {
         // Global Update: Intelligence mapping for the entire section
         // Note: newDefaults was already initialized with empty arrays at the top of this effect
         const sectionsToClear = new Set<string>();
-        
+
         const detectedAcademicLevel = (parsedTranscriptData.academicLevel || "").toLowerCase();
-        
+
         // SMART DETECTION: Check if there are any full-time professional experiences in the data
         const professionalExperiences = rootData.professional?.experiences || rootData.professional || [];
         const hasFullTimeExp = Array.isArray(professionalExperiences) && professionalExperiences.some((exp: any) => {
@@ -448,20 +490,20 @@ const EducationalDetailsForm: React.FC = () => {
         // SMART PG DETECTION: Check for PG degrees in the educational records
         const hasPGDegree = educationalRecords.some((e: any) => {
           const degree = (getValue(e, ['degree', 'program']) || "").toLowerCase();
-          return degree.includes('master') || degree.includes('m.tech') || degree.includes('mba') || 
-                 degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
+          return degree.includes('master') || degree.includes('m.tech') || degree.includes('mba') ||
+            degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
         });
 
-        const isWorkingProf = currentAcademicLevel === 'Working/Completed College' || 
-                             detectedAcademicLevel.includes('working') || 
-                             hasFullTimeExp;
-                             
-        const isPostgrad = currentAcademicLevel === 'Postgraduate' || 
-                           detectedAcademicLevel.includes('postgraduate') || 
-                           hasPGDegree;
+        const isWorkingProf = currentAcademicLevel === 'Working/Completed College' ||
+          detectedAcademicLevel.includes('working') ||
+          hasFullTimeExp;
+
+        const isPostgrad = currentAcademicLevel === 'Postgraduate' ||
+          detectedAcademicLevel.includes('postgraduate') ||
+          hasPGDegree;
 
         const isHighSchool = currentAcademicLevel === 'High School (8th–12th grade)' || detectedAcademicLevel.includes('high school');
-        
+
         console.log(`[EducationalDetailsForm] Sync Logic - isWorkingProf: ${isWorkingProf}, isPostgrad: ${isPostgrad} (hasPG: ${hasPGDegree}), current: ${currentAcademicLevel}, detected: ${detectedAcademicLevel}`);
 
         educationalRecords.forEach((e: any) => {
@@ -470,9 +512,9 @@ const EducationalDetailsForm: React.FC = () => {
           const sections: string[] = [];
 
           // 1. Strict High School check
-          const isHS = searchLevel.includes('high school') || searchLevel.includes('12th') || 
-                       searchLevel.includes('secondary') || searchLevel.includes('school') ||
-                       degreeName.includes('grade') || degreeName.includes('standard');
+          const isHS = searchLevel.includes('high school') || searchLevel.includes('12th') ||
+            searchLevel.includes('secondary') || searchLevel.includes('school') ||
+            degreeName.includes('grade') || degreeName.includes('standard');
 
           if (isHS) {
             sections.push('highSchool');
@@ -484,10 +526,10 @@ const EducationalDetailsForm: React.FC = () => {
               sections.push('tenPlus');
             } else if (isPostgrad) {
               // FOR POSTGRADUATES: Route based on degree type
-              const isPG = degreeName.includes('master') || degreeName.includes('mba') || degreeName.includes('msc') || 
-                           degreeName.includes('m.a') || degreeName.includes('m.tech') || degreeName.includes('pg') ||
-                           searchLevel.includes('postgraduate');
-              
+              const isPG = degreeName.includes('master') || degreeName.includes('mba') || degreeName.includes('msc') ||
+                degreeName.includes('m.a') || degreeName.includes('m.tech') || degreeName.includes('pg') ||
+                searchLevel.includes('postgraduate');
+
               if (isPG) {
                 sections.push('postgraduate');
               } else {
@@ -516,13 +558,13 @@ const EducationalDetailsForm: React.FC = () => {
               newDefaults[s] = [];
               sectionsToClear.add(s);
             }
-            
+
             const updatedArray = Array.isArray(newDefaults[s]) ? [...newDefaults[s]] : [];
             updatedArray.push(mapRecord(e, s));
             newDefaults[s] = updatedArray;
           });
         });
-        
+
         console.log(`[EducationalDetailsForm] Global update complete. Cleared and updated:`, Array.from(sectionsToClear));
       }
     }
@@ -540,7 +582,7 @@ const EducationalDetailsForm: React.FC = () => {
     // 2. Map Courses & Certifications
     const coursesKeys = ['courses', 'certifications', 'coursesAndCertifications', 'certificates', 'certificationsAndAwards', 'achievementsAndCertifications', 'achievements'];
     const coursesData = findKey(parsedTranscriptData, coursesKeys);
-    
+
     if (coursesData && Array.isArray(coursesData) && coursesData.length > 0) {
       newDefaults.courses = coursesData.map((c: any) => ({
         courseType: c.courseType || "Certificate",
@@ -555,7 +597,7 @@ const EducationalDetailsForm: React.FC = () => {
     // 3. Map Awards & Scholarships
     const awardsKeys = ['awards', 'scholarships', 'honors', 'achievements', 'awardsAndScholarships', 'awardsAndFellowships', 'certificationsAndAwards', 'achievementsAndCertifications'];
     const awardsData = findKey(parsedTranscriptData, awardsKeys);
-    
+
     if (awardsData && Array.isArray(awardsData) && awardsData.length > 0) {
       newDefaults.awards = awardsData.map((a: any) => ({
         nameOfHonorReceived: a.nameOfHonorReceived || a.name || a.honor || a.title || "Award/Achievement",
@@ -568,11 +610,11 @@ const EducationalDetailsForm: React.FC = () => {
 
     // 4. Map Test Scores
     const testScoresData = parsedTranscriptData.testScores || parsedTranscriptData.test_scores || findKey(parsedTranscriptData, ['testScores', 'test_scores']);
-    
+
     if (testScoresData && Array.isArray(testScoresData) && testScoresData.length > 0) {
       newDefaults.testScores = testScoresData.map((newScore: any) => {
         const cleanScore = { ...newScore };
-        
+
         // Dynamic Alias Resolution
         const findVal = (keys: string[]) => {
           for (const k of keys) {
@@ -606,7 +648,7 @@ const EducationalDetailsForm: React.FC = () => {
         const rawTestType = String(cleanScore.testType || "").trim();
         let testType = "Other";
         let testTypeOther = "";
-        
+
         if (rawTestType.toLowerCase().includes('gmat')) {
           testType = "GMAT";
         } else if (rawTestType.toLowerCase().includes('gre')) {
@@ -644,7 +686,7 @@ const EducationalDetailsForm: React.FC = () => {
           readingYourScore: cleanScore.readingYourScore || "",
           scienceYourScore: cleanScore.scienceYourScore || "",
           integratedReasoningScore: cleanScore.integratedReasoningScore || "",
-          
+
           // Map sanitized percentiles to precise React Hook Form fields
           verbalReasoningPercentile: sanitizePercentile(verbalPercentileVal),
           quantitativeReasoningPercentile: sanitizePercentile(quantPercentileVal),
@@ -662,7 +704,7 @@ const EducationalDetailsForm: React.FC = () => {
     // 5. Academic Level Sync
     if (parsedTranscriptData.academicLevel && !isTargeted) {
       const topLevel = parsedTranscriptData.academicLevel;
-      
+
       // PROTECTION: If the user has manually selected Working Professional or Postgraduate, 
       // do not let the AI downgrade them to Undergraduate unless they were originally in HS.
       // Also respect the smart detection from above.
@@ -675,17 +717,17 @@ const EducationalDetailsForm: React.FC = () => {
       // SMART PG DETECTION
       const hasPGDegree = educationalRecords.some((e: any) => {
         const degree = (getValue(e, ['degree', 'program']) || "").toLowerCase();
-        return degree.includes('master') || degree.includes('m.tech') || degree.includes('mba') || 
-               degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
+        return degree.includes('master') || degree.includes('m.tech') || degree.includes('mba') ||
+          degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
       });
 
-      const isCurrentlyProfessional = currentAcademicLevel === 'Working/Completed College' || 
-                                     currentAcademicLevel === 'Postgraduate' || 
-                                     hasFullTimeExp || 
-                                     hasPGDegree;
-                                     
+      const isCurrentlyProfessional = currentAcademicLevel === 'Working/Completed College' ||
+        currentAcademicLevel === 'Postgraduate' ||
+        hasFullTimeExp ||
+        hasPGDegree;
+
       const isAiSayingUndergrad = topLevel.toLowerCase().includes('undergraduate') || topLevel.toLowerCase().includes('college');
-      
+
       if (topLevel.includes('High School')) {
         // Only set to high school if we are currently in HS or nothing
         if (!isCurrentlyProfessional && currentAcademicLevel !== 'College/Undergraduate') {
@@ -801,7 +843,7 @@ const EducationalDetailsForm: React.FC = () => {
       // Include ALL educational sections that have data, not just the relevant one.
       // This ensures that scanned resume data for multiple levels is preserved.
       const allSections = ['highSchool', 'undergraduate', 'postgraduate', 'tenPlus', 'undergraduate_prereq'];
-      
+
       // PROTECTION AGAINST DATA POLLUTION:
       // If we are in Working Professional mode, we should explicitly clear UG/PG sections 
       // if they aren't provided in the current form data (which they shouldn't be).
@@ -815,10 +857,10 @@ const EducationalDetailsForm: React.FC = () => {
 
       allSections.forEach((section) => {
         if (parsedData[section] !== undefined && Array.isArray(parsedData[section])) {
-           // Only include if it's not empty, OR if we explicitly cleared it above
-           if ((parsedData[section] as any[]).length > 0 || cleanEducational[section] !== undefined) {
-             cleanEducational[section] = parsedData[section];
-           }
+          // Only include if it's not empty, OR if we explicitly cleared it above
+          if ((parsedData[section] as any[]).length > 0 || cleanEducational[section] !== undefined) {
+            cleanEducational[section] = parsedData[section];
+          }
         }
       });
 
