@@ -518,7 +518,7 @@ export default function SettingsPage(): React.ReactElement {
             ))}
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {[
               { id: 'en' },
               { id: 'hi' },

@@ -179,7 +179,7 @@ export default function Dashboard(): React.ReactElement {
               </Label>
               <br />
               <Label size="sm" className="text-neutral-500">
-                Edit your counsellor&apos;s voice, language, and accent.
+                Choose your counsellor&apos;s voice, language, and accent.
               </Label>
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function Dashboard(): React.ReactElement {
             href="/settings"
             className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700"
           >
-            Customize
+            Edit
           </Link>
         </div>
       </div>
