@@ -188,7 +188,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     placeholder: 'Select country code',
     required: true,
     options: COUNTRY_CODES,
-    width: 0.3,
+    width: 2,
   },
   {
     id: 'phoneNumber',
@@ -209,6 +209,7 @@ export const personalFieldDefs: FieldDefinition[] = [
     placeholder: 'Select gender',
     required: true,
     options: ['Female', 'Male', 'Other'],
+    width: 2,
   },
   {
     id: 'genderOther',
@@ -229,6 +230,7 @@ export const personalFieldDefs: FieldDefinition[] = [
         value: ['Other'],
       },
     },
+    width: 2,
   },
   {
     id: 'addressline',

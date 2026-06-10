@@ -432,7 +432,7 @@ const CareerResultsPDF: React.FC<CareerResultsPDFProps> = ({ recommendations, st
                 {/* Skill Gaps */}
                 {hasSkillGaps && (
                   <View style={[s.stripRight, !hasFeasibility ? { borderLeftWidth: 0, paddingLeft: 0 } : {}]}>
-                    <Text style={s.stripLabel}>Skill Gaps</Text>
+                    <Text style={s.stripLabel}>Areas for growth</Text>
                     {career.skill_gaps!.slice(0, 5).map((gap, gi) => (
                       <View key={gi} style={[s.bulletItem, { marginBottom: 2 }]}>
                         <View style={s.gapNumCircle}>
