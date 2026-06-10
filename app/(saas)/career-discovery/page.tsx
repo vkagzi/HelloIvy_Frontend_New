@@ -734,7 +734,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                     <span className="text-sm font-semibold text-slate-800">I only want a career report</span>
                     <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-700">Default</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-500">Get 5 career options with skill gaps, feasibility, and next steps — without postgrad degree suggestions.</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Get 5 career options with areas for growth, feasibility, and next steps — without postgrad degree suggestions.</p>
                 </div>
               </label>
               {/* Option 2 */}
