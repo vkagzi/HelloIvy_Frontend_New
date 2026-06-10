@@ -299,20 +299,9 @@ const EducationalDetailsForm: React.FC = () => {
         }
       }
 
-      // Map repeatable years/semesters for university
       const semestersData = Array.isArray(e.semesters) && e.semesters.length > 0 ? e.semesters : null;
       let aiHasSem = getValue(e, ['hasSemesterWiseScores']);
       let isSemWise = aiHasSem === 'Yes' ? 'Yes' : 'No';
-
-      // Advanced Inference: Force Yes if count > 4 or if explicitly containing semester-like labels
-      if (semestersData) {
-        const firstTermLabel = String(getValue(semestersData[0], ['semesterName', 'year', 'semester', 'termName', 'yearName']) || "").toLowerCase();
-        if (firstTermLabel.includes('semester') || firstTermLabel.includes('sem') || semestersData.length > 4) {
-          isSemWise = 'Yes';
-        } else if (firstTermLabel.includes('year')) {
-          isSemWise = 'No';
-        }
-      }
 
       const mapped: any = {
         city: getValue(e, ['city', 'location', 'town', 'address']) ?? "",
@@ -380,7 +369,26 @@ const EducationalDetailsForm: React.FC = () => {
         const yearsData: any[] = semestersData ?? (Array.isArray(legacyData) ? legacyData : []);
 
         if (yearsData.length > 0) {
+          const firstTermLabel = String(getValue(yearsData[0], ['semesterName', 'year', 'semester', 'termName', 'yearName']) || "").toLowerCase();
+          // Advanced Inference: Force Yes if count is 8 (standard 4-year degree) or > 4
+          // unless it specifically has 'year' in the first label and <= 6 items.
+          if (yearsData.length === 8 || yearsData.length > 4) {
+            isSemWise = 'Yes';
+          } else if (firstTermLabel.includes('semester') || firstTermLabel.includes('sem')) {
+            isSemWise = 'Yes';
+          } else if (firstTermLabel.includes('year')) {
+            isSemWise = 'No';
+          }
+
+          // Update toggle value in mapped object
+          mapped.hasSemesterWiseScores = isSemWise;
+
           const fieldName = isSemWise === 'Yes' ? 'semesters' : 'years';
+          const opposingFieldName = isSemWise === 'Yes' ? 'years' : 'semesters';
+          
+          // Clear opposing field to prevent pollution (e.g. 8 years showing up in year-wise view)
+          mapped[opposingFieldName] = [];
+
           mapped[fieldName] = yearsData.map((y: any, idx: number) => {
             const rawYScore = getValue(y, ['sgpa', 'score', 'cgpa', 'gpa', 'tgpa', 'percentage', 'yourTotalScore', 'marks', 'result', 'gradePoints']) ?? "";
             const yScore = cleanScoreValue(rawYScore);
@@ -392,7 +400,7 @@ const EducationalDetailsForm: React.FC = () => {
               highestTotalScore: maxScore
             };
           });
-          console.log(`[mapRecord] Mapped ${mapped[fieldName].length} ${fieldName} for section ${section}`, mapped[fieldName]);
+          console.log(`[mapRecord] Mapped ${mapped[fieldName].length} ${fieldName} (isSemWise: ${isSemWise}) for section ${section}`, mapped[fieldName]);
         }
       }
 
