@@ -66,12 +66,22 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     const initialCount = Math.max(minDegrees, existingCount);
 
     return Array.from({ length: initialCount }, (_, idx) => {
-      const existingYears = Array.isArray(existingDegrees) && existingDegrees[idx]
-        ? (existingDegrees[idx] as Record<string, unknown>)[yearsFieldName]
-        : null;
-      const yearsCount = Array.isArray(existingYears)
-        ? existingYears.length
+      const degreeData = Array.isArray(existingDegrees) && existingDegrees[idx]
+        ? (existingDegrees[idx] as Record<string, unknown>)
+        : {};
+      
+      const isSemWise = degreeData.hasSemesterWiseScores === 'Yes';
+      const activeFieldName = isSemWise ? 'semesters' : yearsFieldName;
+      const existingRows = degreeData[activeFieldName];
+      
+      let yearsCount = Array.isArray(existingRows)
+        ? existingRows.length
         : Math.max(minYears, 1);
+
+      // Safety cap for Years in initialization
+      if (!isSemWise && yearsCount > 6) {
+        yearsCount = 6;
+      }
 
       return {
         key: nanoid(),
@@ -87,8 +97,11 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
   // Set year values in form when degrees/years change
   useEffect(() => {
     degrees.forEach((degree, degreeIdx) => {
+      const isSemWise = form.getValues(`${sectionType}.${degreeIdx}.hasSemesterWiseScores`) === 'Yes';
+      const currentActiveFieldName = isSemWise ? 'semesters' : yearsFieldName;
+
       degree.yearRows.forEach((_, yearIdx) => {
-        const yearFieldPath = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.year`;
+        const yearFieldPath = `${sectionType}.${degreeIdx}.${currentActiveFieldName}.${yearIdx}.year`;
         const currentValue = form.getValues(yearFieldPath);
         // Only set if not already set or different
         if (currentValue !== yearIdx + 1) {
@@ -99,7 +112,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
         (section.repeatables?.fields ?? []).forEach((fid: string) => {
           const field = fieldDefs.find((f) => f.id === fid);
           if (field?.defaultValueFrom) {
-            const targetPath = `${sectionType}.${degreeIdx}.${yearsFieldName}.${yearIdx}.${fid}`;
+            const targetPath = `${sectionType}.${degreeIdx}.${currentActiveFieldName}.${yearIdx}.${fid}`;
             const targetValue = form.getValues(targetPath) as unknown as string;
             if (!targetValue) {
               const sourceValue = form.getValues(
@@ -134,14 +147,34 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
       watchedSectionData.forEach((formDegree, idx) => {
         const currentDegree = prev[idx];
-        const isSemWise = (formDegree as Record<string, unknown>)?.hasSemesterWiseScores === 'Yes';
+        const rawHasSem = (formDegree as Record<string, unknown>)?.hasSemesterWiseScores;
+        const semesters = (formDegree as Record<string, unknown>)?.semesters as any[];
+        const years = (formDegree as Record<string, unknown>)?.years as any[];
+        
+        // Advanced Inference: If either array has 6, 8, or 10 items, it's almost certainly semesters.
+        // We do this to ensure UI stays in sync with common transcript structures.
+        const semCount = Array.isArray(semesters) ? semesters.length : 0;
+        const yearCountActual = Array.isArray(years) ? years.length : 0;
+        
+        let isSemWise = rawHasSem === 'Yes';
+        // Force semester mode if we have 8 or 10 items (clearly semesters) or if user said Yes
+        if (semCount >= 8 || yearCountActual >= 8 || rawHasSem === 'Yes') {
+          isSemWise = true;
+        }
+
         const currentActiveFieldName = isSemWise ? 'semesters' : yearsFieldName;
         const formYears = (formDegree as Record<string, unknown>)?.[currentActiveFieldName] as any[];
         
-        // If form has years, use that count, else use show_default or min
-        const yearsCount = Array.isArray(formYears) && formYears.length > 0 
+        // Use data count if available, otherwise use defaults.
+        // LIMIT: If in Year-wise mode (isSemWise: false), cap rows at 6 (max standard degree years).
+        // This prevents the system from accidentally showing "8th Year" if state is messy.
+        let yearsCount = Array.isArray(formYears) && formYears.length > 0 
           ? formYears.length 
           : Math.max(minYears, 1);
+
+        if (!isSemWise && yearsCount > 6) {
+          yearsCount = 6; // Safety cap for years
+        }
 
         const newYearRows = Array.from({ length: yearsCount }, (_, yIdx) => {
           const formYear = Array.isArray(formYears) ? formYears[yIdx] : {};
