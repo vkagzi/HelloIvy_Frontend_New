@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useProfile } from '@/app/(saas)/profile/_context/ProfileContext';
@@ -39,7 +39,7 @@ export default function LinkedInImporter() {
     }
 
     setLoading(true);
-    addToast('Scanning profile data...', { type: 'info' });
+    addToast('Scanning profile dataΓÇª', { type: 'info' });
 
     try {
       const token = await getAuthToken();
@@ -61,7 +61,6 @@ export default function LinkedInImporter() {
       }
 
       const data = await res.json();
-      console.log('!!! [LinkedInImporter] Received Parsed Data:', data);
       setParsedTranscriptData(data);
       addToast('Profile updated from LinkedIn!', { type: 'success' });
       setText('');
@@ -73,12 +72,10 @@ export default function LinkedInImporter() {
     }
   };
 
-  return null;
-  // Commented out to hide from UI as requested
-  /*
   return (
     <div className="flex flex-col gap-2 w-full max-w-md">
       {!isExpanded ? (
+        /* TRIGGER PILL */
         <button
           onClick={() => setIsExpanded(true)}
           className="
@@ -103,6 +100,7 @@ export default function LinkedInImporter() {
           </div>
         </button>
       ) : (
+        /* EXPANDED PASTE BOX */
         <div className="flex flex-col gap-3 rounded-2xl border border-[#0077B5]/30 bg-[#EBF5FB] p-4 shadow-lg animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -162,6 +160,7 @@ export default function LinkedInImporter() {
               'Start Magic Import'
             )}
             
+            {/* Progress Bar in button */}
             {loading && (
               <div className="absolute bottom-0 left-0 h-1 bg-white/30 transition-all duration-300" style={{ width: `${progress}%` }} />
             )}
@@ -170,5 +169,4 @@ export default function LinkedInImporter() {
       )}
     </div>
   );
-  */
 }

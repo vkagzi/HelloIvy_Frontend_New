@@ -298,21 +298,10 @@ const EducationalDetailsForm: React.FC = () => {
           else if (numScore <= 100) maxScore = "100";
         }
       }
-
-      // Map repeatable years/semesters for university
-      const semestersData = Array.isArray(e.semesters) && e.semesters.length > 0 ? e.semesters : null;
+        const semestersData = Array.isArray(e.semesters) && e.semesters.length > 0 ? e.semesters : null;
       let aiHasSem = getValue(e, ['hasSemesterWiseScores']);
-      let isSemWise = aiHasSem === 'Yes' ? 'Yes' : 'No';
-
-      // Advanced Inference: Force Yes if count > 4 or if explicitly containing semester-like labels
-      if (semestersData) {
-        const firstTermLabel = String(getValue(semestersData[0], ['semesterName', 'year', 'semester', 'termName', 'yearName']) || "").toLowerCase();
-        if (firstTermLabel.includes('semester') || firstTermLabel.includes('sem') || semestersData.length > 4) {
-          isSemWise = 'Yes';
-        } else if (firstTermLabel.includes('year')) {
-          isSemWise = 'No';
-        }
-      }
+      // Case-insensitive and boolean-friendly check
+      let isSemWise = (String(aiHasSem).toLowerCase() === 'yes' || aiHasSem === true) ? 'Yes' : 'No';
 
       const mapped: any = {
         city: getValue(e, ['city', 'location', 'town', 'address']) ?? "",
@@ -380,8 +369,38 @@ const EducationalDetailsForm: React.FC = () => {
         const yearsData: any[] = semestersData ?? (Array.isArray(legacyData) ? legacyData : []);
 
         if (yearsData.length > 0) {
+          const firstTermLabel = String(getValue(yearsData[0], ['semesterName', 'year', 'semester', 'termName', 'yearName', 'year']) || "").toLowerCase();
+          
+          // CRITICAL INFERENCE: 
+          // If count is 8, it is almost ALWAYS semesters (4-year degree). 
+          // If count is 10, it's semesters (5-year degree like B.Arch).
+          // If count is 6, it's likely semesters (3-year degree).
+          // If count is > 6, it's IMPOSSIBLE to be a standard year-wise degree; force Semesters.
+          if (yearsData.length > 6 || yearsData.length === 6) {
+            isSemWise = 'Yes';
+          } else if (firstTermLabel.includes('semester') || firstTermLabel.includes('sem')) {
+            isSemWise = 'Yes';
+          } else if (firstTermLabel.includes('year') && yearsData.length <= 5) {
+            isSemWise = 'No';
+          }
+
+          // Update toggle value in mapped object
+          mapped.hasSemesterWiseScores = isSemWise;
+
           const fieldName = isSemWise === 'Yes' ? 'semesters' : 'years';
-          mapped[fieldName] = yearsData.map((y: any, idx: number) => {
+          const opposingFieldName = isSemWise === 'Yes' ? 'years' : 'semesters';
+          
+          mapped[fieldName] = []; 
+          mapped[opposingFieldName] = [];
+
+          // TRUNCATE: If in Year-wise mode, never allow more than 6 items (max standard degree).
+          // If the scan found 8 items, they should have been forced to Semester-wise above, 
+          // but this acts as a final safety check.
+          const processedYearsData = (isSemWise === 'No' && yearsData.length > 6) 
+            ? yearsData.slice(0, 6) 
+            : yearsData;
+
+          mapped[fieldName] = processedYearsData.map((y: any, idx: number) => {
             const rawYScore = getValue(y, ['sgpa', 'score', 'cgpa', 'gpa', 'tgpa', 'percentage', 'yourTotalScore', 'marks', 'result', 'gradePoints']) ?? "";
             const yScore = cleanScoreValue(rawYScore);
             const rawMax = getValue(y, ['maxSgpa', 'highestTotalScore', 'maxScore', 'maxGPA', 'maxPossibleScore', 'outOf', 'scale']) ?? "";
@@ -392,7 +411,11 @@ const EducationalDetailsForm: React.FC = () => {
               highestTotalScore: maxScore
             };
           });
-          console.log(`[mapRecord] Mapped ${mapped[fieldName].length} ${fieldName} for section ${section}`, mapped[fieldName]);
+          console.log(`[mapRecord] Mapped ${mapped[fieldName].length} ${fieldName} (isSemWise: ${isSemWise}) for section ${section}`, mapped[fieldName]);
+        } else {
+          // If NO yearly data found, clear both to prevent showing default/stale rows
+          mapped.semesters = [];
+          mapped.years = [];
         }
       }
 
