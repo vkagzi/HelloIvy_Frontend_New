@@ -554,7 +554,8 @@ export default function PricingPage() {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => {
-                    handleDelete(editingId);
+                    const item = pricing.find((p) => p.id === editingId);
+                    if (item) handleDelete(item);
                     setDialogOpen(false);
                   }} 
                   className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-50 h-9 px-2 text-xs font-semibold"
