@@ -141,7 +141,7 @@ const Sidebar: React.FC = () => {
                   isActive,
                 })}
               </span>
-              <div className="flex flex-1 items-center justify-between gap-2 pr-1">
+              <div className="flex flex-1 items-center gap-2 pr-1">
                 <Label
                   size="md"
                   className={`${isActive
@@ -151,9 +151,6 @@ const Sidebar: React.FC = () => {
                 >
                   {item.label}
                 </Label>
-                <span className="text-violet-700 text-[11px] whitespace-nowrap">
-                  ⏳ {item.timeEstimate}
-                </span>
               </div>
             </Link>
           );
