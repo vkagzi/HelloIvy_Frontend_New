@@ -208,20 +208,29 @@ const Navbar: React.FC = () => {
                       const moduleName = HREF_TO_MODULE[item.href];
                       if (!moduleName || modulesLoading) return null;
                       
-                      // Using the real hasAccess check but effectively unlocked due to PAYWALL_DISABLED
-                      // However, we force 'unlocked' visual state here as requested for 'everyone'
-                      const unlocked = true; 
+                      // Custom logic: College Selector is locked for non-admins,
+                      // others are unlocked for everyone as previously requested.
+                      const isCollegeSelector = item.href === '/college-selector';
+                      const unlocked = isCollegeSelector ? isAdmin : true;
+                      
+                      const iconColor = unlocked ? '#15803d' : '#4b5563'; // Dark Green and Dark Grey
                       
                       return (
                         <span
                           title={unlocked ? 'Module unlocked' : 'Module locked'}
                           className="ml-auto flex-shrink-0"
                         >
-                          <FiIcon 
-                            name={unlocked ? 'unlock' : 'lock'} 
-                            className={`h-4 w-4 ${unlocked ? 'text-green-600' : 'text-gray-400'}`}
-                            style={{ color: unlocked ? '#16a34a' : '#9ca3af' }}
-                          />
+                          {unlocked ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={iconColor} stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 9.9-1" fill="none" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={iconColor} stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none" />
+                            </svg>
+                          )}
                         </span>
                       );
                     })()}
