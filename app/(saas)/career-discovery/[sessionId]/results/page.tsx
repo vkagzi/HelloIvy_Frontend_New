@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Heading, Paragraph } from '@/app/_components/Typography';
@@ -38,6 +38,7 @@ const CareerResultsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('results');
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const emailTriggered = useRef(false);
 
   const handleCloseReview = () => {
     localStorage.setItem('career_review_shown', 'true');
@@ -60,12 +61,16 @@ const CareerResultsPage: React.FC = () => {
       const emailSentKey = `email_sent_${sessionId}`;
       const alreadySent = localStorage.getItem(emailSentKey);
 
-      if (!alreadySent) {
+      if (!alreadySent && !emailTriggered.current) {
+        emailTriggered.current = true;
+        // Set a temporary value to prevent concurrent triggers in strict mode/quick re-renders
+        localStorage.setItem(emailSentKey, 'sending');
         autoEmailReport();
       }
     }
 
     async function autoEmailReport() {
+      const emailSentKey = `email_sent_${sessionId}`;
       try {
         const firstName = userDetails.first_name || '';
         const lastName = userDetails.last_name || '';
@@ -83,6 +88,8 @@ const CareerResultsPage: React.FC = () => {
         addToast('Report emailed to your registered address!', { type: 'success' });
       } catch (err) {
         console.error('Failed to auto-email report:', err);
+        localStorage.removeItem(emailSentKey); // allow retry on refresh
+        emailTriggered.current = false; // allow retry on error
       }
     }
   }, [sessionId, recommendations, userDetails, addToast]);

@@ -68,18 +68,24 @@ export default function CollegeSelectorResultsPage() {
     }
   }, []);
 
+  const emailTriggered = React.useRef(false);
+
   // Trigger automatic email once results are loaded
   useEffect(() => {
     if (sessionId && recommendations.length > 0 && userDetails?.email) {
       const emailSentKey = `email_sent_${sessionId}`;
       const alreadySent = localStorage.getItem(emailSentKey);
 
-      if (!alreadySent) {
+      if (!alreadySent && !emailTriggered.current) {
+        emailTriggered.current = true;
+        // Mark as sending to prevent duplicate triggers
+        localStorage.setItem(emailSentKey, 'sending');
         autoEmailReport();
       }
     }
 
     async function autoEmailReport() {
+      const emailSentKey = `email_sent_${sessionId}`;
       try {
         const firstName = userDetails.first_name || '';
         const lastName = userDetails.last_name || '';
@@ -97,6 +103,8 @@ export default function CollegeSelectorResultsPage() {
         addToast('Report emailed to your registered address!', { type: 'success' });
       } catch (err) {
         console.error('Failed to auto-email report:', err);
+        localStorage.removeItem(emailSentKey); // allow retry on refresh
+        emailTriggered.current = false; // allow retry on error
       }
     }
   }, [sessionId, recommendations, userDetails, addToast]);
