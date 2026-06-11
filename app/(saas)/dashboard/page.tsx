@@ -91,7 +91,7 @@ export default function Dashboard(): React.ReactElement {
   const renderCompleteProfile = (): React.ReactElement => {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-4 md:gap-6 md:p-6 lg:flex-row lg:gap-8 lg:p-8">
-        <div className="text-center lg:text-left lg:self-start lg:pt-3">
+        <div className="text-center lg:text-left">
           {loading ? (
             <div className="h-14 w-24 animate-pulse rounded bg-neutral-200" />
           ) : (

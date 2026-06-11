@@ -223,6 +223,17 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
           }
           */
           saveTranscript(transcriptKeyPrefix, sessionId, parsed.messages);
+          const hasUserMessages = parsed.messages.some((m) => m.type === 'user');
+          const isDomainOrCareer = featureId === 'domain-discovery' || featureId === 'career-discovery';
+          if (
+            isDomainOrCareer &&
+            !hasUserMessages &&
+            !parsed.sessionEnded &&
+            !parsed.isTrialLocked &&
+            !options?.skipModal
+          ) {
+            setShowModeModal(true);
+          }
           setIsLoading(false);
           return;
         }
@@ -1147,7 +1158,17 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
         </div>
       </div>
 
-      {/* Communication Mode Selection Modal removed - language and voice mode are managed directly via header & dashboard */}
+      <CommunicationModeModal
+        open={showModeModal}
+        isPaused={isPaused}
+        onSelectText={() => setShowModeModal(false)}
+        onSelectVoice={() => {
+          setShowModeModal(false);
+          activateVoiceMode();
+        }}
+        selectedLanguage={realtimeVoiceLanguage}
+        onLanguageChange={handleLanguageChange}
+      />
 
       {/* Exit Confirmation Dialog (optional) */}
       {showExitDialog &&
