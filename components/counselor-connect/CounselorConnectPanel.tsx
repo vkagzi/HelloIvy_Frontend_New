@@ -191,7 +191,7 @@ export default function CounselorConnectPanel({
               </p>
             )}
           </div>
-          <Button onClick={addMeeting} className="bg-indigo-600 hover:bg-indigo-700 shadow-sm gap-1.5" size="sm">
+          <Button onClick={addMeeting} className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-xl text-white font-semibold shadow-md transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95 gap-1.5" size="sm">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
             Add Meeting
           </Button>
@@ -255,7 +255,6 @@ export default function CounselorConnectPanel({
                       saving={commentSaving === 'parent'}
                       success={commentSuccess === 'parent'}
                       updatedAt={comments.parent_student_comment_updated_at}
-                      saveColor="bg-blue-600 hover:bg-blue-700"
                     />
 
                     {/* ── Counselor side ── */}
@@ -270,7 +269,6 @@ export default function CounselorConnectPanel({
                       saving={commentSaving === 'counselor'}
                       success={commentSuccess === 'counselor'}
                       updatedAt={comments.counselor_comment_updated_at}
-                      saveColor="bg-indigo-600 hover:bg-indigo-700"
                     />
                   </div>
                 </div>
@@ -303,10 +301,9 @@ interface TopicColumnProps {
   saving: boolean;
   success: boolean;
   updatedAt: string | null;
-  saveColor: string;
 }
 
-function TopicColumn({ title, titleIcon, canEdit, topicMap, onTopicChange, meetingIdx, onSave, saving, success, updatedAt, saveColor }: TopicColumnProps) {
+function TopicColumn({ title, titleIcon, canEdit, topicMap, onTopicChange, meetingIdx, onSave, saving, success, updatedAt }: TopicColumnProps) {
   return (
     <div className="space-y-3">
       <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
@@ -348,7 +345,7 @@ function TopicColumn({ title, titleIcon, canEdit, topicMap, onTopicChange, meeti
           {updatedAt ? `Updated: ${formatDateTime(updatedAt)}` : 'Not yet saved'}
         </p>
         {canEdit && (
-          <Button type="button" onClick={onSave} disabled={saving} className={`${saveColor} shadow-sm gap-1.5`} size="sm">
+          <Button type="button" onClick={onSave} disabled={saving} className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-xl text-white font-semibold shadow-md transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95 gap-1.5" size="sm">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
             {saving ? 'Saving...' : 'Submit'}
           </Button>

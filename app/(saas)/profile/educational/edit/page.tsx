@@ -860,6 +860,7 @@ const EducationalDetailsForm: React.FC = () => {
         'High School (8th–12th grade)',
         'College/Undergraduate',
         'Postgraduate',
+        'Working/Completed College',
       ];
       if (academicLevel && gradeLevelLevels.includes(academicLevel)) {
         if (parsedData.gradeLevel !== undefined) {
@@ -867,8 +868,14 @@ const EducationalDetailsForm: React.FC = () => {
         }
       }
 
-      // High-school-only fields
-      if (academicLevel === 'High School (8th–12th grade)') {
+      // Include hasCurrentGradeScores for academic levels that support it
+      const hasScoresLevels = [
+        'High School (8th–12th grade)',
+        'College/Undergraduate',
+        'Postgraduate',
+        'Working/Completed College',
+      ];
+      if (academicLevel && hasScoresLevels.includes(academicLevel)) {
         if (parsedData.hasCurrentGradeScores !== undefined) {
           cleanEducational.hasCurrentGradeScores =
             parsedData.hasCurrentGradeScores;

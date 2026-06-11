@@ -29,8 +29,25 @@ import {
 /** Returns the list of grades to display in descending order (always 2 grades) */
 const computeGradesToShow = (
   selectedGrade: number,
-  hasCurrentGradeScores: string | undefined
+  hasCurrentGradeScores: string | undefined,
+  academicLevel?: string,
+  gradeLevel?: string
 ): number[] => {
+  if (
+    (academicLevel === 'College/Undergraduate' || academicLevel === 'Working/Completed College') &&
+    (gradeLevel === 'Year 1' || gradeLevel === 'Year 2')
+  ) {
+    if (gradeLevel === 'Year 1' && hasCurrentGradeScores === 'No') {
+      return [12, 11];
+    }
+    if (
+      (gradeLevel === 'Year 1' && hasCurrentGradeScores === 'Yes') ||
+      (gradeLevel === 'Year 2' && hasCurrentGradeScores === 'No')
+    ) {
+      return [12];
+    }
+  }
+
   if (
     !hasCurrentGradeScores ||
     !['Yes', 'No'].includes(hasCurrentGradeScores)
@@ -69,6 +86,11 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 }) => {
   const minSubjects = section.repeatables?.repeatable_option?.min ?? 1;
 
+  // Watch top-level fields for college fallback
+  const academicLevel = useWatch({ control: form.control, name: 'academicLevel' }) as string | undefined;
+  const gradeLevel = useWatch({ control: form.control, name: 'gradeLevel' }) as string | undefined;
+  const hasCurrentGradeScoresForm = useWatch({ control: form.control, name: 'hasCurrentGradeScores' }) as string | undefined;
+
   // Helper to calculate grid template columns with field widths
   const getGridTemplateColumns = (fieldIds: string[]): string => {
     const widths = fieldIds.map((fid) => {
@@ -80,8 +102,8 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
   // Reactively compute the list of grades to display (descending order)
   const gradesToShow = useMemo(
-    () => computeGradesToShow(selectedGrade, hasCurrentGradeScores),
-    [selectedGrade, hasCurrentGradeScores]
+    () => computeGradesToShow(selectedGrade, hasCurrentGradeScoresForm, academicLevel, gradeLevel),
+    [selectedGrade, hasCurrentGradeScoresForm, academicLevel, gradeLevel]
   );
 
   // Ref to persist form data snapshots keyed by grade number across renders.
@@ -127,9 +149,14 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
   const [subjectRowsByGrade, setSubjectRowsByGrade] = useState<
     Record<number, SubjectRows>
   >(() => {
+    const formAcademic = form.getValues('academicLevel') as string | undefined;
+    const formGrade = form.getValues('gradeLevel') as string | undefined;
+    const formScores = form.getValues('hasCurrentGradeScores') as string | undefined;
     const initialGrades = computeGradesToShow(
       selectedGrade,
-      hasCurrentGradeScores
+      formScores,
+      formAcademic,
+      formGrade
     );
     const existingSchools = form.getValues(sectionType) as unknown[];
     const map: Record<number, SubjectRows> = {};
@@ -157,9 +184,14 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
   const [termSubjectRowsByGrade, setTermSubjectRowsByGrade] = useState<
     Record<number, Record<number, SubjectRows>>
   >(() => {
+    const formAcademic = form.getValues('academicLevel') as string | undefined;
+    const formGrade = form.getValues('gradeLevel') as string | undefined;
+    const formScores = form.getValues('hasCurrentGradeScores') as string | undefined;
     const initialGrades = computeGradesToShow(
       selectedGrade,
-      hasCurrentGradeScores
+      formScores,
+      formAcademic,
+      formGrade
     );
     const existingSchools = form.getValues(sectionType) as unknown[];
     const map: Record<number, Record<number, SubjectRows>> = {};

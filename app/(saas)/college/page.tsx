@@ -158,7 +158,7 @@ function CollegeLandingPage() {
                 className="mt-1"
               />
               <span className="text-sm text-gray-700">
-                I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs..
+                I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs.
               </span>
             </label>
           </div>

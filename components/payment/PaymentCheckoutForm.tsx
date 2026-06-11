@@ -412,7 +412,7 @@ export default function PaymentCheckoutForm({
           <button
             onClick={handlePay}
             disabled={!isContactValid || processing}
-            className="mt-6 w-full cursor-pointer rounded-lg bg-purple-600 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 disabled:from-cyan-500 disabled:to-blue-500"
           >
             {processing ? (
               <span className="flex items-center justify-center gap-2">

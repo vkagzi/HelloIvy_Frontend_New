@@ -270,7 +270,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
           {config.topRightLink && (
             <Link
               href={config.topRightLink.href}
-              className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-105 hover:from-cyan-600 hover:to-blue-600 hover:shadow-xl active:scale-95"
             >
               {config.topRightLink.label}
             </Link>
@@ -482,7 +482,7 @@ export default function ModuleSelectionForm({ config }: { config: ModuleSelectio
         <button
           onClick={handlePayNow}
           disabled={!canCheckout}
-          className="w-full cursor-pointer rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 py-3 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 disabled:from-cyan-500 disabled:to-blue-500"
         >
           Pay Now — {getCurrencySymbol()}{formatCurrency(convert(grandTotal))}
         </button>

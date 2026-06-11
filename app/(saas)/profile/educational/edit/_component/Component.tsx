@@ -24,14 +24,31 @@ const Component: React.FC<ComponentProps> = ({
   errors,
 }) => {
   // Extract grade number from gradeLevel field (e.g., 'Grade 9' -> 9)
+  const academicLevel = form.watch('academicLevel');
   const gradeLevel = form.watch('gradeLevel');
   const gradeLevelStr = gradeLevel !== undefined && gradeLevel !== null ? String(gradeLevel) : '';
-  const parsedGrade = gradeLevelStr
-    ? parseInt(gradeLevelStr.replace('Grade ', ''), 10)
-    : 9;
-  // Ensure selectedGrade is always a valid number, default to 9 if NaN
-  const selectedGrade = !isNaN(parsedGrade) ? parsedGrade : 9;
-  const hasCurrentGradeScores = form.watch('hasCurrentGradeScores') as string | undefined;
+  
+  let selectedGrade = 9;
+  let hasCurrentGradeScores = form.watch('hasCurrentGradeScores') as string | undefined;
+
+  const isFallbackToSchool =
+    (academicLevel === 'College/Undergraduate' || academicLevel === 'Working/Completed College') &&
+    (
+      (gradeLevelStr === 'Year 1' && hasCurrentGradeScores === 'No') ||
+      (gradeLevelStr === 'Year 1' && hasCurrentGradeScores === 'Yes') ||
+      (gradeLevelStr === 'Year 2' && hasCurrentGradeScores === 'No')
+    );
+
+  if (isFallbackToSchool) {
+    selectedGrade = 12;
+    hasCurrentGradeScores = 'Yes';
+  } else {
+    const parsedGrade = gradeLevelStr
+      ? parseInt(gradeLevelStr.replace('Grade ', ''), 10)
+      : 9;
+    // Ensure selectedGrade is always a valid number, default to 9 if NaN
+    selectedGrade = !isNaN(parsedGrade) ? parsedGrade : 9;
+  }
 
   return (
     <div

@@ -128,7 +128,7 @@ export default function TermsAcceptanceModal({
               onCheckedChange={(checked) => setHasAgreed(Boolean(checked))}
             />
             <label htmlFor="terms-agree" className="cursor-pointer text-sm">
-              I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs..
+              I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs.
             </label>
           </div>
 

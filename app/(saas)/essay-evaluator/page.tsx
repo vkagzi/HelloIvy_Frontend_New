@@ -1123,7 +1123,7 @@ const EssayEvaluatorPage: React.FC = () => {
                   className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">
-                  I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs..
+                  I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs.
                 </span>
               </label>
             </div>
