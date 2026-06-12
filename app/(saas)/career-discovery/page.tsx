@@ -163,7 +163,9 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   const [isCheckingDomain, setIsCheckingDomain] = useState(true);
   const hasFetchedRef = useRef(false);
   // Degree preference (only shown for non-high-school students)
-  const [degreePreference, setDegreePreference] = useState<'career_only' | 'career_and_postgrad'>('career_only');
+  const [degreePreference, setDegreePreference] = useState<
+    'career_only' | 'career_and_postgrad'
+  >('career_only');
 
   // Domain selection state
   const [allDomains, setAllDomains] = useState<DomainItem[]>([]);
@@ -182,15 +184,16 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   } = useProfile();
 
   const profileExists = profileData !== null;
-  const linkText = profileExists ? 'View/Edit your profile' : 'Create your profile';
+  const linkText = profileExists
+    ? 'View/Edit your profile'
+    : 'Create your profile';
   const linkHref = '/profile/personal/edit';
 
   // Detect student's academic level from profile to conditionally show degree preference
-  const academicLevel: string = (
+  const academicLevel: string =
     (profileData as any)?.educational?.academicLevel ||
     (profileData as any)?.profile_data?.educational?.academicLevel ||
-    ''
-  );
+    '';
   const isHighSchool = academicLevel === 'High School (8th\u201312th grade)';
 
   useEffect(() => {
@@ -320,7 +323,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
         selectedPrimary,
         selectedSecondary ?? undefined,
         latestDomainSession?.session_id,
-        isHighSchool ? undefined : degreePreference,
+        isHighSchool ? undefined : degreePreference
       );
       console.log('Created new session:', session);
 
@@ -328,9 +331,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       router.push(`/career-discovery/${session.session_id}/conversations`);
     } catch (err: any) {
       console.error('Failed to start Career & Degree Selection :', err);
-      setError(
-        'Failed to start Career & Degree Selection . Please try again.'
-      );
+      setError('Failed to start Career & Degree Selection . Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -375,7 +376,8 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
 
   const getDomainBadge = (domainName: string) => {
     if (selectedPrimary === domainName) return { num: '1', label: 'Primary' };
-    if (selectedSecondary === domainName) return { num: '2', label: 'Secondary' };
+    if (selectedSecondary === domainName)
+      return { num: '2', label: 'Secondary' };
     return null;
   };
 
@@ -393,10 +395,10 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   const DOMAIN_ICONS: Record<string, string> = {
     'Pure Science': '🔬',
     'Performing Arts': '🎭',
-    'Humanities': '📚',
+    Humanities: '📚',
     'Business / Entrepreneurship': '💼',
     'Statistics / Finance / Data Analytics': '📊',
-    'Law': '⚖️',
+    Law: '⚖️',
     'Social Sciences': '🧠',
     'Health & Life Science': '🩺',
     'Sports/Athletics': '🏅',
@@ -414,7 +416,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       'Focus on solving societal challenges through policy-making, governance, development, and social impact initiatives. Individuals learn how institutions, governments, and organizations create change at local and global levels.',
     'Statistics / Finance / Data Analytics':
       'Gather insights through quantitative analysis, data interpretation, and other data driven tools to use in financial decision-making, and problem-solving. This domain combines mathematics, technology, and business insights to drive evidence-based decisions.',
-    'Humanities':
+    Humanities:
       'Examine human culture, history, language, philosophy, and ideas that shape societies. Individuals build critical thinking, communication, and analytical skills while exploring diverse perspectives.',
     'Art & Aesthetics':
       'Explore creativity, design, visual arts, and artistic expression across various mediums. This domain nurtures imagination, innovation, and an appreciation for beauty and culture.',
@@ -422,8 +424,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
       'Learn how organizations operate, create value, and solve market challenges. Individuals develop leadership, innovation, management, and entrepreneurial skills to build businesses or drive organizational success.',
     'Engineering & Applied Technology':
       'Apply scientific and technical principles to design solutions for real-world problems. This field includes areas such as computer science, all forms of engineering, robotics, and emerging technologies.',
-    'Law':
-      'Study legal systems, rights, justice, and the frameworks that govern society. Individuals develop strong reasoning, argumentation, and analytical skills while understanding legal processes and policy.',
+    Law: 'Study legal systems, rights, justice, and the frameworks that govern society. Individuals develop strong reasoning, argumentation, and analytical skills while understanding legal processes and policy.',
     'Performing Arts':
       'Express creativity through disciplines such as music, theatre, dance, and performance. This domain develops artistic talent, communication, collaboration, and confidence.',
     'Pure Science':
@@ -435,7 +436,10 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
   // Split domains into recommended vs other
   const recommendedDomains = allDomains
     .filter((d) => isRecommended(d.name))
-    .sort((a, b) => (getDomainMatchPct(b.name) ?? 0) - (getDomainMatchPct(a.name) ?? 0));
+    .sort(
+      (a, b) =>
+        (getDomainMatchPct(b.name) ?? 0) - (getDomainMatchPct(a.name) ?? 0)
+    );
   const otherDomains = allDomains
     .filter((d) => !isRecommended(d.name))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -448,7 +452,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     return (
       <div
         key={domain.name}
-        className="relative p-[1.5px] rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-200 hover:shadow-md hover:-translate-y-[1px] flex items-stretch"
+        className="relative flex items-stretch rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 p-[1.5px] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md"
       >
         <button
           type="button"
@@ -457,7 +461,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           onMouseLeave={() => setHoveredDomain(null)}
           onFocus={() => setHoveredDomain(domain.name)}
           onBlur={() => setHoveredDomain(null)}
-          className={`w-full flex items-center gap-2.5 rounded-[6px] px-3 py-2.5 text-left transition-all ${
+          className={`flex w-full items-center gap-2.5 rounded-[6px] px-3 py-2.5 text-left transition-all ${
             badge?.num === '1'
               ? 'bg-blue-50/90 shadow-inner hover:bg-blue-50/66'
               : badge?.num === '2'
@@ -492,17 +496,20 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
               {matchPct}%
             </span>
           )}
-          {hoveredDomain === domain.name && DOMAIN_DESCRIPTIONS[domain.name] && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3.5 z-50 w-80 p-4 rounded-2xl bg-gradient-to-b from-white to-sky-50/95 border border-sky-200 shadow-xl pointer-events-none animate-in fade-in-0 zoom-in-95 duration-200 text-left">
-              <h4 className="text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
-                <span className="text-base leading-none">{icon}</span>
-                {domain.name}
-              </h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">{DOMAIN_DESCRIPTIONS[domain.name]}</p>
-              {/* Arrow */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1.5 w-3 h-3 bg-sky-50/95 border-r border-b border-sky-200 rotate-45"></div>
-            </div>
-          )}
+          {hoveredDomain === domain.name &&
+            DOMAIN_DESCRIPTIONS[domain.name] && (
+              <div className="animate-in fade-in-0 zoom-in-95 pointer-events-none absolute bottom-full left-1/2 z-50 mb-3.5 w-80 -translate-x-1/2 rounded-2xl border border-sky-200 bg-gradient-to-b from-white to-sky-50/95 p-4 text-left shadow-xl duration-200">
+                <h4 className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-800">
+                  <span className="text-base leading-none">{icon}</span>
+                  {domain.name}
+                </h4>
+                <p className="text-xs leading-relaxed font-normal text-slate-600">
+                  {DOMAIN_DESCRIPTIONS[domain.name]}
+                </p>
+                {/* Arrow */}
+                <div className="absolute top-full left-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1.5 rotate-45 border-r border-b border-sky-200 bg-sky-50/95"></div>
+              </div>
+            )}
         </button>
       </div>
     );
@@ -525,7 +532,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
               Career & Degree Selection ?
             </Heading>
             <p className="mt-3 text-sm text-gray-600">
-              Please update your profile with your latest information before we begin.
+              Discover your ideal career and related degree options
             </p>
             {profileLoading ? (
               <div className="mt-5 h-10 w-44 animate-pulse rounded-xl bg-neutral-200" />
@@ -537,6 +544,9 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                 {linkText}
               </Link>
             )}
+            <p className="mt-3 text-sm text-gray-600">
+              Please update your profile with your latest information
+            </p>
           </div>
 
           {/* Right - Brain Animation */}
@@ -585,7 +595,8 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                               </span>
                             </div>
                             <div className="mt-1 text-sm text-gray-600">
-                              Progress: {session.current_step} questions answered{' '}
+                              Progress: {session.current_step} questions
+                              answered{' '}
                               {/* {session.current_phase === 'profile'
                                 ? 'Profile Builder'
                                 : 'Career Explorer'} */}
@@ -662,7 +673,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                     1
                   </span>
                   {selectedPrimary}
-                  <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                  <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
                     Primary
                   </span>
                 </div>
@@ -673,7 +684,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                     2
                   </span>
                   {selectedSecondary}
-                  <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                  <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
                     Secondary
                   </span>
                 </div>
@@ -689,7 +700,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
           ) : hasRecommendations ? (
             <>
               {/* Recommended domains */}
-              <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-emerald-700 uppercase">
                 <FiIcon name="star" className="h-3 w-3" />
                 Recommended for You
               </div>
@@ -697,7 +708,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                 {recommendedDomains.map(renderDomainCard)}
               </div>
               {/* Other domains */}
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <div className="mb-2 text-xs font-semibold tracking-wide text-slate-400 uppercase">
                 Other Domains
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -714,43 +725,45 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
         {/* Degree Preference — only for non-high-school students */}
         {!profileLoading && !isHighSchool && (
           <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50/60 p-5">
-            <h2 className="mb-1 text-base font-semibold text-slate-900">What would you like in your career report?</h2>
-            <p className="mb-4 text-sm text-slate-500">Choose what your report should include. You can always start a new session to switch.</p>
+            <h2 className="mb-1 text-base font-semibold text-slate-900">
+              What would you like in your career report?
+            </h2>
+            {/* <p className="mb-4 text-sm text-slate-500">Choose what your report should include. You can always start a new session to switch.</p> */}
             <div className="flex flex-col gap-3 sm:flex-row">
               {/* Option 1 */}
-              <div
-                className="relative p-[1.5px] rounded-2xl bg-gradient-to-r from-cyan-200 to-blue-200 flex flex-1 items-stretch transition-all duration-200 hover:shadow-md hover:-translate-y-[1px]"
-              >
+              <div className="relative flex flex-1 items-stretch rounded-2xl bg-gradient-to-r from-cyan-200 to-blue-200 p-[1.5px] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md">
                 <label
-                  className={`flex w-full cursor-pointer items-start gap-3 rounded-[14.5px] p-4 bg-gradient-to-b from-white to-blue-50/50 transition-all ${
+                  className={`flex w-full cursor-pointer items-start gap-3 rounded-[14.5px] bg-gradient-to-b from-white to-blue-50/50 p-4 transition-all ${
                     degreePreference === 'career_only'
                       ? 'shadow-xs ring-1 ring-blue-100/50'
                       : 'hover:bg-neutral-50/20'
                   }`}
                 >
+
                   <input
                     type="radio"
                     name="degreePreference"
                     value="career_only"
                     checked={degreePreference === 'career_only'}
                     onChange={() => setDegreePreference('career_only')}
-                    className="mt-1 accent-blue-600 cursor-pointer"
+                    className="mt-1 cursor-pointer accent-blue-600 h-full  justify-center"
                   />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-800">I only want a career report</span>
-                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-700">Default</span>
+                  <div className="flex h-full flex-col justify-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-sm font-semibold text-slate-800">
+                        I only want a career report
+                      </span>
+                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 uppercase">
+                        Default
+                      </span>
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-500">Get 5 career options with areas for growth, feasibility, and next steps — without postgrad degree suggestions.</p>
                   </div>
                 </label>
               </div>
               {/* Option 2 */}
-              <div
-                className="relative p-[1.5px] rounded-2xl bg-gradient-to-r from-cyan-200 to-blue-200 flex flex-1 items-stretch transition-all duration-200 hover:shadow-md hover:-translate-y-[1px]"
-              >
+              <div className="relative flex flex-1 items-stretch rounded-2xl bg-gradient-to-r from-cyan-200 to-blue-200 p-[1.5px] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md">
                 <label
-                  className={`flex w-full cursor-pointer items-start gap-3 rounded-[14.5px] p-4 bg-gradient-to-b from-white to-blue-50/50 transition-all ${
+                  className={`flex w-full cursor-pointer items-start gap-3 rounded-[14.5px] bg-gradient-to-b from-white to-blue-50/50 p-4 transition-all ${
                     degreePreference === 'career_and_postgrad'
                       ? 'shadow-xs ring-1 ring-blue-100/50'
                       : 'hover:bg-neutral-50/20'
@@ -762,11 +775,13 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                     value="career_and_postgrad"
                     checked={degreePreference === 'career_and_postgrad'}
                     onChange={() => setDegreePreference('career_and_postgrad')}
-                    className="mt-1 accent-indigo-600 cursor-pointer"
+                    className="mt-1 cursor-pointer accent-indigo-600"
                   />
                   <div>
-                    <span className="text-sm font-semibold text-slate-800">I want a career report &amp; post grad degree options</span>
-                    <p className="mt-0.5 text-xs text-slate-500">Get 5 career options AND postgraduate degree recommendations (Masters, MBA, etc.) alongside each career.</p>
+                    <span className="text-sm font-semibold text-slate-800">
+                      I want a career report &amp; post grad degree options
+                    </span>
+                    {/* <p className="mt-0.5 text-xs text-slate-500">Get 5 career options AND postgraduate degree recommendations (Masters, MBA, etc.) alongside each career.</p> */}
                   </div>
                 </label>
               </div>
@@ -775,7 +790,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
         )}
 
         <div className="mb-6 rounded-3xl border border-white bg-white p-6 shadow-xs">
-          <div className="mb-6 flex flex-col gap-1">
+          {/* <div className="mb-6 flex flex-col gap-1">
             <h2 className="text-xl font-bold text-slate-800">
               {sessions.length > 0
                 ? 'Start a New Session'
@@ -784,17 +799,17 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             <p className="text-sm text-slate-500">
               Discover your ideal career path that bridges your interests, skills and future goals
             </p>
-          </div>
+          </div> */}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {instructionItems.map((item, index) => (
               <div
                 key={index}
-                className="relative p-[1px] bg-gradient-to-br from-cyan-200 to-blue-100 rounded-3xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xs"
+                className="relative rounded-3xl bg-gradient-to-br from-cyan-200 to-blue-100 p-[1px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xs"
               >
                 <div className="flex h-full flex-col items-center rounded-[23px] bg-gradient-to-b from-white to-blue-50/30 p-5 text-center">
                   {/* Icon Wrapper */}
-                  <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white border border-neutral-100/80 text-neutral-800 shadow-xs">
+                  <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-neutral-100/80 bg-white text-neutral-800 shadow-xs">
                     {item.icon}
                   </div>
 
@@ -828,7 +843,8 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                 className="mt-1"
               />
               <span className="text-sm text-gray-700">
-                I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs.
+                I acknowledge that the report & recommendations are
+                AI-generated; the results are dependent on my inputs.
               </span>
             </label>
           </div>

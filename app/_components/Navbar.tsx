@@ -74,6 +74,19 @@ const Navbar: React.FC = () => {
 
     // Map backend modules to NavItem shape and avoid duplicates
     const extra: (typeof sidebarNavItems[0])[] = [];
+    const activeModuleValues = new Set(dynamicModules.map(m => m.value));
+
+    // Filter out static items that are not active
+    const activeStaticItems = filteredNavItems.filter(item => {
+      const moduleName = HREF_TO_MODULE[item.href];
+      // If it's a tracked module, check if it's in active set. 
+      // If it's NOT a tracked module (like /dashboard), keep it.
+      if (moduleName && !activeModuleValues.has(moduleName)) {
+        return false;
+      }
+      return true;
+    });
+
     for (const m of dynamicModules) {
       // Map database/backend underscores to frontend url hyphens
       let href = `/${m.value}`;
@@ -91,14 +104,14 @@ const Navbar: React.FC = () => {
 
     // Insert extras after the college selector if present, otherwise append
     const insertAfter = '/college-selector';
-    const idx = filteredNavItems.findIndex((i) => i.href === insertAfter);
+    const idx = activeStaticItems.findIndex((i) => i.href === insertAfter);
     let combined: (typeof sidebarNavItems[0])[];
     if (idx >= 0) {
-      const copy = [...filteredNavItems];
+      const copy = [...activeStaticItems];
       copy.splice(idx + 1, 0, ...extra);
       combined = copy;
     } else {
-      combined = [...filteredNavItems, ...extra];
+      combined = [...activeStaticItems, ...extra];
     }
     return sortNavItems(combined).filter(
       (item) => !item.href.includes('resume') && !item.label.toLowerCase().includes('resume')

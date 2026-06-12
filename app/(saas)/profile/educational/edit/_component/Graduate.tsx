@@ -225,7 +225,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     if (hasExpanded) {
       form.setValue(sectionType, finalSectionData, { shouldDirty: true });
     }
-  }, [gradeLevel, hasCurrentGradeScores, isCurrentBlock, sectionType, yearsFieldName, section.repeatables?.fields, form, watchedSectionDataStr]);
+  }, [gradeLevel, hasCurrentGradeScores, isCurrentBlock, sectionType, yearsFieldName, section.repeatables?.fields, form]);
 
   useEffect(() => {
     if (!Array.isArray(watchedSectionData) || watchedSectionData.length === 0) return;
@@ -257,25 +257,19 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
         const formYears = (formDegree as Record<string, unknown>)?.[currentActiveFieldName] as any[];
 
         // Use data count if available, otherwise use defaults.
-        // LIMIT: If in Year-wise mode (isSemWise: false), cap rows at 6 (max standard degree years).
-        // This prevents the system from accidentally showing "8th Year" if state is messy.
         let yearsCount = Array.isArray(formYears) && formYears.length > 0
           ? formYears.length
           : Math.max(minYears, 1);
 
-        if (!isSemWise && yearsCount > 6) {
-          yearsCount = 6; // Safety cap for years
-        }
-
-        // Overwrite yearsCount if current block
-        if (isCurrentBlock) {
+        // If form is empty (e.g., initially or just switched from Year to Semester), setup initial computed count
+        if ((!Array.isArray(formYears) || formYears.length === 0) && isCurrentBlock) {
           const computedCount = computeYearsToShow(
             sectionType,
             gradeLevel,
             hasCurrentGradeScores,
             isSemWise ? 'Yes' : 'No'
           );
-          if (computedCount >= 0) {
+          if (computedCount > yearsCount) {
             yearsCount = computedCount;
           }
         }
@@ -669,13 +663,14 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
         );
       })}
 
-      <button
+      <Button
         type="button"
-        className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-500/30 bg-white px-4 py-2 text-label-md font-semibold text-blue-600 shadow-xs transition-all hover:border-blue-500 hover:bg-blue-50/50 hover:text-blue-700 hover:shadow-sm active:bg-blue-100 self-start cursor-pointer"
+        variant="outline"
+        size="md"
+        label="+ Add Degree"
         onClick={() => handleAddDegree()}
-      >
-        + Add Degree
-      </button>
+        className="text-blue-600 border-blue-500/30 hover:bg-blue-50"
+      />
     </div>
   );
 };

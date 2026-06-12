@@ -49,6 +49,97 @@ export {
   stateBoardSubjects,
 };
 
+export const americanLevels = [
+  'Not Applicable',
+  'Standard',
+  'Honors',
+  'AP',
+  'Dual Enrollment',
+  'Core',
+  'Other',
+];
+
+export const cambridgeIGCSELevels = [
+  'Not Applicable',
+  'Core',
+  'Extended',
+  'Other',
+];
+
+export const cambridgeALevelLevels = [
+  'Not Applicable',
+  'AS Level',
+  'A Level',
+  'Other',
+];
+
+export const cbseLevels = [
+  'Not Applicable',
+  'Other',
+];
+
+export const hscLevels = [
+  'Not Applicable',
+  'Other',
+];
+
+export const icseLevels = [
+  'Not Applicable',
+  'Other',
+];
+
+export const ibLevels = [
+  'Not Applicable',
+  'Higher (HL)',
+  'Standard (SL)',
+  'Other',
+];
+
+export const iscLevels = [
+  'Not Applicable',
+  'Other',
+];
+
+export const niosLevels = [
+  'Not Applicable',
+  'Other',
+];
+
+export const stateBoardLevels = [
+  'Not Applicable',
+  'Other',
+];
+
+export const mypLevels = [
+  'Not Applicable',
+  'Standard',
+  'Extended',
+  'Other',
+];
+
+export const ibcpLevels = [
+  'Not Applicable',
+  'Higher (HL)',
+  'Standard (SL)',
+  'Other',
+];
+
+export const defaultLevels = [
+  'Not Applicable',
+  'A Level',
+  'AS Level',
+  'AP',
+  'Advanced',
+  'Core',
+  'Dual Enrollment',
+  'Extended',
+  'Foundation',
+  'Higher',
+  'Honors',
+  'Standard',
+  'Other',
+];
+
 export const UNDERGRADUATE_DEGREE_PROGRAMS = [
   'B.A. (Bachelor of Arts)',
   'B.Arch (Bachelor of Architecture)',
@@ -805,21 +896,47 @@ export const educationalFieldDefs: FieldDefinition[] = [
     type: 'select',
     label: 'Level',
     placeholder: 'Select level',
-    options: [
-      'Not Applicable',
-      'A Level',
-      'AS Level',
-      'AP',
-      'Advanced',
-      'Core',
-      'Dual Enrollment',
-      'Extended',
-      'Foundation',
-      'Higher',
-      'Honors',
-      'Standard',
-    ],
+    optionsDependsOn: {
+      fieldId: 'board',
+      map: {
+        'American (AP / American High School Diploma)': americanLevels,
+        'American (AP / US High School Diploma)': americanLevels,
+        'Cambridge - A Levels': cambridgeALevelLevels,
+        'Cambridge - IGCSE': cambridgeIGCSELevels,
+        CBSE: cbseLevels,
+        HSC: hscLevels,
+        IBCP: ibcpLevels,
+        ICSE: icseLevels,
+        'International Baccalaureate (IB)': ibLevels,
+        ISC: iscLevels,
+        MYP: mypLevels,
+        NIOS: niosLevels,
+        'Indian State Boards': stateBoardLevels,
+        Other: cbseLevels,
+      },
+      default: defaultLevels,
+    },
     required: false,
+  },
+  {
+    id: 'levelOther',
+    type: 'text',
+    label: 'Other Level Name',
+    placeholder: 'Enter other level name',
+    required: false,
+    validationDependsOn: [
+      {
+        fieldId: 'level',
+        values: ['Other'],
+        validation: { required: true },
+      },
+    ],
+    visibility: {
+      depends_on: {
+        field_id: 'level',
+        value: ['Other'],
+      },
+    },
   },
   {
     id: 'subjectOther',
@@ -1036,6 +1153,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
       },
     },
   },
+
   {
     id: 'score',
     type: 'text',
@@ -1709,6 +1827,7 @@ export const educationalLayout: LayoutBlock[] = [
         'subject',
         'subjectOther',
         'level',
+        'levelOther',
         'yourTotalScore',
         'highestTotalScore',
       ],
