@@ -16,7 +16,7 @@ export default function AdminAddCouponPage() {
 
   const [formData, setFormData] = useState({
     title: '',
-    date_from: '',
+    date_from: new Date().toISOString().split('T')[0],
     duration: '',
     is_limited: false,
     coupon_type: 'discount',
@@ -205,7 +205,7 @@ export default function AdminAddCouponPage() {
 
             {/* Minimum Booking Amount */}
             <div>
-              <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider">Min Booking Amount (₹)</label>
+              <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider">Min Booking Amount</label>
               <input 
                 type="number" 
                 placeholder="Min order amount"
@@ -227,7 +227,7 @@ export default function AdminAddCouponPage() {
               >
                 <option value="">Choose Unit Type</option>
                 <option value="percentage">Percentage (%)</option>
-                <option value="flat">Flat Amount (₹)</option>
+                <option value="flat">Flat Amount</option>
               </select>
             </div>
 

@@ -36,7 +36,7 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
         const res = await api(`/api/accounts/admin/coupons/${id}/`);
         setFormData({
           title: res.title || '',
-          date_from: res.date_from || '',
+          date_from: res.date_from || new Date().toISOString().split('T')[0],
           duration: res.duration ? res.duration.toString() : '',
           is_limited: res.is_limited || false,
           coupon_type: res.coupon_type || 'discount',
@@ -229,7 +229,7 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider">Min Booking Amount (₹)</label>
+              <label className="mb-2 block text-sm font-bold text-neutral-700 uppercase tracking-wider">Min Booking Amount</label>
               <input
                 type="number"
                 placeholder="Min order amount"
@@ -250,7 +250,7 @@ export default function AdminEditCouponPage({ params }: { params: Promise<{ id: 
               >
                 <option value="">Choose Unit Type</option>
                 <option value="percentage">Percentage (%)</option>
-                <option value="flat">Flat Amount (₹)</option>
+                <option value="flat">Flat Amount</option>
               </select>
             </div>
 

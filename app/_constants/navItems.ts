@@ -35,7 +35,7 @@ export const navItems: NavItem[] = [
     href: '/recommendations',
   },
   { label: 'Resources', icon: 'resources', href: '/resources' },
-  { label: 'Resume Builder', icon: 'CV', href: '/resume' },
+  { label: 'Resume Builder', icon: 'file-invoice', href: '/resume-builder' },
   {
     label: 'Interview Preparation',
     icon: 'videoconference',
@@ -73,6 +73,7 @@ export const sidebarNavItems: NavItem[] = navItems.filter((item) =>
     '/domain-discovery',
     '/career-discovery',
     '/college-selector',
+    '/resume-builder',
     '/counselor-connect',
     '/pay-as-student',
   ].includes(item.href)

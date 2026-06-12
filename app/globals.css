@@ -307,6 +307,18 @@ input::placeholder {
   @apply text-neutral-400;
 }
 
+/* Hide Spin Buttons */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 .input-field:hover {
   @apply border-neutral-400;
 }

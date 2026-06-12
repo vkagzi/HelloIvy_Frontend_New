@@ -17,6 +17,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   '/domain-discovery': 'domain_discovery',
   '/career-discovery': 'career_discovery',
   '/college-selector': 'college_selector',
+  '/resume-builder': 'resume_builder',
 };
 
 const Navbar: React.FC = () => {
@@ -67,9 +68,7 @@ const Navbar: React.FC = () => {
     };
 
     if (!dynamicModules || dynamicModules.length === 0) {
-      return sortNavItems(filteredNavItems).filter(
-        (item) => !item.href.includes('resume') && !item.label.toLowerCase().includes('resume')
-      );
+      return sortNavItems(filteredNavItems);
     }
 
     // Map backend modules to NavItem shape and avoid duplicates
@@ -113,9 +112,7 @@ const Navbar: React.FC = () => {
     } else {
       combined = [...activeStaticItems, ...extra];
     }
-    return sortNavItems(combined).filter(
-      (item) => !item.href.includes('resume') && !item.label.toLowerCase().includes('resume')
-    );
+    return sortNavItems(combined);
   }, [dynamicModules, filteredNavItems]);
 
   // Close drawer on route change
