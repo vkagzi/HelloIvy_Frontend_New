@@ -2,7 +2,7 @@ import type { NextConfig } from 'next';
 
 // Use environment variable for API URL, fallback to localhost for development
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+  (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000').replace(/\/api$/, '') + '/api';
 
 const nextConfig: NextConfig = {
   /* config options here */

@@ -121,7 +121,7 @@ export default function StudentCounselorConnectPage() {
               <Button
                 onClick={handleSendEmail}
                 disabled={!emailBody.trim() || emailSending}
-                className="bg-indigo-600 hover:bg-indigo-700 shadow-sm gap-1.5"
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-xl text-white font-semibold shadow-md transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95 gap-1.5"
                 size="sm"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>

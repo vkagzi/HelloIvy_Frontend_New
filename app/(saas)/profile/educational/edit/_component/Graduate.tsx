@@ -28,6 +28,33 @@ interface DegreeInstance {
   yearRows: YearRow[];
 }
 
+const computeYearsToShow = (
+  sectionType: string,
+  gradeLevel: string | undefined,
+  hasCurrentGradeScores: string | undefined,
+  hasSemesterWiseScores: string | undefined
+): number => {
+  const isCurrentBlock = ['undergraduate', 'postgraduate', 'tenPlus'].includes(sectionType);
+  if (!isCurrentBlock) {
+    return -1; // -1 means do not force/slice years
+  }
+
+  if (!hasCurrentGradeScores || !['Yes', 'No'].includes(hasCurrentGradeScores)) {
+    return 0; // 0 means do not show score details
+  }
+
+  const gradeLevelStr = gradeLevel ? String(gradeLevel) : '';
+  const parsedYear = parseInt(gradeLevelStr.replace('Year ', ''), 10);
+  if (isNaN(parsedYear)) {
+    return 0;
+  }
+
+  const years = hasCurrentGradeScores === 'Yes' ? parsedYear : parsedYear - 1;
+  const multiplier = hasSemesterWiseScores === 'Yes' ? 2 : 1;
+  const result = years * multiplier;
+  return multiplier === 2 ? Math.min(result, 6) : result;
+};
+
 export const GraduateBlock: React.FC<GraduateBlockProps> = ({
   section,
   sectionType,
@@ -38,6 +65,11 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
   const minDegrees = 1;
   const minYears = section.repeatables?.repeatable_option?.min ?? 1;
   const yearsFieldName = section.repeatables?.name ?? 'years';
+
+  // Watch top-level gradeLevel and hasCurrentGradeScores
+  const gradeLevel = useWatch({ control: form.control, name: 'gradeLevel' }) as string | undefined;
+  const hasCurrentGradeScores = useWatch({ control: form.control, name: 'hasCurrentGradeScores' }) as string | undefined;
+  const isCurrentBlock = ['undergraduate', 'postgraduate', 'tenPlus'].includes(sectionType);
 
   // Helper to calculate grid template columns with field widths
   const getGridTemplateColumns = (fieldIds: string[]): string => {
@@ -69,11 +101,11 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
       const degreeData = Array.isArray(existingDegrees) && existingDegrees[idx]
         ? (existingDegrees[idx] as Record<string, unknown>)
         : {};
-      
+
       const isSemWise = degreeData.hasSemesterWiseScores === 'Yes';
       const activeFieldName = isSemWise ? 'semesters' : yearsFieldName;
       const existingRows = degreeData[activeFieldName];
-      
+
       let yearsCount = Array.isArray(existingRows)
         ? existingRows.length
         : Math.max(minYears, 1);
@@ -81,6 +113,19 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
       // Safety cap for Years in initialization
       if (!isSemWise && yearsCount > 6) {
         yearsCount = 6;
+      }
+
+      // If current block, override yearsCount based on gradeLevel and hasCurrentGradeScores
+      if (isCurrentBlock) {
+        const computedCount = computeYearsToShow(
+          sectionType,
+          gradeLevel,
+          hasCurrentGradeScores,
+          degreeData.hasSemesterWiseScores as string
+        );
+        if (computedCount >= 0) {
+          yearsCount = computedCount;
+        }
       }
 
       return {
@@ -136,9 +181,55 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
   const formValues = useWatch({ control: form.control });
 
+  // Reactively resize form array when gradeLevel/hasCurrentGradeScores changes
+  const watchedSectionDataStr = JSON.stringify(watchedSectionData);
+  useEffect(() => {
+    if (!isCurrentBlock) return;
+
+    const currentSectionData = form.getValues(sectionType);
+    if (!Array.isArray(currentSectionData)) return;
+
+    let hasExpanded = false;
+    const finalSectionData = currentSectionData.map((degreeData) => {
+      if (!degreeData) return degreeData;
+      const isSemWise = degreeData.hasSemesterWiseScores === 'Yes';
+      const activeFieldName = isSemWise ? 'semesters' : yearsFieldName;
+      const currentRows = (degreeData[activeFieldName] as any[]) ?? [];
+
+      const computedCount = computeYearsToShow(
+        sectionType,
+        gradeLevel,
+        hasCurrentGradeScores,
+        degreeData.hasSemesterWiseScores as string
+      );
+
+      if (computedCount > currentRows.length) {
+        hasExpanded = true;
+        // Expand the array
+        let nextRows = [...currentRows];
+        while (nextRows.length < computedCount) {
+          nextRows.push(
+            Object.fromEntries(
+              (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+            )
+          );
+        }
+        return {
+          ...degreeData,
+          [activeFieldName]: nextRows,
+        };
+      }
+      return degreeData;
+    });
+
+    if (hasExpanded) {
+      form.setValue(sectionType, finalSectionData, { shouldDirty: true });
+    }
+  }, [gradeLevel, hasCurrentGradeScores, isCurrentBlock, sectionType, yearsFieldName, section.repeatables?.fields, form, watchedSectionDataStr]);
+
   useEffect(() => {
     if (!Array.isArray(watchedSectionData) || watchedSectionData.length === 0) return;
-    
+
     console.log(`[GraduateBlock] ${sectionType} watched data changed:`, watchedSectionData);
 
     setDegrees((prev) => {
@@ -150,12 +241,12 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
         const rawHasSem = (formDegree as Record<string, unknown>)?.hasSemesterWiseScores;
         const semesters = (formDegree as Record<string, unknown>)?.semesters as any[];
         const years = (formDegree as Record<string, unknown>)?.years as any[];
-        
+
         // Advanced Inference: If either array has 6, 8, or 10 items, it's almost certainly semesters.
         // We do this to ensure UI stays in sync with common transcript structures.
         const semCount = Array.isArray(semesters) ? semesters.length : 0;
         const yearCountActual = Array.isArray(years) ? years.length : 0;
-        
+
         let isSemWise = rawHasSem === 'Yes';
         // Force semester mode if we have 8 or 10 items (clearly semesters) or if user said Yes
         if (semCount >= 8 || yearCountActual >= 8 || rawHasSem === 'Yes') {
@@ -164,16 +255,29 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
         const currentActiveFieldName = isSemWise ? 'semesters' : yearsFieldName;
         const formYears = (formDegree as Record<string, unknown>)?.[currentActiveFieldName] as any[];
-        
+
         // Use data count if available, otherwise use defaults.
         // LIMIT: If in Year-wise mode (isSemWise: false), cap rows at 6 (max standard degree years).
         // This prevents the system from accidentally showing "8th Year" if state is messy.
-        let yearsCount = Array.isArray(formYears) && formYears.length > 0 
-          ? formYears.length 
+        let yearsCount = Array.isArray(formYears) && formYears.length > 0
+          ? formYears.length
           : Math.max(minYears, 1);
 
         if (!isSemWise && yearsCount > 6) {
           yearsCount = 6; // Safety cap for years
+        }
+
+        // Overwrite yearsCount if current block
+        if (isCurrentBlock) {
+          const computedCount = computeYearsToShow(
+            sectionType,
+            gradeLevel,
+            hasCurrentGradeScores,
+            isSemWise ? 'Yes' : 'No'
+          );
+          if (computedCount >= 0) {
+            yearsCount = computedCount;
+          }
         }
 
         const newYearRows = Array.from({ length: yearsCount }, (_, yIdx) => {
@@ -205,7 +309,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
 
       return changed ? next : prev;
     });
-  }, [watchedSectionData, sectionType, yearsFieldName, minYears, section.repeatables?.fields]);
+  }, [watchedSectionData, sectionType, yearsFieldName, minYears, section.repeatables?.fields, gradeLevel, hasCurrentGradeScores, isCurrentBlock]);
 
   // Add a new degree block
   const handleAddDegree = (): void => {
@@ -225,14 +329,14 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
   // Remove a degree block by key
   const handleRemoveDegree = (key: string, degreeIdx: number): void => {
     if (degrees.length <= minDegrees) return;
-    
+
     // Get the current array and remove the item to preserve index integrity in react-hook-form
     const currentData = form.getValues(sectionType);
     if (Array.isArray(currentData)) {
       const nextData = currentData.filter((_, idx) => idx !== degreeIdx);
       form.setValue(sectionType, nextData, { shouldDirty: true, shouldValidate: true });
     }
-    
+
     setDegrees((prev) => prev.filter((degree) => degree.key !== key));
   };
 
@@ -242,7 +346,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     if (!degree) return;
 
     const isSemesterWise = form.getValues(`${sectionType}.${degreeIdx}.hasSemesterWiseScores`) === 'Yes';
-    if (isSemesterWise && degree.yearRows.length >= 8) return;
+    if (isSemesterWise && degree.yearRows.length >= 12) return; // Increased cap to 12
 
     const activeFieldName = isSemesterWise ? 'semesters' : yearsFieldName;
 
@@ -281,7 +385,7 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
     const isSemesterWise = form.getValues(`${sectionType}.${degreeIdx}.hasSemesterWiseScores`) === 'Yes';
     const minRows = isSemesterWise ? 1 : minYears;
     if (!degree || degree.yearRows.length <= minRows) return;
-    
+
     // Update form data first to let index shifting happen correctly
     const currentSectionData = form.getValues(sectionType);
     if (Array.isArray(currentSectionData) && currentSectionData[degreeIdx]) {
@@ -294,14 +398,14 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
         form.setValue(`${sectionType}.${degreeIdx}.${currentActiveFieldName}`, nextYears, { shouldDirty: true, shouldValidate: true });
       }
     }
-    
+
     setDegrees((prev) =>
       prev.map((deg, idx) =>
         idx === degreeIdx
           ? {
-              ...deg,
-              yearRows: deg.yearRows.filter((_, i) => i !== yearIdx),
-            }
+            ...deg,
+            yearRows: deg.yearRows.filter((_, i) => i !== yearIdx),
+          }
           : deg
       )
     );
@@ -409,81 +513,98 @@ export const GraduateBlock: React.FC<GraduateBlockProps> = ({
               </Label>
               <TranscriptUploader targetSection={sectionType} targetIndex={degreeIdx} />
             </div>
-            
-            <div
-              className="mt-5 grid gap-4"
-              style={{
-                gridTemplateColumns: `auto ${getGridTemplateColumns(section.repeatables?.fields ?? [])} 100px`,
-              }}
-            >
-              {degree.yearRows.map((_, yearIdx) => (
-                <React.Fragment key={yearIdx}>
-                  {/* Year label */}
-                  <div className="flex items-center">
-                    <Label size="md" className="font-medium text-neutral-700">
-                      {getOrdinalSuffix(yearIdx + 1)} {hasSemesterWiseScores === 'Yes' ? 'Semester' : 'Year'}
-                    </Label>
-                  </div>
-                  
-                  {/* Year fields */}
-                  {section.repeatables?.fields.map((fieldId: string) => {
-                    const fieldDef = fieldDefs.find((def) => def.id === fieldId);
-                    if (!fieldDef) return null;
-                    const controllerName = `${sectionType}.${degreeIdx}.${activeYearsFieldName}.${yearIdx}.${fieldDef.id}`;
-                    const repeatableField: FieldDefinition = {
-                      ...fieldDef,
-                      id: controllerName,
-                    };
-                    return (
-                      <div key={controllerName}>
-                        <Controller
-                          key={controllerName} // Force re-render if name changes
-                          name={controllerName}
-                          control={form.control}
-                          defaultValue={form.getValues(controllerName) ?? ''}
-                          render={() => (
-                            <FieldRenderer
-                              field={repeatableField}
-                              form={form}
-                              error={errors[controllerName]}
-                              inputHeightClass="py-2"
-                              labelHeightClass="text-label-md"
-                              inputWidthClass="w-full"
+
+            {isCurrentBlock && (!hasCurrentGradeScores || !['Yes', 'No'].includes(hasCurrentGradeScores)) ? (
+              <p className="text-label-sm text-neutral-400 mt-4">
+                Please answer the question above to see year/semester score details.
+              </p>
+            ) : (
+              <>
+                <div
+                  className="mt-5 grid gap-4 items-center"
+                  style={{
+                    gridTemplateColumns: `minmax(120px, auto) 1fr 1fr 100px`,
+                  }}
+                >
+                  {/* Header Row */}
+                  <div className="text-label-md font-semibold text-neutral-500 pb-1">Period</div>
+                  <div className="text-label-md font-semibold text-neutral-500 pb-1">Your Score / GPA</div>
+                  <div className="text-label-md font-semibold text-neutral-500 pb-1">Max Possible</div>
+                  <div /> {/* Empty for remove button column */}
+
+                  {degree.yearRows.map((_, yearIdx) => (
+                    <React.Fragment key={yearIdx}>
+                      {/* Year label */}
+                      <div className="flex items-center">
+                        <Label size="md" className="font-medium text-neutral-700">
+                          {getOrdinalSuffix(yearIdx + 1)} {hasSemesterWiseScores === 'Yes' ? 'Semester' : 'Year'}
+                        </Label>
+                      </div>
+
+                      {/* Year fields */}
+                      {section.repeatables?.fields.map((fieldId: string) => {
+                        const fieldDef = fieldDefs.find((def) => def.id === fieldId);
+                        if (!fieldDef) return null;
+                        const controllerName = `${sectionType}.${degreeIdx}.${activeYearsFieldName}.${yearIdx}.${fieldDef.id}`;
+                        const repeatableField: FieldDefinition = {
+                          ...fieldDef,
+                          id: controllerName,
+                        };
+                        return (
+                          <div key={controllerName}>
+                            <Controller
+                              key={controllerName} // Force re-render if name changes
+                              name={controllerName}
+                              control={form.control}
+                              defaultValue={form.getValues(controllerName) ?? ''}
+                              render={() => (
+                                <FieldRenderer
+                                  field={{ ...repeatableField, label: '' }}
+                                  form={form}
+                                  error={errors[controllerName]}
+                                  inputHeightClass="py-2"
+                                  labelHeightClass="text-label-md"
+                                  inputWidthClass="w-full"
+                                />
+                              )}
                             />
-                          )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Remove year button */}
+                      <div className="flex items-center justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          label="Remove"
+                          className="text-blue-500"
+                          onClick={() => handleRemoveYear(degreeIdx, yearIdx)}
+                          disabled={
+                            hasSemesterWiseScores === 'Yes'
+                              ? degree.yearRows.length <= 1
+                              : degree.yearRows.length <= minYears
+                          }
                         />
                       </div>
-                    );
-                  })}
-                  
-                  {/* Remove year button */}
-                  <div className="flex items-center justify-end">
+                    </React.Fragment>
+                  ))}
+                </div>
+
+                {!(hasSemesterWiseScores === 'Yes' && degree.yearRows.length >= 12) && (
+                  <div className="mt-3">
                     <Button
-                      variant="ghost"
-                      size="sm"
                       type="button"
-                      label="Remove"
-                      className="text-blue-500"
-                      onClick={() => handleRemoveYear(degreeIdx, yearIdx)}
-                      disabled={
-                        hasSemesterWiseScores === 'Yes'
-                          ? degree.yearRows.length <= 1
-                          : degree.yearRows.length <= minYears
-                      }
+                      variant="outline"
+                      size="sm"
+                      label={hasSemesterWiseScores === 'Yes' ? '+ Add Semester' : '+ Add Year'}
+                      onClick={() => handleAddYear(degreeIdx)}
+                      className="text-blue-600 border-blue-500/30 hover:bg-blue-50"
                     />
                   </div>
-                </React.Fragment>
-              ))}
-            </div>
-
-            {!(hasSemesterWiseScores === 'Yes' && degree.yearRows.length >= 8) && (
-              <button
-                type="button"
-                className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-500/30 bg-white px-4 py-2 text-label-md font-semibold text-blue-600 shadow-xs transition-all hover:border-blue-500 hover:bg-blue-50/50 hover:text-blue-700 hover:shadow-sm active:bg-blue-100 self-start cursor-pointer"
-                onClick={() => handleAddYear(degreeIdx)}
-              >
-                {hasSemesterWiseScores === 'Yes' ? '+ Add Semester' : '+ Add Year'}
-              </button>
+                )}
+              </>
             )}
 
             <hr className="mt-5 mb-10 border-t border-neutral-200" aria-hidden="true" />

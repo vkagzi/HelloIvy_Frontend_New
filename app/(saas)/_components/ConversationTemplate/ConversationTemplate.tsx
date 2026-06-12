@@ -217,10 +217,23 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
           if (parsed.sessionEnded) {
             setSessionEnded(true);
           }
+          /*
           if (parsed.isTrialLocked) {
             setIsTrialLocked(true);
           }
+          */
           saveTranscript(transcriptKeyPrefix, sessionId, parsed.messages);
+          const hasUserMessages = parsed.messages.some((m) => m.type === 'user');
+          const isDomainOrCareer = featureId === 'domain-discovery' || featureId === 'career-discovery';
+          if (
+            isDomainOrCareer &&
+            !hasUserMessages &&
+            !parsed.sessionEnded &&
+            !parsed.isTrialLocked &&
+            !options?.skipModal
+          ) {
+            setShowModeModal(true);
+          }
           setIsLoading(false);
           return;
         }
@@ -552,16 +565,23 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
         },
       ]);
 
+      let buffer = '';
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Split buffer into lines, keeping the last (potentially incomplete) part in the buffer
+        let lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6).trim();
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+          
+          if (trimmedLine.startsWith('data: ')) {
+            const dataStr = trimmedLine.slice(6).trim();
             if (!dataStr) continue;
             try {
               const data = JSON.parse(dataStr);
@@ -575,6 +595,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                 // Yield to browser between tokens so each one paints in its own frame
                 await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
               }
+              
               if (data.is_complete || data.questions_completed !== undefined) {
                 if (data.progress_percentage !== undefined) setProgressPercentage(data.progress_percentage);
                 if (data.questions_completed !== undefined) setQuestionsCompleted(data.questions_completed);
@@ -597,6 +618,15 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
             }
           }
         }
+      }
+      
+      // Process remaining buffer if it looks like a complete data line
+      if (buffer.trim().startsWith('data: ')) {
+         const dataStr = buffer.trim().slice(6).trim();
+         try {
+           const data = JSON.parse(dataStr);
+           // ... handle same as above or just ignore as it should normally end with \n\n
+         } catch(e) {}
       }
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -1035,7 +1065,7 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
                     <FiIcon name="phone-slash" className="h-4 w-4" />
                   </button>
                 </div>
-              ) : isTrialLocked ? (
+              ) : false && isTrialLocked ? (
                 /* ── Trial Locked State: Paywall ── */
                 <div className="rounded-2xl border-2 border-dashed border-indigo-200 bg-linear-to-br from-indigo-50 to-white p-6 shadow-sm">
                   <div className="flex flex-col items-center text-center">
@@ -1128,7 +1158,17 @@ const ConversationTemplate: React.FC<ConversationTemplateProps> = ({ config }) =
         </div>
       </div>
 
-      {/* Communication Mode Selection Modal removed - language and voice mode are managed directly via header & dashboard */}
+      <CommunicationModeModal
+        open={showModeModal}
+        isPaused={isPaused}
+        onSelectText={() => setShowModeModal(false)}
+        onSelectVoice={() => {
+          setShowModeModal(false);
+          activateVoiceMode();
+        }}
+        selectedLanguage={realtimeVoiceLanguage}
+        onLanguageChange={handleLanguageChange}
+      />
 
       {/* Exit Confirmation Dialog (optional) */}
       {showExitDialog &&

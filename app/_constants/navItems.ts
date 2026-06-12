@@ -71,6 +71,7 @@ export const sidebarNavItems: NavItem[] = navItems.filter((item) =>
   [
     '/dashboard',
     '/domain-discovery',
+    '/career-discovery',
     '/college-selector',
     '/counselor-connect',
     '/pay-as-student',

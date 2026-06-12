@@ -91,7 +91,7 @@ export default function Dashboard(): React.ReactElement {
   const renderCompleteProfile = (): React.ReactElement => {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-4 md:gap-6 md:p-6 lg:flex-row lg:gap-8 lg:p-8">
-        <div className="text-center lg:text-left lg:self-start lg:pt-3">
+        <div className="text-center lg:text-left">
           {loading ? (
             <div className="h-14 w-24 animate-pulse rounded bg-neutral-200" />
           ) : (
@@ -190,7 +190,7 @@ export default function Dashboard(): React.ReactElement {
           </div>
           <Link
             href="/settings"
-            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-105 hover:from-cyan-600 hover:to-blue-600 hover:shadow-xl active:scale-95"
           >
             Edit
           </Link>

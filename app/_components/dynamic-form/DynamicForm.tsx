@@ -1385,7 +1385,22 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             const hasScores = filtered['hasCurrentGradeScores'] as
               | string
               | undefined;
-            if (
+            const academicLevel = filtered['academicLevel'] as string | undefined;
+
+            let allowedGrades: Set<number> | null = null;
+
+            if (academicLevel === 'College/Undergraduate' || academicLevel === 'Working/Completed College') {
+              if (gradeLevelRaw === 'Year 1' && hasScores === 'No') {
+                // Fallback to high school: show Grade 12 and Grade 11
+                allowedGrades = new Set<number>([12, 11]);
+              } else if (
+                (gradeLevelRaw === 'Year 1' && hasScores === 'Yes') ||
+                (gradeLevelRaw === 'Year 2' && hasScores === 'No')
+              ) {
+                // Show Grade 12 only
+                allowedGrades = new Set<number>([12]);
+              }
+            } else if (
               gradeLevelRaw &&
               hasScores &&
               ['Yes', 'No'].includes(hasScores)
@@ -1397,21 +1412,22 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               if (!isNaN(selectedGrade)) {
                 const startGrade =
                   hasScores === 'Yes' ? selectedGrade : selectedGrade - 1;
-                // Only allow 2 grades: startGrade and startGrade - 1
-                const allowedGrades = new Set<number>([
+                allowedGrades = new Set<number>([
                   startGrade,
                   startGrade - 1,
                 ]);
-                // Keep only entries whose gradeLevel is in the allowed set
-                trimmedSectionData = sectionData.filter((entry) => {
-                  if (typeof entry !== 'object' || entry === null) return false;
-                  const entryObj = entry as Record<string, unknown>;
-                  const raw = entryObj.gradeLevel ?? entryObj.grade;
-                  const g =
-                    typeof raw === 'number' ? raw : parseInt(String(raw), 10);
-                  return !isNaN(g) && allowedGrades.has(g);
-                });
               }
+            }
+
+            if (allowedGrades) {
+              trimmedSectionData = sectionData.filter((entry) => {
+                if (typeof entry !== 'object' || entry === null) return false;
+                const entryObj = entry as Record<string, unknown>;
+                const raw = entryObj.gradeLevel ?? entryObj.grade;
+                const g =
+                  typeof raw === 'number' ? raw : parseInt(String(raw), 10);
+                return !isNaN(g) && allowedGrades!.has(g);
+              });
             }
           }
 

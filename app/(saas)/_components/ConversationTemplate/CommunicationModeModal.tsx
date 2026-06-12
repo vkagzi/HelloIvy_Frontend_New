@@ -44,7 +44,7 @@ export default function CommunicationModeModal({
         </DialogTitle>
 
         {/* Language Selector */}
-        <div className="mt-4 flex flex-col items-center border-b pb-4 border-gray-100">
+        {/* <div className="mt-4 flex flex-col items-center border-b pb-4 border-gray-100">
           <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
             Choose Language / भाषा चुनें
           </span>
@@ -70,7 +70,7 @@ export default function CommunicationModeModal({
               <span>🇮🇳</span> हिन्दी (Hindi)
             </button>
           </div>
-        </div>
+        </div> */}
 
         <Dialog
           open={showVoicePopup}

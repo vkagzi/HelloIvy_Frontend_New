@@ -689,7 +689,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
   {
     id: 'hasCurrentGradeScores',
     type: 'radio',
-    label: 'Do you have scores for your current grade?',
+    label: 'Do you have scores for your current grade/year?',
     options: ['Yes', 'No'],
     required: false,
     visibility: {
@@ -701,6 +701,11 @@ export const educationalFieldDefs: FieldDefinition[] = [
           'Grade 10',
           'Grade 11 (Lower Sixth)',
           'Grade 12 (Upper Sixth)',
+          'Year 1',
+          'Year 2',
+          'Year 3',
+          'Year 4',
+          'Year 5',
         ],
       },
     },
@@ -1185,8 +1190,8 @@ export const educationalFieldDefs: FieldDefinition[] = [
     options: Array.from({ length: 2035 - 1960 + 1 }, (_, i) => {
       return (1960 + i).toString();
     }),
-    label: 'Year of Completion',
-    placeholder: 'Enter year',
+    label: 'Year / Semester Name',
+    placeholder: 'Enter year or semester (e.g. Monsoon 2023)',
     required: true,
   },
   {
@@ -1540,43 +1545,6 @@ export const educationalLayout: LayoutBlock[] = [
     columns: 3,
   },
   {
-    type: 'highSchool',
-    fields: [
-      'schoolName',
-      'city',
-      'yearOfCompletion',
-      'board',
-      'boardOther',
-      'yourTotalScore',
-      'highestTotalScore',
-      'hasTermWiseScores',
-      'redFlags',
-    ],
-    columns: 3,
-    visibility: {
-      depends_on: {
-        field_id: 'academicLevel',
-        value: ['High School (8th–12th grade)'],
-      },
-    },
-    repeatables: {
-      fields: [
-        'subject',
-        'subjectOther',
-        'level',
-        'yourTotalScore',
-        'highestTotalScore',
-      ],
-      name: 'subjects',
-      repeatable: true,
-      repeatable_option: {
-        add: '+ Add Subject',
-        show_default: 3,
-        min: 3,
-      },
-    },
-  },
-  {
     type: 'postgraduate',
     fields: [
       'institutionName',
@@ -1713,6 +1681,43 @@ export const educationalLayout: LayoutBlock[] = [
         add: '+ Add Year',
         show_default: 1,
         min: 1,
+      },
+    },
+  },
+  {
+    type: 'highSchool',
+    fields: [
+      'schoolName',
+      'city',
+      'yearOfCompletion',
+      'board',
+      'boardOther',
+      'yourTotalScore',
+      'highestTotalScore',
+      'hasTermWiseScores',
+      'redFlags',
+    ],
+    columns: 3,
+    visibility: {
+      depends_on: {
+        field_id: 'academicLevel',
+        value: ['High School (8th–12th grade)'],
+      },
+    },
+    repeatables: {
+      fields: [
+        'subject',
+        'subjectOther',
+        'level',
+        'yourTotalScore',
+        'highestTotalScore',
+      ],
+      name: 'subjects',
+      repeatable: true,
+      repeatable_option: {
+        add: '+ Add Subject',
+        show_default: 3,
+        min: 3,
       },
     },
   },

@@ -446,61 +446,65 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
     const matchPct = getDomainMatchPct(domain.name);
     const icon = DOMAIN_ICONS[domain.name] || '📌';
     return (
-      <button
+      <div
         key={domain.name}
-        type="button"
-        onClick={() => handleDomainClick(domain.name)}
-        onMouseEnter={() => setHoveredDomain(domain.name)}
-        onMouseLeave={() => setHoveredDomain(null)}
-        onFocus={() => setHoveredDomain(domain.name)}
-        onBlur={() => setHoveredDomain(null)}
-        className={`relative flex items-center gap-2.5 rounded-lg border-2 px-3 py-2.5 text-left transition-all ${
-          badge?.num === '1'
-            ? 'border-blue-500 bg-blue-50/50 shadow-md ring-1 ring-blue-200'
-            : badge?.num === '2'
-              ? 'border-teal-500 bg-teal-50/50 shadow-md ring-1 ring-teal-200'
-              : 'border-gray-200 bg-white hover:border-slate-400 hover:shadow-sm'
-        }`}
+        className="relative p-[1.5px] rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-200 hover:shadow-md hover:-translate-y-[1px] flex items-stretch"
       >
-        {badge && (
-          <span
-            className={`absolute -top-2.5 -right-2 flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white shadow ${
-              badge.num === '1' ? 'bg-blue-600' : 'bg-teal-600'
-            }`}
-          >
-            {badge.num}
-            <span className="font-medium">{badge.label}</span>
-          </span>
-        )}
-        <span className="text-lg leading-none">{icon}</span>
-        <span
-          className={`text-sm font-semibold ${
+        <button
+          type="button"
+          onClick={() => handleDomainClick(domain.name)}
+          onMouseEnter={() => setHoveredDomain(domain.name)}
+          onMouseLeave={() => setHoveredDomain(null)}
+          onFocus={() => setHoveredDomain(domain.name)}
+          onBlur={() => setHoveredDomain(null)}
+          className={`w-full flex items-center gap-2.5 rounded-[6px] px-3 py-2.5 text-left transition-all ${
             badge?.num === '1'
-              ? 'text-blue-900'
+              ? 'bg-blue-50/90 shadow-inner hover:bg-blue-50/66'
               : badge?.num === '2'
-                ? 'text-teal-900'
-                : 'text-gray-800'
+                ? 'bg-teal-50/60 shadow-inner hover:bg-teal-50/96'
+                : 'bg-white hover:bg-neutral-50/50'
           }`}
         >
-          {domain.name}
-        </span>
-        {matchPct !== null && (
-          <span className="ml-auto shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-            {matchPct}%
+          {badge && (
+            <span
+              className={`absolute -top-2.5 -right-2 flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white shadow ${
+                badge.num === '1' ? 'bg-blue-600' : 'bg-teal-600'
+              }`}
+            >
+              {badge.num}
+              <span className="font-medium">{badge.label}</span>
+            </span>
+          )}
+          <span className="text-lg leading-none">{icon}</span>
+          <span
+            className={`text-sm font-semibold ${
+              badge?.num === '1'
+                ? 'text-blue-900'
+                : badge?.num === '2'
+                  ? 'text-teal-900'
+                  : 'text-gray-800'
+            }`}
+          >
+            {domain.name}
           </span>
-        )}
-        {hoveredDomain === domain.name && DOMAIN_DESCRIPTIONS[domain.name] && (
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3.5 z-50 w-80 p-4 rounded-2xl bg-gradient-to-b from-white to-sky-50/95 border border-sky-200 shadow-xl pointer-events-none animate-in fade-in-0 zoom-in-95 duration-200 text-left">
-            <h4 className="text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
-              <span className="text-base leading-none">{icon}</span>
-              {domain.name}
-            </h4>
-            <p className="text-xs text-slate-600 leading-relaxed font-normal">{DOMAIN_DESCRIPTIONS[domain.name]}</p>
-            {/* Arrow */}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1.5 w-3 h-3 bg-sky-50/95 border-r border-b border-sky-200 rotate-45"></div>
-          </div>
-        )}
-      </button>
+          {matchPct !== null && (
+            <span className="ml-auto shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+              {matchPct}%
+            </span>
+          )}
+          {hoveredDomain === domain.name && DOMAIN_DESCRIPTIONS[domain.name] && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3.5 z-50 w-80 p-4 rounded-2xl bg-gradient-to-b from-white to-sky-50/95 border border-sky-200 shadow-xl pointer-events-none animate-in fade-in-0 zoom-in-95 duration-200 text-left">
+              <h4 className="text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+                <span className="text-base leading-none">{icon}</span>
+                {domain.name}
+              </h4>
+              <p className="text-xs text-slate-600 leading-relaxed font-normal">{DOMAIN_DESCRIPTIONS[domain.name]}</p>
+              {/* Arrow */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1.5 w-3 h-3 bg-sky-50/95 border-r border-b border-sky-200 rotate-45"></div>
+            </div>
+          )}
+        </button>
+      </div>
     );
   };
 
@@ -581,17 +585,17 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                               </span>
                             </div>
                             <div className="mt-1 text-sm text-gray-600">
-                              Progress: {session.current_step} questions •{' '}
-                              {session.current_phase === 'profile'
+                              Progress: {session.current_step} questions answered{' '}
+                              {/* {session.current_phase === 'profile'
                                 ? 'Profile Builder'
-                                : 'Career Explorer'}
-                              {session.domain_session_id && (
+                                : 'Career Explorer'} */}
+                              {/* {session.domain_session_id && (
                                 <span className="ml-2 text-xs text-gray-500">
                                   (Based on Domain:{' '}
                                   {session.domain_session_id.substring(0, 8)}
                                   ...)
                                 </span>
-                              )}
+                              )} */}
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -714,50 +718,58 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
             <p className="mb-4 text-sm text-slate-500">Choose what your report should include. You can always start a new session to switch.</p>
             <div className="flex flex-col gap-3 sm:flex-row">
               {/* Option 1 */}
-              <label
-                className={`flex flex-1 cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${
-                  degreePreference === 'career_only'
-                    ? 'border-blue-500 bg-white shadow-md'
-                    : 'border-gray-200 bg-white hover:border-blue-300'
-                }`}
+              <div
+                className="relative p-[1.5px] rounded-2xl bg-gradient-to-r from-cyan-200 to-blue-200 flex flex-1 items-stretch transition-all duration-200 hover:shadow-md hover:-translate-y-[1px]"
               >
-                <input
-                  type="radio"
-                  name="degreePreference"
-                  value="career_only"
-                  checked={degreePreference === 'career_only'}
-                  onChange={() => setDegreePreference('career_only')}
-                  className="mt-1 accent-blue-600"
-                />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-800">I only want a career report</span>
-                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-700">Default</span>
+                <label
+                  className={`flex w-full cursor-pointer items-start gap-3 rounded-[14.5px] p-4 bg-gradient-to-b from-white to-blue-50/50 transition-all ${
+                    degreePreference === 'career_only'
+                      ? 'shadow-xs ring-1 ring-blue-100/50'
+                      : 'hover:bg-neutral-50/20'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="degreePreference"
+                    value="career_only"
+                    checked={degreePreference === 'career_only'}
+                    onChange={() => setDegreePreference('career_only')}
+                    className="mt-1 accent-blue-600 cursor-pointer"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-slate-800">I only want a career report</span>
+                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-700">Default</span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-500">Get 5 career options with areas for growth, feasibility, and next steps — without postgrad degree suggestions.</p>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-500">Get 5 career options with areas for growth, feasibility, and next steps — without postgrad degree suggestions.</p>
-                </div>
-              </label>
+                </label>
+              </div>
               {/* Option 2 */}
-              <label
-                className={`flex flex-1 cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${
-                  degreePreference === 'career_and_postgrad'
-                    ? 'border-indigo-500 bg-white shadow-md'
-                    : 'border-gray-200 bg-white hover:border-indigo-300'
-                }`}
+              <div
+                className="relative p-[1.5px] rounded-2xl bg-gradient-to-r from-cyan-200 to-blue-200 flex flex-1 items-stretch transition-all duration-200 hover:shadow-md hover:-translate-y-[1px]"
               >
-                <input
-                  type="radio"
-                  name="degreePreference"
-                  value="career_and_postgrad"
-                  checked={degreePreference === 'career_and_postgrad'}
-                  onChange={() => setDegreePreference('career_and_postgrad')}
-                  className="mt-1 accent-indigo-600"
-                />
-                <div>
-                  <span className="text-sm font-semibold text-slate-800">I want a career report &amp; post grad degree options</span>
-                  <p className="mt-0.5 text-xs text-slate-500">Get 5 career options AND postgraduate degree recommendations (Masters, MBA, etc.) alongside each career.</p>
-                </div>
-              </label>
+                <label
+                  className={`flex w-full cursor-pointer items-start gap-3 rounded-[14.5px] p-4 bg-gradient-to-b from-white to-blue-50/50 transition-all ${
+                    degreePreference === 'career_and_postgrad'
+                      ? 'shadow-xs ring-1 ring-blue-100/50'
+                      : 'hover:bg-neutral-50/20'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="degreePreference"
+                    value="career_and_postgrad"
+                    checked={degreePreference === 'career_and_postgrad'}
+                    onChange={() => setDegreePreference('career_and_postgrad')}
+                    className="mt-1 accent-indigo-600 cursor-pointer"
+                  />
+                  <div>
+                    <span className="text-sm font-semibold text-slate-800">I want a career report &amp; post grad degree options</span>
+                    <p className="mt-0.5 text-xs text-slate-500">Get 5 career options AND postgraduate degree recommendations (Masters, MBA, etc.) alongside each career.</p>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
         )}
@@ -816,7 +828,7 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                 className="mt-1"
               />
               <span className="text-sm text-gray-700">
-                I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs..
+                I acknowledge that the report & recommendations are AI-generated; the results are dependent on my inputs.
               </span>
             </label>
           </div>
