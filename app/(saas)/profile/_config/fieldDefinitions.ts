@@ -1190,8 +1190,8 @@ export const educationalFieldDefs: FieldDefinition[] = [
     options: Array.from({ length: 2035 - 1960 + 1 }, (_, i) => {
       return (1960 + i).toString();
     }),
-    label: 'Year of Completion',
-    placeholder: 'Enter year',
+    label: 'Year / Semester Name',
+    placeholder: 'Enter year or semester (e.g. Monsoon 2023)',
     required: true,
   },
   {

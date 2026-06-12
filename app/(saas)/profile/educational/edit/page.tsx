@@ -393,10 +393,9 @@ const EducationalDetailsForm: React.FC = () => {
           mapped[fieldName] = []; 
           mapped[opposingFieldName] = [];
 
-          // TRUNCATE: If in Year-wise mode, never allow more than 6 items (max standard degree).
-          // If the scan found 8 items, they should have been forced to Semester-wise above, 
-          // but this acts as a final safety check.
-          const processedYearsData = (isSemWise === 'No' && yearsData.length > 6) 
+          // TRUNCATE: Cap auto-extraction at 6 items (semesters or years).
+          // As requested, anything beyond 6 must be added manually by the user.
+          const processedYearsData = yearsData.length > 6 
             ? yearsData.slice(0, 6) 
             : yearsData;
 
