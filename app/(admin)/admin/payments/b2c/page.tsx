@@ -152,7 +152,18 @@ export default function B2CPaymentsPage() {
   // Edit modal
   const [editOpen, setEditOpen] = useState(false);
   const [editPayment, setEditPayment] = useState<UserPayment | null>(null);
-  const [editForm, setEditForm] = useState({ status: '', payment_gateway: '', gateway_transaction_id: '', notes: '' });
+  const [editForm, setEditForm] = useState({
+    status: '',
+    amount: '',
+    currency: '',
+    payment_gateway: '',
+    gateway_transaction_id: '',
+    order_id: '',
+    expiry_date: '',
+    quantity: '',
+    notes: '',
+    created_at: '',
+  });
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -233,7 +244,18 @@ export default function B2CPaymentsPage() {
 
   const openEdit = (p: UserPayment) => {
     setEditPayment(p);
-    setEditForm({ status: p.status, payment_gateway: p.payment_gateway, gateway_transaction_id: p.gateway_transaction_id, notes: p.notes });
+    setEditForm({
+      status: p.status,
+      amount: p.amount,
+      currency: p.currency,
+      payment_gateway: p.payment_gateway,
+      gateway_transaction_id: p.gateway_transaction_id,
+      order_id: (p as any).order_id || '',
+      expiry_date: (p as any).expiry_date || '',
+      quantity: (p as any).quantity != null ? String((p as any).quantity) : '',
+      notes: p.notes,
+      created_at: p.created_at ? p.created_at.slice(0, 16) : '',
+    });
     setEditError(null);
     setEditOpen(true);
   };
@@ -243,7 +265,19 @@ export default function B2CPaymentsPage() {
     setEditSaving(true);
     setEditError(null);
     try {
-      await api(`/api/payments/b2c/${editPayment.id}/`, { method: 'PATCH', body: editForm });
+      const body: Record<string, unknown> = {
+        status: editForm.status,
+        amount: parseFloat(editForm.amount),
+        currency: editForm.currency,
+        payment_gateway: editForm.payment_gateway,
+        gateway_transaction_id: editForm.gateway_transaction_id,
+        order_id: editForm.order_id,
+        notes: editForm.notes,
+      };
+      if (editForm.expiry_date) body.expiry_date = editForm.expiry_date;
+      if (editForm.quantity !== '') body.quantity = parseInt(editForm.quantity, 10);
+      if (editForm.created_at) body.created_at = new Date(editForm.created_at).toISOString();
+      await api(`/api/payments/b2c/${editPayment.id}/`, { method: 'PATCH', body });
       setEditOpen(false);
       fetchPayments();
     } catch (err: unknown) {
@@ -459,7 +493,15 @@ export default function B2CPaymentsPage() {
                     </Button>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 flex gap-1">
+                  <Button
+                    onClick={() => openEdit(p)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-amber-600 hover:text-amber-700 hover:bg-transparent underline text-xs"
+                  >
+                    Edit
+                  </Button>
                   <Button
                     onClick={() => setDetailPayment(p)}
                     variant="ghost"
@@ -592,20 +634,76 @@ export default function B2CPaymentsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Modal */}
+      {/* Edit Modal — All Fields */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-7xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
-          <DialogTitle>Edit Payment #{editPayment?.id}</DialogTitle>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+          <DialogTitle>Edit Payment #{editPayment?.id} — All Fields</DialogTitle>
           {editError && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{editError}</p>}
           <div className="space-y-3">
-            <div className="space-y-1"><Label>Status</Label><Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{STATUS_CHOICES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-1"><Label htmlFor="edit-gateway">Payment Gateway</Label><Input id="edit-gateway" value={editForm.payment_gateway} onChange={(e) => setEditForm({ ...editForm, payment_gateway: e.target.value })} /></div>
-            <div className="space-y-1"><Label htmlFor="edit-txn">Transaction ID</Label><Input id="edit-txn" value={editForm.gateway_transaction_id} onChange={(e) => setEditForm({ ...editForm, gateway_transaction_id: e.target.value })} /></div>
-            <div className="space-y-1"><Label htmlFor="edit-notes">Notes</Label><Input id="edit-notes" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></div>
+            {/* Status + Currency */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Status</Label>
+                <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{STATUS_CHOICES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Currency</Label>
+                <Select value={editForm.currency} onValueChange={(v) => setEditForm({ ...editForm, currency: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{CURRENCY_CHOICES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            {/* Amount + Quantity */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="edit-amount">Amount</Label>
+                <Input id="edit-amount" type="number" step="0.01" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-qty">Quantity</Label>
+                <Input id="edit-qty" type="number" placeholder="Optional" value={editForm.quantity} onChange={(e) => setEditForm({ ...editForm, quantity: e.target.value })} />
+              </div>
+            </div>
+            {/* Gateway + Txn ID */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="edit-gateway">Payment Gateway</Label>
+                <Input id="edit-gateway" value={editForm.payment_gateway} onChange={(e) => setEditForm({ ...editForm, payment_gateway: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-txn">Transaction ID</Label>
+                <Input id="edit-txn" value={editForm.gateway_transaction_id} onChange={(e) => setEditForm({ ...editForm, gateway_transaction_id: e.target.value })} />
+              </div>
+            </div>
+            {/* Order ID */}
+            <div className="space-y-1">
+              <Label htmlFor="edit-order">Order ID</Label>
+              <Input id="edit-order" value={editForm.order_id} onChange={(e) => setEditForm({ ...editForm, order_id: e.target.value })} />
+            </div>
+            {/* Expiry Date + Payment Date */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="edit-expiry">Expiry Date</Label>
+                <Input id="edit-expiry" type="date" value={editForm.expiry_date} onChange={(e) => setEditForm({ ...editForm, expiry_date: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-created">Payment Date (created_at)</Label>
+                <Input id="edit-created" type="datetime-local" value={editForm.created_at} onChange={(e) => setEditForm({ ...editForm, created_at: e.target.value })} />
+              </div>
+            </div>
+            {/* Notes */}
+            <div className="space-y-1">
+              <Label htmlFor="edit-notes">Notes</Label>
+              <Input id="edit-notes" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
+            </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button onClick={handleEdit} disabled={editSaving}>{editSaving ? 'Saving...' : 'Save Changes'}</Button>
+            <Button onClick={handleEdit} disabled={editSaving}>{editSaving ? 'Saving...' : 'Save All Changes'}</Button>
           </div>
         </DialogContent>
       </Dialog>
