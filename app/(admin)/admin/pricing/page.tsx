@@ -471,7 +471,9 @@ export default function PricingPage() {
               <Label className="text-sm font-medium text-gray-700">{!form.is_new_module ? 'Edit Pricing' : 'Pricing'}</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="pricing-base" className="text-xs text-gray-500">Base Price (INR)</Label>
+                  <Label htmlFor="pricing-base" className="text-xs text-gray-500">
+                    Base Price (INR) <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="pricing-base"
                     type="number"
@@ -484,7 +486,9 @@ export default function PricingPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-gray-500">USD Price</Label>
+                  <Label className="text-xs text-gray-500">
+                    USD Price <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="number"
                     min={0}
@@ -517,23 +521,11 @@ export default function PricingPage() {
           <DialogFooter className="flex flex-row items-center gap-2 pt-2 border-t">
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">Cancel</Button>
             
-            {editingId && editingId !== -1 && (
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  const item = pricing.find(p => p.id === editingId);
-                  if (item) {
-                    handleDelete(item);
-                    setDialogOpen(false);
-                  }
-                }}
-                className="bg-red-600 hover:bg-red-700 flex-1"
-              >
-                Delete
-              </Button>
-            )}
-
-            <Button onClick={handleSave} className="flex-1" disabled={saving || (!form.is_new_module && !form.module_name) || !form.price}>
+            <Button 
+              onClick={handleSave} 
+              className="flex-1" 
+              disabled={saving || (!form.is_new_module && !form.module_name) || !form.price || !form.currency_variants['USD']}
+            >
               {saving ? 'Saving...' : !form.is_new_module ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>
