@@ -298,7 +298,7 @@ const EducationalDetailsForm: React.FC = () => {
           else if (numScore <= 100) maxScore = "100";
         }
       }
-        const semestersData = Array.isArray(e.semesters) && e.semesters.length > 0 ? e.semesters : null;
+      const semestersData = Array.isArray(e.semesters) && e.semesters.length > 0 ? e.semesters : null;
       let aiHasSem = getValue(e, ['hasSemesterWiseScores']);
       // Case-insensitive and boolean-friendly check
       let isSemWise = (String(aiHasSem).toLowerCase() === 'yes' || aiHasSem === true) ? 'Yes' : 'No';
@@ -360,6 +360,7 @@ const EducationalDetailsForm: React.FC = () => {
           })(),
           overallPercentage: score,
           maximumPossibleGPA: maxScore,
+          estimatedRank: getValue(e, ['estimatedRank', 'rank', 'classRank', 'percentile']) ?? "",
         })
       };
 
@@ -370,7 +371,7 @@ const EducationalDetailsForm: React.FC = () => {
 
         if (yearsData.length > 0) {
           const firstTermLabel = String(getValue(yearsData[0], ['semesterName', 'year', 'semester', 'termName', 'yearName', 'year']) || "").toLowerCase();
-          
+
           // CRITICAL INFERENCE: 
           // If count is 8, it is almost ALWAYS semesters (4-year degree). 
           // If count is 10, it's semesters (5-year degree like B.Arch).
@@ -387,30 +388,33 @@ const EducationalDetailsForm: React.FC = () => {
           // Update toggle value in mapped object
           mapped.hasSemesterWiseScores = isSemWise;
 
-          const fieldName = isSemWise === 'Yes' ? 'semesters' : 'years';
-          const opposingFieldName = isSemWise === 'Yes' ? 'years' : 'semesters';
-          
-          mapped[fieldName] = []; 
-          mapped[opposingFieldName] = [];
+          mapped.semesters = [];
+          mapped.years = [];
 
-          // TRUNCATE: Cap auto-extraction at 6 items (semesters or years).
-          // As requested, anything beyond 6 must be added manually by the user.
-          const processedYearsData = yearsData.length > 6 
-            ? yearsData.slice(0, 6) 
-            : yearsData;
+          // TRUNCATE: Only take the first 6 items (semesters) as requested.
+          const processedYearsData = yearsData.slice(0, 6);
 
-          mapped[fieldName] = processedYearsData.map((y: any, idx: number) => {
-            const rawYScore = getValue(y, ['sgpa', 'score', 'cgpa', 'gpa', 'tgpa', 'percentage', 'yourTotalScore', 'marks', 'result', 'gradePoints']) ?? "";
+          const extractScores = (y: any) => {
+            const rawYScore = getValue(y, ['score', 'sgpa', 'cgpa', 'gpa', 'tgpa', 'percentage', 'yourTotalScore', 'marks', 'result', 'gradePoints']) ?? "";
             const yScore = cleanScoreValue(rawYScore);
-            const rawMax = getValue(y, ['maxSgpa', 'highestTotalScore', 'maxScore', 'maxGPA', 'maxPossibleScore', 'outOf', 'scale']) ?? "";
+            const rawMax = getValue(y, ['highestTotalScore', 'maxSgpa', 'maxScore', 'maxGPA', 'maxPossibleScore', 'outOf', 'scale']) ?? "";
             const maxScore = rawMax ? cleanScoreValue(rawMax) : (parseFloat(String(yScore)) <= 10 ? "10" : "100");
+            return { yScore, maxScore };
+          };
+
+          const fieldName = isSemWise === 'Yes' ? 'semesters' : 'years';
+          
+          mapped[fieldName] = processedYearsData.map((y: any, idx: number) => {
+            const { yScore, maxScore } = extractScores(y);
             return {
-              year: getValue(y, ['semesterName', 'year', 'semester', 'period', 'level', 'termLabel', 'termName']) ?? (idx + 1),
+              year: idx + 1,
+              period: getValue(y, ['semesterName', 'period', 'termName', 'semester', 'year', 'level', 'termLabel']) ?? "",
               score: yScore,
               highestTotalScore: maxScore
             };
           });
-          console.log(`[mapRecord] Mapped ${mapped[fieldName].length} ${fieldName} (isSemWise: ${isSemWise}) for section ${section}`, mapped[fieldName]);
+
+          console.log(`[mapRecord] Mapped ${fieldName}: ${mapped[fieldName]?.length} (isSemWise: ${isSemWise}) for section ${section}`);
         } else {
           // If NO yearly data found, clear both to prevent showing default/stale rows
           mapped.semesters = [];
@@ -418,381 +422,381 @@ const EducationalDetailsForm: React.FC = () => {
         }
       }
 
-      if (section === 'highSchool') {
-        // Map top-level subjects
-        if (e.subjects) {
-          mapped.subjects = e.subjects.map((subj: any) => ({
-            subject: getValue(subj, ['subject', 'name', 'subjectName']) || "",
-            level: getValue(subj, ['level', 'grade', 'standard']) || "",
-            yourTotalScore: getValue(subj, ['yourTotalScore', 'score', 'marks']) || "",
-            highestTotalScore: getValue(subj, ['highestTotalScore', 'maxScore', 'outOf']) || "100"
-          }));
-        }
+        if (section === 'highSchool') {
+          // Map top-level subjects
+          if (e.subjects) {
+            mapped.subjects = e.subjects.map((subj: any) => ({
+              subject: getValue(subj, ['subject', 'name', 'subjectName']) || "",
+              level: getValue(subj, ['level', 'grade', 'standard']) || "",
+              yourTotalScore: getValue(subj, ['yourTotalScore', 'score', 'marks']) || "",
+              highestTotalScore: getValue(subj, ['highestTotalScore', 'maxScore', 'outOf']) || "100"
+            }));
+          }
 
-        // Map terms (nested subjects)
-        const termsData = getValue(e, ['terms', 'semesters']) ?? [];
-        if (Array.isArray(termsData) && termsData.length > 0) {
-          mapped.terms = termsData.map((t: any, idx: number) => {
-            const termSubjs = getValue(t, ['subjects', 'courses']) ?? [];
-            return {
-              termName: getValue(t, ['termName', 'termLabel', 'semester', 'name']) ?? `Term ${idx + 1}`,
-              subjects: Array.isArray(termSubjs) ? termSubjs.map((subj: any) => ({
-                subject: getValue(subj, ['subject', 'name', 'subjectName']) || "",
-                level: getValue(subj, ['level', 'grade', 'standard']) || "",
-                yourTotalScore: getValue(subj, ['yourTotalScore', 'score', 'marks', 'result', 'sgpa', 'cgpa', 'gpa']) || "",
-                highestTotalScore: getValue(subj, ['highestTotalScore', 'maxScore', 'outOf', 'scale']) || "100"
-              })) : []
-            };
-          });
-          console.log(`[mapRecord] Mapped ${mapped.terms.length} terms for highSchool`);
-        }
-      }
-
-      console.log(`[mapRecord] Resulting mapped record for ${section}:`, mapped);
-      return mapped;
-    };
-
-    // 1. Map Educational Records
-    if (educationalRecords.length > 0) {
-      if (isTargeted) {
-        // Targeted Update: Only update the specific row in the target section
-        const sectionName = target.section;
-        const index = target.index ?? 0;
-        console.log(`[EducationalDetailsForm] Targeted scan detected for ${sectionName} index ${index}`);
-
-        const currentArray = Array.isArray(newDefaults[sectionName]) ? [...newDefaults[sectionName]] : [];
-
-        // Smart Record Picking: Find the record that matches the specific grade for this index
-        let bestRec = firstRec;
-        if (sectionName === 'highSchool' && educationalRecords.length > 1) {
-          const gradeLevel = currentValues.gradeLevel as string | undefined;
-          const hasScores = currentValues.hasCurrentGradeScores as string | undefined;
-          const parsedGrade = gradeLevel ? parseInt(gradeLevel.replace('Grade ', ''), 10) : 9;
-          const selectedGrade = !isNaN(parsedGrade) ? parsedGrade : 9;
-
-          if (hasScores && ['Yes', 'No'].includes(hasScores)) {
-            const startGrade = hasScores === 'Yes' ? selectedGrade : selectedGrade - 1;
-            const targetGradeNum = startGrade - index;
-
-            const matchingRec = educationalRecords.find((e: any) => {
-              const raw = String(getValue(e, ['gradeLevel', 'grade', 'academicLevel']) ?? "").toUpperCase();
-              const romanMap: Record<string, number> = { 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'VIII': 8 };
-              let extracted = parseInt(raw.replace(/GRADE\s+|TH|ST|ND|RD/gi, ''), 10);
-              if (isNaN(extracted)) {
-                for (const [rom, num] of Object.entries(romanMap)) {
-                  if (new RegExp(`\\b${rom}\\b`).test(raw)) { extracted = num; break; }
-                }
-              }
-              return extracted === targetGradeNum;
+          // Map terms (nested subjects)
+          const termsData = getValue(e, ['terms', 'semesters']) ?? [];
+          if (Array.isArray(termsData) && termsData.length > 0) {
+            mapped.terms = termsData.map((t: any, idx: number) => {
+              const termSubjs = getValue(t, ['subjects', 'courses']) ?? [];
+              return {
+                termName: getValue(t, ['termName', 'termLabel', 'semester', 'name']) ?? `Term ${idx + 1}`,
+                subjects: Array.isArray(termSubjs) ? termSubjs.map((subj: any) => ({
+                  subject: getValue(subj, ['subject', 'name', 'subjectName']) || "",
+                  level: getValue(subj, ['level', 'grade', 'standard']) || "",
+                  yourTotalScore: getValue(subj, ['yourTotalScore', 'score', 'marks', 'result', 'sgpa', 'cgpa', 'gpa']) || "",
+                  highestTotalScore: getValue(subj, ['highestTotalScore', 'maxScore', 'outOf', 'scale']) || "100"
+                })) : []
+              };
             });
-
-            if (matchingRec) bestRec = matchingRec;
+            console.log(`[mapRecord] Mapped ${mapped.terms.length} terms for highSchool`);
           }
         }
 
-        if (!currentArray[index]) currentArray[index] = {};
-        const mappedData = mapRecord(bestRec, sectionName);
-        currentArray[index] = { ...currentArray[index], ...mappedData };
+        console.log(`[mapRecord] Resulting mapped record for ${section}:`, mapped);
+        return mapped;
+      };
 
-        newDefaults[sectionName] = currentArray;
-        console.log(`[EducationalDetailsForm] Updated ${sectionName}[${index}] with mapped data.`, newDefaults[sectionName]);
-      } else {
-        // Global Update: Intelligence mapping for the entire section
-        // Note: newDefaults was already initialized with empty arrays at the top of this effect
-        const sectionsToClear = new Set<string>();
+      // 1. Map Educational Records
+      if (educationalRecords.length > 0) {
+        if (isTargeted) {
+          // Targeted Update: Only update the specific row in the target section
+          const sectionName = target.section;
+          const index = target.index ?? 0;
+          console.log(`[EducationalDetailsForm] Targeted scan detected for ${sectionName} index ${index}`);
 
-        const detectedAcademicLevel = (parsedTranscriptData.academicLevel || "").toLowerCase();
+          const currentArray = Array.isArray(newDefaults[sectionName]) ? [...newDefaults[sectionName]] : [];
 
-        // SMART DETECTION: Check if there are any full-time professional experiences in the data
+          // Smart Record Picking: Find the record that matches the specific grade for this index
+          let bestRec = firstRec;
+          if (sectionName === 'highSchool' && educationalRecords.length > 1) {
+            const gradeLevel = currentValues.gradeLevel as string | undefined;
+            const hasScores = currentValues.hasCurrentGradeScores as string | undefined;
+            const parsedGrade = gradeLevel ? parseInt(gradeLevel.replace('Grade ', ''), 10) : 9;
+            const selectedGrade = !isNaN(parsedGrade) ? parsedGrade : 9;
+
+            if (hasScores && ['Yes', 'No'].includes(hasScores)) {
+              const startGrade = hasScores === 'Yes' ? selectedGrade : selectedGrade - 1;
+              const targetGradeNum = startGrade - index;
+
+              const matchingRec = educationalRecords.find((e: any) => {
+                const raw = String(getValue(e, ['gradeLevel', 'grade', 'academicLevel']) ?? "").toUpperCase();
+                const romanMap: Record<string, number> = { 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'VIII': 8 };
+                let extracted = parseInt(raw.replace(/GRADE\s+|TH|ST|ND|RD/gi, ''), 10);
+                if (isNaN(extracted)) {
+                  for (const [rom, num] of Object.entries(romanMap)) {
+                    if (new RegExp(`\\b${rom}\\b`).test(raw)) { extracted = num; break; }
+                  }
+                }
+                return extracted === targetGradeNum;
+              });
+
+              if (matchingRec) bestRec = matchingRec;
+            }
+          }
+
+          if (!currentArray[index]) currentArray[index] = {};
+          const mappedData = mapRecord(bestRec, sectionName);
+          currentArray[index] = { ...currentArray[index], ...mappedData };
+
+          newDefaults[sectionName] = currentArray;
+          console.log(`[EducationalDetailsForm] Updated ${sectionName}[${index}] with mapped data.`, newDefaults[sectionName]);
+        } else {
+          // Global Update: Intelligence mapping for the entire section
+          // Note: newDefaults was already initialized with empty arrays at the top of this effect
+          const sectionsToClear = new Set<string>();
+
+          const detectedAcademicLevel = (parsedTranscriptData.academicLevel || "").toLowerCase();
+
+          // SMART DETECTION: Check if there are any full-time professional experiences in the data
+          const professionalExperiences = rootData.professional?.experiences || rootData.professional || [];
+          const hasFullTimeExp = Array.isArray(professionalExperiences) && professionalExperiences.some((exp: any) => {
+            const type = (exp.experienceType || exp.experience_type || "").toLowerCase();
+            return type.includes('full-time') || type.includes('working') || type.includes('job');
+          });
+
+          // SMART PG DETECTION: Check for PG degrees in the educational records
+          const hasPGDegree = educationalRecords.some((e: any) => {
+            const degree = (getValue(e, ['degree', 'program']) || "").toLowerCase();
+            return degree.includes('master') || degree.includes('m.tech') || degree.includes('mba') ||
+              degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
+          });
+
+          const isWorkingProf = currentAcademicLevel === 'Working/Completed College' ||
+            detectedAcademicLevel.includes('working') ||
+            hasFullTimeExp;
+
+          const isPostgrad = currentAcademicLevel === 'Postgraduate' ||
+            detectedAcademicLevel.includes('postgraduate') ||
+            hasPGDegree;
+
+          const isHighSchool = currentAcademicLevel === 'High School (8th–12th grade)' || detectedAcademicLevel.includes('high school');
+
+          console.log(`[EducationalDetailsForm] Sync Logic - isWorkingProf: ${isWorkingProf}, isPostgrad: ${isPostgrad} (hasPG: ${hasPGDegree}), current: ${currentAcademicLevel}, detected: ${detectedAcademicLevel}`);
+
+          educationalRecords.forEach((e: any) => {
+            const searchLevel = (getValue(e, ['academicLevel', 'level', 'degree', 'program', 'institutionName']) || "").toLowerCase();
+            const degreeName = (getValue(e, ['degree', 'program']) || "").toLowerCase();
+            const sections: string[] = [];
+
+            // 1. Strict High School check
+            const isHS = searchLevel.includes('high school') || searchLevel.includes('12th') ||
+              searchLevel.includes('secondary') || searchLevel.includes('school') ||
+              degreeName.includes('grade') || degreeName.includes('standard');
+
+            if (isHS) {
+              sections.push('highSchool');
+            } else {
+              // 2. Routing for Degrees (UG/PG)
+              if (isWorkingProf) {
+                // FOR WORKING PROFESSIONALS: EVERYTHING non-HS goes ONLY to tenPlus
+                // This is what the user wants: "working prof should apper only in working prof section"
+                sections.push('tenPlus');
+              } else if (isPostgrad) {
+                // FOR POSTGRADUATES: Route based on degree type
+                const isPG = degreeName.includes('master') || degreeName.includes('mba') || degreeName.includes('msc') ||
+                  degreeName.includes('m.a') || degreeName.includes('m.tech') || degreeName.includes('pg') ||
+                  searchLevel.includes('postgraduate');
+
+                if (isPG) {
+                  sections.push('postgraduate');
+                } else {
+                  // If it's a Bachelors degree but user is marked as Postgrad,
+                  // push to undergraduate_prereq ONLY (to avoid duplicate entries).
+                  sections.push('undergraduate_prereq');
+                }
+              } else {
+                // FOR UNDERGRADUATES: Default to undergraduate
+                sections.push('undergraduate');
+              }
+            }
+
+            // Fallback if no sections were identified but we have a global target
+            if (sections.length === 0 && globalTargetSection) {
+              // Respect Working Professional priority even in fallback
+              if (isWorkingProf) sections.push('tenPlus');
+              else {
+                sections.push(globalTargetSection);
+                if (globalTargetSection === 'undergraduate') sections.push('undergraduate_prereq');
+              }
+            }
+
+            sections.forEach(s => {
+              // Ensure we don't clear a section we already added data to in this same scan
+              if (!sectionsToClear.has(s)) {
+                newDefaults[s] = [];
+                sectionsToClear.add(s);
+              }
+
+              const updatedArray = Array.isArray(newDefaults[s]) ? [...newDefaults[s]] : [];
+              updatedArray.push(mapRecord(e, s));
+              newDefaults[s] = updatedArray;
+            });
+          });
+
+          console.log(`[EducationalDetailsForm] Global update complete. Cleared and updated:`, Array.from(sectionsToClear));
+        }
+      }
+
+      // Helper to find data in common variations of keys
+      const findKey = (data: any, options: string[]) => {
+        for (const opt of options) {
+          if (data[opt] && Array.isArray(data[opt])) return data[opt];
+          const found = Object.keys(data).find(k => k.toLowerCase() === opt.toLowerCase());
+          if (found && Array.isArray(data[found])) return data[found];
+        }
+        return null;
+      };
+
+      // 2. Map Courses & Certifications
+      const coursesKeys = ['courses', 'certifications', 'coursesAndCertifications', 'certificates', 'certificationsAndAwards', 'achievementsAndCertifications', 'achievements'];
+      let coursesData = findKey(rootData, coursesKeys);
+
+      // Check nested educational object if not in root
+      if (!coursesData && rootData.educational) {
+        coursesData = findKey(rootData.educational, coursesKeys);
+      }
+
+      if (coursesData && Array.isArray(coursesData) && coursesData.length > 0) {
+        newDefaults.courses = coursesData.map((c: any) => ({
+          courseType: c.courseType || "Certificate",
+          description: c.description || c.name || c.title || "N/A",
+          year: String(c.year || c.yearOfCompletion || c.date || ""),
+          awards: c.awards || c.awardsCertifications || "",
+          duration: c.duration || "",
+          location: c.location || "Online",
+        }));
+      }
+
+      // 3. Map Awards & Scholarships
+      const awardsKeys = ['awards', 'scholarships', 'honors', 'achievements', 'awardsAndScholarships', 'awardsAndFellowships', 'certificationsAndAwards', 'achievementsAndCertifications'];
+      let awardsData = findKey(rootData, awardsKeys);
+
+      // Check nested educational object if not in root
+      if (!awardsData && rootData.educational) {
+        awardsData = findKey(rootData.educational, awardsKeys);
+      }
+
+      if (awardsData && Array.isArray(awardsData) && awardsData.length > 0) {
+        newDefaults.awards = awardsData.map((a: any) => ({
+          nameOfHonorReceived: a.nameOfHonorReceived || a.name || a.honor || a.title || "Award/Achievement",
+          description: a.description || a.name || a.title || "N/A",
+          levelOfCompetitiveness: a.levelOfCompetitiveness || "International",
+          numberOfParticipants: String(a.numberOfParticipants || ""),
+          year: String(a.year || a.yearOfCompletion || a.date || ""),
+        }));
+      }
+
+      // 4. Map Test Scores
+      const testScoresData = parsedTranscriptData.testScores || parsedTranscriptData.test_scores || findKey(parsedTranscriptData, ['testScores', 'test_scores']);
+
+      if (testScoresData && Array.isArray(testScoresData) && testScoresData.length > 0) {
+        newDefaults.testScores = testScoresData.map((newScore: any) => {
+          const cleanScore = { ...newScore };
+
+          // Dynamic Alias Resolution
+          const findVal = (keys: string[]) => {
+            for (const k of keys) {
+              const foundKey = Object.keys(cleanScore).find(
+                (x) => x.toLowerCase() === k.toLowerCase() || x.toLowerCase().replace(/[^a-z0-9]/g, '') === k.toLowerCase().replace(/[^a-z0-9]/g, '')
+              );
+              if (foundKey && cleanScore[foundKey] !== undefined && cleanScore[foundKey] !== null && cleanScore[foundKey] !== '') {
+                return cleanScore[foundKey];
+              }
+            }
+            return undefined;
+          };
+
+          const sanitizePercentile = (val: any) => {
+            if (val === undefined || val === null || val === '') return undefined;
+            const digits = String(val).replace(/[^\d]/g, '');
+            return digits ? Number(digits) : undefined;
+          };
+
+          // Explicitly map percentiles using alias groups to match fieldDefinitions.ts IDs
+          const verbalPercentileVal = findVal(['verbalReasoningPercentile', 'verbalPercentile', 'verbal_percentile', 'verbalReasoningPercent']);
+          const quantPercentileVal = findVal(['quantitativeReasoningPercentile', 'quantPercentile', 'quantitativePercentile', 'quant_percentile', 'quantitativeReasoningPercent']);
+          const diPercentileVal = findVal(['dataInsightsPercentile', 'dataInsightPercentile', 'data_insights_percentile', 'dataInsightsPercent']);
+          const awaPercentileVal = findVal(['analyticalWritingPercentile', 'awaPercentile', 'awa_percentile', 'analyticalWritingPercent']);
+          const totalPercentileVal = findVal(['yourPercentile', 'totalPercentile', 'percentile', 'total_percentile', 'scorePercentile', 'yourScorePercentile']);
+          const mathPercentileVal = findVal(['mathYourPercentile', 'mathPercentile', 'math_percentile']);
+          const readingPercentileVal = findVal(['criticalReadingYourPercentile', 'readingPercentile', 'reading_percentile', 'criticalReadingPercentile']);
+          const irPercentileVal = findVal(['integratedReasoningPercentile', 'irPercentile', 'ir_percentile']);
+
+          // Normalize testType to exact dropdown option strings to trigger GMAT/GRE layout rendering
+          const rawTestType = String(cleanScore.testType || "").trim();
+          let testType = "Other";
+          let testTypeOther = "";
+
+          if (rawTestType.toLowerCase().includes('gmat')) {
+            testType = "GMAT";
+          } else if (rawTestType.toLowerCase().includes('gre')) {
+            testType = "GRE";
+          } else if (rawTestType.toLowerCase().includes('sat')) {
+            testType = "SAT";
+          } else if (rawTestType.toLowerCase().includes('act')) {
+            testType = "ACT";
+          } else if (rawTestType.toLowerCase().includes('toefl')) {
+            testType = "TOEFL";
+          } else if (rawTestType.toLowerCase().includes('ielts')) {
+            testType = "IELTS";
+          } else if (rawTestType.toLowerCase().includes('executive')) {
+            testType = "Executive Assessment";
+          } else if (rawTestType) {
+            testType = "Other";
+            testTypeOther = rawTestType;
+          }
+
+          return {
+            ...cleanScore,
+            testType,
+            testTypeOther,
+            testDate: cleanScore.testDate || "",
+            totalScore: cleanScore.totalScore || cleanScore.yourScore || "",
+            yourScore: cleanScore.yourScore || cleanScore.totalScore || "",
+            writingYourScore: cleanScore.writingYourScore || "",
+            mathYourScore: cleanScore.mathYourScore || "",
+            criticalReadingYourScore: cleanScore.criticalReadingYourScore || "",
+            analyticalWritingScore: cleanScore.analyticalWritingScore || "",
+            verbalReasoningScore: cleanScore.verbalReasoningScore || "",
+            quantitativeReasoningScore: cleanScore.quantitativeReasoningScore || "",
+            dataInsightsScore: cleanScore.dataInsightsScore || "",
+            englishYourScore: cleanScore.englishYourScore || "",
+            readingYourScore: cleanScore.readingYourScore || "",
+            scienceYourScore: cleanScore.scienceYourScore || "",
+            integratedReasoningScore: cleanScore.integratedReasoningScore || "",
+
+            // Map sanitized percentiles to precise React Hook Form fields
+            verbalReasoningPercentile: sanitizePercentile(verbalPercentileVal),
+            quantitativeReasoningPercentile: sanitizePercentile(quantPercentileVal),
+            dataInsightsPercentile: sanitizePercentile(diPercentileVal),
+            analyticalWritingPercentile: sanitizePercentile(awaPercentileVal),
+            yourPercentile: sanitizePercentile(totalPercentileVal),
+            mathYourPercentile: sanitizePercentile(mathPercentileVal),
+            criticalReadingYourPercentile: sanitizePercentile(readingPercentileVal),
+            integratedReasoningPercentile: sanitizePercentile(irPercentileVal),
+          };
+        });
+        console.log('!!! [EducationalDetailsForm] Mapped testScores:', JSON.stringify(newDefaults.testScores, null, 2));
+      }
+
+      // 5. Academic Level Sync
+      if (parsedTranscriptData.academicLevel && !isTargeted) {
+        const topLevel = parsedTranscriptData.academicLevel;
+
+        // PROTECTION: If the user has manually selected Working Professional or Postgraduate, 
+        // do not let the AI downgrade them to Undergraduate unless they were originally in HS.
+        // Also respect the smart detection from above.
         const professionalExperiences = rootData.professional?.experiences || rootData.professional || [];
         const hasFullTimeExp = Array.isArray(professionalExperiences) && professionalExperiences.some((exp: any) => {
           const type = (exp.experienceType || exp.experience_type || "").toLowerCase();
           return type.includes('full-time') || type.includes('working') || type.includes('job');
         });
 
-        // SMART PG DETECTION: Check for PG degrees in the educational records
+        // SMART PG DETECTION
         const hasPGDegree = educationalRecords.some((e: any) => {
           const degree = (getValue(e, ['degree', 'program']) || "").toLowerCase();
           return degree.includes('master') || degree.includes('m.tech') || degree.includes('mba') ||
             degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
         });
 
-        const isWorkingProf = currentAcademicLevel === 'Working/Completed College' ||
-          detectedAcademicLevel.includes('working') ||
-          hasFullTimeExp;
-
-        const isPostgrad = currentAcademicLevel === 'Postgraduate' ||
-          detectedAcademicLevel.includes('postgraduate') ||
+        const isCurrentlyProfessional = currentAcademicLevel === 'Working/Completed College' ||
+          currentAcademicLevel === 'Postgraduate' ||
+          hasFullTimeExp ||
           hasPGDegree;
 
-        const isHighSchool = currentAcademicLevel === 'High School (8th–12th grade)' || detectedAcademicLevel.includes('high school');
+        const isAiSayingUndergrad = topLevel.toLowerCase().includes('undergraduate') || topLevel.toLowerCase().includes('college');
 
-        console.log(`[EducationalDetailsForm] Sync Logic - isWorkingProf: ${isWorkingProf}, isPostgrad: ${isPostgrad} (hasPG: ${hasPGDegree}), current: ${currentAcademicLevel}, detected: ${detectedAcademicLevel}`);
-
-        educationalRecords.forEach((e: any) => {
-          const searchLevel = (getValue(e, ['academicLevel', 'level', 'degree', 'program', 'institutionName']) || "").toLowerCase();
-          const degreeName = (getValue(e, ['degree', 'program']) || "").toLowerCase();
-          const sections: string[] = [];
-
-          // 1. Strict High School check
-          const isHS = searchLevel.includes('high school') || searchLevel.includes('12th') ||
-            searchLevel.includes('secondary') || searchLevel.includes('school') ||
-            degreeName.includes('grade') || degreeName.includes('standard');
-
-          if (isHS) {
-            sections.push('highSchool');
-          } else {
-            // 2. Routing for Degrees (UG/PG)
-            if (isWorkingProf) {
-              // FOR WORKING PROFESSIONALS: EVERYTHING non-HS goes ONLY to tenPlus
-              // This is what the user wants: "working prof should apper only in working prof section"
-              sections.push('tenPlus');
-            } else if (isPostgrad) {
-              // FOR POSTGRADUATES: Route based on degree type
-              const isPG = degreeName.includes('master') || degreeName.includes('mba') || degreeName.includes('msc') ||
-                degreeName.includes('m.a') || degreeName.includes('m.tech') || degreeName.includes('pg') ||
-                searchLevel.includes('postgraduate');
-
-              if (isPG) {
-                sections.push('postgraduate');
-              } else {
-                // If it's a Bachelors degree but user is marked as Postgrad,
-                // push to undergraduate_prereq ONLY (to avoid duplicate entries).
-                sections.push('undergraduate_prereq');
-              }
-            } else {
-              // FOR UNDERGRADUATES: Default to undergraduate
-              sections.push('undergraduate');
-            }
+        if (topLevel.includes('High School')) {
+          // Only set to high school if we are currently in HS or nothing
+          if (!isCurrentlyProfessional && currentAcademicLevel !== 'College/Undergraduate') {
+            newDefaults.academicLevel = 'High School (8th–12th grade)';
           }
-
-          // Fallback if no sections were identified but we have a global target
-          if (sections.length === 0 && globalTargetSection) {
-            // Respect Working Professional priority even in fallback
-            if (isWorkingProf) sections.push('tenPlus');
-            else {
-              sections.push(globalTargetSection);
-              if (globalTargetSection === 'undergraduate') sections.push('undergraduate_prereq');
-            }
+        } else if (topLevel.includes('Postgraduate') || hasPGDegree) {
+          // Only set to postgrad if we aren't already a Working Professional
+          if (currentAcademicLevel !== 'Working/Completed College' && !hasFullTimeExp) {
+            newDefaults.academicLevel = 'Postgraduate';
           }
-
-          sections.forEach(s => {
-            // Ensure we don't clear a section we already added data to in this same scan
-            if (!sectionsToClear.has(s)) {
-              newDefaults[s] = [];
-              sectionsToClear.add(s);
-            }
-
-            const updatedArray = Array.isArray(newDefaults[s]) ? [...newDefaults[s]] : [];
-            updatedArray.push(mapRecord(e, s));
-            newDefaults[s] = updatedArray;
-          });
-        });
-
-        console.log(`[EducationalDetailsForm] Global update complete. Cleared and updated:`, Array.from(sectionsToClear));
-      }
-    }
-
-    // Helper to find data in common variations of keys
-    const findKey = (data: any, options: string[]) => {
-      for (const opt of options) {
-        if (data[opt] && Array.isArray(data[opt])) return data[opt];
-        const found = Object.keys(data).find(k => k.toLowerCase() === opt.toLowerCase());
-        if (found && Array.isArray(data[found])) return data[found];
-      }
-      return null;
-    };
-
-    // 2. Map Courses & Certifications
-    const coursesKeys = ['courses', 'certifications', 'coursesAndCertifications', 'certificates', 'certificationsAndAwards', 'achievementsAndCertifications', 'achievements'];
-    let coursesData = findKey(rootData, coursesKeys);
-    
-    // Check nested educational object if not in root
-    if (!coursesData && rootData.educational) {
-      coursesData = findKey(rootData.educational, coursesKeys);
-    }
-
-    if (coursesData && Array.isArray(coursesData) && coursesData.length > 0) {
-      newDefaults.courses = coursesData.map((c: any) => ({
-        courseType: c.courseType || "Certificate",
-        description: c.description || c.name || c.title || "N/A",
-        year: String(c.year || c.yearOfCompletion || c.date || ""),
-        awards: c.awards || c.awardsCertifications || "",
-        duration: c.duration || "",
-        location: c.location || "Online",
-      }));
-    }
-
-    // 3. Map Awards & Scholarships
-    const awardsKeys = ['awards', 'scholarships', 'honors', 'achievements', 'awardsAndScholarships', 'awardsAndFellowships', 'certificationsAndAwards', 'achievementsAndCertifications'];
-    let awardsData = findKey(rootData, awardsKeys);
-
-    // Check nested educational object if not in root
-    if (!awardsData && rootData.educational) {
-      awardsData = findKey(rootData.educational, awardsKeys);
-    }
-
-    if (awardsData && Array.isArray(awardsData) && awardsData.length > 0) {
-      newDefaults.awards = awardsData.map((a: any) => ({
-        nameOfHonorReceived: a.nameOfHonorReceived || a.name || a.honor || a.title || "Award/Achievement",
-        description: a.description || a.name || a.title || "N/A",
-        levelOfCompetitiveness: a.levelOfCompetitiveness || "International",
-        numberOfParticipants: String(a.numberOfParticipants || ""),
-        year: String(a.year || a.yearOfCompletion || a.date || ""),
-      }));
-    }
-
-    // 4. Map Test Scores
-    const testScoresData = parsedTranscriptData.testScores || parsedTranscriptData.test_scores || findKey(parsedTranscriptData, ['testScores', 'test_scores']);
-
-    if (testScoresData && Array.isArray(testScoresData) && testScoresData.length > 0) {
-      newDefaults.testScores = testScoresData.map((newScore: any) => {
-        const cleanScore = { ...newScore };
-
-        // Dynamic Alias Resolution
-        const findVal = (keys: string[]) => {
-          for (const k of keys) {
-            const foundKey = Object.keys(cleanScore).find(
-              (x) => x.toLowerCase() === k.toLowerCase() || x.toLowerCase().replace(/[^a-z0-9]/g, '') === k.toLowerCase().replace(/[^a-z0-9]/g, '')
-            );
-            if (foundKey && cleanScore[foundKey] !== undefined && cleanScore[foundKey] !== null && cleanScore[foundKey] !== '') {
-              return cleanScore[foundKey];
-            }
-          }
-          return undefined;
-        };
-
-        const sanitizePercentile = (val: any) => {
-          if (val === undefined || val === null || val === '') return undefined;
-          const digits = String(val).replace(/[^\d]/g, '');
-          return digits ? Number(digits) : undefined;
-        };
-
-        // Explicitly map percentiles using alias groups to match fieldDefinitions.ts IDs
-        const verbalPercentileVal = findVal(['verbalReasoningPercentile', 'verbalPercentile', 'verbal_percentile', 'verbalReasoningPercent']);
-        const quantPercentileVal = findVal(['quantitativeReasoningPercentile', 'quantPercentile', 'quantitativePercentile', 'quant_percentile', 'quantitativeReasoningPercent']);
-        const diPercentileVal = findVal(['dataInsightsPercentile', 'dataInsightPercentile', 'data_insights_percentile', 'dataInsightsPercent']);
-        const awaPercentileVal = findVal(['analyticalWritingPercentile', 'awaPercentile', 'awa_percentile', 'analyticalWritingPercent']);
-        const totalPercentileVal = findVal(['yourPercentile', 'totalPercentile', 'percentile', 'total_percentile', 'scorePercentile', 'yourScorePercentile']);
-        const mathPercentileVal = findVal(['mathYourPercentile', 'mathPercentile', 'math_percentile']);
-        const readingPercentileVal = findVal(['criticalReadingYourPercentile', 'readingPercentile', 'reading_percentile', 'criticalReadingPercentile']);
-        const irPercentileVal = findVal(['integratedReasoningPercentile', 'irPercentile', 'ir_percentile']);
-
-        // Normalize testType to exact dropdown option strings to trigger GMAT/GRE layout rendering
-        const rawTestType = String(cleanScore.testType || "").trim();
-        let testType = "Other";
-        let testTypeOther = "";
-
-        if (rawTestType.toLowerCase().includes('gmat')) {
-          testType = "GMAT";
-        } else if (rawTestType.toLowerCase().includes('gre')) {
-          testType = "GRE";
-        } else if (rawTestType.toLowerCase().includes('sat')) {
-          testType = "SAT";
-        } else if (rawTestType.toLowerCase().includes('act')) {
-          testType = "ACT";
-        } else if (rawTestType.toLowerCase().includes('toefl')) {
-          testType = "TOEFL";
-        } else if (rawTestType.toLowerCase().includes('ielts')) {
-          testType = "IELTS";
-        } else if (rawTestType.toLowerCase().includes('executive')) {
-          testType = "Executive Assessment";
-        } else if (rawTestType) {
-          testType = "Other";
-          testTypeOther = rawTestType;
+        } else if (topLevel.includes('Working') || hasFullTimeExp) {
+          newDefaults.academicLevel = 'Working/Completed College';
+        } else if (!isCurrentlyProfessional || !isAiSayingUndergrad) {
+          // Only set to undergraduate if we aren't already in a "higher" level or if the AI is specifically saying undergrad
+          newDefaults.academicLevel = 'College/Undergraduate';
         }
-
-        return {
-          ...cleanScore,
-          testType,
-          testTypeOther,
-          testDate: cleanScore.testDate || "",
-          totalScore: cleanScore.totalScore || cleanScore.yourScore || "",
-          yourScore: cleanScore.yourScore || cleanScore.totalScore || "",
-          writingYourScore: cleanScore.writingYourScore || "",
-          mathYourScore: cleanScore.mathYourScore || "",
-          criticalReadingYourScore: cleanScore.criticalReadingYourScore || "",
-          analyticalWritingScore: cleanScore.analyticalWritingScore || "",
-          verbalReasoningScore: cleanScore.verbalReasoningScore || "",
-          quantitativeReasoningScore: cleanScore.quantitativeReasoningScore || "",
-          dataInsightsScore: cleanScore.dataInsightsScore || "",
-          englishYourScore: cleanScore.englishYourScore || "",
-          readingYourScore: cleanScore.readingYourScore || "",
-          scienceYourScore: cleanScore.scienceYourScore || "",
-          integratedReasoningScore: cleanScore.integratedReasoningScore || "",
-
-          // Map sanitized percentiles to precise React Hook Form fields
-          verbalReasoningPercentile: sanitizePercentile(verbalPercentileVal),
-          quantitativeReasoningPercentile: sanitizePercentile(quantPercentileVal),
-          dataInsightsPercentile: sanitizePercentile(diPercentileVal),
-          analyticalWritingPercentile: sanitizePercentile(awaPercentileVal),
-          yourPercentile: sanitizePercentile(totalPercentileVal),
-          mathYourPercentile: sanitizePercentile(mathPercentileVal),
-          criticalReadingYourPercentile: sanitizePercentile(readingPercentileVal),
-          integratedReasoningPercentile: sanitizePercentile(irPercentileVal),
-        };
-      });
-      console.log('!!! [EducationalDetailsForm] Mapped testScores:', JSON.stringify(newDefaults.testScores, null, 2));
-    }
-
-    // 5. Academic Level Sync
-    if (parsedTranscriptData.academicLevel && !isTargeted) {
-      const topLevel = parsedTranscriptData.academicLevel;
-
-      // PROTECTION: If the user has manually selected Working Professional or Postgraduate, 
-      // do not let the AI downgrade them to Undergraduate unless they were originally in HS.
-      // Also respect the smart detection from above.
-      const professionalExperiences = rootData.professional?.experiences || rootData.professional || [];
-      const hasFullTimeExp = Array.isArray(professionalExperiences) && professionalExperiences.some((exp: any) => {
-        const type = (exp.experienceType || exp.experience_type || "").toLowerCase();
-        return type.includes('full-time') || type.includes('working') || type.includes('job');
-      });
-
-      // SMART PG DETECTION
-      const hasPGDegree = educationalRecords.some((e: any) => {
-        const degree = (getValue(e, ['degree', 'program']) || "").toLowerCase();
-        return degree.includes('master') || degree.includes('m.tech') || degree.includes('mba') ||
-          degree.includes('msc') || degree.includes('m.a') || degree.includes('pg');
-      });
-
-      const isCurrentlyProfessional = currentAcademicLevel === 'Working/Completed College' ||
-        currentAcademicLevel === 'Postgraduate' ||
-        hasFullTimeExp ||
-        hasPGDegree;
-
-      const isAiSayingUndergrad = topLevel.toLowerCase().includes('undergraduate') || topLevel.toLowerCase().includes('college');
-
-      if (topLevel.includes('High School')) {
-        // Only set to high school if we are currently in HS or nothing
-        if (!isCurrentlyProfessional && currentAcademicLevel !== 'College/Undergraduate') {
-          newDefaults.academicLevel = 'High School (8th–12th grade)';
-        }
-      } else if (topLevel.includes('Postgraduate') || hasPGDegree) {
-        // Only set to postgrad if we aren't already a Working Professional
-        if (currentAcademicLevel !== 'Working/Completed College' && !hasFullTimeExp) {
-          newDefaults.academicLevel = 'Postgraduate';
-        }
-      } else if (topLevel.includes('Working') || hasFullTimeExp) {
-        newDefaults.academicLevel = 'Working/Completed College';
-      } else if (!isCurrentlyProfessional || !isAiSayingUndergrad) {
-        // Only set to undergraduate if we aren't already in a "higher" level or if the AI is specifically saying undergrad
-        newDefaults.academicLevel = 'College/Undergraduate';
       }
-    }
 
-    // Support grade level specifically
-    if (firstRec?.gradeLevel && !isTargeted) {
-      newDefaults.gradeLevel = firstRec.gradeLevel;
-      if (newDefaults.academicLevel && newDefaults.academicLevel.includes('High School')) {
-        newDefaults.hasCurrentGradeScores = 'Yes';
+      // Support grade level specifically
+      if (firstRec?.gradeLevel && !isTargeted) {
+        newDefaults.gradeLevel = firstRec.gradeLevel;
+        if (newDefaults.academicLevel && newDefaults.academicLevel.includes('High School')) {
+          newDefaults.hasCurrentGradeScores = 'Yes';
+        }
       }
-    }
 
-    setFormDefaults(newDefaults);
-    if (formRef.current) {
-      formRef.current.reset(newDefaults);
-    }
-  }, [parsedTranscriptData, educationalDetails]); // eslint-disable-line react-hooks/exhaustive-deps
+      setFormDefaults(newDefaults);
+      if (formRef.current) {
+        formRef.current.reset(newDefaults);
+      }
+    }, [parsedTranscriptData, educationalDetails]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Apply DOB-based year lower bounds: school yearOfCompletion >= DOB+1, college startYear >= DOB+10
   React.useEffect(() => {

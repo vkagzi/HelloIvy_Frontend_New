@@ -1153,6 +1153,7 @@ export const educationalFieldDefs: FieldDefinition[] = [
       },
     },
   },
+
   {
     id: 'score',
     type: 'text',

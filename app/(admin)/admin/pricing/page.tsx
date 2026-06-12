@@ -210,7 +210,7 @@ export default function PricingPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({ ...EMPTY_FORM });
+    setForm({ ...EMPTY_FORM, is_new_module: true });
     setScopeType('none');
     setScopeOpen(false);
     setSchoolQuery('');
@@ -365,7 +365,7 @@ export default function PricingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Module Pricing</h1>
-        <Button onClick={openCreate} className="bg-purple-600 hover:bg-purple-700">+ Add Module</Button>
+        <Button onClick={openCreate} className="bg-purple-600 hover:bg-purple-700">Create New Module</Button>
       </div>
 
       {/* Table */}
@@ -413,11 +413,6 @@ export default function PricingPage() {
                     <button onClick={() => openEdit(p)} className="text-blue-600 hover:text-blue-800" title="Edit">
                       <Pencil size={16} />
                     </button>
-                    {(!['college_selector', 'career_discovery', 'domain_discovery'].includes(p.module_name) || p.id !== -1) && (
-                      <button onClick={() => handleDelete(p)} className="text-red-600 hover:text-red-800" title="Delete">
-                        <Trash2 size={16} />
-                      </button>
-                    )}
                   </div>
                 </td>
               </tr>
@@ -431,48 +426,33 @@ export default function PricingPage() {
         <DialogContent className="max-w-lg max-h-[95vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {editingId ? 'Edit Module' : 'Add Module'}
+              {(editingId || !form.is_new_module) ? 'Edit Module' : 'Create New Module'}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className="space-y-6 pt-4">
             {/* Module Selection / Creation */}
             <div className="space-y-3 rounded-lg border border-purple-100 bg-purple-50/30 p-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="pricing-module" className="font-semibold text-purple-900">Edit Module</Label>
-                {!editingId && (
-                  <button 
-                    type="button"
-                    onClick={() => setForm({ ...form, is_new_module: !form.is_new_module, module_name: '' })}
-                    className="text-xs font-medium text-purple-600 hover:text-purple-800"
-                  >
-                    {form.is_new_module ? "← Select Existing" : "+ New Custom Module"}
-                  </button>
-                )}
+                <Label htmlFor="pricing-module" className="font-semibold text-purple-900">
+                  {(editingId || !form.is_new_module) ? 'Module Details' : 'Create New Module'}
+                </Label>
               </div>
 
               {!form.is_new_module ? (
-                <Select
-                  value={form.module_name}
-                  onValueChange={(v) => setForm({ ...form, module_name: v })}
-                  disabled={!!editingId}
-                >
-                  <SelectTrigger id="pricing-module" className="w-full bg-white">
-                    <SelectValue placeholder="Select module" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {modules.map((m) => (
-                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-purple-700">Module Name</Label>
+                  <div className="h-10 flex items-center px-3 bg-white border border-gray-100 rounded-md text-sm font-semibold text-gray-700">
+                    {moduleLabels[form.module_name] || form.module_name}
+                  </div>
+                </div>
               ) : (
                 <div className="animate-in fade-in slide-in-from-top-1">
                   <div className="space-y-1">
                     <Label htmlFor="new-module-label" className="text-xs font-medium text-purple-700">Display Name</Label>
                     <Input
                       id="new-module-label"
-                      placeholder="Essay Evaluator"
+                      placeholder="e.g. Essay Evaluator"
                       value={form.new_module_label}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -488,7 +468,7 @@ export default function PricingPage() {
 
             {/* Pricing Section */}
             <div className={cn("space-y-4 rounded-lg border border-gray-200 bg-gray-50/50 p-3 transition-opacity", !isModuleSelected && "opacity-50 pointer-events-none")}>
-              <Label className="text-sm font-medium text-gray-700">Pricing</Label>
+              <Label className="text-sm font-medium text-gray-700">{!form.is_new_module ? 'Edit Pricing' : 'Pricing'}</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="pricing-base" className="text-xs text-gray-500">Base Price (INR)</Label>
@@ -523,20 +503,6 @@ export default function PricingPage() {
               </div>
             </div>
 
-            {/* Override fields */}
-            <div className={cn("space-y-2 rounded-lg border border-gray-200 bg-gray-50/50 p-3 transition-opacity", !isModuleSelected && "opacity-50 pointer-events-none")}>
-              <Label className="text-sm font-medium text-gray-700">Edit Name</Label>
-              <div className="space-y-1.5">
-                <Input
-                  id="override-label"
-                  placeholder="Custom Module Name"
-                  disabled={!isModuleSelected}
-                  value={form.label_override}
-                  onChange={(e) => setForm({ ...form, label_override: e.target.value })}
-                />
-              </div>
-            </div>
-
             {/* Active Toggle */}
             <div className="flex items-center gap-2">
               <Checkbox
@@ -546,34 +512,29 @@ export default function PricingPage() {
               />
               <Label htmlFor="pricing-active" className="cursor-pointer text-sm font-medium">Active</Label>
             </div>
-
-            {/* Delete Option - separate row below */}
-            {editingId && (
-              <div className="pt-2 border-t border-gray-100/50">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    const item = pricing.find((p) => p.id === editingId);
-                    if (item) handleDelete(item);
-                    setDialogOpen(false);
-                  }} 
-                  className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-50 h-9 px-2 text-xs font-semibold"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Module Configuration
-                </Button>
-                <p className="px-2 mt-1 text-[10px] text-gray-400">
-                  Deleting this configuration will revert the module to global defaults.
-                </p>
-              </div>
-            )}
           </div>
 
-          <DialogFooter className="pt-1 mt-1">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving || (!form.is_new_module && !form.module_name) || !form.price}>
-              {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
+          <DialogFooter className="flex flex-row items-center gap-2 pt-2 border-t">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">Cancel</Button>
+            
+            {editingId && editingId !== -1 && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  const item = pricing.find(p => p.id === editingId);
+                  if (item) {
+                    handleDelete(item);
+                    setDialogOpen(false);
+                  }
+                }}
+                className="bg-red-600 hover:bg-red-700 flex-1"
+              >
+                Delete
+              </Button>
+            )}
+
+            <Button onClick={handleSave} className="flex-1" disabled={saving || (!form.is_new_module && !form.module_name) || !form.price}>
+              {saving ? 'Saving...' : !form.is_new_module ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>
         </DialogContent>
