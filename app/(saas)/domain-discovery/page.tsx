@@ -321,7 +321,7 @@ function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
               streams and subjects?
             </Heading>
             <p className="mt-3 text-sm text-gray-600">
-              Please update your profile with your latest information before we begin.
+              Discover potential career paths and subjects that match you best
             </p>
             {profileLoading ? (
               <div className="mt-5 h-10 w-44 animate-pulse rounded-xl bg-neutral-200" />
@@ -333,6 +333,9 @@ function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
                 {linkText}
               </Link>
             )}
+            <p className="mt-3 text-sm text-gray-600">
+              Please update your profile with your latest information
+            </p>
           </div>
 
           {/* Right - Brain Animation */}
@@ -432,7 +435,7 @@ function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
 
         {/* Instructions */}
         <div className="mb-6 rounded-3xl border border-white bg-white p-6 shadow-xs">
-          <div className="mb-6 flex flex-col gap-1">
+          {/* <div className="mb-6 flex flex-col gap-1">
             <h2 className="text-xl font-bold text-slate-800">
               {sessions.length > 0
                 ? 'Start a New Session'
@@ -441,7 +444,7 @@ function DomainDiscoveryPage({}: DomainDiscoveryPageProps) {
             <p className="text-sm text-slate-500">
               Discover academic and interest domains that match your natural curiosities, passions, and learning preferences.
             </p>
-          </div>
+          </div> */}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {instructionItems.map((item, index) => (

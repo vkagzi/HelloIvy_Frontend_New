@@ -171,10 +171,15 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
       const subjectsCount = Array.isArray(existingSubjects)
         ? existingSubjects.length
         : minSubjects;
-      map[grade] = Array.from({ length: subjectsCount }, () => ({
+      map[grade] = Array.from({ length: subjectsCount }, (_, sIdx) => ({
         _id: nanoid(),
         ...Object.fromEntries(
-          (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+          (section.repeatables?.fields ?? []).map((fid: string) => [
+            fid,
+            (Array.isArray(existingSubjects) && existingSubjects[sIdx]?.[fid] !== undefined && existingSubjects[sIdx]?.[fid] !== null)
+              ? existingSubjects[sIdx]?.[fid]
+              : (fid === 'level' ? 'Not Applicable' : ''),
+          ])
         ),
       }));
     });
@@ -216,7 +221,9 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
               ...Object.fromEntries(
                 (section.repeatables?.fields ?? []).map((fid: string) => [
                   fid,
-                  (Array.isArray(termSubjects) && termSubjects[sIdx]?.[fid]) ?? '',
+                  (Array.isArray(termSubjects) && termSubjects[sIdx]?.[fid] !== undefined && termSubjects[sIdx]?.[fid] !== null)
+                    ? termSubjects[sIdx]?.[fid]
+                    : (fid === 'level' ? 'Not Applicable' : ''),
                 ])
               ),
             }));
@@ -245,7 +252,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
             ...Object.fromEntries(
               (section.repeatables?.fields ?? []).map((fid: string) => [
                 fid,
-                '',
+                fid === 'level' ? 'Not Applicable' : '',
               ])
             ),
           }));
@@ -264,7 +271,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
 
     // Build empty subjects array with minSubjects rows
     const emptySubjects = Array.from({ length: minSubjects }, () =>
-      Object.fromEntries(repeatableFieldIds.map((fid: string) => [fid, '']))
+      Object.fromEntries(repeatableFieldIds.map((fid: string) => [fid, fid === 'level' ? 'Not Applicable' : '']))
     );
 
     const emptyEntry: Record<string, unknown> = {
@@ -457,7 +464,10 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
         const initialTermSubjects = Array.from({ length: minSubjects }, () => ({
           _id: nanoid(),
           ...Object.fromEntries(
-            (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+            (section.repeatables?.fields ?? []).map((fid: string) => [
+              fid,
+              fid === 'level' ? 'Not Applicable' : '',
+            ])
           ),
         }));
 
@@ -491,7 +501,10 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     const newRow = {
       _id: nanoid(),
       ...Object.fromEntries(
-        (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+        (section.repeatables?.fields ?? []).map((fid: string) => [
+          fid,
+          fid === 'level' ? 'Not Applicable' : '',
+        ])
       ),
     };
 
@@ -515,7 +528,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
             string,
             unknown
           >,
-          '' as never
+          (fieldId === 'level' ? 'Not Applicable' : '') as never
         );
       });
     }, 0);
@@ -660,7 +673,10 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
     const newRow = {
       _id: nanoid(),
       ...Object.fromEntries(
-        (section.repeatables?.fields ?? []).map((fid: string) => [fid, ''])
+        (section.repeatables?.fields ?? []).map((fid: string) => [
+          fid,
+          fid === 'level' ? 'Not Applicable' : '',
+        ])
       ),
     };
 
@@ -691,7 +707,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
             string,
             unknown
           >,
-          '' as never
+          (fieldId === 'level' ? 'Not Applicable' : '') as never
         );
       });
     }, 0);
@@ -970,6 +986,7 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                                     // Get the board value
                                     const boardValue = schoolValues?.board as string | undefined;
                                     const boardSubjectMap: Record<string, string[]> = {
+                                      'American (AP / American High School Diploma)': americanSubjects,
                                       'American (AP / US High School Diploma)': americanSubjects,
                                       'Cambridge - A Levels': cambridgeALevelSubjects,
                                       'Cambridge - IGCSE': cambridgeIGCSESubjects,
@@ -978,10 +995,12 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                                       IBCP: ibcpSubjects,
                                       ICSE: icseSubjects,
                                       'International Baccalaureate (IB)': ibSubjects,
+                                      'International Baccalaureate': ibSubjects,
                                       ISC: iscSubjects,
                                       MYP: mypSubjects,
                                       NIOS: niosSubjects,
                                       'State Board': stateBoardSubjects,
+                                      'Indian State Boards': stateBoardSubjects,
                                     };
 
                                     const currentBoardSubjects = (boardValue && boardSubjectMap[boardValue]) || seniorSecondarySubjects;
@@ -1134,6 +1153,9 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                             const subjectValue = schoolSubjects?.[rowIdx]?.subject as string | undefined;
                             const showSubjectOther = subjectValue === 'Other';
 
+                            const levelValue = schoolSubjects?.[rowIdx]?.level as string | undefined;
+                            const showLevelOther = levelValue === 'Other';
+
                             // Collect subjects already selected in OTHER rows
                             const alreadySelectedSubjects = subjectRows.reduce<string[]>((acc, _, otherIdx) => {
                               if (otherIdx === rowIdx) return acc;
@@ -1161,6 +1183,18 @@ export const SchoolBlock: React.FC<SchoolBlockProps> = ({
                                   if (
                                     fieldId === 'subjectOther' &&
                                     !showSubjectOther
+                                  ) {
+                                    return (
+                                      <td key={fieldId} className="px-4 py-3">
+                                        <span className="text-neutral-400">-</span>
+                                      </td>
+                                    );
+                                  }
+
+                                  // For levelOther field, only render if this row has 'Other' selected
+                                  if (
+                                    fieldId === 'levelOther' &&
+                                    !showLevelOther
                                   ) {
                                     return (
                                       <td key={fieldId} className="px-4 py-3">
