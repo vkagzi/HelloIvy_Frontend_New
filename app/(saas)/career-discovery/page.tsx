@@ -585,17 +585,17 @@ function CareerDiscoveryPage({}: CareerDiscoveryPageProps) {
                               </span>
                             </div>
                             <div className="mt-1 text-sm text-gray-600">
-                              Progress: {session.current_step} questions •{' '}
-                              {session.current_phase === 'profile'
+                              Progress: {session.current_step} questions answered{' '}
+                              {/* {session.current_phase === 'profile'
                                 ? 'Profile Builder'
-                                : 'Career Explorer'}
-                              {session.domain_session_id && (
+                                : 'Career Explorer'} */}
+                              {/* {session.domain_session_id && (
                                 <span className="ml-2 text-xs text-gray-500">
                                   (Based on Domain:{' '}
                                   {session.domain_session_id.substring(0, 8)}
                                   ...)
                                 </span>
-                              )}
+                              )} */}
                             </div>
                           </div>
                           <div className="flex gap-2">
