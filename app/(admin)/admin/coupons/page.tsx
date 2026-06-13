@@ -169,7 +169,7 @@ export default function AdminCouponsListPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-bold text-neutral-900">
-                          {coupon.voucher_type === 'percentage' ? `${coupon.voucher_value}%` : `₹${coupon.voucher_value}`}
+                          {coupon.voucher_type === 'percentage' ? `${coupon.voucher_value}%` : coupon.voucher_value}
                         </span>
                         <div className="text-[10px] capitalize text-neutral-400 font-bold tracking-tight">{coupon.coupon_type}</div>
                       </td>
